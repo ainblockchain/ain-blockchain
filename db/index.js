@@ -3,7 +3,6 @@ const logger = new (require('../logger'))('DATABASE');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
-  DevFlags,
   NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
@@ -620,7 +619,7 @@ class DB {
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, auth, timestamp, options) {
+  evalRule(valuePath, value, auth, options) {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
@@ -631,7 +630,7 @@ class DB {
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.RULES_ROOT, localPath, options);
     if (limitChecked !== true) return limitChecked;
-    return this.getPermissionForValue(localPath, value, auth, timestamp);
+    return this.getPermissionForValue(localPath, value, auth, options);
   }
 
   // TODO(platfowner): Consider allowing the callers to specify target config.
@@ -740,8 +739,8 @@ class DB {
           auth.fid = op.fid;
         }
         const timestamp = op.timestamp || Date.now();
-        resultList.push(this.evalRule(
-            op.ref, op.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(op)));
+        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op), { timestamp });
+        resultList.push(this.evalRule(op.ref, op.value, auth, options));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
         if (op.address) {
@@ -811,9 +810,14 @@ class DB {
     return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
-  setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  setValue(valuePath, value, auth, transaction, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
+    let blockTime = _.get(options, 'blockTime', null);
+    if (!blockTime) {
+      blockTime = this.lastBlockTimestamp();
+    }
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
@@ -841,7 +845,7 @@ class DB {
           null,
           unitWriteGasAmount);
     }
-    const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
+    const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, options);
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
@@ -871,9 +875,6 @@ class DB {
     let funcResults = null;
     let subtreeFuncResults = null;
     if (auth && (auth.addr || auth.fid)) {
-      if (blockTime === null) {
-        blockTime = this.lastBlockTimestamp();
-      }
       const accountRegistrationGasAmount = DB.getBlockchainParam(
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
@@ -898,8 +899,7 @@ class DB {
         networkId,
       };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
-          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
-          blockchainParams, options);
+          localPath, valueCopy, prevValueCopy, auth, transaction, blockchainParams, options);
       funcResults = func_results;
       subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
@@ -935,8 +935,9 @@ class DB {
         subtreeFuncResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  incValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -948,12 +949,12 @@ class DB {
           unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(
-        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
+    return this.setValue(valuePath, valueAfter, auth, transaction, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  decValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -965,12 +966,12 @@ class DB {
           unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(
-        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
+    return this.setValue(valuePath, valueAfter, auth, transaction, options);
   }
 
-  setFunction(functionPath, func, auth, blockNumber, options) {
+  setFunction(functionPath, func, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1031,8 +1032,9 @@ class DB {
         unitWriteGasAmount);
   }
 
-  setRule(rulePath, rule, auth, blockNumber, options) {
+  setRule(rulePath, rule, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1086,8 +1088,9 @@ class DB {
         unitWriteGasAmount);
   }
 
-  setOwner(ownerPath, owner, auth, blockNumber, options) {
+  setOwner(ownerPath, owner, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1180,31 +1183,30 @@ class DB {
 
   executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     let result;
+    const options = Object.assign(CommonUtil.toSetOptions(op), {
+      timestamp,
+      blockNumber,
+      blockTime,
+    });
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+        result = this.setValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+        result = this.incValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+        result = this.decValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setFunction(op.ref, op.value, auth, options);
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setRule(op.ref, op.value, auth, options);
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setOwner(op.ref, op.value, auth, options);
         break;
       default:
         const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1487,7 +1489,7 @@ class DB {
     return true;
   }
 
-  collectFee(auth, timestamp, tx, blockNumber, executionResult) {
+  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult) {
     const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
@@ -1526,10 +1528,13 @@ class DB {
         CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath,
-        { amount: executionResult.gas_cost_total },
-        auth, timestamp, tx, blockNumber, null);
+        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, tx, newOptions);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
@@ -1735,6 +1740,7 @@ class DB {
 
   executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
+
     const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
@@ -1765,7 +1771,7 @@ class DB {
       }
     }
     if (!skipFees) {
-      this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
+      this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
       this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
@@ -1824,8 +1830,12 @@ class DB {
     return newValue;
   }
 
-  getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
+  getPermissionForValue(parsedValuePath, newValue, auth, options) {
     const LOG_HEADER = 'getPermissionForValue';
+
+    const timestamp = _.get(options, 'timestamp', null);
+    const blockNumber = _.get(options, 'blockNumber', null);
+    const blockTime = _.get(options, 'blockTime', null);
     // Evaluate write rules and return matched configs
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const matchedWriteRules = matched.write;
@@ -1848,7 +1858,8 @@ class DB {
     }
     try {
       const evalWriteRuleRes = this.evalWriteRuleConfig(
-        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth,
+        timestamp, blockNumber, blockTime);
       if (evalWriteRuleRes.code) {
         return {
           code: evalWriteRuleRes.code,
@@ -2301,12 +2312,13 @@ class DB {
 
   // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
   static makeWriteRuleEvalFunction(ruleCodeSnippet, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-        'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
+    return new Function('auth', 'data', 'newData', 'currentTime', 'blockNumber', 'blockTime',
+        'getValue', 'getRule', 'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util',
         ...Object.keys(pathVars), ruleCodeSnippet);
   }
 
-  evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
+  evalWriteRuleConfig(
+      writeRuleConfig, pathVars, data, newData, auth, timestamp, blockNumber, blockTime) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
       return {
         ruleString: '',
@@ -2335,10 +2347,10 @@ class DB {
         message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
       };
     }
-    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
-        this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-        this.evalRule.bind(this), this.evalOwner.bind(this),
-        new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, blockNumber, blockTime,
+        this.getValue.bind(this), this.getRule.bind(this), this.getFunction.bind(this),
+        this.getOwner.bind(this), this.evalRule.bind(this), this.evalOwner.bind(this),
+        new RuleUtil(), ...Object.values(pathVars));
     return {
       ruleString,
       evalResult,
