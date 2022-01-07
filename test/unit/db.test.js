@@ -771,12 +771,12 @@ describe("DB operations", () => {
         // Set 100 children
         for (let i = 0; i < 100; i++) {
           expect(node.db.setValue(`/apps/test/test_rule/some/path/more/than/max/child_${i}`, i, { addr: 'abcd' },
-              null, { extra: { executed_at: 1234567890000 + i }}).code).to.equal(0);
+              { extra: { executed_at: 1234567890000 + i }}).code).to.equal(0);
         }
         assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 100);
         // Set 101'st child
         expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child_100", 100, { addr: 'abcd' },
-            null, { extra: { executed_at: 1234567890000 + 100 }}).code).to.equal(0);
+            { extra: { executed_at: 1234567890000 + 100 }}).code).to.equal(0);
         // 100 children removed
         assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 1);
       })
@@ -793,7 +793,7 @@ describe("DB operations", () => {
             child1: 1,
             child2: 2
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
           "bandwidth_gas_amount": 1
@@ -813,7 +813,7 @@ describe("DB operations", () => {
               height2: 0
             }
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_height\":1}] at '/apps/test/test_rule/some/path/max/height' for value path '/apps/test/test_rule/some/path/max/height' with newValue '{\"height1\":{\"height2\":0}}'",
           "bandwidth_gas_amount": 1
@@ -832,7 +832,7 @@ describe("DB operations", () => {
             size1: 1,
             size2: 2
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_size\":1}] at '/apps/test/test_rule/some/path/max/size' for value path '/apps/test/test_rule/some/path/max/size' with newValue '{\"size1\":1,\"size2\":2}'",
           "bandwidth_gas_amount": 1
@@ -848,7 +848,7 @@ describe("DB operations", () => {
           }
         }).code).to.equal(0);
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/max/bytes", 1,
-          { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+          { addr: 'abcd' }, { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_bytes\":7}] at '/apps/test/test_rule/some/path/max/bytes' for value path '/apps/test/test_rule/some/path/max/bytes' with newValue '1'",
           "bandwidth_gas_amount": 1
@@ -1467,13 +1467,13 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
@@ -1481,23 +1481,23 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a non-variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1506,13 +1506,13 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a closest variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
@@ -1520,12 +1520,12 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a closest non-variable rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1534,12 +1534,12 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a rule without subtree rules", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1548,7 +1548,7 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a rule with subtree rules", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12101,
           "message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
           "matched": "erased",
@@ -1557,7 +1557,7 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a non-variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12105,
           "message": "Rule syntax error: \"Unexpected token 'while'\" in write rule: [while(]",
           "matched": "erased",
@@ -3890,7 +3890,8 @@ describe("DB operations", () => {
           });
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(
+            overSizeTx, false, true, node.bc.lastBlockNumber() + 1, node.bc.lastBlockTimestamp());
         assert.deepEqual(res.code, 10901);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for services"), true);
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
@@ -4312,18 +4313,18 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
+        `/apps/test/users/${node2.account.address}/balance`, 0, null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
+        `/apps/test/users/${node2.account.address}/balance`, -1, null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
+        `/apps/test/users/${node1.account.address}/balance`, 1, null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -4331,19 +4332,19 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if data exists", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
+        `/apps/test/users/${node1.account.address}/info`, "something", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
+        `/apps/test/users/${node2.account.address}/info`, "something else", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/new_info`, "something",
-        { addr: node2.account.address }, null)), {
+        { addr: node2.account.address }, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -4352,13 +4353,13 @@ describe("DB rule config", () => {
   it("apply the closest ancestor's rule config if not exists", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
-        { addr: node1.account.address }, null)), {
+        { addr: node1.account.address }, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
-        { addr: node1.account.address }, null)), {
+        { addr: node1.account.address }, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [auth.addr === $uid] at '/apps/test/users/$uid' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something\"', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp 'null'",
       "matched": "erased",
@@ -4367,12 +4368,12 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
+        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
+        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4381,12 +4382,12 @@ describe("DB rule config", () => {
 
   it("validates old data and new data together", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
+        `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
+        `/apps/test/users/${node1.account.address}/next_counter`, 12, null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4396,13 +4397,13 @@ describe("DB rule config", () => {
   it("can handle nested path variables", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
-        "some value", null, null)), {
+        "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/second_users/${node1.account.address}/next_counter`,
-        "some other value", null, null)), {
+        "some other value", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [$wcard1 == $wcard2] at '/apps/test/second_users/$wcard1/$wcard2' for value path '/apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$wcard2\":\"next_counter\",\"$wcard1\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"some other value\"', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4411,12 +4412,12 @@ describe("DB rule config", () => {
 
   it("duplicated path variables", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
+        '/apps/test/no_dup_key/aaa/bbb', "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
+        '/apps/test/dup_key/aaa/bbb', "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -5039,7 +5040,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/test/test_sharding/some/path/to/value", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}).code)
+            { extra: { executed_at: 1234567890000 }}).code)
             .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
       })
@@ -5048,7 +5049,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
@@ -5058,7 +5059,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/some/non-existing/path", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
       })
@@ -5075,8 +5076,7 @@ describe("DB sharding config", () => {
       it("setValue with isGlobal = true and non-writable path with sharding", () => {
         expect(node.db.setValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20,
-            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
-            100, 1234567890000, { isGlobal: true }).code)
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
@@ -5095,7 +5095,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
@@ -5110,7 +5110,7 @@ describe("DB sharding config", () => {
         expect(node.db.incValue(
             "/apps/test/test_sharding/some/path/to/number", incDelta,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}).code)
+            { extra: { executed_at: 1234567890000 }}).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
@@ -5120,8 +5120,7 @@ describe("DB sharding config", () => {
         expect(node.db.incValue(
             "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
-            { isGlobal: true }).code)
+            { extra: { executed_at: 1234567890000 }}, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
@@ -5130,7 +5129,7 @@ describe("DB sharding config", () => {
       it("incValue with isGlobal = true and non-existing path", () => {
         expect(node.db.incValue(
             "/apps/some/non-existing/path", incDelta,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, 
             { isGlobal: true }).code)
             .to.equal(0);
       })
@@ -5147,7 +5146,7 @@ describe("DB sharding config", () => {
         expect(node.db.incValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, null, 100, 1234567890000, { isGlobal: true }).code)
+            null, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
@@ -5165,7 +5164,7 @@ describe("DB sharding config", () => {
         expect(node.db.incValue(
             "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+            { extra: { executed_at: 1234567890000 }}, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path",
@@ -5179,7 +5178,7 @@ describe("DB sharding config", () => {
         expect(node.db.decValue(
             "/apps/test/test_sharding/some/path/to/number", decDelta,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}).code)
+            { extra: { executed_at: 1234567890000 }}).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
@@ -5189,7 +5188,7 @@ describe("DB sharding config", () => {
         expect(node.db.decValue(
             "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }}, 
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
@@ -5199,7 +5198,7 @@ describe("DB sharding config", () => {
       it("decValue with isGlobal = true and non-existing path", () => {
         expect(node.db.decValue(
             "/apps/some/non-existing/path", decDelta,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { isGlobal: true }).code)
             .to.equal(0);
       })
 
@@ -5215,7 +5214,7 @@ describe("DB sharding config", () => {
         expect(node.db.decValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, null, 100, 1234567890000, { isGlobal: true }).code)
+            null, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
@@ -5234,7 +5233,7 @@ describe("DB sharding config", () => {
         expect(node.db.decValue(
             "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
@@ -5327,7 +5326,7 @@ describe("DB sharding config", () => {
       it("setFunction with isGlobal = true", () => {
         expect(node.db.setFunction(
             "/apps/afan/apps/test/test_sharding/some/path/to", funcChange,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
             .to.equal(0);
         assert.deepEqual(node.db.getFunction(
             "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -5337,7 +5336,7 @@ describe("DB sharding config", () => {
       it("setFunction with isGlobal = true and non-existing path", () => {
         expect(node.db.setFunction(
             "/apps/some/non-existing/path", funcChange,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
             .to.equal(0);
       })
     });
@@ -5459,7 +5458,7 @@ describe("DB sharding config", () => {
       it("setRule with isGlobal = true", () => {
         expect(node.db.setRule(
             "/apps/afan/apps/test/test_sharding/some/path/to", newRule,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
             .to.equal(0);
         assert.deepEqual(node.db.getRule(
             "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -5467,7 +5466,8 @@ describe("DB sharding config", () => {
       })
 
       it("setRule with isGlobal = true and non-existing path", () => {
-        expect(node.db.setRule("/apps/some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+        expect(node.db.setRule("/apps/some/non-existing/path", newRule,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
             .to.equal(0);
       })
     });
@@ -5552,7 +5552,7 @@ describe("DB sharding config", () => {
       it("evalRule with isGlobal = true", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/afan/apps/test/test_sharding/some/path/to", newValue,
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })), {
           "code": 0,
           "matched": "erased",
         });
@@ -5561,7 +5561,7 @@ describe("DB sharding config", () => {
       it("evalRule with isGlobal = true and non-existing path", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/some/non-existing/path", newValue,
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })),
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })),
             null);
       })
     });
@@ -5635,7 +5635,7 @@ describe("DB sharding config", () => {
       it("setOwner with isGlobal = true", () => {
         expect(node.db.setOwner(
             "/apps/afan/apps/test/test_sharding/some/path/to", ownerChange,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
                 .to.equal(0);
         assert.deepEqual(
             node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newOwner);
@@ -5644,7 +5644,7 @@ describe("DB sharding config", () => {
       it("setOwner with isGlobal = true and non-existing path", () => {
         expect(node.db.setOwner(
             "/apps/some/non-existing/path", ownerChange,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code).to.equal(0);
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code).to.equal(0);
       })
     });
 
