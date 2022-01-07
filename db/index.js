@@ -17,7 +17,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
-  TimerFlagEnabledBlockNumberMap,
+  TimerFlagEnabledBandageMap,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -462,27 +462,27 @@ class DB {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
   }
 
-  writeReplacements(timerFlagName) {
-    const replacementFilePath = path.resolve(__dirname, `./replace-data/${timerFlagName}.js`);
-    if (!fs.existsSync(replacementFilePath)) {
-      throw Error(`Missing a replacement data file: ${timerFlagName}`);
+  applyBandages(timerFlagName) {
+    const bandageFilePath = path.resolve(__dirname, `./bandage-files/${timerFlagName}.js`);
+    if (!fs.existsSync(bandageFilePath)) {
+      throw Error(`Missing a bandage data file: ${timerFlagName}`);
     }
-    const replacementArr = require(replacementFilePath).data;
-    if (!CommonUtil.isArray(replacementArr)) {
-      throw Error(`Invalid replacement data file: ${timerFlagName}, ${JSON.stringify(replacementArr)}`);
+    const bandageList = require(bandageFilePath).data;
+    if (!CommonUtil.isArray(bandageList)) {
+      throw Error(`Invalid bandage data file: ${timerFlagName}, ${JSON.stringify(bandageList)}`);
     }
-    for (const replacement of replacementArr) {
-      this.writeDatabase(replacement.path, replacement.value);
+    for (const bandage of bandageList) {
+      this.writeDatabase(bandage.path, bandage.value);
     }
   }
 
   replaceDbStates(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
     // NOTE(liayoo): A timer flag with enabled_block of N will be applied at the end of block N - 1.
-    if (!TimerFlagEnabledBlockNumberMap.has(blockNumber - 1)) return;
-    const timerFlags = TimerFlagEnabledBlockNumberMap.get(blockNumber - 1);
+    if (!TimerFlagEnabledBandageMap.has(blockNumber - 1)) return;
+    const timerFlags = TimerFlagEnabledBandageMap.get(blockNumber - 1);
     for (const flagName of timerFlags) {
-      this.writeReplacements(flagName);
+      this.applyBandages(flagName);
     }
   }
 
