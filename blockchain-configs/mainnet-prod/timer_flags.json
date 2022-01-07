@@ -1,5 +1,8 @@
 {
   "allow_lower_case_app_names_only": {
     "enabled_block": null
+  },
+  "create_app_config_sanitization": {
+    "enabled_block": null
   }
 }

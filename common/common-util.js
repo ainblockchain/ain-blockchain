@@ -945,6 +945,18 @@ class CommonUtil {
     }
     return false;
   }
+
+  static getTimerFlagEnabledBlock(timerFlags, flagName) {
+    const flag = timerFlags[flagName];
+    if (!flag) {
+      return null;
+    }
+    const enabledBlock = flag['enabled_block'];
+    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock)) {
+      return null;
+    }
+    return enabledBlock;
+  }
 }
 
 module.exports = CommonUtil;

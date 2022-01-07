@@ -16,6 +16,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
+  getTimerFlagEnabledBlock,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -458,6 +459,23 @@ class DB {
 
   writeDatabase(fullPath, stateObj) {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
+  }
+
+  writeReplacements(replacementFile) {
+    const replacementArr = (require(`./replace-data/${replacementFile}`)).data;
+    for (const replacement of replacementArr) {
+      this.writeDatabase(replacement.path, replacement.value);
+    }
+  }
+
+  replaceDbStates(blockNumber) {
+    if (!CommonUtil.isNumber(blockNumber)) return;
+    if (getTimerFlagEnabledBlock('create_app_config_sanitization') === blockNumber) {
+      this.writeReplacements('create_app_config_sanitization');
+    }
+    if (getTimerFlagEnabledBlock('native_service_path_length_check') === blockNumber) {
+      this.writeReplacements('native_service_path_length_check');
+    }
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
