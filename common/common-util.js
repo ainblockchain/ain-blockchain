@@ -969,6 +969,19 @@ class CommonUtil {
     }
     return enabledBlock;
   }
+
+  static createTimerFlagEnabledBlockNumberMap(timerFlags) {
+    const map = new Map();
+    for (const [flagName, flag] of Object.entries(timerFlags)) {
+      if (CommonUtil.isNumber(flag['enabled_block'])) {
+        if (!map.has(flag['enabled_block'])) {
+          map.set(flag['enabled_block'], []);
+        }
+        map.get(flag['enabled_block']).push(flagName);
+      }
+    }
+    return map;
+  }
 }
 
 module.exports = CommonUtil;
