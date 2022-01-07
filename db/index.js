@@ -478,9 +478,9 @@ class DB {
 
   replaceDbStates(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
-    // NOTE(liayoo): A timer flag with enabled_block of N will be applied at the end of block N - 1.
-    if (!TimerFlagEnabledBandageMap.has(blockNumber - 1)) return;
-    const timerFlags = TimerFlagEnabledBandageMap.get(blockNumber - 1);
+    // NOTE(liayoo): A timer flag with enabled_block of N + 1 will be applied at the end of block N.
+    if (!TimerFlagEnabledBandageMap.has(blockNumber + 1)) return;
+    const timerFlags = TimerFlagEnabledBandageMap.get(blockNumber + 1);
     for (const flagName of timerFlags) {
       this.applyBandages(flagName);
     }
