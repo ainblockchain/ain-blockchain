@@ -14,5 +14,9 @@
   "update_max_state_tree_size_per_byte": {
     "enabled_block": null,
     "has_bandage": true
+  },
+  "update_erc20_token_pool_addr": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
