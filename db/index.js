@@ -15,7 +15,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
-  getTimerFlagEnabledBlock,
+  isTimerFlagEnabledAt,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -469,10 +469,10 @@ class DB {
 
   replaceDbStates(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
-    if (getTimerFlagEnabledBlock('create_app_config_sanitization') === blockNumber) {
+    if (isTimerFlagEnabledAt('create_app_config_sanitization', blockNumber)) {
       this.writeReplacements('create_app_config_sanitization');
     }
-    if (getTimerFlagEnabledBlock('native_service_path_length_check') === blockNumber) {
+    if (isTimerFlagEnabledAt('native_service_path_length_check', blockNumber)) {
       this.writeReplacements('native_service_path_length_check');
     }
   }
