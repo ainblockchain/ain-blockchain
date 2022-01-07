@@ -15,7 +15,7 @@
     "enabled_block": null,
     "has_bandage": true
   },
-  "update_erc20_token_pool_addr": {
+  "update_testnet_prod_token_pool_addr": {
     "enabled_block": null,
     "has_bandage": true
   }
