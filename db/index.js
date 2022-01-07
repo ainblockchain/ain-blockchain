@@ -1,5 +1,7 @@
 const logger = new (require('../logger'))('DATABASE');
 
+const fs = require('fs');
+const path = require('path');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
@@ -461,7 +463,14 @@ class DB {
   }
 
   writeReplacements(replacementFile) {
-    const replacementArr = (require(`./replace-data/${replacementFile}`)).data;
+    const replacementFilePath = path.resolve(__dirname, `./replace-data/${replacementFile}.js`);
+    if (!fs.existsSync(replacementFilePath)) {
+      throw Error(`Missing a replacement data file: ${replacementFile}`);
+    }
+    const replacementArr = require(replacementFilePath).data;
+    if (!CommonUtil.isArray(replacementArr)) {
+      throw Error(`Invalid replacement data file: ${replacementFile}, ${JSON.stringify(replacementArr)}`);
+    }
     for (const replacement of replacementArr) {
       this.writeDatabase(replacement.path, replacement.value);
     }
