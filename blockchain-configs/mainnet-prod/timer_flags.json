@@ -10,5 +10,9 @@
   "native_service_path_length_check": {
     "enabled_block": null,
     "has_bandage": true
+  },
+  "update_max_state_tree_size_per_byte": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
