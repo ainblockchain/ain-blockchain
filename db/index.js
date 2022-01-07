@@ -478,8 +478,9 @@ class DB {
 
   replaceDbStates(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
-    if (!TimerFlagEnabledBlockNumberMap.has(blockNumber)) return;
-    const timerFlags = TimerFlagEnabledBlockNumberMap.get(blockNumber);
+    // NOTE(liayoo): A timer flag with enabled_block of N will be applied at the end of block N - 1.
+    if (!TimerFlagEnabledBlockNumberMap.has(blockNumber - 1)) return;
+    const timerFlags = TimerFlagEnabledBlockNumberMap.get(blockNumber - 1);
     for (const flagName of timerFlags) {
       this.writeReplacements(flagName);
     }
