@@ -1848,7 +1848,7 @@ class DB {
     }
     try {
       const evalWriteRuleRes = this.evalWriteRuleConfig(
-        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp, parsedValuePath);
       if (evalWriteRuleRes.code) {
         return {
           code: evalWriteRuleRes.code,
@@ -2301,12 +2301,12 @@ class DB {
 
   // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
   static makeWriteRuleEvalFunction(ruleCodeSnippet, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
-        'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
+    return new Function('auth', 'data', 'newData', 'currentTime', 'parsedValuePath', 'getValue',
+        'getRule', 'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
         ...Object.keys(pathVars), ruleCodeSnippet);
   }
 
-  evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
+  evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp, parsedValuePath) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
       return {
         ruleString: '',
@@ -2335,9 +2335,9 @@ class DB {
         message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
       };
     }
-    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
-        this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
-        this.evalRule.bind(this), this.evalOwner.bind(this),
+    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, parsedValuePath,
+        this.getValue.bind(this), this.getRule.bind(this), this.getFunction.bind(this),
+        this.getOwner.bind(this), this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
     return {
       ruleString,
