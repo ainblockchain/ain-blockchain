@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -974,6 +976,10 @@ class CommonUtil {
     const map = new Map();
     for (const [flagName, flag] of Object.entries(timerFlags)) {
       if (CommonUtil.isNumber(flag['enabled_block']) && flag['has_bandage'] === true) {
+        const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
+        if (!fs.existsSync(bandageFilePath)) {
+          throw Error(`Missing a bandage data file: ${flagName}`);
+        }
         if (!map.has(flag['enabled_block'])) {
           map.set(flag['enabled_block'], []);
         }
