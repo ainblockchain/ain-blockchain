@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -gt 1 ]]; then
-    printf "Usage: bash start_tracker_genesis_gcp.sh [--keep-code]\n"
+    printf "Usage: bash start_tracker_genesis_gcp.sh [--keep-code|--no-keep-code]\n"
     printf "Example: bash start_tracker_genesis_gcp.sh --keep-code\n"
     printf "\n"
     exit
@@ -12,6 +12,8 @@ KEEP_CODE_OPTION=""
 
 if [[ $# = 1 ]]; then
     if [[ $1 = '--keep-code' ]]; then
+        KEEP_CODE_OPTION=$1
+    elif [[ $1 = '--no-keep-code' ]]; then
         KEEP_CODE_OPTION=$1
     else
         printf "Invalid option: $1\n"
@@ -26,7 +28,7 @@ printf 'Killing jobs..\n'
 killall node
 
 
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Creating new working directory..\n'
     cd

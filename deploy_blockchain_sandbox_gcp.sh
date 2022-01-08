@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code] [--keep-data] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
     printf "\n"
     exit
@@ -33,7 +33,11 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
     elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
@@ -55,8 +59,8 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
-KEEP_CODE_OPTION=""
-KEEP_DATA_OPTION=""
+KEEP_CODE_OPTION="--no-keep-code"
+KEEP_DATA_OPTION="--no-keep-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
@@ -341,7 +345,7 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
 fi
 
 # deploy files to GCP instances
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\nDeploying parent blockchain...\n"
     index=$START_NODE_IDX
     while [ $index -le $END_NODE_IDX ]
@@ -387,12 +391,12 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 fi
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     GO_TO_PROJECT_ROOT_CMD="cd ."
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "" ]]; then
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
