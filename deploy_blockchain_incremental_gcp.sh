@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 10 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Node Index> [--setup] [--canary] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
@@ -24,16 +24,19 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-printf "GCP_USER=$GCP_USER\n"
 GCP_USER="$2"
+printf "GCP_USER=$GCP_USER\n"
 
 number_re='^[0-9]+$'
 if ! [[ $3 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $3\n"
     exit
 fi
-printf "NUM_SHARDS=$NUM_SHARDS\n"
 NUM_SHARDS=$3
+printf "NUM_SHARDS=$NUM_SHARDS\n"
+BEGIN_PARENT_NODE_INDEX=$4
+printf "BEGIN_PARENT_NODE_INDEX=$BEGIN_PARENT_NODE_INDEX\n"
+printf "\n"
 
 function parse_options() {
     local option="$1"
@@ -73,7 +76,7 @@ KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 RUN_MODE_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]
 do
   parse_options "${!ARG_INDEX}"
@@ -300,8 +303,10 @@ fi
 if [[ $RUN_MODE_OPTION = "--canary" ]]; then
     deploy_node "0"
 else
-    deploy_tracker "$NUM_PARENT_NODES"
-    for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
+    if [[ $BEGIN_PARENT_NODE_INDEX = 0 ]]; then
+        deploy_tracker "$NUM_PARENT_NODES"
+    fi
+    for j in `seq $BEGIN_PARENT_NODE_INDEX $(( ${NUM_PARENT_NODES} - 1 ))`
         do
             deploy_node "$j"
             sleep 40

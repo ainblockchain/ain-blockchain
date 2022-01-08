@@ -12,7 +12,7 @@ printf "\n[[[[[ start_tracker_incremental_gcp.sh ]]]]]\n\n"
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
 NUM_NODES="$1"
-KEEP_CODE_OPTION=""
+KEEP_CODE_OPTION="--keep-code"
 
 if [[ $# = 2 ]]; then
     if [[ $2 = '--keep-code' ]]; then

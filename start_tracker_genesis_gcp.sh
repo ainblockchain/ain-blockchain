@@ -8,7 +8,7 @@ if [[ $# -gt 1 ]]; then
 fi
 printf "\n[[[[[ start_tracker_genesis_gcp.sh ]]]]]\n\n"
 
-KEEP_CODE_OPTION=""
+KEEP_CODE_OPTION="--keep-code"
 
 if [[ $# = 1 ]]; then
     if [[ $1 = '--keep-code' ]]; then
