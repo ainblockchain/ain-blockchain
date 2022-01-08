@@ -462,7 +462,7 @@ class DB {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
   }
 
-  applyBandages(timerFlagName) {
+  applyBandagesForTimerFlag(timerFlagName) {
     const bandageFilePath = path.resolve(__dirname, `./bandage-files/${timerFlagName}.js`);
     if (!fs.existsSync(bandageFilePath)) {
       throw Error(`Missing a bandage data file: ${timerFlagName}`);
@@ -476,13 +476,13 @@ class DB {
     }
   }
 
-  replaceDbStates(blockNumber) {
+  applyBandagesForBlockNumber(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
     // NOTE(liayoo): A timer flag with enabled_block of N + 1 will be applied at the end of block N.
     if (!TimerFlagEnabledBandageMap.has(blockNumber + 1)) return;
     const timerFlags = TimerFlagEnabledBandageMap.get(blockNumber + 1);
     for (const flagName of timerFlags) {
-      this.applyBandages(flagName);
+      this.applyBandagesForTimerFlag(flagName);
     }
   }
 
