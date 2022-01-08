@@ -443,6 +443,7 @@ class Consensus {
         validators, recordedInvalidBlockHashSet, blockNumber, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } =
         this.executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb);
+    tempDb.applyBandagesForBlockNumber(blockNumber);
     const stateProofHash = NodeConfigs.LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
@@ -843,6 +844,7 @@ class Consensus {
           evidence, validators, prevBlockMajority, number, timestamp, proposalTx, db);
       Consensus.validateAndExecuteTransactions(
           transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node);
+      db.applyBandagesForBlockNumber(number);
       Consensus.validateStateProofHash(state_proof_hash, number, db, node, takeSnapshot);
       Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
       Consensus.addBlockToBlockPool(block, proposalTx, db, node.bp);

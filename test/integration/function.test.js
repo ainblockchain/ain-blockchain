@@ -1547,7 +1547,7 @@ describe('Native Function', () => {
                   }
                 },
                 "2": {
-                  "path": "/manage_app/test_service_create_app0/config",
+                  "path": "/manage_app/test_service_create_app0/config/admin",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -1633,6 +1633,523 @@ describe('Native Function', () => {
         }
       });
 
+      it("when failed with invalid admin config (non-boolean value)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: 1 }, // not a boolean
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0xbbde1064a2defd1ad0cf34fde85897d8078963a51ddf9d49c4a6cd36a1b2a21d",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 1
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 1
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid admin config (empty)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: {}, // empty
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x513ea13f8585f6f0d9501afd7f43596485cdd24a03ba08c9c1c6280039f9c1f5",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 1
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Invalid object for states: /admin",
+            "code": 10101,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 1
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid billing config (non-boolean value)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            billing: {
+              billingAccount1: {
+                users: {
+                  [serviceAdmin]: '1' // not a boolean
+                }
+              }
+            }
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x334bd9ade968329d2323b04b6c9690f93ce834980f66cb9c33a7b46f46f850bb",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 3,
+                "app": {
+                  "test_service_create_app1": 2
+                }
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "1": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "2": {
+                    "path": "/manage_app/test_service_create_app1/config/admin",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "3": {
+                    "path": "/manage_app/test_service_create_app1/config/billing",
+                    "result": {
+                      "message": "Write rule evaluated false: [(auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true) && util.validateManageAppBillingConfig(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/config/billing' for value path '/manage_app/test_service_create_app1/config/billing' with path vars '{\"$app_name\":\"test_service_create_app1\"}', data 'null', newData '{\"billingAccount1\":{\"users\":{\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\":\"1\"}}}', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_createApp\",\"fids\":[\"_createApp\"]}', timestamp '1234567890000'",
+                      "code": 12103,
+                      "bandwidth_gas_amount": 1
+                    }
+                  }
+                },
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid billing config (missing users)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            billing: {
+              billingAccount1: {
+                not_users: {
+                  [serviceAdmin]: true
+                }
+              }
+            }
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0xcae22372e7ceb17e3205c77a2e0f560211a56aea9510714783152c2ac2de2393",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 3,
+                "app": {
+                  "test_service_create_app1": 2
+                }
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "1": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "2": {
+                    "path": "/manage_app/test_service_create_app1/config/admin",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "3": {
+                    "path": "/manage_app/test_service_create_app1/config/billing",
+                    "result": {
+                      "message": "Write rule evaluated false: [(auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true) && util.validateManageAppBillingConfig(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/config/billing' for value path '/manage_app/test_service_create_app1/config/billing' with path vars '{\"$app_name\":\"test_service_create_app1\"}', data 'null', newData '{\"billingAccount1\":{\"not_users\":{\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\":true}}}', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_createApp\",\"fids\":[\"_createApp\"]}', timestamp '1234567890000'",
+                      "code": 12103,
+                      "bandwidth_gas_amount": 1
+                    }
+                  }
+                },
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid billing config (non-checksum key)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            billing: {
+              billingAccount1: {
+                users: {
+                  [serviceAdmin.toLowerCase()]: true
+                }
+              }
+            }
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x76ed3268388b6aea0ecbf8c9113f05d7cd0b0e4b98266583a8afc5d57e0f0d50",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 3,
+                "app": {
+                  "test_service_create_app1": 2
+                }
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "1": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "2": {
+                    "path": "/manage_app/test_service_create_app1/config/admin",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "3": {
+                    "path": "/manage_app/test_service_create_app1/config/billing",
+                    "result": {
+                      "message": "Write rule evaluated false: [(auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true) && util.validateManageAppBillingConfig(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/config/billing' for value path '/manage_app/test_service_create_app1/config/billing' with path vars '{\"$app_name\":\"test_service_create_app1\"}', data 'null', newData '{\"billingAccount1\":{\"users\":{\"0x00adec28b6a845a085e03591be7550dd68673c1c\":true}}}', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_createApp\",\"fids\":[\"_createApp\"]}', timestamp '1234567890000'",
+                      "code": 12103,
+                      "bandwidth_gas_amount": 1
+                    }
+                  }
+                },
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid service config (missing staking config)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            service: {
+              // no staking config
+              some_other_key: {
+                lockup_duration: 100
+              }
+            }
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x99a5da5db8be83ea0ffb26acb3d0c22c224b15409ad32a48281dc9b96040d546",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 3,
+                "app": {
+                  "test_service_create_app1": 2
+                }
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "1": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "2": {
+                    "path": "/manage_app/test_service_create_app1/config/admin",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "3": {
+                    "path": "/manage_app/test_service_create_app1/config/service",
+                    "result": {
+                      "message": "Write rule evaluated false: [(auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true) && util.validateManageAppServiceConfig(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/config/service' for value path '/manage_app/test_service_create_app1/config/service' with path vars '{\"$app_name\":\"test_service_create_app1\"}', data 'null', newData '{\"some_other_key\":{\"lockup_duration\":100}}', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_createApp\",\"fids\":[\"_createApp\"]}', timestamp '1234567890000'",
+                      "code": 12103,
+                      "bandwidth_gas_amount": 1
+                    }
+                  }
+                },
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid service config (invalid staking lockup_duration)", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            service: {
+              staking: {
+                lockup_duration: -1 // not a positive integer
+              }
+            }
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x04b87fa1edb759e694d53fb8d79a045768475b294e8918a024044361656daa71",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 3,
+                "app": {
+                  "test_service_create_app1": 2
+                }
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "1": {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "2": {
+                    "path": "/manage_app/test_service_create_app1/config/admin",
+                    "result": {
+                      "code": 0,
+                      "bandwidth_gas_amount": 1
+                    }
+                  },
+                  "3": {
+                    "path": "/manage_app/test_service_create_app1/config/service",
+                    "result": {
+                      "message": "Write rule evaluated false: [(auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true) && util.validateManageAppServiceConfig(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/config/service' for value path '/manage_app/test_service_create_app1/config/service' with path vars '{\"$app_name\":\"test_service_create_app1\"}', data 'null', newData '{\"staking\":{\"lockup_duration\":-1}}', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_createApp\",\"fids\":[\"_createApp\"]}', timestamp '1234567890000'",
+                      "code": 12103,
+                      "bandwidth_gas_amount": 1
+                    }
+                  }
+                },
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when failed with invalid is_public config", async () => {
+        const appName = 'test_service_create_app1';
+        const manageAppPath = `/manage_app/${appName}/create/0`;
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            is_public: 0 // not a boolean
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "tx_hash": "0x7136c45859641088c1bdbe324488e473d8a365e3f98c2fbafbdfa4888ca8398d",
+          "result": {
+            "gas_amount_total": {
+              "bandwidth": {
+                "service": 1
+              },
+              "state": {
+                "service": 0
+              }
+            },
+            "gas_cost_total": 0,
+            "message": "Triggered function call failed",
+            "func_results": {
+              "_createApp": {
+                "code": 20001,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            "code": 10104,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 1
+          }
+        });
+        if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
       it('create a public app', async () => {
         const appName = 'test_service_create_app1';
         const appStakingPath =
@@ -1675,7 +2192,14 @@ describe('Native Function', () => {
                   }
                 },
                 "2": {
-                  "path": "/manage_app/test_service_create_app1/config",
+                  "path": "/manage_app/test_service_create_app1/config/admin",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/manage_app/test_service_create_app1/config/is_public",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -1692,7 +2216,7 @@ describe('Native Function', () => {
               "app": {
                 "test_service_create_app1": 2
               },
-              "service": 2
+              "service": 3
             },
             "state": {
               "service": 'erased'

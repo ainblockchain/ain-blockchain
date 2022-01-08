@@ -1,5 +1,18 @@
 {
   "allow_lower_case_app_names_only": {
-    "enabled_block": 1
+    "enabled_block": 2,
+    "has_bandage": false
+  },
+  "create_app_config_sanitization": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "native_service_path_length_check": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "update_max_state_tree_size_per_byte": {
+    "enabled_block": 2,
+    "has_bandage": true
   }
 }
