@@ -214,6 +214,11 @@ class FileUtil {
     }
   }
 
+  static hasBlockFile(chainPath, blockNumber) {
+    const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
+    return fs.existsSync(blockPath);
+  }
+
   static writeH2nFile(chainPath, blockHash, blockNumber) {
     const LOG_HEADER = 'writeH2nFile';
 
@@ -241,6 +246,11 @@ class FileUtil {
     }
   }
 
+  static hasH2nFile(chainPath, blockHash) {
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    return fs.existsSync(h2nPath);
+  }
+
   static readH2nFile(chainPath, blockHash) {
     const LOG_HEADER = 'readH2nFile';
     try {
@@ -252,8 +262,9 @@ class FileUtil {
     }
   }
 
-  static async writeSnapshot(snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
-    const LOG_HEADER = 'writeSnapshot';
+  static async writeSnapshotFile(
+      snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
+    const LOG_HEADER = 'writeSnapshotFile';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
     return new Promise((resolve) => {
@@ -271,8 +282,8 @@ class FileUtil {
     });
   }
 
-  static deleteSnapshot(snapshotPath, blockNumber, isDebug = false) {
-    const LOG_HEADER = 'deleteSnapshot';
+  static deleteSnapshotFile(snapshotPath, blockNumber, isDebug = false) {
+    const LOG_HEADER = 'deleteSnapshotFile';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
     if (fs.existsSync(filePath)) {
@@ -282,6 +293,11 @@ class FileUtil {
         logger.error(`[${LOG_HEADER}] Failed to delete snapshot at ${filePath}: ${err.stack}`);
       }
     }
+  }
+
+  static hasSnapshotFile(snapshotPath, blockNumber, isDebug = false) {
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
+    return fs.existsSync(filePath);
   }
 
   static getAccountFromKeystoreFile(keystorePath, password) {

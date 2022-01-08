@@ -226,7 +226,17 @@ class Blockchain {
   }
 
   writeBlock(block) {
+    const LOG_HEADER = 'writeBlock';
+
+    if (FileUtil.hasBlockFile(this.blockchainPath, block)) {
+      logger.error(
+          `[${LOG_HEADER}] Overwriting block file for block ${block.number} of hash ${block.hash}`);
+    }
     FileUtil.writeBlockFile(this.blockchainPath, block);
+    if (FileUtil.hasH2nFile(this.blockchainPath, block.hash, block.number)) {
+      logger.error(
+          `[${LOG_HEADER}] Overwriting h2n file for block ${block.number} of hash ${block.hash}`);
+    }
     FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
   }
 
