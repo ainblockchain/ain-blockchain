@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
-    printf "Usage: bash start_tracker_incremental_gcp.sh <Number of Nodes> [--keep-code|--no-keep-code]\n"
-    printf "Example: bash start_tracker_incremental_gcp.sh 5 --keep-code\n"
+if [[ "$#" -gt 1 ]]; then
+    printf "Usage: bash start_tracker_incremental_gcp.sh [--keep-code|--no-keep-code]\n"
+    printf "Example: bash start_tracker_incremental_gcp.sh --keep-code\n"
     printf "\n"
     exit
 fi
@@ -11,21 +11,19 @@ printf "\n[[[[[ start_tracker_incremental_gcp.sh ]]]]]\n\n"
 # 1. Configure env vars
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
-NUM_NODES="$1"
 KEEP_CODE_OPTION="--keep-code"
 
-if [[ $# = 2 ]]; then
-    if [[ $2 = '--keep-code' ]]; then
-        KEEP_CODE_OPTION=$2
-    elif [[ $2 = '--no-keep-code' ]]; then
-        KEEP_CODE_OPTION=$2
+if [[ $# = 1 ]]; then
+    if [[ $1 = '--keep-code' ]]; then
+        KEEP_CODE_OPTION=$1
+    elif [[ $1 = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION=$1
     else
-        printf "Invalid option: $2\n"
+        printf "Invalid option: $1\n"
         exit
     fi
 fi
 
-printf "NUM_NODES=$NUM_NODES\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
 # 2. Get currently used directory & new directory
@@ -69,8 +67,8 @@ printf "KILL_CMD=$KILL_CMD\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 5. Remove old working directory keeping the chain data
-printf "\n#### [Step 5] Remove old working directory keeping the chain data ####\n\n"
+# 5. Remove old working directory
+printf "\n#### [Step 5] Remove old working directory ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
