@@ -447,17 +447,13 @@ class RuleUtil {
       return false;
     }
     const stakingConfig = newData[PredefinedDbPaths.STAKING];
-    if (stakingConfig) {
-      const lockupDuration = stakingConfig[PredefinedDbPaths.STAKING_LOCKUP_DURATION];
-      if (!this.isInteger(lockupDuration) || lockupDuration < 0) {
-        return false;
-      }
-      sanitizedVal[PredefinedDbPaths.STAKING] = {
-        [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: lockupDuration
-      };
-    } else {
+    const lockupDuration = stakingConfig[PredefinedDbPaths.STAKING_LOCKUP_DURATION];
+    if (!this.isInteger(lockupDuration) || lockupDuration < 0) {
       return false;
     }
+    sanitizedVal[PredefinedDbPaths.STAKING] = {
+      [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: lockupDuration
+    };
     return _.isEqual(sanitizedVal, newData);
   }
 
