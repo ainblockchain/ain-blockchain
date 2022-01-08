@@ -855,6 +855,9 @@ class BlockchainNode {
             });
           });
         }
+        const versionToFinalize = this.bp.hashToDb.get(blockToFinalize.hash).stateVersion;
+        this.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
+
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
         }
@@ -866,8 +869,6 @@ class BlockchainNode {
       }
     }
     if (lastFinalizedBlock) {
-      const versionToFinalize = this.bp.hashToDb.get(lastFinalizedBlock.hash).stateVersion;
-      this.cloneAndFinalizeVersion(versionToFinalize, lastFinalizedBlock.number);
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
     }
   }
