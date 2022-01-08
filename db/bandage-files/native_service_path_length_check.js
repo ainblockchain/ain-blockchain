@@ -22,7 +22,7 @@ module.exports = {
       },
       prevValue: {
         '.rule': {
-          'write': 'util.validateCheckoutRefundData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, auth, newData, getValue)'
+          'write': '(auth.fid === \'_closeCheckout\' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, auth.addr, $checkout_id, newData, currentTime, getValue))'
         }
       }
     },
