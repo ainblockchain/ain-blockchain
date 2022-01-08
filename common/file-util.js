@@ -253,8 +253,8 @@ class FileUtil {
 
   static readH2nFile(chainPath, blockHash) {
     const LOG_HEADER = 'readH2nFile';
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     try {
-      const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Error while reading ${h2nPath}: ${err}`);
