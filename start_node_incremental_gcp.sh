@@ -268,18 +268,6 @@ printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
-if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-    printf '\n'
-    printf 'Removing old data..\n'
-    sudo rm -rf /home/ain_blockchain_data/chains
-    sudo rm -rf /home/ain_blockchain_data/snapshots
-    sudo rm -rf /home/ain_blockchain_data/logs
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-else
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-fi
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Creating new working directory..\n'
@@ -308,8 +296,25 @@ printf "KILL_CMD=$KILL_CMD\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 5. Remove old working directory keeping the chain data
-printf "\n#### [Step 5] Remove old working directory keeping the chain data if necessary ####\n\n"
+# 5. Set up data directory
+printf "\n#### [Step 5] Set up data directory ####\n\n"
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+    printf '\n'
+    printf 'Removing old data..\n'
+    sudo rm -rf /home/ain_blockchain_data/chains
+    sudo rm -rf /home/ain_blockchain_data/snapshots
+    sudo rm -rf /home/ain_blockchain_data/logs
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+else
+    printf '\n'
+    printf 'Keeping existing data..\n'
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+fi
+
+# 6. Remove old working directory keeping the chain data
+printf "\n#### [Step 6] Remove old working directory if necessary ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
@@ -318,11 +323,11 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     eval $RM_CMD
 else
     printf '\n'
-    printf 'Keeping old working directory..\n'
+    printf 'Keeping existing working directory..\n'
 fi
 
-# 6. Start a new node server
-printf "\n#### [Step 6] Start new node server ####\n\n"
+# 7. Start a new node server
+printf "\n#### [Step 7] Start new node server ####\n\n"
 
 if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
