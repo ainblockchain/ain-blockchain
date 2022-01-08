@@ -34,6 +34,7 @@ if ! [[ $3 =~ $number_re ]] ; then
 fi
 NUM_SHARDS=$3
 printf "NUM_SHARDS=$NUM_SHARDS\n"
+printf "\n"
 
 
 function parse_options() {
