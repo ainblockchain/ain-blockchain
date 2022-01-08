@@ -973,10 +973,12 @@ class CommonUtil {
   }
 
   static createTimerFlagEnabledBandageMap(timerFlags) {
+    const LOG_HEADER = 'createTimerFlagEnabledBandageMap';
     const map = new Map();
     for (const [flagName, flag] of Object.entries(timerFlags)) {
       if (CommonUtil.isNumber(flag['enabled_block']) && flag['has_bandage'] === true) {
         const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
+        logger.info(`[${LOG_HEADER}] Loading bandage file (${bandageFilePath}) for timer flag (${flagName})`);
         if (!fs.existsSync(bandageFilePath)) {
           throw Error(`Missing a bandage data file: ${flagName}`);
         }
@@ -984,6 +986,8 @@ class CommonUtil {
           map.set(flag['enabled_block'], []);
         }
         map.get(flag['enabled_block']).push(flagName);
+      } else {
+        logger.info(`[${LOG_HEADER}] Skipping bandage file loading for timer flag (${flagName})`);
       }
     }
     return map;
