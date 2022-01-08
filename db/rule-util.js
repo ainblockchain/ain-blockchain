@@ -408,7 +408,7 @@ class RuleUtil {
   }
 
   validateManageAppAdminConfig(newData) {
-    if (!this.isDict(newData)) {
+    if (!this.isDict(newData) || this.isEmpty(newData)) {
       return false;
     }
     for (const [addr, val] of Object.entries(newData)) {
