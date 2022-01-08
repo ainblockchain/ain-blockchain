@@ -353,13 +353,19 @@ class BlockchainNode {
   }
 
   async writeSnapshot(blockNumber) {
+    const LOG_HEADER = 'writeSnapshot';
+
     const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
-    await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+    if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
+      logger.error(
+          `[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
+    }
+    await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
 
   deleteSnapshot(blockNumber) {
-    FileUtil.deleteSnapshot(this.snapshotDir, blockNumber);
+    FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
   buildBlockchainSnapshot(blockNumber, stateRoot) {
