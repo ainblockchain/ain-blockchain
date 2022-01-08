@@ -571,4 +571,240 @@ describe("RuleUtil", () => {
       expect(util.toBool('true')).to.equal(true);
     })
   })
+
+  describe("validateManageAppAdminConfig", () => {
+    it("returns false", () => {
+      expect(util.validateManageAppAdminConfig(0)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(10)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(-1)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(15.5)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(null)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(undefined)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(Infinity)).to.equal(false);
+      expect(util.validateManageAppAdminConfig(NaN)).to.equal(false);
+      expect(util.validateManageAppAdminConfig('')).to.equal(false);
+      expect(util.validateManageAppAdminConfig('abc')).to.equal(false);
+      expect(util.validateManageAppAdminConfig('false')).to.equal(false);
+      expect(util.validateManageAppAdminConfig({})).to.equal(false);
+      expect(util.validateManageAppAdminConfig({a: 'A'})).to.equal(false);
+      expect(util.validateManageAppAdminConfig([])).to.equal(false);
+      expect(util.validateManageAppAdminConfig([10])).to.equal(false);
+      expect(util.validateManageAppAdminConfig(false)).to.equal(false);
+      expect(util.validateManageAppAdminConfig({'0xCAcD898dBaEdBD9037aCd25b82417587E972838d': 1})).to.equal(false);
+      expect(util.validateManageAppAdminConfig({'0xcacd898dbaedbd9037acd25b82417587e972838d': true})).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.validateManageAppAdminConfig({'0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true})).to.equal(true);
+      expect(util.validateManageAppAdminConfig({'0xCAcD898dBaEdBD9037aCd25b82417587E972838d': false})).to.equal(true);
+      expect(util.validateManageAppAdminConfig({
+        '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true,
+        '0x00ADEc28B6a845a085e03591bE7550dd68673C1C': false
+      })).to.equal(true);
+    })
+  })
+
+  describe("validateManageAppBillingConfig", () => {
+    it("returns false", () => {
+      expect(util.validateManageAppBillingConfig(0)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(10)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(-1)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(15.5)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(null)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(undefined)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(Infinity)).to.equal(false);
+      expect(util.validateManageAppBillingConfig(NaN)).to.equal(false);
+      expect(util.validateManageAppBillingConfig('')).to.equal(false);
+      expect(util.validateManageAppBillingConfig('abc')).to.equal(false);
+      expect(util.validateManageAppBillingConfig('false')).to.equal(false);
+      expect(util.validateManageAppBillingConfig({})).to.equal(false);
+      expect(util.validateManageAppBillingConfig({a: 'A'})).to.equal(false);
+      expect(util.validateManageAppBillingConfig([])).to.equal(false);
+      expect(util.validateManageAppBillingConfig([10])).to.equal(false);
+      expect(util.validateManageAppBillingConfig(false)).to.equal(false);
+      expect(util.validateManageAppBillingConfig({'0xCAcD898dBaEdBD9037aCd25b82417587E972838d': 1})).to.equal(false);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xcacd898dbaedbd9037acd25b82417587e972838d': true
+          }
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': 0
+          }
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': '123'
+          }
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': null
+          }
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          not_users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true
+          }
+        }
+      })).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true
+          }
+        }
+      })).to.equal(true);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true,
+            '0x00ADEc28B6a845a085e03591bE7550dd68673C1C': false
+          }
+        }
+      })).to.equal(true);
+      expect(util.validateManageAppBillingConfig({
+        account1: {
+          users: {
+            '0xCAcD898dBaEdBD9037aCd25b82417587E972838d': true
+          }
+        },
+        account2: {
+          users: {
+            '0x00ADEc28B6a845a085e03591bE7550dd68673C1C': false
+          }
+        }
+      })).to.equal(true);
+    })
+  })
+
+  describe("validateManageAppIsPublicConfig", () => {
+    it("returns false", () => {
+      expect(util.validateManageAppIsPublicConfig(0)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(10)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(-1)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(15.5)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(undefined)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(Infinity)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig(NaN)).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig('')).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig('abc')).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig('false')).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig({})).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig({a: 'A'})).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig([])).to.equal(false);
+      expect(util.validateManageAppIsPublicConfig([10])).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.validateManageAppIsPublicConfig(true)).to.equal(true);
+      expect(util.validateManageAppIsPublicConfig(false)).to.equal(true);
+      expect(util.validateManageAppIsPublicConfig(null)).to.equal(true);
+    })
+  })
+
+  describe("validateManageAppServiceConfig", () => {
+    it("returns false", () => {
+      expect(util.validateManageAppServiceConfig(0)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(10)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(-1)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(15.5)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(null)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(undefined)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(Infinity)).to.equal(false);
+      expect(util.validateManageAppServiceConfig(NaN)).to.equal(false);
+      expect(util.validateManageAppServiceConfig('')).to.equal(false);
+      expect(util.validateManageAppServiceConfig('abc')).to.equal(false);
+      expect(util.validateManageAppServiceConfig('false')).to.equal(false);
+      expect(util.validateManageAppServiceConfig({})).to.equal(false);
+      expect(util.validateManageAppServiceConfig({a: 'A'})).to.equal(false);
+      expect(util.validateManageAppServiceConfig([])).to.equal(false);
+      expect(util.validateManageAppServiceConfig([10])).to.equal(false);
+      expect(util.validateManageAppServiceConfig(false)).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: -1
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: 1.1
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: '100'
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          not_lockup_duration: 10
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        not_staking: {
+          lockup_duration: 100
+        }
+      })).to.equal(false);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: 100
+        },
+        not_staking: {
+          something: '123'
+        }
+      })).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: 100
+        }
+      })).to.equal(true);
+      expect(util.validateManageAppServiceConfig({
+        staking: {
+          lockup_duration: 0
+        }
+      })).to.equal(true);
+    })
+  })
+
+  describe("checkValuePathLen", () => {
+    it("returns false", () => {
+      expect(util.checkValuePathLen(0, 0)).to.equal(false);
+      expect(util.checkValuePathLen(10, 0)).to.equal(false);
+      expect(util.checkValuePathLen(-1, 0)).to.equal(false);
+      expect(util.checkValuePathLen(15.5, 0)).to.equal(false);
+      expect(util.checkValuePathLen(null, 0)).to.equal(false);
+      expect(util.checkValuePathLen(undefined, 0)).to.equal(false);
+      expect(util.checkValuePathLen(Infinity, 0)).to.equal(false);
+      expect(util.checkValuePathLen(NaN, 0)).to.equal(false);
+      expect(util.checkValuePathLen('', 0)).to.equal(false);
+      expect(util.checkValuePathLen('abc', 0)).to.equal(false);
+      expect(util.checkValuePathLen('false', 0)).to.equal(false);
+      expect(util.checkValuePathLen({}, 0)).to.equal(false);
+      expect(util.checkValuePathLen({a: 'A'}, 1)).to.equal(false);
+      expect(util.checkValuePathLen(['1', '2', '3'], 2)).to.equal(false);
+      expect(util.checkValuePathLen(['1', '2', '3'], -1)).to.equal(false);
+    })
+
+    it("returns true", () => {
+      expect(util.checkValuePathLen([], 0)).to.equal(true);
+      expect(util.checkValuePathLen(['1', '2', '3'], 3)).to.equal(true);
+    })
+  })
 })
