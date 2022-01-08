@@ -1,5 +1,7 @@
 const logger = new (require('../logger'))('DATABASE');
 
+const fs = require('fs');
+const path = require('path');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
@@ -15,6 +17,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
+  TimerFlagEnabledBandageMap,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -457,6 +460,30 @@ class DB {
 
   writeDatabase(fullPath, stateObj) {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
+  }
+
+  applyBandagesForTimerFlag(timerFlagName) {
+    const bandageFilePath = path.resolve(__dirname, `./bandage-files/${timerFlagName}.js`);
+    if (!fs.existsSync(bandageFilePath)) {
+      throw Error(`Missing a bandage data file: ${timerFlagName}`);
+    }
+    const bandageList = require(bandageFilePath).data;
+    if (!CommonUtil.isArray(bandageList)) {
+      throw Error(`Invalid bandage data file: ${timerFlagName}, ${JSON.stringify(bandageList)}`);
+    }
+    for (const bandage of bandageList) {
+      this.writeDatabase(bandage.path, bandage.value);
+    }
+  }
+
+  applyBandagesForBlockNumber(blockNumber) {
+    if (!CommonUtil.isNumber(blockNumber)) return;
+    // NOTE(liayoo): A timer flag with enabled_block of N + 1 will be applied at the end of block N.
+    if (!TimerFlagEnabledBandageMap.has(blockNumber + 1)) return;
+    const timerFlags = TimerFlagEnabledBandageMap.get(blockNumber + 1);
+    for (const flagName of timerFlags) {
+      this.applyBandagesForTimerFlag(flagName);
+    }
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
@@ -1859,7 +1886,7 @@ class DB {
     try {
       const evalWriteRuleRes = this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth,
-        timestamp, blockNumber, blockTime);
+        timestamp, blockNumber, blockTime, parsedValuePath);
       if (evalWriteRuleRes.code) {
         return {
           code: evalWriteRuleRes.code,
@@ -2312,13 +2339,14 @@ class DB {
 
   // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
   static makeWriteRuleEvalFunction(ruleCodeSnippet, pathVars) {
-    return new Function('auth', 'data', 'newData', 'currentTime', 'blockNumber', 'blockTime',
+    return new Function(
+        'auth', 'data', 'newData', 'currentTime', 'blockNumber', 'blockTime', 'parsedValuePath',
         'getValue', 'getRule', 'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util',
         ...Object.keys(pathVars), ruleCodeSnippet);
   }
 
   evalWriteRuleConfig(
-      writeRuleConfig, pathVars, data, newData, auth, timestamp, blockNumber, blockTime) {
+      writeRuleConfig, pathVars, data, newData, auth, timestamp, blockNumber, blockTime, parsedValuePath) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
       return {
         ruleString: '',
@@ -2347,7 +2375,8 @@ class DB {
         message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
       };
     }
-    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, blockNumber, blockTime,
+    const evalResult = !!writeRuleEvalFunc(
+        auth, data, newData, timestamp, blockNumber, blockTime, parsedValuePath,
         this.getValue.bind(this), this.getRule.bind(this), this.getFunction.bind(this),
         this.getOwner.bind(this), this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), ...Object.values(pathVars));

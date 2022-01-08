@@ -754,7 +754,7 @@ class Functions {
     if (serviceConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
     }
-    if (!_.isEqual(sanitizedVal, rawVal, { strict: true })) {
+    if (!_.isEqual(sanitizedVal, rawVal)) {
       return { errorCode: FunctionResultCode.FAILURE };
     }
     return { sanitizedVal, errorCode: null };
@@ -795,12 +795,13 @@ class Functions {
     this.setRuleOrLog(appPath, buildRulePermission(rule), context);
     this.setOwnerOrLog(appPath, owner, context);
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
-    const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
-    if (!CommonUtil.isFailedTx(result)) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } else {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    for (const [configKey, configVal] of Object.entries(sanitizedVal)) {
+      const result = this.setValueOrLog(`${manageAppConfigPath}/${configKey}`, configVal, context);
+      if (CommonUtil.isFailedTx(result)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
     }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _collectFee(value, context) {
@@ -949,7 +950,11 @@ class Functions {
     const stakingKey = context.params.staking_key;
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
-    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    // Use 0 as the default.
+    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)) || 0;
+    if (!CommonUtil.isInteger(lockup) || lockup < 0) {
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_LOCKUP_DURATION);
+    }
     const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {

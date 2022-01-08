@@ -3874,7 +3874,16 @@ describe('Blockchain Node', () => {
           }
         }
       };
-      await setUpApp('test_billing', serverList, { admin: adminConfig, billing: billingConfig });
+      const serviceConfig = {
+        staking: {
+          lockup_duration: 1000
+        }
+      }
+      await setUpApp('test_billing', serverList, {
+        admin: adminConfig,
+        billing: billingConfig,
+        service: serviceConfig
+      });
 
       // const server4Addr =
       //     parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
@@ -3950,8 +3959,12 @@ describe('Blockchain Node', () => {
     it('app-dependent service tx: individual account', async () => {
       const gasPrice = 1;
       const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
-          value: 1000,
+          ref: '/manage_app/test_billing/config/service',
+          value: {
+            staking: {
+              lockup_duration: 1000
+            }
+          },
           gas_price: gasPrice,
           nonce: -1,
           timestamp: Date.now(),
@@ -3975,8 +3988,12 @@ describe('Blockchain Node', () => {
 
     it('app-dependent service tx: invalid billing param', async () => {
       const txResBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
-          value: 1000,
+          ref: '/manage_app/test_billing/config/service',
+          value: {
+            staking: {
+              lockup_duration: 1000
+            }
+          },
           gas_price: 1,
           billing: 'A',
           nonce: -1,
@@ -3988,8 +4005,12 @@ describe('Blockchain Node', () => {
 
     it('app-dependent service tx: not a billing account user', async () => {
       const txResBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
-          value: 1000,
+          ref: '/manage_app/test_billing/config/service',
+          value: {
+            staking: {
+              lockup_duration: 1000
+            }
+          },
           gas_price: 1,
           billing: 'test_billing|B',
           nonce: -1,
@@ -4006,8 +4027,12 @@ describe('Blockchain Node', () => {
         'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       const gasPrice = 1;
       const txRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: '/manage_app/test_billing/config/service/staking/lockup_duration',
-          value: 1000,
+          ref: '/manage_app/test_billing/config/service',
+          value: {
+            staking: {
+              lockup_duration: 1000
+            }
+          },
           gas_price: 1,
           billing: 'test_billing|A',
           nonce: -1,
@@ -4085,8 +4110,12 @@ describe('Blockchain Node', () => {
               type: 'SET_VALUE'
             },
             {
-              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
-              value: 100,
+              ref: `/manage_app/test_billing/config/service`,
+              value: {
+                staking: {
+                  lockup_duration: 1000
+                }
+              },
               type: 'SET_VALUE'
             }
           ],
@@ -4123,8 +4152,12 @@ describe('Blockchain Node', () => {
               type: 'SET_VALUE'
             },
             {
-              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
-              value: 100,
+              ref: `/manage_app/test_billing/config/service`,
+              value: {
+                staking: {
+                  lockup_duration: 1000
+                }
+              },
               type: 'SET_VALUE'
             }
           ],
@@ -4171,6 +4204,11 @@ describe('Blockchain Node', () => {
                 [billingUserB]: true
               }
             }
+          },
+          service: {
+            staking: {
+              lockup_duration: 2592000000
+            }
           }
         },
         nonce: -1,
@@ -4183,13 +4221,21 @@ describe('Blockchain Node', () => {
       const txResBody = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
           op_list: [
             {
-              ref: `/manage_app/test_billing/config/service/staking/lockup_duration`,
-              value: 100,
+              ref: `/manage_app/test_billing/config/service`,
+              value: {
+                staking: {
+                  lockup_duration: 100
+                  }
+                },
               type: 'SET_VALUE'
             },
             {
-              ref: `/manage_app/test_billing_2/config/service/staking/lockup_duration`,
-              value: 100,
+              ref: `/manage_app/test_billing_2/config/service`,
+              value: {
+                staking: {
+                  lockup_duration: 100
+                  }
+                },
               type: 'SET_VALUE'
             }
           ],

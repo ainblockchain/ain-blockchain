@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -956,6 +958,39 @@ class CommonUtil {
       return true;
     }
     return false;
+  }
+
+  static getTimerFlagEnabledBlock(timerFlags, flagName) {
+    const flag = timerFlags[flagName];
+    if (!flag) {
+      return null;
+    }
+    const enabledBlock = flag['enabled_block'];
+    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock)) {
+      return null;
+    }
+    return enabledBlock;
+  }
+
+  static createTimerFlagEnabledBandageMap(timerFlags) {
+    const LOG_HEADER = 'createTimerFlagEnabledBandageMap';
+    const map = new Map();
+    for (const [flagName, flag] of Object.entries(timerFlags)) {
+      if (CommonUtil.isNumber(flag['enabled_block']) && flag['has_bandage'] === true) {
+        const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
+        console.log(`[${LOG_HEADER}] Registering bandage file (${bandageFilePath}) for timer flag (${flagName})`);
+        if (!fs.existsSync(bandageFilePath)) {
+          throw Error(`Missing a bandage data file: ${flagName}`);
+        }
+        if (!map.has(flag['enabled_block'])) {
+          map.set(flag['enabled_block'], []);
+        }
+        map.get(flag['enabled_block']).push(flagName);
+      } else {
+        console.log(`[${LOG_HEADER}] Skipping bandage file registration for timer flag (${flagName})`);
+      }
+    }
+    return map;
   }
 }
 

@@ -61,6 +61,11 @@ function isEnabledTimerFlag(flagName, blockNumber) {
   return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
 }
 
+function isTimerFlagEnabledAt(flagName, blockNumber) {
+  return CommonUtil.getTimerFlagEnabledBlock(TimerFlags, flagName) === blockNumber;
+}
+const TimerFlagEnabledBandageMap = CommonUtil.createTimerFlagEnabledBandageMap(TimerFlags);
+
 // ** Blockchain params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 
@@ -754,6 +759,8 @@ module.exports = {
   BlockchainConsts,
   TimerFlags,
   isEnabledTimerFlag,
+  isTimerFlagEnabledAt,
+  TimerFlagEnabledBandageMap,
   BlockchainParams,
   NodeConfigs,
   MessageTypes,
