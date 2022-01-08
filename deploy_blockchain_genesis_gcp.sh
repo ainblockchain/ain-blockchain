@@ -188,46 +188,6 @@ NODE_7_ZONE="asia-southeast1-b"
 NODE_8_ZONE="us-central1-a"
 NODE_9_ZONE="europe-west4-a"
 
-if [[ $KILL_OPTION = "--skip-kill" ]]; then
-    printf "\nSkipping process kill...\n"
-else
-    # kill any processes still alive
-    printf "\nKilling all trackers and blockchain nodes...\n"
-    gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-    gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-    gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-    gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-    gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
-    gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
-    gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
-    gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
-    gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_7_ZONE
-    gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_8_ZONE
-    gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_9_ZONE
-
-    if [[ $NUM_SHARDS -gt 0 ]]; then
-        for i in $(seq $NUM_SHARDS)
-            do
-                printf "shard #$i\n"
-
-                SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-                SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
-                SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
-                SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
-
-                gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-                gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-                gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-                gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-            done
-    fi
-fi
-
-# If --kill-only, do not proceed any further
-if [[ $KILL_OPTION = "--kill-only" ]]; then
-    exit
-fi
-
 # deploy files to GCP instances
 if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf "\nDeploying parent blockchain...\n\n"
@@ -279,6 +239,46 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     gcloud compute ssh $NODE_8_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_8_ZONE
     printf "\n\n##########################\n# Setting up parent node 9 #\n##########################\n\n"
     gcloud compute ssh $NODE_9_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_9_ZONE
+fi
+
+if [[ $KILL_OPTION = "--skip-kill" ]]; then
+    printf "\nSkipping process kill...\n"
+else
+    # kill any processes still alive
+    printf "\nKilling all trackers and blockchain nodes...\n"
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+    gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
+    gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
+    gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
+    gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
+    gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
+    gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
+    gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_7_ZONE
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_8_ZONE
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_9_ZONE
+
+    if [[ $NUM_SHARDS -gt 0 ]]; then
+        for i in $(seq $NUM_SHARDS)
+            do
+                printf "shard #$i\n"
+
+                SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+                SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
+                SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
+                SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
+
+                gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+                gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
+                gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
+                gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
+            done
+    fi
+fi
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_OPTION = "--kill-only" ]]; then
+    exit
 fi
 
 printf "\nStarting blockchain servers...\n\n"
