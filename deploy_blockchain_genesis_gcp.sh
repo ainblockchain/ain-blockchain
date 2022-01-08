@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--restart|--reset] [--kill-only|--skip-kill]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code] [--keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
     printf "\n"
     exit
@@ -58,18 +58,10 @@ function parse_options() {
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ $option = '--restart' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
-    elif [[ $option = '--reset' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
             printf "You cannot use both --skip-kill and --kill-only\n"
@@ -91,7 +83,8 @@ function parse_options() {
 # Parse options.
 SETUP_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
-RESET_RESTART_OPTION=""
+KEEP_CODE_OPTION=""
+KEEP_DATA_OPTION=""
 KILL_OPTION=""
 
 ARG_INDEX=4
@@ -102,7 +95,8 @@ do
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
@@ -235,7 +229,7 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
 fi
 
 # deploy files to GCP instances
-if [[ $RESET_RESTART_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf "\nDeploying parent blockchain...\n\n"
     printf "\nDeploying files to parent tracker (${TRACKER_TARGET_ADDR})...\n\n"
     gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
@@ -288,33 +282,32 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 fi
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
-    # restart after removing chains, snapshots, and log files
+if [[ $KEEP_CODE_OPTION = "" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ."
+else
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+fi
+if [[ $KEEP_DATA_OPTION = "" ]]; then
+    # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
-elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
-    # restart
-    START_TRACKER_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
+    LOGS_DIR=/home/ain_blockchain_data/logs
+    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
 else
-    # start
-    START_TRACKER_CMD_BASE=". start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE=". start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION=""
+    # restart with existing chains, snapshots, and log files
+    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
+    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
 fi
 printf "\n"
 printf "START_TRACKER_CMD_BASE=$START_TRACKER_CMD_BASE\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
-printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
 printf "\n\n###########################\n# Starting parent tracker #\n###########################\n\n"
 
 printf "\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
 printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
@@ -335,12 +328,13 @@ do
     NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+    printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
     inject_account "$node_index"
@@ -365,7 +359,7 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
             SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
             # deploy files to GCP instances
-            if [[ $RESET_RESTART_OPTION = "" ]]; then
+            if [[ $KEEP_CODE_OPTION = "" ]]; then
                 printf "\nDeploying files to shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR})...\n\n"
                 gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})...\n\n"
@@ -394,15 +388,15 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
             printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
             eval $START_TRACKER_CMD
             printf "\n\n##########################\n# Starting shard_$i node 0 #\n##########################\n\n"
-            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
             printf "START_NODE_CMD=$START_NODE_CMD\n"
             eval $START_NODE_CMD
             printf "\n\n##########################\n# Starting shard_$i node 1 #\n##########################\n\n"
-            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
             printf "START_NODE_CMD=$START_NODE_CMD\n"
             eval $START_NODE_CMD
             printf "\n\n##########################\n# Starting shard_$i node 2 #\n##########################\n\n"
-            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
             printf "START_NODE_CMD=$START_NODE_CMD\n"
             eval $START_NODE_CMD
         done
