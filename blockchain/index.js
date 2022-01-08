@@ -233,7 +233,8 @@ class Blockchain {
           `[${LOG_HEADER}] Overwriting block file for block ${block.number} of hash ${block.hash}`);
     }
     FileUtil.writeBlockFile(this.blockchainPath, block);
-    if (FileUtil.hasH2nFile(this.blockchainPath, block.hash, block.number)) {
+
+    if (FileUtil.hasH2nFile(this.blockchainPath, block.hash)) {
       logger.error(
           `[${LOG_HEADER}] Overwriting h2n file for block ${block.number} of hash ${block.hash}`);
     }
