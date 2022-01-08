@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--keep-code] [--keep-data]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
     printf "\n"
     exit
@@ -61,18 +61,10 @@ function parse_options() {
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ $option = '--restart' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
-    elif [[ $option = '--reset' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -84,7 +76,8 @@ SETUP_OPTION=""
 RUN_MODE_OPTION=""
 FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
-RESET_RESTART_OPTION=""
+KEEP_CODE_OPTION=""
+KEEP_DATA_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -97,7 +90,8 @@ printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "RUN_MODE_OPTION=$RUN_MODE_OPTION\n"
 printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -158,7 +152,7 @@ function deploy_tracker() {
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
 
-    if [[ $RESET_RESTART_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "" ]]; then
         # 1. Copy files for tracker
         printf "\n\n[[[ Copying files for tracker ]]]\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
@@ -196,7 +190,7 @@ function deploy_node() {
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
 
-    if [[ $RESET_RESTART_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "" ]]; then
         # 1. Copy files for node
         printf "\n\n<<< Copying files for node $node_index >>>\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
@@ -224,13 +218,14 @@ function deploy_node() {
     fi
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+    printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $FULL_SYNC_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $FULL_SYNC_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
@@ -253,6 +248,7 @@ function deploy_node() {
             echo 0
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     else
+        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
@@ -289,23 +285,22 @@ NODE_TARGET_ADDR_LIST=(
 )
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
-    # restart after removing chains, snapshots, and log files
+if [[ $KEEP_CODE_OPTION = "" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ."
+else
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+fi
+if [[ $KEEP_DATA_OPTION = "" ]]; then
+    # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_incremental_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
-elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
-    # restart
-    START_TRACKER_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_incremental_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
+    LOGS_DIR=/home/ain_blockchain_data/logs
+    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
 else
-    # start
-    START_TRACKER_CMD_BASE=". start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE=". start_node_incremental_gcp.sh"
-    KEEP_CODE_OPTION=""
+    # restart with existing chains, snapshots, and log files
+    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
 fi
 
 if [[ $RUN_MODE_OPTION = "--canary" ]]; then

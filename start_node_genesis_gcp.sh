@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
-if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--keep-data] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     return 1
@@ -13,6 +13,8 @@ function parse_options() {
     local option="$1"
     if [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     elif [[ $option = '--full-sync' ]]; then
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
@@ -63,6 +65,7 @@ fi
 NODE_INDEX="$3"
 
 KEEP_CODE_OPTION=""
+KEEP_DATA_OPTION=""
 FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
@@ -80,6 +83,7 @@ printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
@@ -122,15 +126,22 @@ fi
 printf '\n'
 printf 'Killing old jobs..\n'
 sudo killall node
-
+if [[ $KEEP_DATA_OPTION = "" ]]; then
+    printf '\n'
+    printf 'Removing old data..\n'
+    sudo rm -rf /home/ain_blockchain_data/chains
+    sudo rm -rf /home/ain_blockchain_data/snapshots
+    sudo rm -rf /home/ain_blockchain_data/logs
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+else
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+fi
 if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Setting up working directory..\n'
     cd
-    sudo rm -rf /home/ain_blockchain_data
-    sudo mkdir /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-
     sudo rm -rf ../ain-blockchain*
     sudo mkdir ../ain-blockchain
     sudo chmod -R 777 ../ain-blockchain
@@ -146,7 +157,6 @@ else
     OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
-    sudo chmod -R 777 /home/ain_blockchain_data
 fi
 
 
