@@ -346,14 +346,20 @@ class BlockchainNode {
 
   async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
-      const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
-      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
-      await FileUtil.writeSnapshot(
-          this.snapshotDir,
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
-          null, snapshotChunkSize);
+      this.deleteSnapshot(
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
+      await this.writeSnapshot(blockNumber);
     }
+  }
+
+  async writeSnapshot(blockNumber) {
+    const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
+    const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+    await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+  }
+
+  deleteSnapshot(blockNumber) {
+    FileUtil.deleteSnapshot(this.snapshotDir, blockNumber);
   }
 
   buildBlockchainSnapshot(blockNumber, stateRoot) {

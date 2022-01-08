@@ -256,28 +256,31 @@ class FileUtil {
     const LOG_HEADER = 'writeSnapshot';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
-    if (snapshot === null) { // Delete
-      if (fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          logger.error(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
-        }
+    return new Promise((resolve) => {
+      new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
+        .pipe(zlib.createGzip())
+        .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
+        .on('finish', () => {
+          logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
+          resolve();
+        })
+        .on('error', (e) => {
+          logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
+          resolve();
+        });
+    });
+  }
+
+  static deleteSnapshot(snapshotPath, blockNumber, isDebug = false) {
+    const LOG_HEADER = 'deleteSnapshot';
+
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] Failed to delete snapshot at ${filePath}: ${err.stack}`);
       }
-    } else {
-      return new Promise((resolve) => {
-        new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
-          .pipe(zlib.createGzip())
-          .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
-          .on('finish', () => {
-            logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
-            resolve();
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
-            resolve();
-          });
-      });
     }
   }
 
