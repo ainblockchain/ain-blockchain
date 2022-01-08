@@ -60,6 +60,7 @@ const TimerFlags = getBlockchainConfig('timer_flags.json');
 function isEnabledTimerFlag(flagName, blockNumber) {
   return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
 }
+
 function isTimerFlagEnabledAt(flagName, blockNumber) {
   return CommonUtil.getTimerFlagEnabledBlock(TimerFlags, flagName) === blockNumber;
 }
