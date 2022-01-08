@@ -1547,7 +1547,7 @@ describe('Native Function', () => {
                   }
                 },
                 "2": {
-                  "path": "/manage_app/test_service_create_app0/config",
+                  "path": "/manage_app/test_service_create_app0/config/admin",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -1675,7 +1675,14 @@ describe('Native Function', () => {
                   }
                 },
                 "2": {
-                  "path": "/manage_app/test_service_create_app1/config",
+                  "path": "/manage_app/test_service_create_app1/config/admin",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/manage_app/test_service_create_app1/config/is_public",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -1692,7 +1699,7 @@ describe('Native Function', () => {
               "app": {
                 "test_service_create_app1": 2
               },
-              "service": 2
+              "service": 3
             },
             "state": {
               "service": 'erased'
