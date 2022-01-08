@@ -197,10 +197,6 @@ class FileUtil {
     const LOG_HEADER = 'writeBlockFile';
 
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
-    if (fs.existsSync(blockPath)) {
-      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
-      return;
-    }
     const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
     FileUtil.createDir(blockDirPath);
     const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
