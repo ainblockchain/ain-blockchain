@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--keep-code] [--keep-data]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
 fi
@@ -41,30 +41,24 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ $option = '--canary' ]]; then
         RUN_MODE_OPTION="$option"
-    elif [[ $option = '--full-sync' ]]; then
-        FULL_SYNC_OPTION="$option"
+    elif [[ $option = '--private-key' ]]; then
+        ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
-        ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ $option = '--private-key' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
     elif [[ $option = '--keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--full-sync' ]]; then
+        SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--fast-sync' ]]; then
+        SYNC_MODE_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -73,11 +67,11 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
+ACCOUNT_INJECTION_OPTION="--private-key"
+KEEP_CODE_OPTION="--keep-code"
+KEEP_DATA_OPTION="--keep-data"
+SYNC_MODE_OPTION="--fast-sync"
 RUN_MODE_OPTION=""
-FULL_SYNC_OPTION=""
-ACCOUNT_INJECTION_OPTION=""
-KEEP_CODE_OPTION=""
-KEEP_DATA_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -88,10 +82,10 @@ done
 
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "RUN_MODE_OPTION=$RUN_MODE_OPTION\n"
-printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -152,7 +146,7 @@ function deploy_tracker() {
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
 
-    if [[ $KEEP_CODE_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for tracker
         printf "\n\n[[[ Copying files for tracker ]]]\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
@@ -190,7 +184,7 @@ function deploy_node() {
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
 
-    if [[ $KEEP_CODE_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for node
         printf "\n\n<<< Copying files for node $node_index >>>\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
@@ -217,15 +211,15 @@ function deploy_node() {
         REST_FUNC_OPTION=""
     fi
 
+    printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
-    printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
-    printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+    printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $FULL_SYNC_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
@@ -285,12 +279,12 @@ NODE_TARGET_ADDR_LIST=(
 )
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     GO_TO_PROJECT_ROOT_CMD="cd ."
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "" ]]; then
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots

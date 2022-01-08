@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
-    printf "Usage: bash start_tracker_incremental_gcp.sh <Number of Nodes> [--keep-code]\n"
+    printf "Usage: bash start_tracker_incremental_gcp.sh <Number of Nodes> [--keep-code|--no-keep-code]\n"
     printf "Example: bash start_tracker_incremental_gcp.sh 5 --keep-code\n"
     printf "\n"
     exit
@@ -16,6 +16,8 @@ KEEP_CODE_OPTION=""
 
 if [[ $# = 2 ]]; then
     if [[ $2 = '--keep-code' ]]; then
+        KEEP_CODE_OPTION=$2
+    elif [[ $2 = '--no-keep-code' ]]; then
         KEEP_CODE_OPTION=$2
     else
         printf "Invalid option: $2\n"
@@ -39,7 +41,7 @@ printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Creating new working directory..\n'
     MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
@@ -69,7 +71,7 @@ sleep 10
 
 # 5. Remove old working directory keeping the chain data
 printf "\n#### [Step 5] Remove old working directory keeping the chain data ####\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
     RM_CMD="sudo rm -rf $OLD_DIR_PATH"
