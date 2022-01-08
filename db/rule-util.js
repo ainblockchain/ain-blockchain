@@ -420,7 +420,7 @@ class RuleUtil {
   }
 
   validateManageAppBillingConfig(newData) {
-    if (!this.isDict(newData)) {
+    if (!this.isDict(newData) || this.isEmpty(newData)) {
       return false;
     }
     for (const billingConfig of Object.values(newData)) {
