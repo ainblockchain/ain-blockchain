@@ -703,7 +703,7 @@ class BlockchainNode {
             this.bc.addBlockToChainAndWriteToDisk(block, false);
             this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
           } else {
-            this.tryFinalizeChain(isGenesisStart);
+            this.tryFinalizeChain(isGenesisStart, false);
           }
         }
       } catch (e) {
@@ -829,7 +829,7 @@ class BlockchainNode {
     }
   }
 
-  tryFinalizeChain(isGenesisStart = false) {
+  tryFinalizeChain(isGenesisStart = false, writeToDisk = true) {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
     if (!finalizableChain || !finalizableChain.length) {
@@ -847,7 +847,7 @@ class BlockchainNode {
       if (blockToFinalize.number <= this.bc.lastBlockNumber()) {
         continue;
       }
-      if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, true)) {
+      if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, writeToDisk)) {
         lastFinalizedBlock = blockToFinalize;
         logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
