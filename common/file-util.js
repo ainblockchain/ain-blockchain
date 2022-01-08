@@ -247,7 +247,7 @@ class FileUtil {
       const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${h2nPath}: ${err}`);
       return -1;
     }
   }
