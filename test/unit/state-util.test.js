@@ -351,12 +351,12 @@ describe("state-util", () => {
       expect(isValidServiceName('0_0')).to.equal(false);
     })
 
-    it("when upper-case string input with blockNumber = 0 returning false", () => {
-      expect(isValidServiceName('A', 0)).to.equal(true);
-      expect(isValidServiceName('aA', 0)).to.equal(true);
-      expect(isValidServiceName('A_', 0)).to.equal(true);
-      expect(isValidServiceName('A0', 0)).to.equal(true);
-      expect(isValidServiceName('a0A', 0)).to.equal(true);
+    it("when upper-case string input with blockNumber = 1 returning false", () => {
+      expect(isValidServiceName('A', 1)).to.equal(true);
+      expect(isValidServiceName('aA', 1)).to.equal(true);
+      expect(isValidServiceName('A_', 1)).to.equal(true);
+      expect(isValidServiceName('A0', 1)).to.equal(true);
+      expect(isValidServiceName('a0A', 1)).to.equal(true);
     })
 
     it("when upper-case string input with blockNumber = 2 returning false", () => {
@@ -367,12 +367,12 @@ describe("state-util", () => {
       expect(isValidServiceName('a0A', 2)).to.equal(false);
     })
 
-    it("when lower-case string input with blockNumber = 0 returning true", () => {
-      expect(isValidServiceName('a', 0)).to.equal(true);
-      expect(isValidServiceName('aa', 0)).to.equal(true);
-      expect(isValidServiceName('a_', 0)).to.equal(true);
-      expect(isValidServiceName('a0', 0)).to.equal(true);
-      expect(isValidServiceName('a0a', 0)).to.equal(true);
+    it("when lower-case string input with blockNumber = 1 returning true", () => {
+      expect(isValidServiceName('a', 1)).to.equal(true);
+      expect(isValidServiceName('aa', 1)).to.equal(true);
+      expect(isValidServiceName('a_', 1)).to.equal(true);
+      expect(isValidServiceName('a0', 1)).to.equal(true);
+      expect(isValidServiceName('a0a', 1)).to.equal(true);
     })
 
     it("when lower-case string input with blockNumber = 2 returning true", () => {
@@ -391,7 +391,6 @@ describe("state-util", () => {
     })
 
     it("when reserved service name input returning false", () => {
-      expect(isValidServiceName('balance_total_sum', 0)).to.equal(false);
       expect(isValidServiceName('balance_total_sum', 1)).to.equal(false);
       expect(isValidServiceName('balance_total_sum', 2)).to.equal(false);
     })
