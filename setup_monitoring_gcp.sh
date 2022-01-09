@@ -22,13 +22,12 @@ killall grafana-server
 
 
 printf 'Setting up working directory..\n'
-cd
-sudo rm -rf ../ain-blockchain
-sudo mkdir ../ain-blockchain
-sudo chmod 777 ../ain-blockchain
-mv * ../ain-blockchain
-cd ../ain-blockchain
-
+sudo rm -rf /home/ain-blockchain
+cd ~
+sudo mv ain-blockchain /home
+sudo chmod -R 777 /home/ain-blockchain
+sudo chown -R root:root /home/ain-blockchain
+cd /home/ain-blockchain
 
 printf 'Installing Prometheus..\n'
 curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \

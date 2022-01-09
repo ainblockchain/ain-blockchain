@@ -246,7 +246,7 @@ else
         NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
         NODE_ZONE=NODE_${node_index}_ZONE
 
-        printf "\n* >> Killing node $node_index job (${!NODE_TARGET_ADDR})  *********************************************************\n\n"
+        printf "\n* >> Killing node $node_index job (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
         gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo killall node" --project $PROJECT_ID --zone ${!NODE_ZONE}
     done
 

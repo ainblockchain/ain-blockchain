@@ -76,7 +76,7 @@ printf "KILL_OPTION=$KILL_OPTION\n"
 
 # Get confirmation.
 printf "\n"
-read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
 printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
