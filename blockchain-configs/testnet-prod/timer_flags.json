@@ -1,7 +1,7 @@
 {
   "allow_lower_case_app_names_only": {
     "enabled_block": null,
-    "has_bandage": false
+    "has_bandage": true
   },
   "create_app_config_sanitization": {
     "enabled_block": null,
