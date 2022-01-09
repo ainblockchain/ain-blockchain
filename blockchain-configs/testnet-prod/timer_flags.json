@@ -18,5 +18,9 @@
   "update_testnet_prod_token_pool_addr": {
     "enabled_block": null,
     "has_bandage": true
+  },
+  "staking_balance_total_sum": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
