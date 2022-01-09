@@ -2426,6 +2426,17 @@ describe('Native Function', () => {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
+                },
+                "3": {
+                  "path": "/staking/balance_total_sum",
+                  "result": {
+                    "bandwidth_gas_amount": 1,
+                    "code": 0,
+                    "subtree_func_results": {
+                      "/$user_addr/$staking_key/stake/$record_id/value": {},
+                      "/$user_addr/$staking_key/unstake/$record_id/value": {}
+                    }
+                  }
                 }
               },
               "code": 0,
@@ -2437,7 +2448,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 2006
+              "service": 2007
             },
             "state": {
               "service": 'erased'
@@ -2508,6 +2519,17 @@ describe('Native Function', () => {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
+                },
+                "3": {
+                  "path": "/staking/balance_total_sum",
+                  "result": {
+                    "bandwidth_gas_amount": 1,
+                    "code": 0,
+                    "subtree_func_results": {
+                      "/$user_addr/$staking_key/stake/$record_id/value": {},
+                      "/$user_addr/$staking_key/unstake/$record_id/value": {}
+                    }
+                  }
                 }
               },
               "code": 0,
@@ -2519,7 +2541,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 6
+              "service": 7
             },
             "state": {
               "service": 'erased'
@@ -2895,6 +2917,8 @@ describe('Native Function', () => {
 
       describe('Stake:', () => {
         it('stake: stake', async () => {
+          const beforeStakingBalanceTotalSum = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/balance_total_sum`).body.toString('utf-8')).result;
           let beforeBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
           const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
@@ -2957,6 +2981,17 @@ describe('Native Function', () => {
                       },
                       "bandwidth_gas_amount": 1,
                     }
+                  },
+                  "3": {
+                    "path": "/staking/balance_total_sum",
+                    "result": {
+                      "bandwidth_gas_amount": 1,
+                      "code": 0,
+                      "subtree_func_results": {
+                        "/$user_addr/$staking_key/stake/$record_id/value": {},
+                        "/$user_addr/$staking_key/unstake/$record_id/value": {}
+                      }
+                    }
                   }
                 }
               }
@@ -2966,7 +3001,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 2006
+                "service": 2007
               },
               "state": {
                 "service": 'erased'
@@ -2978,6 +3013,8 @@ describe('Native Function', () => {
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
+          const afterStakingBalanceTotalSum = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/balance_total_sum`).body.toString('utf-8')).result;
           const stakeValue = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${stakePath}/1/value`).body.toString('utf-8')).result;
           const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
@@ -2991,6 +3028,7 @@ describe('Native Function', () => {
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance + stakeAmount);
           expect(afterBalance).to.equal(beforeBalance - stakeAmount);
           expect(stakingAppBalanceTotal).to.equal(stakeAmount + 1);
+          expect(afterStakingBalanceTotalSum).to.equal(beforeStakingBalanceTotalSum + stakeAmount);
         });
 
         it('stake: stake with null value', async () => {
@@ -3167,6 +3205,8 @@ describe('Native Function', () => {
         });
 
         it('unstake: unstake', async () => {
+          const beforeStakingBalanceTotalSum = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/balance_total_sum`).body.toString('utf-8')).result;
           const beforeBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
           const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
@@ -3222,6 +3262,17 @@ describe('Native Function', () => {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
+                  },
+                  "2": {
+                    "path": "/staking/balance_total_sum",
+                    "result": {
+                      "bandwidth_gas_amount": 1,
+                      "code": 0,
+                      "subtree_func_results": {
+                        "/$user_addr/$staking_key/stake/$record_id/value": {},
+                        "/$user_addr/$staking_key/unstake/$record_id/value": {}
+                      }
+                    }
                   }
                 }
               }
@@ -3231,7 +3282,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 5
+                "service": 6
               },
               "state": {
                 "service": 'erased'
@@ -3243,6 +3294,8 @@ describe('Native Function', () => {
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
+          const afterStakingBalanceTotalSum = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/staking/balance_total_sum`).body.toString('utf-8')).result;
           const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
           const afterBalance = parseOrLog(syncRequest('GET',
@@ -3251,6 +3304,7 @@ describe('Native Function', () => {
               server2 + `/get_value?ref=/staking/test_service_staking/balance_total`)
             .body.toString('utf-8')).result;
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance - stakeAmount);
+          expect(afterStakingBalanceTotalSum).to.equal(beforeStakingBalanceTotalSum - stakeAmount);
           expect(afterBalance).to.equal(beforeBalance + stakeAmount);
           expect(stakingAppBalanceTotal).to.equal(1);
         });
