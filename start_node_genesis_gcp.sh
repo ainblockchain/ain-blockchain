@@ -121,37 +121,41 @@ fi
 printf '\n'
 printf 'Killing old jobs..\n'
 sudo killall node
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    printf '\n'
+    printf 'Setting up working directory..\n'
+    sudo rm -rf /home/ain-blockchain*
+    CODE_CMD="cd ~; sudo mv ain-blockchain /home; sudo chmod -R 777 /home/ain-blockchain; sudo chown -R root:root /home/ain-blockchain; cd /home/ain-blockchain"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
+
+    printf '\n'
+    printf 'Installing node modules..\n'
+    INSTALL_CMD="sudo yarn install --ignore-engines"
+    printf "\nINSTALL_CMD=$INSTALL_CMD\n"
+    eval $INSTALL_CMD
+else
+    printf '\n'
+    printf 'Using old directory..\n'
+    OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
+    printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
+fi
 if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     printf '\n'
     printf 'Removing old data..\n'
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    printf "\nDATA_CMD=$DATA_CMD\n"
+    eval $DATA_CMD
 else
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-fi
-if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    printf '\n'
-    printf 'Setting up working directory..\n'
-    cd
-    sudo rm -rf ../ain-blockchain*
-    sudo mkdir ../ain-blockchain
-    sudo chmod -R 777 ../ain-blockchain
-    mv * ../ain-blockchain
-    cd ../ain-blockchain
-
-    printf '\n'
-    printf 'Installing node modules..\n'
-    sudo yarn install --ignore-engines
-else
-    printf '\n'
-    printf 'Using old directory..\n'
-    OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
-    printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
-    sudo chmod -R 777 $OLD_DIR_PATH
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    printf "\nDATA_CMD=$DATA_CMD\n"
+    eval $DATA_CMD
 fi
 
 
@@ -265,8 +269,9 @@ if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        sudo mkdir -p /home/ain_blockchain_data/keys/8080
-        sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/
+        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
+        printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
+        eval $KEYSTORE_CMD
     fi
     export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
@@ -283,7 +288,7 @@ fi
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD=$START_CMD\n"
+printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 

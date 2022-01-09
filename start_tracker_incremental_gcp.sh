@@ -29,12 +29,14 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
 
-OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
+OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
 printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
 
 date=$(date '+%Y-%m-%dT%H:%M')
 printf "date=$date\n"
-NEW_DIR_PATH="../ain-blockchain-$date"
+NEW_DIR_NAME="ain-blockchain-$date"
+printf "NEW_DIR_NAME=$NEW_DIR_NAME\n"
+NEW_DIR_PATH="/home/$NEW_DIR_NAME"
 printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
@@ -42,21 +44,22 @@ printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Creating new working directory..\n'
-    MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
-    printf "MKDIR_CMD=$MKDIR_CMD\n"
-    eval $MKDIR_CMD
-
-    sudo chmod -R 777 $NEW_DIR_PATH
-    mv * $NEW_DIR_PATH
+    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R root:root $NEW_DIR_PATH"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    sudo yarn install --ignore-engines
+    INSTALL_CMD="sudo yarn install --ignore-engines"
+    printf "\nINSTALL_CMD=$INSTALL_CMD\n"
+    eval $INSTALL_CMD
 else
     printf '\n'
     printf 'Using old working directory..\n'
-    sudo chmod -R 777 $OLD_DIR_PATH
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 fi
 
 # 4. Kill old tracker server 
@@ -73,7 +76,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
     RM_CMD="sudo rm -rf $OLD_DIR_PATH"
-    printf "RM_CMD=$RM_CMD\n"
+    printf "\nRM_CMD=$RM_CMD\n"
     eval $RM_CMD
 else
     printf '\n'
@@ -84,7 +87,7 @@ fi
 printf "\n#### [Step 6] Start new tracker server ####\n\n"
 
 START_CMD="nohup node --async-stack-traces tracker-server/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD=$START_CMD\n"
+printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
