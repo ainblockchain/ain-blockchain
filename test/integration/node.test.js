@@ -786,7 +786,7 @@ describe('Blockchain Node', () => {
           "available": {
             "tree_bytes": 2474987586,
             "tree_height": 30,
-            "tree_size": 24749934
+            "tree_size": 247499934
           },
           "staking": {
             "app": 1,
@@ -1208,7 +1208,7 @@ describe('Blockchain Node', () => {
             "available": {
               "tree_bytes": 2474819814,
               "tree_height": 30,
-              "tree_size": 24748934
+              "tree_size": 247498934
             },
             "staking": {
               "app": 1,

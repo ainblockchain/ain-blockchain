@@ -14,5 +14,9 @@
   "update_max_state_tree_size_per_byte": {
     "enabled_block": null,
     "has_bandage": true
+  },
+  "staking_balance_total_sum": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }

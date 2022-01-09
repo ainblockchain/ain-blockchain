@@ -818,6 +818,15 @@ class DB {
   }
 
   static getAppStakesTotalFromStateRoot(stateRoot) {
+    const balanceTotalSum = DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getStakingBalanceTotalSumPath());
+    const consensusStakeTotal = DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getStakingBalanceTotalPath(PredefinedDbPaths.CONSENSUS)) || 0;
+    if (balanceTotalSum !== null) {
+      // NOTE(liayoo): /staking/balance_total_sum was introduced after the
+      //    'staking_balance_total_sum' timer flag.
+      return balanceTotalSum - consensusStakeTotal;
+    }
     const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING, true) || {};
     return Object.keys(appStakes).filter((appName) => appName !== PredefinedDbPaths.CONSENSUS)
         .reduce((acc, appName) => acc +

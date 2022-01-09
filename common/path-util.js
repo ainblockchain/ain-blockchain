@@ -135,6 +135,10 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.STAKING, serviceName, PredefinedDbPaths.STAKING_BALANCE_TOTAL]);
   }
 
+  static getStakingBalanceTotalSumPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.STAKING, PredefinedDbPaths.STAKING_BALANCE_TOTAL_SUM]);
+  }
+
   static getPaymentServiceAdminPath(serviceName) {
     return CommonUtil.formatPath([PredefinedDbPaths.PAYMENTS, serviceName, PredefinedDbPaths.PAYMENTS_CONFIG,
         PredefinedDbPaths.PAYMENTS_ADMIN]);

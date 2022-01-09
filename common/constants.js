@@ -263,6 +263,7 @@ const PredefinedDbPaths = {
   // Staking
   STAKING: 'staking',
   STAKING_BALANCE_TOTAL: 'balance_total',
+  STAKING_BALANCE_TOTAL_SUM: 'balance_total_sum',
   STAKING_EXPIRE_AT: 'expire_at',
   STAKING_LOCKUP_DURATION: 'lockup_duration',
   STAKING_RESULT: 'result',
