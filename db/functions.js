@@ -15,6 +15,7 @@ const {
   OwnerProperties,
   buildOwnerPermissions,
   buildRulePermission,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -940,6 +941,13 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
+  sumUpStakingBalanceTotal() {
+    const appStakes = this.db.getValue(PredefinedDbPaths.STAKING, { isShallow: true }) || {};
+    return Object.keys(appStakes).reduce((acc, appName) => {
+      return acc + this.db.getValue(PathUtil.getStakingBalanceTotalPath(appName));
+    }, 0);
+  }
+
   _stake(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -973,7 +981,15 @@ class Functions {
         this.setValueOrLog(expirationPath, newExpiration, context);
       }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      const balanceTotalSumPath = PathUtil.getStakingBalanceTotalSumPath();
       this.incValueOrLog(balanceTotalPath, value, context);
+      if (isEnabledTimerFlag('staking_balance_total_sum', context.blockNumber)) {
+        if (this.db.getValue(balanceTotalSumPath) === null) {
+          this.setValueOrLog(balanceTotalSumPath, this.sumUpStakingBalanceTotal(), context);
+        } else {
+          this.incValueOrLog(balanceTotalSumPath, value, context);
+        }
+      }
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
@@ -1001,7 +1017,15 @@ class Functions {
         stakingServiceAccountName, user, value, context);
     if (!CommonUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      const balanceTotalSumPath = PathUtil.getStakingBalanceTotalSumPath();
       this.decValueOrLog(balanceTotalPath, value, context);
+      if (isEnabledTimerFlag('staking_balance_total_sum', context.blockNumber)) {
+        if (this.db.getValue(balanceTotalSumPath) === null) {
+          this.setValueOrLog(balanceTotalSumPath, this.sumUpStakingBalanceTotal(), context);
+        } else {
+          this.decValueOrLog(balanceTotalSumPath, value, context);
+        }
+      }
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
