@@ -78,15 +78,17 @@ function txsToDummyReceipts(txs) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
+  const blockNumber = lastBlock.number + 1;
   const finalDb = DB.create(
-      node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
+      node.stateManager.getFinalVersion(), node.stateManager.createUniqueVersionName(StateVersions.FINAL),
       node.bc, true, lastBlock.number, node.stateManager, BlockchainParams.genesis.genesis_addr);
-  finalDb.executeTransactionList(votes, true, false, lastBlock.number + 1, lastBlock.timestamp);
-  finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1, lastBlock.timestamp);
-  node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
+  finalDb.executeTransactionList(votes, true, false, blockNumber, lastBlock.timestamp);
+  finalDb.executeTransactionList(txs, false, true, blockNumber, lastBlock.timestamp);
+  finalDb.applyBandagesForBlockNumber(blockNumber);
+  node.cloneAndFinalizeVersion(finalDb.stateVersion, blockNumber);
   const receipts = txsToDummyReceipts(txs);
   node.bc.addBlockToChain(Block.create(
-      lastBlock.hash, votes, {}, txs, receipts, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      lastBlock.hash, votes, {}, txs, receipts, blockNumber, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
 
