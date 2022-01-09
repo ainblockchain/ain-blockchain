@@ -19,6 +19,8 @@ describe("Consensus", () => {
     await setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
     await setNodeForTesting(node2, 1);
+    // to advance block number to 2 and apply the bandages
+    addBlock(node1, [], [], {});
   });
 
   afterEach(() => {
@@ -27,8 +29,8 @@ describe("Consensus", () => {
 
   it("Non-staked nodes cannot vote", () => {
     const tx = getTransaction(node1, {
-        operation: { 
-          type: 'SET_VALUE', 
+        operation: {
+          type: 'SET_VALUE',
           ref: `/transfer/${node1.account.address}/${node2.account.address}/0/value`,
           value: 1
         },
@@ -40,8 +42,8 @@ describe("Consensus", () => {
     const lastBlock = node1.bc.lastBlock();
     const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
+        operation: {
+          type: 'SET_VALUE',
           ref: `/consensus/number/1/${lastBlock.hash}/vote/${node2.account.address}`,
           value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
@@ -56,13 +58,13 @@ describe("Consensus", () => {
   it("Staked nodes can vote", () => {
     const addr = node2.account.address; // Staked node without producing rights
     let lastBlock = node1.bc.lastBlock();
-    const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
+    const tempDb = node1.createTempDb(node1.stateManager.getFinalVersion(), 'CONSENSUS_UNIT_TEST', lastBlock.number);
     tempDb.setValuesForTesting(`/consensus/validator_whitelist/${addr}`, true);
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     const stakeTx = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
-          ref: `/staking/consensus/${addr}/0/stake/key1/value`, 
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/staking/consensus/${addr}/0/stake/key1/value`,
           value: 100000
         },
         nonce: -1,
@@ -74,7 +76,7 @@ describe("Consensus", () => {
     const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: {
-          type: 'SET_VALUE', 
+          type: 'SET_VALUE',
           ref: `/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${addr}`,
           value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
@@ -89,9 +91,9 @@ describe("Consensus", () => {
   it('Staked nodes without producing rights cannot propose blocks', () => {
     const addr = node2.account.address;
     const stakeTx = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
-          ref: `/staking/consensus/${addr}/0/stake/key1/value`, 
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/staking/consensus/${addr}/0/stake/key1/value`,
           value: 100000
         },
         nonce: -1,
@@ -102,8 +104,8 @@ describe("Consensus", () => {
     const lastBlock = node1.bc.lastBlock();
     const proposeTx = getTransaction(node2, {
         operation: {
-          type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${lastBlock.number + 1}/propose`,
           value: {
             number: lastBlock.number + 1,
             proposer: addr,
@@ -121,16 +123,16 @@ describe("Consensus", () => {
     let lastBlock = node1.bc.lastBlock();
     const addr = node2.account.address;
     // Bypass whitelist rule check (need owner's private key)
-    const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
+    const tempDb = node1.createTempDb(node1.stateManager.getFinalVersion(), 'CONSENSUS_UNIT_TEST', lastBlock.number);
     tempDb.setValuesForTesting(`/consensus/proposer_whitelist/${addr}`, true);
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
-    
+
     // Staking less than min_stake_for_proposer
-    let stakeAmount = BlockchainParams.consensus.min_stake_for_proposer - 1;
+    const stakeAmount = BlockchainParams.consensus.min_stake_for_proposer - 1;
     const stakeLessThanMin = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
-          ref: `/staking/consensus/${addr}/0/stake/key1/value`, 
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/staking/consensus/${addr}/0/stake/key1/value`,
           value: stakeAmount
         },
         nonce: -1,
@@ -142,7 +144,7 @@ describe("Consensus", () => {
     const proposeWithStakeLessThanMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE',
-          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          ref: `/consensus/number/${lastBlock.number + 1}/propose`,
           value: {
             number: lastBlock.number + 1,
             proposer: addr,
@@ -157,9 +159,9 @@ describe("Consensus", () => {
 
     // Staking min_stake_for_proposer
     const stakeEqualMin = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
-          ref: `/staking/consensus/${addr}/0/stake/key2/value`, 
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/staking/consensus/${addr}/0/stake/key2/value`,
           value: 1
         },
         nonce: -1,
@@ -170,8 +172,8 @@ describe("Consensus", () => {
     lastBlock = node1.bc.lastBlock();
     const proposeWithStakeEqualMin = getTransaction(node2, {
         operation: {
-          type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${lastBlock.number + 1}/propose`,
           value: {
             number: lastBlock.number + 1,
             proposer: addr,
@@ -188,9 +190,9 @@ describe("Consensus", () => {
     const amount = BlockchainParams.consensus.max_stake_for_proposer
       - BlockchainParams.consensus.min_stake_for_proposer + 1;
     const stakeMoreThanMax = getTransaction(node2, {
-        operation: { 
-          type: 'SET_VALUE', 
-          ref: `/staking/consensus/${addr}/0/stake/key3/value`, 
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/staking/consensus/${addr}/0/stake/key3/value`,
           value: amount
         },
         nonce: -1,
@@ -201,8 +203,8 @@ describe("Consensus", () => {
     lastBlock = node1.bc.lastBlock();
     const proposeWithStakeMoreThanMax = getTransaction(node2, {
         operation: {
-          type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${lastBlock.number + 1}/propose`,
           value: {
             number: lastBlock.number + 1,
             proposer: addr,
