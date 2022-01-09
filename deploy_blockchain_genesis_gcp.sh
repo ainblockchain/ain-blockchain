@@ -191,27 +191,38 @@ NODE_9_ZONE="europe-west4-a"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\nDeploying parent blockchain...\n\n"
     printf "\nDeploying files to parent tracker (${TRACKER_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
+    gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $TRACKER_ZONE
     printf "\nDeploying files to parent node 0 (${NODE_0_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
+    gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_0_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_0_ZONE
     printf "\nDeploying files to parent node 1 (${NODE_1_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
+    gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_1_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_1_ZONE
     printf "\nDeploying files to parent node 2 (${NODE_2_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_2_ZONE
+    gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_2_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_2_ZONE
     printf "\nDeploying files to parent node 3 (${NODE_3_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_3_ZONE
+    gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_3_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_3_ZONE
     printf "\nDeploying files to parent node 4 (${NODE_4_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
+    gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_4_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_4_ZONE
     printf "\nDeploying files to parent node 5 (${NODE_5_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_5_ZONE
+    gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_5_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_5_ZONE
     printf "\nDeploying files to parent node 6 (${NODE_6_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_6_ZONE
+    gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_6_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_6_ZONE
     printf "\nDeploying files to parent node 7 (${NODE_7_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_7_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_7_ZONE
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_7_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_7_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_7_ZONE
     printf "\nDeploying files to parent node 8 (${NODE_8_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_8_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_8_ZONE
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_8_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_8_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_8_ZONE
     printf "\nDeploying files to parent node 9 (${NODE_9_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_9_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_9_ZONE
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_9_ZONE
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_9_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $NODE_9_ZONE
 fi
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
@@ -282,7 +293,7 @@ fi
 
 printf "\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ."
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
@@ -361,12 +372,16 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
             # deploy files to GCP instances
             if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
                 printf "\nDeploying files to shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR})...\n\n"
+                gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
                 gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})...\n\n"
+                gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_0_ZONE
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
                 printf "\nDeploying files to shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR})...\n\n"
+                gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_1_ZONE
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
                 printf "\nDeploying files to shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR})...\n\n"
+                gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_2_ZONE
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
             fi
 

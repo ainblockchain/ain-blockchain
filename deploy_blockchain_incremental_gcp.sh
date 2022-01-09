@@ -147,7 +147,8 @@ function deploy_tracker() {
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for tracker
         printf "\n\n[[[ Copying files for tracker ]]]\n\n"
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
+        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
+        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
     fi
@@ -185,7 +186,8 @@ function deploy_node() {
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for node
         printf "\n\n<<< Copying files for node $node_index >>>\n\n"
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
+        gcloud compute ssh $node_target_addr --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $node_zone
+        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain --project $PROJECT_ID --zone $node_zone"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
     fi
@@ -278,7 +280,7 @@ NODE_TARGET_ADDR_LIST=(
 
 printf "\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ."
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
