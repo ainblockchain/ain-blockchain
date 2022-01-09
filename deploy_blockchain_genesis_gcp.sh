@@ -304,7 +304,11 @@ printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
 
 for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
+    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+    NODE_ZONE=NODE_${node_index}_ZONE
+
     printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+    
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
@@ -312,8 +316,6 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
         JSON_RPC_OPTION=""
         REST_FUNC_OPTION=""
     fi
-    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-    NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
