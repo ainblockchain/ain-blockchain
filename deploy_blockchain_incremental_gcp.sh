@@ -78,8 +78,7 @@ KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 
 ARG_INDEX=6
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
@@ -152,7 +151,7 @@ NODE_ZONE_LIST=(
 )
 
 function deploy_tracker() {
-    printf "\n* >> Deploying tracker ********************************************************\n\n"
+    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
 
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
@@ -191,7 +190,7 @@ function deploy_node() {
     local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
     local node_zone=${NODE_ZONE_LIST[${node_index}]}
 
-    printf "\n* >> Deploying node $node_index *********************************************************\n\n"
+    printf "\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
 
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
@@ -209,7 +208,7 @@ function deploy_node() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
         printf "\n\n<<< Setting up node $node_index >>>\n\n"
-        SETUP_CMD="gcloud compute ssh $node_target_addr --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
+        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
@@ -239,14 +238,14 @@ function deploy_node() {
     # 4. Inject node account
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
-        printf "\n* >> Initializing account for node $node_index ********************\n\n"
+        printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
         echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
         {
@@ -256,7 +255,7 @@ function deploy_node() {
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     else
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
@@ -319,30 +318,27 @@ if [[ $begin_index -lt 0 ]]; then
   begin_index=0
 fi
 if [[ $begin_index -le $END_PARENT_NODE_INDEX ]] && [[ $END_PARENT_NODE_INDEX -ge 0 ]]; then
-    for j in `seq $(( $begin_index )) $(( $END_PARENT_NODE_INDEX ))`
-        do
-            deploy_node "$j"
-            sleep 40
-        done
+    for j in `seq $(( $begin_index )) $(( $END_PARENT_NODE_INDEX ))`; do
+        deploy_node "$j"
+        sleep 40
+    done
 fi
 
 if [[ $NUM_SHARDS -gt 0 ]]; then
-    for i in $(seq $NUM_SHARDS)
-        do
-            printf "###############################################################################\n"
-            printf "# Deploying shard $i blockchain #\n"
-            printf "###############################################################################\n\n"
+    for i in $(seq $NUM_SHARDS); do
+        printf "###############################################################################\n"
+        printf "# Deploying shard $i blockchain #\n"
+        printf "###############################################################################\n\n"
 
-            TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-            NODE_TARGET_ADDR_LIST=( \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
+        TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+        NODE_TARGET_ADDR_LIST=( \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
 
-            deploy_tracker "$NUM_SHARD_NODES"
-            for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`
-                do
-                    deploy_node "$j"
-                done
+        deploy_tracker "$NUM_SHARD_NODES"
+        for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`; do
+            deploy_node "$j"
+        done
     done
 fi
