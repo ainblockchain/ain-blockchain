@@ -978,16 +978,16 @@ class CommonUtil {
     for (const [flagName, flag] of Object.entries(timerFlags)) {
       if (CommonUtil.isNumber(flag['enabled_block']) && flag['has_bandage'] === true) {
         const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
-        console.log(`[${LOG_HEADER}] Registering bandage file (${bandageFilePath}) for timer flag (${flagName})`);
+        console.log(`[${LOG_HEADER}] Registering bandage file ${bandageFilePath}`);
         if (!fs.existsSync(bandageFilePath)) {
-          throw Error(`Missing a bandage data file: ${flagName}`);
+          throw Error(`Missing bandage file: ${flagName}`);
         }
         if (!map.has(flag['enabled_block'])) {
           map.set(flag['enabled_block'], []);
         }
         map.get(flag['enabled_block']).push(flagName);
       } else {
-        console.log(`[${LOG_HEADER}] Skipping bandage file registration for timer flag (${flagName})`);
+        console.log(`[${LOG_HEADER}] Skipping bandage file registration for timer flag ${flagName}`);
       }
     }
     return map;
