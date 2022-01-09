@@ -12,11 +12,11 @@ printf "\n[[[[[ start_node_genesis_gcp.sh ]]]]]\n\n"
 function parse_options() {
     local option="$1"
     if [[ $option = '--private-key' ]]; then
-        ACCOUNT_INJECTION_OPTION="private_key"
+        ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
-        ACCOUNT_INJECTION_OPTION="keystore"
+        ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
-        ACCOUNT_INJECTION_OPTION="mnemonic"
+        ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ $option = '--no-keep-code' ]]; then
@@ -95,7 +95,13 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     return 1
 fi
 
-export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+    export ACCOUNT_INJECTION_OPTION=keystore
+elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
+    export ACCOUNT_INJECTION_OPTION=mnemonic
+else
+    export ACCOUNT_INJECTION_OPTION=private_key
+fi
 if [[ $SYNC_MODE_OPTION = "--full-sync" ]]; then
     export SYNC_MODE=full
 else
