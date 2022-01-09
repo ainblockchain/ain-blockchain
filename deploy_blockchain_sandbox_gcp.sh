@@ -64,8 +64,7 @@ KEEP_DATA_OPTION="--no-keep-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
@@ -320,8 +319,7 @@ else
     # kill any processes still alive
     printf "\nKilling all blockchain nodes...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -348,8 +346,7 @@ fi
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\nDeploying parent blockchain...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
  
@@ -372,8 +369,7 @@ fi
 if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up blockchain nodes #\n##########################\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -413,8 +409,7 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 
 node_index=$START_NODE_IDX
-while [ $node_index -le $END_NODE_IDX ]
-do
+while [ $node_index -le $END_NODE_IDX ]; do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"

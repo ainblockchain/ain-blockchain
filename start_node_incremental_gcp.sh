@@ -64,8 +64,7 @@ JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
 ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
