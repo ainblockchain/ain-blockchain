@@ -3,6 +3,7 @@
 if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
+    printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
     exit
@@ -302,9 +303,9 @@ fi
 if [[ $BEGIN_PARENT_NODE_INDEX = -1 ]]; then
     deploy_tracker
 fi
-begin_index = $BEGIN_PARENT_NODE_INDEX
+begin_index=$BEGIN_PARENT_NODE_INDEX
 if [[ $begin_index -lt 0 ]]; then
-  begin_index = 0
+  begin_index=0
 fi
 if [[ $begin_index -le $END_PARENT_NODE_INDEX ]] && [[ $END_PARENT_NODE_INDEX -ge 0 ]]; then
     for j in `seq $(( $begin_index )) $(( $END_PARENT_NODE_INDEX ))`

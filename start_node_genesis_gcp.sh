@@ -123,7 +123,7 @@ printf 'Killing old jobs..\n'
 sudo killall node
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Setting up working directory..\n'
+    printf 'Setting up new working directory..\n'
     sudo rm -rf /home/ain-blockchain*
     CODE_CMD="cd ~; sudo mv ain-blockchain /home; sudo chmod -R 777 /home/ain-blockchain; sudo chown -R root:root /home/ain-blockchain; cd /home/ain-blockchain"
     printf "\nCODE_CMD=$CODE_CMD\n"
@@ -136,7 +136,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     eval $INSTALL_CMD
 else
     printf '\n'
-    printf 'Using old directory..\n'
+    printf 'Reusing existing working directory..\n'
     OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
@@ -145,7 +145,7 @@ else
 fi
 if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     printf '\n'
-    printf 'Removing old data..\n'
+    printf 'Setting up new data directory..\n'
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
@@ -153,6 +153,7 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
+    printf 'Reusing existing data directory..\n'
     DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
@@ -269,7 +270,7 @@ if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
+        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo cp ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
         printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
         eval $KEYSTORE_CMD
     fi
