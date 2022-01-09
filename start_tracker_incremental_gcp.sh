@@ -43,7 +43,7 @@ printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Creating new working directory..\n'
+    printf 'Setting up new data directory..\n'
     CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R root:root $NEW_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
@@ -56,7 +56,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     eval $INSTALL_CMD
 else
     printf '\n'
-    printf 'Using old working directory..\n'
+    printf 'Reusing existing working directory..\n'
     CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
@@ -80,7 +80,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     eval $RM_CMD
 else
     printf '\n'
-    printf 'Keeping old working directory..\n'
+    printf 'Keeping existing working directory..\n'
 fi
 
 # 6. Start new tracker server
