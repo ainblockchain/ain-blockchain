@@ -352,8 +352,9 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
-
-        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ --project $PROJECT_ID --zone ${!NODE_ZONE}"
+ 
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone ${!NODE_ZONE}
+        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
         # printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then
@@ -392,7 +393,7 @@ fi
 
 printf "\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ."
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi

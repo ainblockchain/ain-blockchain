@@ -106,7 +106,7 @@ fi
 # Get confirmation.
 if [[ "$SEASON" = "mainnet" ]]; then
     printf "\n"
-    printf "Do you want to proceed for $SEASON? >> Enter [mainnet]: "
+    printf "Do you want to proceed for $SEASON? Enter [mainnet]: "
     read CONFIRM
     printf "\n\n"
     if [[ ! $CONFIRM = "mainnet" ]]
@@ -115,10 +115,9 @@ if [[ "$SEASON" = "mainnet" ]]; then
     fi
 else
     printf "\n"
-    read -p "Do you want to proceed for $SEASON? >> Enter [y/N]: " -n 1 -r
+    read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
     printf "\n\n"
-    if [[ ! $REPLY =~ ^[Yy]$ ]]
-    then
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
     fi
 fi
