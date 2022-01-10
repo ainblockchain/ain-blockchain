@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code] [--keep-data] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
     printf "\n"
     exit
@@ -33,7 +33,11 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
     elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
@@ -55,13 +59,12 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
-KEEP_CODE_OPTION=""
-KEEP_DATA_OPTION=""
+KEEP_CODE_OPTION="--no-keep-code"
+KEEP_DATA_OPTION="--no-keep-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
@@ -73,7 +76,7 @@ printf "KILL_OPTION=$KILL_OPTION\n"
 
 # Get confirmation.
 printf "\n"
-read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
 printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -316,8 +319,7 @@ else
     # kill any processes still alive
     printf "\nKilling all blockchain nodes...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -341,15 +343,15 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
 fi
 
 # deploy files to GCP instances
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\nDeploying parent blockchain...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
-
-        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ --project $PROJECT_ID --zone ${!NODE_ZONE}"
+ 
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone ${!NODE_ZONE}
+        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
         # printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then
@@ -367,8 +369,7 @@ fi
 if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up blockchain nodes #\n##########################\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -387,12 +388,12 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 fi
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ."
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "" ]]; then
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
@@ -408,8 +409,7 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 
 node_index=$START_NODE_IDX
-while [ $node_index -le $END_NODE_IDX ]
-do
+while [ $node_index -le $END_NODE_IDX ]; do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"

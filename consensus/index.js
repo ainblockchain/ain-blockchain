@@ -757,7 +757,7 @@ class Consensus {
         const snapshot = node.buildBlockchainSnapshot(number, db.stateRoot);
         const snapshotChunkSize = node.getBlockchainParam('resource/snapshot_chunk_size');
         // NOTE(liayoo): This write is not awaited.
-        FileUtil.writeSnapshot(node.snapshotDir, number, snapshot, snapshotChunkSize, true);
+        FileUtil.writeSnapshotFile(node.snapshotDir, number, snapshot, snapshotChunkSize, true);
       }
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
