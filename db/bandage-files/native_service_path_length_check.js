@@ -56,12 +56,12 @@ module.exports = {
       path: ['rules', 'escrow', '$source_account', '$target_account', '$escrow_key', 'hold', '$record_id'],
       value: {
         '.rule': {
-          'write': '((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(\'/escrow/\' + $source_account + \'/\' + $target_account + \'/\' + $escrow_key + \'/config\') !== null && data === null && util.isDict(newData) && util.checkValuePathLen(parsedValuePath, 6) === true'
+          'write': '((util.isServAcntName($source_account, blockNumber) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(\'/escrow/\' + $source_account + \'/\' + $target_account + \'/\' + $escrow_key + \'/config\') !== null && data === null && util.isDict(newData) && util.checkValuePathLen(parsedValuePath, 6) === true'
         }
       },
       prevValue: {
         '.rule': {
-          'write': '((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(\'/escrow/\' + $source_account + \'/\' + $target_account + \'/\' + $escrow_key + \'/config\') !== null && data === null && util.isDict(newData)'
+          'write': '((util.isServAcntName($source_account, blockNumber) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue(\'/escrow/\' + $source_account + \'/\' + $target_account + \'/\' + $escrow_key + \'/config\') !== null && data === null && util.isDict(newData)'
         }
       }
     },
@@ -160,12 +160,12 @@ module.exports = {
       path: ['rules', 'payments', '$service_name', '$user_addr', '$payment_key', 'claim', '$record_id'],
       value: {
         '.rule': {
-          'write': 'util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target)) && util.checkValuePathLen(parsedValuePath, 6) === true'
+          'write': 'util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target, blockNumber)) && util.checkValuePathLen(parsedValuePath, 6) === true'
         }
       },
       prevValue: {
         '.rule': {
-          'write': 'util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))'
+          'write': 'util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target, blockNumber))'
         }
       }
     },
