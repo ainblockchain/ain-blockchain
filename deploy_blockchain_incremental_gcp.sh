@@ -1,8 +1,10 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--keep-code] [--keep-data]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
+if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
+    printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
+    printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
     exit
 fi
@@ -24,47 +26,44 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-printf "GCP_USER=$GCP_USER\n"
 GCP_USER="$2"
+printf "GCP_USER=$GCP_USER\n"
 
 number_re='^[0-9]+$'
 if ! [[ $3 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $3\n"
     exit
 fi
-printf "NUM_SHARDS=$NUM_SHARDS\n"
 NUM_SHARDS=$3
+printf "NUM_SHARDS=$NUM_SHARDS\n"
+BEGIN_PARENT_NODE_INDEX=$4
+printf "BEGIN_PARENT_NODE_INDEX=$BEGIN_PARENT_NODE_INDEX\n"
+END_PARENT_NODE_INDEX=$5
+printf "END_PARENT_NODE_INDEX=$END_PARENT_NODE_INDEX\n"
+printf "\n"
 
 function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
         SETUP_OPTION="$option"
-    elif [[ $option = '--canary' ]]; then
-        RUN_MODE_OPTION="$option"
-    elif [[ $option = '--full-sync' ]]; then
-        FULL_SYNC_OPTION="$option"
+    elif [[ $option = '--private-key' ]]; then
+        ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
-        ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ $option = '--private-key' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
     elif [[ $option = '--keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--full-sync' ]]; then
+        SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--fast-sync' ]]; then
+        SYNC_MODE_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -73,25 +72,22 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
-RUN_MODE_OPTION=""
-FULL_SYNC_OPTION=""
-ACCOUNT_INJECTION_OPTION=""
-KEEP_CODE_OPTION=""
-KEEP_DATA_OPTION=""
+ACCOUNT_INJECTION_OPTION="--private-key"
+KEEP_CODE_OPTION="--keep-code"
+KEEP_DATA_OPTION="--keep-data"
+SYNC_MODE_OPTION="--fast-sync"
 
-ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+ARG_INDEX=6
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
 
 printf "SETUP_OPTION=$SETUP_OPTION\n"
-printf "RUN_MODE_OPTION=$RUN_MODE_OPTION\n"
-printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -99,11 +95,22 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
 fi
 
 # Get confirmation.
-printf "\n"
-read -p "Do you want to proceed? >> (y/N) " -n 1 -r
-printf "\n\n"
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+if [[ "$SEASON" = "mainnet" ]]; then
+    printf "\n"
+    printf "Do you want to proceed for $SEASON? Enter [mainnet]: "
+    read CONFIRM
+    printf "\n\n"
+    if [[ ! $CONFIRM = "mainnet" ]]
+    then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+else
+    printf "\n"
+    read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
+    printf "\n\n"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
 fi
 
 # Read node ip addresses
@@ -127,7 +134,6 @@ fi
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
-NUM_PARENT_NODES=10
 NUM_SHARD_NODES=3
 
 TRACKER_ZONE="asia-east1-b"
@@ -145,17 +151,16 @@ NODE_ZONE_LIST=(
 )
 
 function deploy_tracker() {
-    local num_nodes="$1"
-
-    printf "\n* >> Deploying tracker ********************************************************\n\n"
+    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
 
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
 
-    if [[ $KEEP_CODE_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for tracker
         printf "\n\n[[[ Copying files for tracker ]]]\n\n"
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
+        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
+        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
     fi
@@ -175,7 +180,7 @@ function deploy_tracker() {
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
     printf "\n"
-    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $num_nodes $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
     printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
     eval $START_TRACKER_CMD
 }
@@ -185,15 +190,16 @@ function deploy_node() {
     local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
     local node_zone=${NODE_ZONE_LIST[${node_index}]}
 
-    printf "\n* >> Deploying node $node_index *********************************************************\n\n"
+    printf "\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
 
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
 
-    if [[ $KEEP_CODE_OPTION = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         # 1. Copy files for node
         printf "\n\n<<< Copying files for node $node_index >>>\n\n"
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
+        gcloud compute ssh $node_target_addr --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $node_zone
+        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain --project $PROJECT_ID --zone $node_zone"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
     fi
@@ -202,7 +208,7 @@ function deploy_node() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
         printf "\n\n<<< Setting up node $node_index >>>\n\n"
-        SETUP_CMD="gcloud compute ssh $node_target_addr --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
+        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
@@ -217,29 +223,29 @@ function deploy_node() {
         REST_FUNC_OPTION=""
     fi
 
+    printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
-    printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
-    printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+    printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $FULL_SYNC_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
-    # 4. Init account if necessary (if --keystore specified)
+    # 4. Inject node account
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
-        printf "\n* >> Initializing account for node $node_index ********************\n\n"
+        printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
         echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
         {
@@ -249,7 +255,7 @@ function deploy_node() {
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     else
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
@@ -259,7 +265,7 @@ function deploy_node() {
         echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 
-    #5. Wait until node is synced
+    # 5. Wait until node is synced
     printf "\n\n<<< Waiting until node $node_index is synced >>>\n\n"
     WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
     printf "WAIT_CMD=$WAIT_CMD\n\n"
@@ -285,12 +291,12 @@ NODE_TARGET_ADDR_LIST=(
 )
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ."
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "" ]]; then
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
@@ -303,38 +309,36 @@ else
     START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
 fi
 
-if [[ $RUN_MODE_OPTION = "--canary" ]]; then
-    deploy_node "0"
-else
-    deploy_tracker "$NUM_PARENT_NODES"
-    for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
-        do
-            deploy_node "$j"
-            sleep 40
-        done
+# Tracker server is deployed with BEGIN_PARENT_NODE_INDEX = -1
+if [[ $BEGIN_PARENT_NODE_INDEX = -1 ]]; then
+    deploy_tracker
+fi
+begin_index=$BEGIN_PARENT_NODE_INDEX
+if [[ $begin_index -lt 0 ]]; then
+  begin_index=0
+fi
+if [[ $begin_index -le $END_PARENT_NODE_INDEX ]] && [[ $END_PARENT_NODE_INDEX -ge 0 ]]; then
+    for j in `seq $(( $begin_index )) $(( $END_PARENT_NODE_INDEX ))`; do
+        deploy_node "$j"
+        sleep 40
+    done
 fi
 
 if [[ $NUM_SHARDS -gt 0 ]]; then
-    for i in $(seq $NUM_SHARDS)
-        do
-            printf "###############################################################################\n"
-            printf "# Deploying shard $i blockchain #\n"
-            printf "###############################################################################\n\n"
+    for i in $(seq $NUM_SHARDS); do
+        printf "###############################################################################\n"
+        printf "# Deploying shard $i blockchain #\n"
+        printf "###############################################################################\n\n"
 
-            TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-            NODE_TARGET_ADDR_LIST=( \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
-                "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
+        TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+        NODE_TARGET_ADDR_LIST=( \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
+            "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
 
-            if [[ $RUN_MODE_OPTION = "--canary" ]]; then
-                deploy_node "0"
-            else
-                deploy_tracker "$NUM_SHARD_NODES"
-                for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`
-                    do
-                        deploy_node "$j"
-                    done
-            fi
+        deploy_tracker "$NUM_SHARD_NODES"
+        for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`; do
+            deploy_node "$j"
+        done
     done
 fi

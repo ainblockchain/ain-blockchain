@@ -576,7 +576,7 @@ class BlockPool {
       return validLastVotes;
     }
     tempDb.destroyDb();
-    throw Error(`[${LOG_HEADER}] lastBlock doesn't have enough votes`);
+    throw Error(`[${LOG_HEADER}] lastBlock doesn't have enough votes: ${lastBlock.number}`);
   }
 
   /**

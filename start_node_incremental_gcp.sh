@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--keep-data] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
 fi
@@ -10,30 +10,24 @@ printf "\n[[[[[ start_node_incremental_gcp.sh ]]]]]\n\n"
 
 function parse_options() {
     local option="$1"
-    if [[ $option = '--keep-code' ]]; then
+    if [[ $option = '--private-key' ]]; then
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--keystore' ]]; then
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--mnemonic' ]]; then
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ $option = '--keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     elif [[ $option = '--full-sync' ]]; then
-        FULL_SYNC_OPTION="$option"
-    elif [[ $option = '--keystore' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
-        ACCOUNT_INJECTION_OPTION="keystore"
-    elif [[ $option = '--mnemonic' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            exit
-        fi
-        ACCOUNT_INJECTION_OPTION="mnemonic"
-    elif [[ $option = '--private-key' ]]; then
-        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "Multiple account injection options given\n"
-            return 1
-        fi
-        ACCOUNT_INJECTION_OPTION="private_key"
+        SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--fast-sync' ]]; then
+        SYNC_MODE_OPTION="$option"
     elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
@@ -62,16 +56,15 @@ if [[ "$3" -lt 0 ]] || [[ "$3" -gt 9 ]]; then
 fi
 NODE_INDEX="$3"
 
-KEEP_CODE_OPTION=""
-KEEP_DATA_OPTION=""
-FULL_SYNC_OPTION=""
-ACCOUNT_INJECTION_OPTION=""
+ACCOUNT_INJECTION_OPTION="--private-key"
+KEEP_CODE_OPTION="--keep-code"
+KEEP_DATA_OPTION="--keep-data"
+SYNC_MODE_OPTION="--fast-sync"
 JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
 ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
@@ -79,11 +72,12 @@ done
 printf "SEASON=$SEASON\n"
 printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
+printf "\n"
 
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
-printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
-printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
@@ -220,27 +214,44 @@ printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ $ACCOUNT_INJECTION_OPTION != "--private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
+    printf 'Invalid account injection option\n'
+    return 1
+fi
+
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    return 1
+fi
+
+if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+    export ACCOUNT_INJECTION_OPTION=keystore
+elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
+    export ACCOUNT_INJECTION_OPTION=mnemonic
+else
+    export ACCOUNT_INJECTION_OPTION=private_key
+fi
+if [[ $SYNC_MODE_OPTION = "--full-sync" ]]; then
+    export SYNC_MODE=full
+else
+    export SYNC_MODE=fast
+fi
 if [[ $SEASON = "staging" ]]; then
-  # for performance test pipeline
-  export ENABLE_EXPRESS_RATE_LIMIT=false
+    # for performance test pipeline
+    export ENABLE_EXPRESS_RATE_LIMIT=false
 else
-  export ENABLE_EXPRESS_RATE_LIMIT=true
+    export ENABLE_EXPRESS_RATE_LIMIT=true
 fi
-if [[ $FULL_SYNC_OPTION = "" ]]; then
-  export SYNC_MODE=fast
-else
-  export SYNC_MODE=full
-fi
-export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
-  export ENABLE_JSON_RPC_API=true
+    export ENABLE_JSON_RPC_API=true
 else
-  export ENABLE_JSON_RPC_API=false
+    export ENABLE_JSON_RPC_API=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
-  export ENABLE_REST_FUNCTION_CALL=true
+    export ENABLE_REST_FUNCTION_CALL=true
 else
-  export ENABLE_REST_FUNCTION_CALL=false
+    export ENABLE_REST_FUNCTION_CALL=false
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
@@ -252,46 +263,37 @@ fi
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
 
-OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
+OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
 printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
 
 date=$(date '+%Y-%m-%dT%H-%M')
 printf "date=$date\n"
-NEW_DIR_PATH="../ain-blockchain-$date"
+NEW_DIR_NAME="ain-blockchain-$date"
+printf "NEW_DIR_NAME=$NEW_DIR_NAME\n"
+NEW_DIR_PATH="/home/$NEW_DIR_NAME"
 printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
-if [[ $KEEP_DATA_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Removing old data..\n'
-    sudo rm -rf /home/ain_blockchain_data/chains
-    sudo rm -rf /home/ain_blockchain_data/snapshots
-    sudo rm -rf /home/ain_blockchain_data/logs
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-else
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
-fi
-if [[ $KEEP_CODE_OPTION = "" ]]; then
-    printf '\n'
-    printf 'Creating new working directory..\n'
-    MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
-    printf "MKDIR_CMD=$MKDIR_CMD\n"
-    eval $MKDIR_CMD
-
-    sudo chmod -R 777 $NEW_DIR_PATH
-    mv * $NEW_DIR_PATH
+    printf 'Setting up new working directory..\n'
+    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R root:root $NEW_DIR_PATH"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    sudo yarn install --ignore-engines
+    INSTALL_CMD="sudo yarn install --ignore-engines"
+    printf "\nINSTALL_CMD=$INSTALL_CMD\n"
+    eval $INSTALL_CMD
 else
     printf '\n'
-    printf 'Using old working directory..\n'
-    sudo chmod -R 777 $OLD_DIR_PATH
+    printf 'Reusing existing working directory..\n'
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 fi
 
 # 4. Kill old node server 
@@ -302,28 +304,48 @@ printf "KILL_CMD=$KILL_CMD\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 5. Remove old working directory keeping the chain data
-printf "\n#### [Step 5] Remove old working directory keeping the chain data if necessary ####\n\n"
-if [[ $KEEP_CODE_OPTION = "" ]]; then
+# 5. Set up data directory
+printf "\n#### [Step 5] Set up data directory ####\n\n"
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+    printf '\n'
+    printf 'Setting up new data directory..\n'
+    sudo rm -rf /home/ain_blockchain_data/chains
+    sudo rm -rf /home/ain_blockchain_data/snapshots
+    sudo rm -rf /home/ain_blockchain_data/logs
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    printf "\nDATA_CMD=$DATA_CMD\n"
+    eval $DATA_CMD
+else
+    printf '\n'
+    printf 'Reusing existing data directory..\n'
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    printf "\nDATA_CMD=$DATA_CMD\n"
+    eval $DATA_CMD
+fi
+
+# 6. Remove old working directory keeping the chain data
+printf "\n#### [Step 6] Remove old working directory if necessary ####\n\n"
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
     RM_CMD="sudo rm -rf $OLD_DIR_PATH"
-    printf "RM_CMD=$RM_CMD\n"
+    printf "\nRM_CMD=$RM_CMD\n"
     eval $RM_CMD
 else
     printf '\n'
-    printf 'Keeping old working directory..\n'
+    printf 'Keeping existing working directory..\n'
 fi
 
-# 6. Start a new node server
-printf "\n#### [Step 6] Start new node server ####\n\n"
+# 7. Start a new node server
+printf "\n#### [Step 7] Start new node server ####\n\n"
 
 if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    if [[ $KEEP_CODE_OPTION = "" ]]; then
-        sudo mkdir -p /home/ain_blockchain_data/keys/8080
-        sudo mv $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/
+    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo cp $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
+        printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
+        eval $KEYSTORE_CMD
     fi
     export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
@@ -339,7 +361,7 @@ else
 fi
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD=$START_CMD\n"
+printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
