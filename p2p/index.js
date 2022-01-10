@@ -16,6 +16,8 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
   getEnvVariables,
+  TimerFlags,
+  TimerFlagEnabledBandageMap,
 } = require('../common/constants');
 const P2pUtil = require('./p2p-util');
 const {
@@ -126,7 +128,13 @@ class P2pClient {
       devFlags: DevFlags,
       blockchainConsts: BlockchainConsts,
       nodeConfigs: NodeConfigs,
+      timerFlags: TimerFlags,
+      bandageMap: this.getBandageMap(),
     };
+  }
+
+  getBandageMap() {
+    return Object.fromEntries(TimerFlagEnabledBandageMap.entries());
   }
 
   /**
