@@ -14,6 +14,7 @@ function buildCreateAppTxBody(address, timestamp) {
         }
       }
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }

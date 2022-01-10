@@ -31,6 +31,7 @@ function buildOpenCheckinTxBody(fromAddr, tokenAmount, checkinId) {
       },
       is_global: true,
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }
