@@ -12,6 +12,7 @@ function buildPayTxBody(address, timestamp) {
         pay_method: 'paypal'
       }
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }

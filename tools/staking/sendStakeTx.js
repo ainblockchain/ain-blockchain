@@ -8,6 +8,7 @@ function buildStakeTxBody(address, timestamp) {
       ref: `/staking/test_service/${address}/0/stake/${timestamp}/value`,
       value: 100
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }
