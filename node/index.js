@@ -359,8 +359,7 @@ class BlockchainNode {
     const snapshot = this.buildBlockchainSnapshot(block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
-      logger.error(
-          `[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
+      logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
     }
     await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
@@ -685,8 +684,7 @@ class BlockchainNode {
       proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
+        CommonUtil.finishWithStackTrace(logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
         return false;
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
