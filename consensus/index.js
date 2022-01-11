@@ -749,20 +749,22 @@ class Consensus {
     }
   }
 
-  static validateStateProofHash(expectedStateProofHash, number, db, node, takeSnapshot) {
+  static validateStateProofHash(expectedStateProofHash, block, db, node, takeSnapshot) {
     if (NodeConfigs.LIGHTWEIGHT) return;
+
+    const blockNumber = block.number;
     const stateProofHash = db.getProofHash('/');
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
         // NOTE(platfowner): Write the current snapshot for debugging.
-        const snapshot = node.buildBlockchainSnapshot(number, db.stateRoot);
+        const snapshot = node.buildBlockchainSnapshot(block, db.stateRoot);
         const snapshotChunkSize = node.getBlockchainParam('resource/snapshot_chunk_size');
         // NOTE(liayoo): This write is not awaited.
-        FileUtil.writeSnapshotFile(node.snapshotDir, number, snapshot, snapshotChunkSize, true);
+        FileUtil.writeSnapshotFile(node.snapshotDir, blockNumber, snapshot, snapshotChunkSize, true);
       }
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
-        message: `State proof hashes don't match (${number}): ${stateProofHash} / ${expectedStateProofHash}`,
+        message: `State proof hashes don't match (${blockNumber}): ${stateProofHash} / ${expectedStateProofHash}`,
         level: 'error'
       });
     }
@@ -846,7 +848,7 @@ class Consensus {
       Consensus.validateAndExecuteTransactions(
           transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node);
       db.applyBandagesForBlockNumber(number);
-      Consensus.validateStateProofHash(state_proof_hash, number, db, node, takeSnapshot);
+      Consensus.validateStateProofHash(state_proof_hash, block, db, node, takeSnapshot);
       Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
       Consensus.addBlockToBlockPool(block, proposalTx, db, node.bp);
     } catch (e) {
