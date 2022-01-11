@@ -33,6 +33,7 @@ async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
       },
       is_global: true,
     },
+    gas_price: 500,
     timestamp: Date.now(),
     nonce: -1
   }

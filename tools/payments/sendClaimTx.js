@@ -16,6 +16,7 @@ function buildClaimTxBody(ownerAddr, userAddr, timestamp, escrowKey) {
       ref: `/payments/test_service/${userAddr}/0/claim/${timestamp}`,
       value: value
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   };
