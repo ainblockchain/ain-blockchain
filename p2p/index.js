@@ -511,7 +511,7 @@ class P2pClient {
 
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
-    socket.on('message', (message) => {
+    socket.on('message', async (message) => {
       const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
       const peerNetworkId = _.get(parsedMessage, 'networkId');
@@ -623,7 +623,7 @@ class P2pClient {
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
-          this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
+          await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
         default:
           logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
@@ -675,11 +675,23 @@ class P2pClient {
     return true;
   }
 
-  handleChainSegment(number, chainSegment, catchUpInfo, socket) {
+  async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
     const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
     // Received from a peer that I didn't request from
     if (_.get(this.chainSyncInProgress, 'address') !== address) {
+      return;
+    }
+    const firstBlock = chainSegment.length > 0 ? chainSegment[0] : null;
+    const genesisBlockHash = this.server.node.bc.genesisBlockHash;
+    if (firstBlock && firstBlock.number === 0 && firstBlock.hash !== genesisBlockHash) {
+      const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, address);
+      logger.error(
+          `[${LOG_HEADER}] Genesis block from ${address} (${p2pUrl}) has a mismatched hash: ${firstBlock.hash} / ${genesisBlockHash}`
+          + `\n${new Error().stack}.`);
+      await CommonUtil.sleep(NodeConfigs.P2P_GENESIS_BLOCK_HASH_MISMATCH_SLEEP_MS);
+      this.resetChainSyncPeer();
+      this.requestChainSegment();
       return;
     }
     if (this.tryInitProcesses(number)) { // Already caught up
@@ -696,10 +708,10 @@ class P2pClient {
     }
     if (mergeResult >= 0) { // Merge success
       this.tryInitProcesses(number);
+      this.server.consensus.catchUp(catchUpInfo);
     } else {
       logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
     }
-    this.server.consensus.catchUp(catchUpInfo);
     if (this.server.node.bc.lastBlockNumber() <= number) {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
