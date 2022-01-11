@@ -355,7 +355,8 @@ class BlockchainNode {
   async writeSnapshot(blockNumber) {
     const LOG_HEADER = 'writeSnapshot';
 
-    const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
+    const block = this.bc.getBlockByNumber(blockNumber);
+    const snapshot = this.buildBlockchainSnapshot(block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
       logger.error(
@@ -368,8 +369,8 @@ class BlockchainNode {
     FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
-  buildBlockchainSnapshot(blockNumber, stateRoot) {
-    const block = this.bc.getBlockByNumber(blockNumber);
+  buildBlockchainSnapshot(block, stateRoot) {
+    const blockNumber = block.number;
     const blockTimestamp = block.timestamp;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
