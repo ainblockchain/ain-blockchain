@@ -1,22 +1,22 @@
 {
   "allow_lower_case_app_names_only": {
-    "enabled_block": null,
+    "enabled_block": 44600,
     "has_bandage": true
   },
   "create_app_config_sanitization": {
-    "enabled_block": null,
+    "enabled_block": 44600,
     "has_bandage": true
   },
   "native_service_path_length_check": {
-    "enabled_block": null,
+    "enabled_block": 44600,
     "has_bandage": true
   },
   "update_max_state_tree_size_per_byte": {
-    "enabled_block": null,
+    "enabled_block": 44600,
     "has_bandage": true
   },
   "staking_balance_total_sum": {
-    "enabled_block": null,
+    "enabled_block": 44600,
     "has_bandage": true
   }
 }
