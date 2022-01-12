@@ -23,6 +23,7 @@ const P2pUtil = require('./p2p-util');
 const {
   sendGetRequest
 } = require('../common/network-util');
+const { Block } = require('../blockchain/block');
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -681,6 +682,13 @@ class P2pClient {
     const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
     for (let i = 0; i < chainSegment.length; i++) {
       const block = chainSegment[i];
+      if (!Block.hasRequiredFields(block)) {
+        logger.error(
+            `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) is in a non-standard format: ${JSON.stringify(block)}`
+            + `\n${new Error().stack}.`);
+        // non-standard format case
+        return false;
+      }
       if (i === 0) {
         const genesisBlockHash = this.server.node.bc.genesisBlockHash;
         if (block.number === 0 && block.hash !== genesisBlockHash) {
