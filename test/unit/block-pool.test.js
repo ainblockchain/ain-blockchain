@@ -110,9 +110,9 @@ describe("BlockPool", () => {
     );
     const blockPool = new BlockPool(node1);
     blockPool.addSeenBlock(block, proposalTx);
-    assert.deepEqual(blockPool.hashToBlockInfo[block.hash].block, block);
-    expect(blockPool.epochToBlock[block.epoch]).to.equal(block.hash);
-    expect(blockPool.hashToNextBlockSet[block.last_hash].has(block.hash)).to.equal(true);
+    assert.deepEqual(blockPool.hashToBlockInfo.get(block.hash).block, block);
+    expect(blockPool.epochToBlock.get(block.epoch)).to.equal(block.hash);
+    expect(blockPool.hashToNextBlockSet.get(block.last_hash).has(block.hash)).to.equal(true);
   });
 
   it("Returns an empty array if there's no finalizable chain", () => {
@@ -170,7 +170,7 @@ describe("BlockPool", () => {
     // block B (1,1)
     const blockB = createAndAddBlock(node1, blockPool, blockA, blockA.number + 1, blockA.epoch + 1);
     createAndAddVote(node1, blockPool, blockB);
-    expect(blockPool.hashToBlockInfo[blockB.hash].notarized).to.equal(true);
+    expect(blockPool.hashToBlockInfo.get(blockB.hash).notarized).to.equal(true);
 
     // block F (2,2)
     const blockF = createAndAddBlock(node1, blockPool, blockB, blockB.number + 1, blockB.epoch + 1);
@@ -179,9 +179,9 @@ describe("BlockPool", () => {
     const blockC = createAndAddBlock(node1, blockPool, blockB, blockB.number + 1, blockB.epoch + 2);
 
     createAndAddVote(node1, blockPool, blockF);
-    expect(blockPool.hashToBlockInfo[blockF.hash].notarized).to.equal(true);
+    expect(blockPool.hashToBlockInfo.get(blockF.hash).notarized).to.equal(true);
     createAndAddVote(node1, blockPool, blockC);
-    expect(blockPool.hashToBlockInfo[blockC.hash].notarized).to.equal(true);
+    expect(blockPool.hashToBlockInfo.get(blockC.hash).notarized).to.equal(true);
 
     // block D (3,4)
     const blockD = createAndAddBlock(node1, blockPool, blockC, blockC.number + 1, blockC.epoch + 1);
@@ -191,12 +191,12 @@ describe("BlockPool", () => {
 
     // block G (3,6)
     const blockG = createAndAddBlock(node1, blockPool, blockF, blockF.number + 1, blockF.epoch + 4);
-    expect(blockPool.hashToBlockInfo[blockG.hash].notarized).to.equal(undefined);
+    expect(blockPool.hashToBlockInfo.get(blockG.hash).notarized).to.equal(undefined);
 
     createAndAddVote(node1, blockPool, blockD);
-    expect(blockPool.hashToBlockInfo[blockD.hash].notarized).to.equal(true);
+    expect(blockPool.hashToBlockInfo.get(blockD.hash).notarized).to.equal(true);
     createAndAddVote(node1, blockPool, blockE);
-    expect(blockPool.hashToBlockInfo[blockE.hash].notarized).to.equal(true);
+    expect(blockPool.hashToBlockInfo.get(blockE.hash).notarized).to.equal(true);
 
     const finalizableChain = blockPool.getFinalizableChain();
     assert.deepEqual(finalizableChain, [blockA, blockB, blockC, blockD, blockE]);

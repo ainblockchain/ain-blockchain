@@ -32,10 +32,9 @@ printf "OPTIONS=$OPTIONS\n"
 
 # Get confirmation.
 printf "\n"
-read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
 printf "\n\n"
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
@@ -51,14 +50,15 @@ gcloud compute ssh $MONITORING_TARGET_ADDR --command "sudo killall grafana-serve
 # deploy files to GCP instances
 printf "\nDeploying monitoring..."
 printf "\nDeploying files to ${MONITORING_TARGET_ADDR}..."
-gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute ssh ${MONITORING_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $MONITORING_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 if [[ $OPTIONS = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up monitoring #\n###########################\n\n"
-    gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_ubuntu.sh" --project $PROJECT_ID
+    gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_ubuntu.sh" --project $PROJECT_ID
 fi
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running monitoring #\n############################\n\n"
-gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_gcp.sh ${SEASON} && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_gcp.sh ${SEASON} && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE

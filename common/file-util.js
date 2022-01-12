@@ -197,10 +197,6 @@ class FileUtil {
     const LOG_HEADER = 'writeBlockFile';
 
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
-    if (fs.existsSync(blockPath)) {
-      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
-      return;
-    }
     const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
     FileUtil.createDir(blockDirPath);
     const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
@@ -216,6 +212,11 @@ class FileUtil {
     if (fs.existsSync(blockPath)) {
       fs.unlinkSync(blockPath);
     }
+  }
+
+  static hasBlockFile(chainPath, blockNumber) {
+    const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
+    return fs.existsSync(blockPath);
   }
 
   static writeH2nFile(chainPath, blockHash, blockNumber) {
@@ -245,44 +246,58 @@ class FileUtil {
     }
   }
 
+  static hasH2nFile(chainPath, blockHash) {
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    return fs.existsSync(h2nPath);
+  }
+
   static readH2nFile(chainPath, blockHash) {
     const LOG_HEADER = 'readH2nFile';
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     try {
-      const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${h2nPath}: ${err}`);
       return -1;
     }
   }
 
-  static async writeSnapshot(snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
-    const LOG_HEADER = 'writeSnapshot';
+  static async writeSnapshotFile(
+      snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
+    const LOG_HEADER = 'writeSnapshotFile';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
-    if (snapshot === null) { // Delete
-      if (fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          logger.error(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
-        }
+    return new Promise((resolve) => {
+      new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
+        .pipe(zlib.createGzip())
+        .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
+        .on('finish', () => {
+          logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
+          resolve();
+        })
+        .on('error', (e) => {
+          logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
+          resolve();
+        });
+    });
+  }
+
+  static deleteSnapshotFile(snapshotPath, blockNumber, isDebug = false) {
+    const LOG_HEADER = 'deleteSnapshotFile';
+
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] Failed to delete snapshot at ${filePath}: ${err.stack}`);
       }
-    } else {
-      return new Promise((resolve) => {
-        new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
-          .pipe(zlib.createGzip())
-          .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
-          .on('finish', () => {
-            logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
-            resolve();
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
-            resolve();
-          });
-      });
     }
+  }
+
+  static hasSnapshotFile(snapshotPath, blockNumber, isDebug = false) {
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
+    return fs.existsSync(filePath);
   }
 
   static getAccountFromKeystoreFile(keystorePath, password) {

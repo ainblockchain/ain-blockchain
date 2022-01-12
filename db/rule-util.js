@@ -85,7 +85,8 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
-  isServAcntName(name) {
+  // TODO(platfowner): Update related write rule and pass blockNumber as a parameter.
+  isServAcntName(name, blockNumber = null) {
     const { isServiceAccountServiceType } = require('../common/constants');
     const { isValidServiceName } = require('./state-util');
 
@@ -96,7 +97,7 @@ class RuleUtil {
     if (parsed.length < 3) {
       return false;
     }
-    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1]);
+    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1], blockNumber);
   }
 
   isValShardProto(value) {
@@ -404,6 +405,60 @@ class RuleUtil {
     const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
         Object.keys(existingUrls).length < maxUrlsPerDeveloper;
+  }
+
+  validateManageAppAdminConfig(newData) {
+    if (!this.isDict(newData) || this.isEmpty(newData)) {
+      return false;
+    }
+    for (const [addr, val] of Object.entries(newData)) {
+      if (!this.isCksumAddr(addr) || !this.isBool(val)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  validateManageAppBillingConfig(newData) {
+    if (!this.isDict(newData) || this.isEmpty(newData)) {
+      return false;
+    }
+    for (const billingConfig of Object.values(newData)) {
+      if (!this.isDict(billingConfig) || !this.isDict(billingConfig.users)) {
+        return false;
+      }
+      for (const [user, permission] of Object.entries(billingConfig.users)) {
+        if (!this.isCksumAddr(user) || !this.isBool(permission)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  validateManageAppIsPublicConfig(newData) {
+    return newData === null || this.isBool(newData);
+  }
+
+  validateManageAppServiceConfig(newData) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const sanitizedVal = {};
+    if (!this.isDict(newData) || !this.isDict(newData[PredefinedDbPaths.STAKING])) {
+      return false;
+    }
+    const stakingConfig = newData[PredefinedDbPaths.STAKING];
+    const lockupDuration = stakingConfig[PredefinedDbPaths.STAKING_LOCKUP_DURATION];
+    if (!this.isInteger(lockupDuration) || lockupDuration < 0) {
+      return false;
+    }
+    sanitizedVal[PredefinedDbPaths.STAKING] = {
+      [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: lockupDuration
+    };
+    return _.isEqual(sanitizedVal, newData);
+  }
+
+  checkValuePathLen(parsedValuePath, expectedLen) {
+    return this.isArray(parsedValuePath) && this.length(parsedValuePath) === expectedLen;
   }
 }
 

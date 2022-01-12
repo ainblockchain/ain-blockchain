@@ -351,19 +351,48 @@ describe("state-util", () => {
       expect(isValidServiceName('0_0')).to.equal(false);
     })
 
-    it("when string input returning true", () => {
-      expect(isValidServiceName('a')).to.equal(true);
-      expect(isValidServiceName('aa')).to.equal(true);
-      expect(isValidServiceName('a_')).to.equal(true);
-      expect(isValidServiceName('a0')).to.equal(true);
-      expect(isValidServiceName('a0a')).to.equal(true);
-      expect(isValidServiceName('_')).to.equal(true);
-      expect(isValidServiceName('_0')).to.equal(true);
-      expect(isValidServiceName('_0_')).to.equal(true);
-      expect(isValidServiceName('consensus')).to.equal(true);
-      expect(isValidServiceName('afan')).to.equal(true);
-      expect(isValidServiceName('collaborative_ai')).to.equal(true);
-      expect(isValidServiceName('_a_dapp')).to.equal(true);
+    it("when upper-case string input with blockNumber = 1 returning false", () => {
+      expect(isValidServiceName('A', 1)).to.equal(true);
+      expect(isValidServiceName('aA', 1)).to.equal(true);
+      expect(isValidServiceName('A_', 1)).to.equal(true);
+      expect(isValidServiceName('A0', 1)).to.equal(true);
+      expect(isValidServiceName('a0A', 1)).to.equal(true);
+    })
+
+    it("when upper-case string input with blockNumber = 2 returning false", () => {
+      expect(isValidServiceName('A', 2)).to.equal(false);
+      expect(isValidServiceName('aA', 2)).to.equal(false);
+      expect(isValidServiceName('A_', 2)).to.equal(false);
+      expect(isValidServiceName('A0', 2)).to.equal(false);
+      expect(isValidServiceName('a0A', 2)).to.equal(false);
+    })
+
+    it("when lower-case string input with blockNumber = 1 returning true", () => {
+      expect(isValidServiceName('a', 1)).to.equal(true);
+      expect(isValidServiceName('aa', 1)).to.equal(true);
+      expect(isValidServiceName('a_', 1)).to.equal(true);
+      expect(isValidServiceName('a0', 1)).to.equal(true);
+      expect(isValidServiceName('a0a', 1)).to.equal(true);
+    })
+
+    it("when lower-case string input with blockNumber = 2 returning true", () => {
+      expect(isValidServiceName('a', 2)).to.equal(true);
+      expect(isValidServiceName('aa', 2)).to.equal(true);
+      expect(isValidServiceName('a_', 2)).to.equal(true);
+      expect(isValidServiceName('a0', 2)).to.equal(true);
+      expect(isValidServiceName('a0a', 2)).to.equal(true);
+      expect(isValidServiceName('_', 2)).to.equal(true);
+      expect(isValidServiceName('_0', 2)).to.equal(true);
+      expect(isValidServiceName('_0_', 2)).to.equal(true);
+      expect(isValidServiceName('consensus', 2)).to.equal(true);
+      expect(isValidServiceName('afan', 2)).to.equal(true);
+      expect(isValidServiceName('collaborative_ai', 2)).to.equal(true);
+      expect(isValidServiceName('_a_dapp', 2)).to.equal(true);
+    })
+
+    it("when reserved service name input returning false", () => {
+      expect(isValidServiceName('balance_total_sum', 1)).to.equal(false);
+      expect(isValidServiceName('balance_total_sum', 2)).to.equal(false);
     })
   })
 

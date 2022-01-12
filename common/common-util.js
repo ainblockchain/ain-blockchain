@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
@@ -261,6 +263,15 @@ class CommonUtil {
     if (args.is_merge !== undefined) {
       options.isMerge = CommonUtil.toBool(args.is_merge);
     }
+    if (args.timestamp !== undefined) {
+      options.timestamp = CommonUtil.numberOrZero(args.timestamp);
+    }
+    if (args.block_number !== undefined) {
+      options.blockNumber = CommonUtil.numberOrZero(args.block_number);
+    }
+    if (args.block_time !== undefined) {
+      options.blockTime = CommonUtil.numberOrZero(args.block_time);
+    }
     if (fromApi) {
       options.fromApi = true;
     }
@@ -271,6 +282,9 @@ class CommonUtil {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.timestamp !== undefined) {
+      options.timestamp = CommonUtil.numberOrZero(args.timestamp);
     }
     return options;
   }
@@ -923,6 +937,65 @@ class CommonUtil {
   static timestampExceedsThreshold(timestamp, threshold) {
     if (!timestamp) return true;
     return Date.now() - timestamp > threshold;
+  }
+
+  static hasTimerFlagEnabled(timerFlags, flagName, blockNumber) {
+    const flag = timerFlags[flagName];
+    if (!flag) {
+      return false;
+    }
+    if (!CommonUtil.isNumber(blockNumber)) {
+      return false;
+    }
+    const enabledBlock = flag['enabled_block'];
+    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock) ||
+        blockNumber < enabledBlock) {
+      return false;
+    }
+    const disabledBlock = flag['disabled_block'];
+    if (disabledBlock === undefined || !CommonUtil.isNumber(disabledBlock) ||
+        blockNumber < disabledBlock) {
+      return true;
+    }
+    return false;
+  }
+
+  static getTimerFlagEnabledBlock(timerFlags, flagName) {
+    const flag = timerFlags[flagName];
+    if (!flag) {
+      return null;
+    }
+    const enabledBlock = flag['enabled_block'];
+    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock)) {
+      return null;
+    }
+    return enabledBlock;
+  }
+
+  static createTimerFlagEnabledBandageMap(timerFlags) {
+    const LOG_HEADER = 'createTimerFlagEnabledBandageMap';
+    const map = new Map();
+    console.log(`[${LOG_HEADER}] Registering bandage files:`);
+    const flagNameList = Object.keys(timerFlags);
+    for (let i = 0; i < flagNameList.length; i++) {
+      const flagName = flagNameList[i];
+      const flag = timerFlags[flagName];
+      const enabledBlockNumber = flag['enabled_block'];
+      if (CommonUtil.isNumber(enabledBlockNumber) && flag['has_bandage'] === true) {
+        const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
+        console.log(`[${LOG_HEADER}] [${i}] Registering ${bandageFilePath}`);
+        if (!fs.existsSync(bandageFilePath)) {
+          throw Error(`Missing bandage file: ${bandageFilePath}`);
+        }
+        if (!map.has(enabledBlockNumber)) {
+          map.set(enabledBlockNumber, []);
+        }
+        map.get(enabledBlockNumber).push(flagName);
+      } else {
+        console.log(`[${LOG_HEADER}] [${i}] Skipping for timer flag: ${flagName}`);
+      }
+    }
+    return map;
   }
 }
 

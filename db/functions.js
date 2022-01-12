@@ -15,10 +15,13 @@ const {
   OwnerProperties,
   buildOwnerPermissions,
   buildRulePermission,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
+
+axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
 
 /**
  * Built-in functions with function paths.
@@ -90,13 +93,11 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   matchAndTriggerFunctions(
-      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-      blockchainParams, options) {
+      parsedValuePath, value, prevValue, auth, transaction, blockchainParams, options) {
     const matchedFunction = this.db.matchFunctionForParsedPath(parsedValuePath);
     const triggerRes = this.triggerFunctions(
         matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
-        parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-        blockchainParams);
+        parsedValuePath, value, prevValue, auth, transaction, blockchainParams, options);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
       const matchedPrevValues =
@@ -114,8 +115,8 @@ class Functions {
           const substreePrevValue = matchedPrevValue.value;
           const subtreeValuePathRes = this.triggerFunctions(
               subtreeFuncPath, pathVars, subtreeConfig.config,
-              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-              transaction, blockNumber, blockTime, blockchainParams);
+              subtreeValuePath, subtreeValue, substreePrevValue, auth, transaction,
+              blockchainParams, options);
           subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
         }
       }
@@ -132,9 +133,8 @@ class Functions {
             Functions.matchValueWithValuePath(prevValue, matchedValue.path);
         const subtreeValuePathRes = this.triggerFunctions(
             subtreeFuncPath, pathVars, subtreeConfig.config,
-            subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-            transaction, blockNumber, blockTime,
-            blockchainParams);
+            subtreeValuePath, subtreeValue, substreePrevValue, auth, transaction,
+            blockchainParams, options);
         subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
@@ -146,12 +146,15 @@ class Functions {
   }
 
   triggerFunctions(
-      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
-      transaction, blockNumber, blockTime, blockchainParams) {
+      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, transaction,
+      blockchainParams, options) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const functionList = Functions.getFunctionList(functionMap);
     const params = Functions.convertPathVars2Params(pathVars);
+    const timestamp = _.get(options, 'timestamp', null);
+    const blockNumber = _.get(options, 'blockNumber', null);
+    const blockTime = _.get(options, 'blockTime', null);
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
@@ -159,8 +162,8 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          valuePath, functionPath, timestamp, executedAt, params, value, prevValue,
-          transaction, blockTime);
+          valuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction,
+          blockNumber, blockTime, options);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -204,6 +207,7 @@ class Functions {
                     transaction,
                     blockNumber,
                     blockTime,
+                    options,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
@@ -254,7 +258,10 @@ class Functions {
               transaction,
               blockNumber,
               blockTime,
+              options,
               auth: newAuth,
+              chainId: blockchainParams.chainId,
+              networkId: blockchainParams.networkId,
             }, {
               timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
@@ -340,7 +347,8 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction, blockTime) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction,
+      blockNumber, blockTime, options) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
@@ -348,7 +356,8 @@ class Functions {
       `value: '${JSON.stringify(value, null, 2)}', ` +
       `prevValue: '${JSON.stringify(prevValue, null, 2)}'` +
       `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
-      `blockTime: ${blockTime}`;
+      `blockNumber: ${blockNumber}, blockTime: ${blockTime}` +
+      `options: ${JSON.stringify(options, null, 2)}`;
   }
 
   static getFunctionList(functionMap) {
@@ -462,13 +471,17 @@ class Functions {
   }
 
   setValueOrLog(valuePath, value, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -478,13 +491,17 @@ class Functions {
   }
 
   incValueOrLog(valuePath, delta, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -494,13 +511,17 @@ class Functions {
   }
 
   decValueOrLog(valuePath, delta, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.decValue(valuePath, delta, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -522,8 +543,15 @@ class Functions {
 
   setOwnerOrLog(ownerPath, owner, context) {
     const auth = context.auth;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
-    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber);
+    const blockTime = context.blockTime;
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setOwner(ownerPath, owner, auth, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -534,8 +562,15 @@ class Functions {
 
   setRuleOrLog(rulePath, rule, context) {
     const auth = context.auth;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
-    const result = this.db.setRule(rulePath, rule, auth, blockNumber);
+    const blockTime = context.blockTime;
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setRule(rulePath, rule, auth, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
@@ -720,7 +755,7 @@ class Functions {
     if (serviceConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
     }
-    if (!_.isEqual(sanitizedVal, rawVal, { strict: true })) {
+    if (!_.isEqual(sanitizedVal, rawVal)) {
       return { errorCode: FunctionResultCode.FAILURE };
     }
     return { sanitizedVal, errorCode: null };
@@ -733,7 +768,7 @@ class Functions {
     }
     const { isValidServiceName } = require('./state-util');
     const appName = context.params.app_name;
-    if (!isValidServiceName(appName)) {
+    if (!isValidServiceName(appName, context.blockNumber)) {
       return this.returnFuncResult(context, FunctionResultCode.INVALID_SERVICE_NAME);
     }
     const { sanitizedVal, errorCode } = this.sanitizeCreateAppConfig(value);
@@ -761,12 +796,13 @@ class Functions {
     this.setRuleOrLog(appPath, buildRulePermission(rule), context);
     this.setOwnerOrLog(appPath, owner, context);
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
-    const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
-    if (!CommonUtil.isFailedTx(result)) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } else {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    for (const [configKey, configVal] of Object.entries(sanitizedVal)) {
+      const result = this.setValueOrLog(`${manageAppConfigPath}/${configKey}`, configVal, context);
+      if (CommonUtil.isFailedTx(result)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
     }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _collectFee(value, context) {
@@ -905,6 +941,13 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
+  sumUpStakingBalanceTotal() {
+    const appStakes = this.db.getValue(PredefinedDbPaths.STAKING, { isShallow: true }) || {};
+    return Object.keys(appStakes).reduce((acc, appName) => {
+      return acc + this.db.getValue(PathUtil.getStakingBalanceTotalPath(appName));
+    }, 0);
+  }
+
   _stake(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -915,7 +958,11 @@ class Functions {
     const stakingKey = context.params.staking_key;
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
-    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    // Use 0 as the default.
+    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)) || 0;
+    if (!CommonUtil.isInteger(lockup) || lockup < 0) {
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_LOCKUP_DURATION);
+    }
     const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
@@ -934,7 +981,15 @@ class Functions {
         this.setValueOrLog(expirationPath, newExpiration, context);
       }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      const balanceTotalSumPath = PathUtil.getStakingBalanceTotalSumPath();
       this.incValueOrLog(balanceTotalPath, value, context);
+      if (isEnabledTimerFlag('staking_balance_total_sum', context.blockNumber)) {
+        if (this.db.getValue(balanceTotalSumPath) === null) {
+          this.setValueOrLog(balanceTotalSumPath, this.sumUpStakingBalanceTotal(), context);
+        } else {
+          this.incValueOrLog(balanceTotalSumPath, value, context);
+        }
+      }
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
@@ -962,7 +1017,15 @@ class Functions {
         stakingServiceAccountName, user, value, context);
     if (!CommonUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
+      const balanceTotalSumPath = PathUtil.getStakingBalanceTotalSumPath();
       this.decValueOrLog(balanceTotalPath, value, context);
+      if (isEnabledTimerFlag('staking_balance_total_sum', context.blockNumber)) {
+        if (this.db.getValue(balanceTotalSumPath) === null) {
+          this.setValueOrLog(balanceTotalSumPath, this.sumUpStakingBalanceTotal(), context);
+        } else {
+          this.decValueOrLog(balanceTotalSumPath, value, context);
+        }
+      }
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);

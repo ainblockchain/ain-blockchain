@@ -173,20 +173,28 @@ class P2pServer {
         consensusStatus.health === true;
   }
 
-  getNodeStatus() {
+  getDbStatus() {
+    const dbStatus = {
+      rootStateInfo: this.node.db.getStateInfo('/'),
+      rootStateProof: this.node.db.getStateProof('/'),
+    };
     const accountsStateInfo = this.node.db.getStateInfo(
         `/${PredefinedDbPaths.VALUES_ROOT}/${PredefinedDbPaths.ACCOUNTS}`);
+    dbStatus.numAccounts = _.get(accountsStateInfo, StateLabelProperties.NUM_CHILDREN, null);
+    const appsStateInfo = this.node.db.getStateInfo(
+        `/${PredefinedDbPaths.VALUES_ROOT}/${PredefinedDbPaths.MANAGE_APP}`);
+    dbStatus.numApps = _.get(appsStateInfo, StateLabelProperties.NUM_CHILDREN, null);
+    return dbStatus;
+  }
+
+  getNodeStatus() {
     return {
       health: this.getNodeHealth(),
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.getNonce(),
-      dbStatus: {
-        rootStateInfo: this.node.db.getStateInfo('/'),
-        rootStateProof: this.node.db.getStateProof('/'),
-        numAccounts: _.get(accountsStateInfo, StateLabelProperties.NUM_CHILDREN),
-      },
+      dbStatus: this.getDbStatus(),
       stateVersionStatus: this.getStateVersionStatus(),
     };
   }
@@ -266,7 +274,7 @@ class P2pServer {
   getTxStatus() {
     return {
       txPoolSize: this.node.tp.getPoolSize(),
-      txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
+      txTrackerSize: this.node.tp.transactionTracker.size,
     };
   }
 
@@ -570,7 +578,7 @@ class P2pServer {
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
             trafficStatsManager.addEvent(
                 TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
-            if (this.node.tp.transactionTracker[tx.hash]) {
+            if (this.node.tp.transactionTracker.has(tx.hash)) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);

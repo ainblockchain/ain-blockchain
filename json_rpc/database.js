@@ -91,8 +91,8 @@ module.exports = function getDatabaseApis(node) {
         auth.fid = args.fid;
       }
       const timestamp = args.timestamp || Date.now();
-      const result = node.db.evalRule(
-          args.ref, args.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(args, true));
+      const options = Object.assign(CommonUtil.toMatchOrEvalOptions(args, true), { timestamp });
+      const result = node.db.evalRule(args.ref, args.value, auth, options);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));

@@ -55,7 +55,18 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 
-// ** Blockchain Params **
+// ** Timer flags **
+const TimerFlags = getBlockchainConfig('timer_flags.json');
+function isEnabledTimerFlag(flagName, blockNumber) {
+  return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
+}
+
+function isTimerFlagEnabledAt(flagName, blockNumber) {
+  return CommonUtil.getTimerFlagEnabledBlock(TimerFlags, flagName) === blockNumber;
+}
+const TimerFlagEnabledBandageMap = CommonUtil.createTimerFlagEnabledBandageMap(TimerFlags);
+
+// ** Blockchain params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 
 // ** Node configs, set for individual nodes by env vars **
@@ -252,6 +263,7 @@ const PredefinedDbPaths = {
   // Staking
   STAKING: 'staking',
   STAKING_BALANCE_TOTAL: 'balance_total',
+  STAKING_BALANCE_TOTAL_SUM: 'balance_total_sum',
   STAKING_EXPIRE_AT: 'expire_at',
   STAKING_LOCKUP_DURATION: 'lockup_duration',
   STAKING_RESULT: 'result',
@@ -400,6 +412,7 @@ const StateLabelProperties = {
 const BlockchainSnapshotProperties = {
   BLOCK: 'block',
   BLOCK_NUMBER: 'block_number',
+  BLOCK_TIMESTAMP: 'block_timestamp',
   RADIX_SNAPSHOT: 'radix_snapshot',
   ROOT_PROOF_HASH: 'root_proof_hash',
   STATE_SNAPSHOT: 'state_snapshot',
@@ -568,6 +581,11 @@ const TrafficEventTypes = {
   P2P_TAG_CONSENSUS_MAX_OCCUR: 'p2p_tag_consensus_max_occur',
   P2P_TAG_TX_LENGTH: 'p2p_tag_tx_length',
   P2P_TAG_TX_MAX_OCCUR: 'p2p_tag_tx_max_occur',
+  // Peer reorg
+  PEER_REORG_BELOW_MIN_OUTBOUND: 'peer_reorg_below_min_outbound',
+  PEER_REORG_CANDIDATES_BIDIRECTED: 'peer_reorg_candidates_bidirected',
+  PEER_REORG_CANDIDATES_WHITELISTED: 'peer_reorg_candidates_whitelisted',
+  PEER_REORG_CANDIDATES_NOT_WHITELISTED: 'peer_reorg_candidates_not_whitelisted',
   // Access control
   ACCESS_CONTROL_GET: 'access_control_get',
   ACCESS_CONTROL_SET: 'access_control_set',
@@ -606,12 +624,12 @@ const BlockchainEventMessageTypes = {
   EMIT_EVENT: 'EMIT_EVENT',
 };
 
-// ** Lists **
+// ** Lists & Sets **
 
 /**
  * Root labels of service paths.
  */
-const SERVICE_TYPES = [
+const SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
   PredefinedDbPaths.CHECKOUT,
@@ -623,36 +641,46 @@ const SERVICE_TYPES = [
   PredefinedDbPaths.SHARDING,
   PredefinedDbPaths.STAKING,
   PredefinedDbPaths.TRANSFER,
-];
+]);
 
 function isServiceType(type) {
-  return SERVICE_TYPES.includes(type);
+  return SERVICE_TYPE_SET.has(type);
 }
 
 /**
- * Service types allowed to create service accounts.
+ * Set of service types allowed to create service accounts.
  */
-const SERVICE_ACCOUNT_SERVICE_TYPES = [
+const SERVICE_ACCOUNT_SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.GAS_FEE_BILLING,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
-];
+]);
 
 function isServiceAccountServiceType(type) {
-  return SERVICE_ACCOUNT_SERVICE_TYPES.includes(type);
+  return SERVICE_ACCOUNT_SERVICE_TYPE_SET.has(type);
 }
 
 /**
- * Service types that are app-dependent.
+ * Set of app-dependent service types.
  */
-const APP_DEPENDENT_SERVICE_TYPES = [
+const APP_DEPENDENT_SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.MANAGE_APP,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
-];
+]);
 
+/**
+ * Set of reserved service (or app) names.
+ */
+const RESERVED_SERVICE_NAME_SET = new Set([
+  'balance_total_sum',
+]);
+
+/**
+ * List of exposed env variables.
+ */
 const EXPOSED_ENV_VARIABLE_LIST = [
   'BLOCKCHAIN_CONFIGS_DIR',
   'HOSTING_ENV',
@@ -680,7 +708,11 @@ function getEnvVariables() {
 }
 
 function isAppDependentServiceType(type) {
-  return APP_DEPENDENT_SERVICE_TYPES.includes(type);
+  return APP_DEPENDENT_SERVICE_TYPE_SET.has(type);
+}
+
+function isReservedServiceName(name) {
+  return RESERVED_SERVICE_NAME_SET.has(name);
 }
 
 function getBlockchainConfig(filename) {
@@ -726,6 +758,11 @@ const trafficStatsManager = new TrafficStatsManager(
 module.exports = {
   DevFlags,
   BlockchainConsts,
+  TimerFlags,
+  isEnabledTimerFlag,
+  isTimerFlagEnabledAt,
+  TimerFlagEnabledBandageMap,
+  BlockchainParams,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
@@ -754,10 +791,10 @@ module.exports = {
   BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
+  isReservedServiceName,
   getEnvVariables,
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  BlockchainParams,
   trafficStatsManager,
 };

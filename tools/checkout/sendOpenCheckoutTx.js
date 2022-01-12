@@ -14,6 +14,7 @@ function buildOpenCheckoutTxBody(fromAddr, tokenAmount, checkoutId) {
       },
       is_global: true,
     },
+    gas_price: 500,
     timestamp: checkoutId,
     nonce: -1
   }

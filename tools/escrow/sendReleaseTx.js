@@ -11,6 +11,7 @@ function buildReleaseTxBody(source, target, timestamp) {
         ratio: 0.5
       }
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }

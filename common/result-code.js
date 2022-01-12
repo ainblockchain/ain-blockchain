@@ -124,6 +124,7 @@ const FunctionResultCode = {
   INSUFFICIENT_BALANCE: 20101,
   // Staking
   IN_LOCKUP_PERIOD: 20201,
+  INVALID_LOCKUP_DURATION: 20202,
   // Create app
   INVALID_SERVICE_NAME: 20301,
   // Check-in & Check-out

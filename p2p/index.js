@@ -16,6 +16,8 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
   getEnvVariables,
+  TimerFlags,
+  TimerFlagEnabledBandageMap,
 } = require('../common/constants');
 const P2pUtil = require('./p2p-util');
 const {
@@ -126,7 +128,13 @@ class P2pClient {
       devFlags: DevFlags,
       blockchainConsts: BlockchainConsts,
       nodeConfigs: NodeConfigs,
+      timerFlags: TimerFlags,
+      bandageMap: this.getBandageMap(),
     };
+  }
+
+  getBandageMap() {
+    return Object.fromEntries(TimerFlagEnabledBandageMap.entries());
   }
 
   /**
@@ -310,17 +318,25 @@ class P2pClient {
       const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
       // NOTE(minsulee2): Keep less than majority whitelisted.
       if (whitelisted.length >= whitelistDisconnectThreshold) {
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.PEER_REORG_CANDIDATES_WHITELISTED, whitelisted.length);
         this.pickRandomPeerAndDisconnect(whitelisted);
       } else {
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.PEER_REORG_CANDIDATES_NOT_WHITELISTED, notWhitelisted.length);
         this.pickRandomPeerAndDisconnect(notWhitelisted);
       }
     } else {
+      trafficStatsManager.addEvent(
+          TrafficEventTypes.PEER_REORG_CANDIDATES_BIDIRECTED, bidirectedConnections.length);
       this.pickRandomPeerAndDisconnect(bidirectedConnections);
     }
   }
 
   async tryReorgPeerConnections() {
-    if (Object.keys(this.outbound).length < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+    const numOutbound = Object.keys(this.outbound).length;
+    if (numOutbound < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+      trafficStatsManager.addEvent(TrafficEventTypes.PEER_REORG_BELOW_MIN_OUTBOUND, numOutbound);
       return;
     }
     if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
@@ -359,6 +375,7 @@ class P2pClient {
         return;
       }
       logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
+      // TODO(liayoo): Move this to after node account is injected.
       if (await this.server.tryInitializeShard()) {
         logger.info(`[${LOG_HEADER}] Shard initialization done!`);
       } else {

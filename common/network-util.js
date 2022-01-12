@@ -12,6 +12,8 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/ip';
 
+axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
+
 async function _waitUntilTxFinalize(endpoint, txHash) {
   while (true) {
     const confirmed = await sendGetRequest(
