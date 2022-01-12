@@ -344,6 +344,7 @@ class Consensus {
   }
 
   executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
+    const LOG_HEADER = 'executeAndGetValidTransactions';
     const candidates = this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
