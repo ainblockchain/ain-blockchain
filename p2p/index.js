@@ -675,20 +675,47 @@ class P2pClient {
     return true;
   }
 
+  precheckChainSegment(chainSegment, peerAddress) {
+    const LOG_HEADER = 'precheckChainSegment';
+
+    const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
+    for (let i = 0; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
+      if (i === 0) {
+        const genesisBlockHash = this.server.node.bc.genesisBlockHash;
+        if (block.number === 0 && block.hash !== genesisBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] Genesis block from ${peerAddress} (${p2pUrl}) has a mismatched hash: ${block.hash} / ${genesisBlockHash}`
+              + `\n${new Error().stack}.`);
+          // genesis block hash mismatch case
+          return false;
+        }
+      } else {
+        const lastHash = block.last_hash;
+        const prevBlockHash = chainSegment[i - 1].hash;
+        if (lastHash !== prevBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) has a mismatched last_hash: ${lastHash} / ${prevBlockHash}`
+              + `\n${new Error().stack}.`);
+          // last_hash mismatch case
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
   async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
+
     const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
     // Received from a peer that I didn't request from
     if (_.get(this.chainSyncInProgress, 'address') !== address) {
       return;
     }
-    const firstBlock = chainSegment.length > 0 ? chainSegment[0] : null;
-    const genesisBlockHash = this.server.node.bc.genesisBlockHash;
-    if (firstBlock && firstBlock.number === 0 && firstBlock.hash !== genesisBlockHash) {
-      const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, address);
-      logger.error(
-          `[${LOG_HEADER}] Genesis block from ${address} (${p2pUrl}) has a mismatched hash: ${firstBlock.hash} / ${genesisBlockHash}`
-          + `\n${new Error().stack}.`);
+    if (!this.precheckChainSegment(chainSegment, address)) {
+      // Buffer time to avoid network resource abusing
       await CommonUtil.sleep(NodeConfigs.P2P_GENESIS_BLOCK_HASH_MISMATCH_SLEEP_MS);
       this.resetChainSyncPeer();
       this.requestChainSegment();
