@@ -318,8 +318,10 @@ class RuleUtil {
     if (!_.isEqual(request, newData.request)) {
       return false;
     }
-    return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        this.isBool(newData.response.status);
+    // NOTE(liayoo): tx_hash could be undefined if the admin (token pool) cancels the request upon
+    //    user's request.
+    return this.isDict(newData.response) && this.isBool(newData.response.status) &&
+        (newData.response.tx_hash === undefined || this.isValidHash(newData.response.tx_hash));
   }
 
   validateClaimRewardData(userAddr, newData, getValue) {
