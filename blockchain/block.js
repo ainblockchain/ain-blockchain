@@ -63,6 +63,14 @@ class Block {
     return JSON.stringify(this, null, 2);
   }
 
+  // TODO(platfowner): Add a richer validation function (ref: Transaction.isInStandardFormat()).
+  static hasRequiredFields(block) {
+    return CommonUtil.isDict(block) && block.number !== undefined &&
+    block.timestamp !== undefined && block.hash !== undefined &&
+    block.last_hash !== undefined && block.last_votes !== undefined &&
+    block.transactions !== undefined && block.state_proof_hash !== undefined;
+  }
+
   static sanitizeTransactions(transactions) {
     const sanitized = [];
     transactions.forEach((tx) => {
