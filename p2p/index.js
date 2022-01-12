@@ -714,6 +714,7 @@ class P2pClient {
     return true;
   }
 
+  // TODO(platfowner): Add peer blacklisting.
   async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
 
