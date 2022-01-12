@@ -758,7 +758,7 @@ class Consensus {
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
         // NOTE(platfowner): Write the current snapshot for debugging.
-        const snapshot = node.buildBlockchainSnapshot(block, db.stateRoot);
+        const snapshot = node.buildBlockchainSnapshot(blockNumber, block, db.stateRoot);
         const snapshotChunkSize = node.getBlockchainParam('resource/snapshot_chunk_size');
         // NOTE(liayoo): This write is not awaited.
         FileUtil.writeSnapshotFile(node.snapshotDir, blockNumber, snapshot, snapshotChunkSize, true);

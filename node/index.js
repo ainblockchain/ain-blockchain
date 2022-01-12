@@ -356,7 +356,7 @@ class BlockchainNode {
     const LOG_HEADER = 'writeSnapshot';
 
     const block = this.bc.getBlockByNumber(blockNumber);
-    const snapshot = this.buildBlockchainSnapshot(block, this.stateManager.getFinalRoot());
+    const snapshot = this.buildBlockchainSnapshot(blockNumber, block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
       logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
@@ -368,9 +368,8 @@ class BlockchainNode {
     FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
-  buildBlockchainSnapshot(block, stateRoot) {
-    const blockNumber = block.number;
-    const blockTimestamp = block.timestamp;
+  buildBlockchainSnapshot(blockNumber, block, stateRoot) {
+    const blockTimestamp = CommonUtil.isDict(block) ? block.timestamp : null;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
