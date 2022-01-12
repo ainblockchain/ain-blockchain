@@ -17,10 +17,10 @@ const VersionUtil = require('../common/version-util');
 const { convertIpv6ToIpv4 } = require('../common/network-util');
 const {
   BlockchainConsts,
+  NodeConfigs,
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
-  NodeConfigs,
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
 
@@ -73,9 +73,10 @@ app.post(
 );
 
 app.get('/', (req, res, next) => {
+  const welcome = `[Welcome to AIN Blockchain Node]\n\n- CURRENT_PROTOCOL_VERSION: ${BlockchainConsts.CURRENT_PROTOCOL_VERSION}\n- DATA_PROTOCOL_VERSION: ${BlockchainConsts.DATA_PROTOCOL_VERSION}\n- CONSENSUS_PROTOCOL_VERSION: ${BlockchainConsts.CONSENSUS_PROTOCOL_VERSION}\n\nDevelopers Guide: ${NodeConfigs.BLOCKCHAIN_GUIDE_URL}`;
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Node')
+    .send(welcome)
     .end();
 });
 
@@ -297,9 +298,9 @@ app.post('/eval_rule', (req, res, next) => {
   if (body.fid) {
     auth.fid = body.fid;
   }
-  const result = node.db.evalRule(
-      body.ref, body.value, auth, body.timestamp || Date.now(),
-      CommonUtil.toMatchOrEvalOptions(body, true));
+  const timestamp = body.timestamp || Date.now();
+  const options = Object.assign(CommonUtil.toMatchOrEvalOptions(body, true), { timestamp });
+  const result = node.db.evalRule(body.ref, body.value, auth, options);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -418,7 +419,7 @@ app.get('/last_block', (req, res, next) => {
 
 app.get('/tx_pool', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.tp.transactions;
+  const result = Object.fromEntries(node.tp.transactions);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -429,7 +430,7 @@ app.get('/tx_pool', (req, res, next) => {
 
 app.get('/tx_tracker', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.tp.transactionTracker;
+  const result = Object.fromEntries(node.tp.transactionTracker);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)

@@ -11,6 +11,7 @@ function buildHoldTxBody(source, target, timestamp) {
         amount: 10000,
       }
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }

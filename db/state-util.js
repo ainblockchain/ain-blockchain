@@ -5,6 +5,7 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
+  isEnabledTimerFlag,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -13,6 +14,7 @@ const {
   OwnerProperties,
   ShardingProperties,
   StateLabelProperties,
+  isReservedServiceName,
 } = require('../common/constants');
 
 const WRITE_RULE_ECMA_VERSION = 12;
@@ -20,6 +22,8 @@ const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
 const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   // 1) from parameters
   'auth',
+  'blockNumber',
+  'blockTime',
   'currentTime',
   'data',
   'evalOwner',
@@ -31,6 +35,7 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'lastBlockNumber',
   'newData',
   'util',
+  'parsedValuePath',
   // 2) from language
   'Number',  // type casting
   'String',  // type casting
@@ -125,6 +130,11 @@ function hasVarNamePattern(name) {
   return CommonUtil.isString(name) ? varNameRegex.test(name) : false;
 }
 
+function hasServiceNamePattern(name) {
+  const varNameRegex = /^[a-z_]+[a-z0-9_]*$/gm;
+  return CommonUtil.isString(name) ? varNameRegex.test(name) : false;
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return CommonUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -137,7 +147,14 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
-function isValidServiceName(name) {
+function isValidServiceName(name, blockNumber = null) {
+  if (isReservedServiceName(name)) {
+    return false;
+  }
+  if (CommonUtil.isNumber(blockNumber) &&
+      isEnabledTimerFlag('allow_lower_case_app_names_only', blockNumber)) {
+    return hasServiceNamePattern(name);
+  }
   return hasVarNamePattern(name);
 }
 

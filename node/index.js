@@ -273,7 +273,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
         this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
-        this.bc.lastBlockNumber() + 1);
+        this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
 
     // 6. Node status changed: STARTING -> SYNCING.
     this.state = BlockchainNodeStates.SYNCING;
@@ -346,23 +346,37 @@ class BlockchainNode {
 
   async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
-      const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
-      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
-      await FileUtil.writeSnapshot(
-          this.snapshotDir,
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
-          null, snapshotChunkSize);
+      this.deleteSnapshot(
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
+      await this.writeSnapshot(blockNumber);
     }
+  }
+
+  async writeSnapshot(blockNumber) {
+    const LOG_HEADER = 'writeSnapshot';
+
+    const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
+    const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+    if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
+      logger.error(
+          `[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
+    }
+    await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+  }
+
+  deleteSnapshot(blockNumber) {
+    FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
   buildBlockchainSnapshot(blockNumber, stateRoot) {
     const block = this.bc.getBlockByNumber(blockNumber);
+    const blockTimestamp = block.timestamp;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
     return {
       [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
+      [BlockchainSnapshotProperties.BLOCK_TIMESTAMP]: blockTimestamp,
       [BlockchainSnapshotProperties.BLOCK]: block,
       [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
       [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
@@ -372,7 +386,7 @@ class BlockchainNode {
 
   getTransactionByHash(hash) {
     const LOG_HEADER = 'getTransactionByHash';
-    const transactionInfo = this.tp.transactionTracker[hash];
+    const transactionInfo = this.tp.transactionTracker.get(hash);
     if (!transactionInfo) {
       return null;
     }
@@ -394,7 +408,7 @@ class BlockchainNode {
         transactionInfo.state === TransactionStates.PENDING) {
       const address = transactionInfo.address;
       transactionInfo.transaction =
-          _.find(this.tp.transactions[address], (tx) => tx.hash === hash) || null;
+          _.find(this.tp.transactions.get(address), (tx) => tx.hash === hash) || null;
     }
     return transactionInfo;
   }
@@ -484,8 +498,10 @@ class BlockchainNode {
     };
     const available = {
       tree_height: stateTreeHeightLimit,
-      tree_size: Math.max(0, (appsTreeSizeBudget * appStakeRatio) - usage.tree_size),
-      tree_bytes: Math.max(0, (appsStateBudget * appStakeRatio) - usage.tree_bytes),
+      tree_size: appStake > 0 ? Math.max(0, appsTreeSizeBudget * appStakeRatio - usage.tree_size)
+          : Math.max(0, freeTreeSizeBudget - freeTierTreeSize),
+      tree_bytes: appStake > 0 ? Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes)
+          : Math.max(0, freeStateBudget - freeTierTreeBytes),
     };
     const staking = {
       app: appStake,
@@ -514,6 +530,11 @@ class BlockchainNode {
       result.used = this.tp.getPoolSize();
     }
     return result;
+  }
+
+  getRewards() {
+    return this.account ? this.db.getValue(CommonUtil.formatPath(
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, this.account.address])) : null;
   }
 
   // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
@@ -564,6 +585,7 @@ class BlockchainNode {
   }
 
   createSingleTransaction(txBody) {
+    if (!this.account) return null;
     if (txBody.nonce === undefined) {
       txBody.nonce = this.getNonce();
     }
@@ -628,7 +650,8 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
+    const result = this.db.executeTransaction(
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
@@ -680,7 +703,7 @@ class BlockchainNode {
             this.bc.addBlockToChainAndWriteToDisk(block, false);
             this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
           } else {
-            this.tryFinalizeChain(isGenesisStart);
+            this.tryFinalizeChain(isGenesisStart, false);
           }
         }
       } catch (e) {
@@ -806,7 +829,7 @@ class BlockchainNode {
     }
   }
 
-  tryFinalizeChain(isGenesisStart = false) {
+  tryFinalizeChain(isGenesisStart = false, writeToDisk = true) {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
     if (!finalizableChain || !finalizableChain.length) {
@@ -824,7 +847,7 @@ class BlockchainNode {
       if (blockToFinalize.number <= this.bc.lastBlockNumber()) {
         continue;
       }
-      if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, true)) {
+      if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, writeToDisk)) {
         lastFinalizedBlock = blockToFinalize;
         logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
@@ -838,6 +861,9 @@ class BlockchainNode {
             });
           });
         }
+        const versionToFinalize = this.bp.hashToDb.get(blockToFinalize.hash).stateVersion;
+        this.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
+
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
         }
@@ -849,8 +875,6 @@ class BlockchainNode {
       }
     }
     if (lastFinalizedBlock) {
-      const versionToFinalize = this.bp.hashToDb.get(lastFinalizedBlock.hash).stateVersion;
-      this.cloneAndFinalizeVersion(versionToFinalize, lastFinalizedBlock.number);
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
     }
   }

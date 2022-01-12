@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset] [--kill-only|--skip-kill]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
     printf "\n"
     exit
@@ -31,18 +31,14 @@ function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
         SETUP_OPTION="$option"
-    elif [[ $option = '--restart' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
-    elif [[ $option = '--reset' ]]; then
-        if [[ "$RESET_RESTART_OPTION" ]]; then
-            printf "You cannot use both restart and reset\n"
-            exit
-        fi
-        RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--no-keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
             printf "You cannot use both --skip-kill and --kill-only\n"
@@ -63,23 +59,24 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
-RESET_RESTART_OPTION=""
+KEEP_CODE_OPTION="--no-keep-code"
+KEEP_DATA_OPTION="--no-keep-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
-while [ $ARG_INDEX -le $# ]
-do
+while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
-printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
 
 # Get confirmation.
 printf "\n"
-read -p "Do you want to proceed? >> (y/N) " -n 1 -r
+read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
 printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
@@ -322,8 +319,7 @@ else
     # kill any processes still alive
     printf "\nKilling all blockchain nodes...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -347,15 +343,15 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
 fi
 
 # deploy files to GCP instances
-if [[ $RESET_RESTART_OPTION = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\nDeploying parent blockchain...\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
-
-        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ --project $PROJECT_ID --zone ${!NODE_ZONE}"
+ 
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone ${!NODE_ZONE}
+        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
         # printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then
@@ -373,8 +369,7 @@ fi
 if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up blockchain nodes #\n##########################\n"
     index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]
-    do
+    while [ $index -le $END_NODE_IDX ]; do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
@@ -393,28 +388,28 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 fi
 
 printf "\nStarting blockchain servers...\n\n"
-if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
-    # restart after removing chains, snapshots, and log files
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
+else
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+fi
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+    # restart after removing chains, snapshots, and log files (but keep the keys)
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
-elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
-    # restart
-    START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION="--keep-code"
+    LOGS_DIR=/home/ain_blockchain_data/logs
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
 else
-    # start
-    START_NODE_CMD_BASE=". start_node_genesis_gcp.sh"
-    KEEP_CODE_OPTION=""
+    # restart with existing chains, snapshots, and log files
+    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
 fi
 printf "\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 
 node_index=$START_NODE_IDX
-while [ $node_index -le $END_NODE_IDX ]
-do
+while [ $node_index -le $END_NODE_IDX ]; do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"
@@ -427,11 +422,12 @@ do
     NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+    printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
