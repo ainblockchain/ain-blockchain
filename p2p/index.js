@@ -18,6 +18,7 @@ const {
   getEnvVariables,
   TimerFlags,
   TimerFlagEnabledBandageMap,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const P2pUtil = require('./p2p-util');
 const {
@@ -131,6 +132,23 @@ class P2pClient {
       nodeConfigs: NodeConfigs,
       timerFlags: TimerFlags,
       bandageMap: this.getBandageMap(),
+      timerFlagStatus: this.getTimerFlagStatus(),
+    };
+  }
+
+  getTimerFlagStatus() {
+    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const flagStates = {};
+    for (const flagName of Object.keys(TimerFlags)) {
+      flagStates[flagName] = isEnabledTimerFlag(flagName, lastBlockNumber);
+    }
+    return {
+      lastBlockNumber,
+      flagStates: flagStates,
+      numFlags: Object.keys(TimerFlags).length,
+      numEnabledFlags: Object.values(flagStates).reduce((acc, state) => {
+        return acc + (state ? 1 : 0);
+      }, 0),
     };
   }
 
