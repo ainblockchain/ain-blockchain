@@ -5790,6 +5790,119 @@ describe('Native Function', () => {
         expect(totalCompleteAmount).to.equal(checkinAmount);
       });
 
+      it('token pool can close checkin with undefined tx_hash', async () => {
+        const timestamp = 1641988209614;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
+        const amount = checkinAmount;
+        const senderProofBody = {
+          ref,
+          amount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
+        const openCheckinRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkinAmount,
+            sender,
+            sender_proof: senderProof,
+          },
+          gas_price: 0,
+          timestamp,
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        expect(openCheckinRes.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(openCheckinRes, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const closeCheckinTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `${checkinHistoryBasePath}/${serviceUser}/${timestamp}`,
+            value: {
+              request: {
+                amount: checkinAmount,
+                sender,
+                sender_proof: senderProof,
+              },
+              response: {
+                // tx_hash is undefined
+                status: false
+              }
+            }
+          },
+          gas_price: 0,
+          timestamp,
+          nonce: -1
+        };
+        const signature = ainUtil.ecSignTransaction(
+            closeCheckinTxBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const closeCheckinRes = await client.request('ain_sendSignedTransaction', {
+          tx_body: closeCheckinTxBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        });
+        const txHash = _.get(closeCheckinRes, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(eraseStateGas(_.get(closeCheckinRes, 'result.result.result', null)), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 4
+            },
+            "state": {
+              "service": "erased"
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_closeCheckin": {
+              "op_results": {
+                "0": {
+                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1641988209614",
+                  "result": {
+                    "func_results": {
+                      "_openCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      },
+                      "_cancelCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkin/stats/pending/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/checkin/stats/pending/token_pool/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": 0,
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": "erased"
+        });
+      });
+
       it('can close a failed checkin', async () => {
         // open checkin
         const beforeBalance = parseOrLog(syncRequest('GET',
