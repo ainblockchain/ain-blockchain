@@ -355,11 +355,11 @@ class BlockchainNode {
   async writeSnapshot(blockNumber) {
     const LOG_HEADER = 'writeSnapshot';
 
-    const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
+    const block = this.bc.getBlockByNumber(blockNumber);
+    const snapshot = this.buildBlockchainSnapshot(blockNumber, block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
-      logger.error(
-          `[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
+      logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
     }
     await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
@@ -368,9 +368,8 @@ class BlockchainNode {
     FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
-  buildBlockchainSnapshot(blockNumber, stateRoot) {
-    const block = this.bc.getBlockByNumber(blockNumber);
-    const blockTimestamp = block.timestamp;
+  buildBlockchainSnapshot(blockNumber, block, stateRoot) {
+    const blockTimestamp = CommonUtil.isDict(block) ? block.timestamp : null;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
@@ -684,8 +683,7 @@ class BlockchainNode {
       proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
+        CommonUtil.finishWithStackTrace(logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
         return false;
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);

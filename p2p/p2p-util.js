@@ -35,6 +35,11 @@ class P2pUtil {
     return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
   }
 
+  static getP2pUrlFromAddress(connectionObj, address) {
+    const peerInfo = connectionObj[address] ? connectionObj[address].peerInfo : null;
+    return _.get(peerInfo, 'networkStatus.urls.p2p.url', null);
+  }
+
   static _removeSocketConnectionIfExists(connectionObj, address) {
     if (address in connectionObj) {
       delete connectionObj[address];
