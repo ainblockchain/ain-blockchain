@@ -57,6 +57,7 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
 
 // ** Timer flags **
 const TimerFlags = getBlockchainConfig('timer_flags.json');
+
 function isEnabledTimerFlag(flagName, blockNumber) {
   return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
 }
@@ -64,6 +65,7 @@ function isEnabledTimerFlag(flagName, blockNumber) {
 function isTimerFlagEnabledAt(flagName, blockNumber) {
   return CommonUtil.getTimerFlagEnabledBlock(TimerFlags, flagName) === blockNumber;
 }
+
 const TimerFlagEnabledBandageMap = CommonUtil.createTimerFlagEnabledBandageMap(TimerFlags);
 
 // ** Blockchain params **
