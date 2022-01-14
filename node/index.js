@@ -355,11 +355,11 @@ class BlockchainNode {
   async writeSnapshot(blockNumber) {
     const LOG_HEADER = 'writeSnapshot';
 
-    const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
+    const block = this.bc.getBlockByNumber(blockNumber);
+    const snapshot = this.buildBlockchainSnapshot(blockNumber, block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
-      logger.error(
-          `[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
+      logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
     }
     await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
@@ -368,9 +368,8 @@ class BlockchainNode {
     FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
-  buildBlockchainSnapshot(blockNumber, stateRoot) {
-    const block = this.bc.getBlockByNumber(blockNumber);
-    const blockTimestamp = block.timestamp;
+  buildBlockchainSnapshot(blockNumber, block, stateRoot) {
+    const blockTimestamp = CommonUtil.isDict(block) ? block.timestamp : null;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
@@ -478,17 +477,15 @@ class BlockchainNode {
   getStateUsageWithStakingInfo(appName) {
     if (!appName) return null;
     const stateTreeHeightLimit = this.getBlockchainParam('resource/state_tree_height_limit');
+    const maxStateTreeSizePerByte = this.getBlockchainParam('resource/max_state_tree_size_per_byte');
     const appStakesTotal = this.db.getAppStakesTotal();
     const appStake = this.db.getAppStake(appName);
     const appStakeRatio = appStakesTotal > 0 ? appStake / appStakesTotal : 1;
     const {
       appsStateBudget,
-      appsTreeSizeBudget,
       freeStateBudget,
-      freeTreeSizeBudget,
     } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
     const freeTierUsage = this.db.getStateFreeTierUsage();
-    const freeTierTreeSize = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_SIZE] : 0;
     const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
     const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
     const usage = {
@@ -496,22 +493,22 @@ class BlockchainNode {
       tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
       tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
     };
+    const availableTreeBytes = appStake > 0 ?
+        Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
+        Math.max(0, freeStateBudget - freeTierTreeBytes);
+    // NOTE(platfowner): availableTreeSize is determined by availableTreeBytes.
+    const availableTreeSize = availableTreeBytes * maxStateTreeSizePerByte;
     const available = {
       tree_height: stateTreeHeightLimit,
-      tree_size: appStake > 0 ? Math.max(0, appsTreeSizeBudget * appStakeRatio - usage.tree_size)
-          : Math.max(0, freeTreeSizeBudget - freeTierTreeSize),
-      tree_bytes: appStake > 0 ? Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes)
-          : Math.max(0, freeStateBudget - freeTierTreeBytes),
+      tree_bytes: availableTreeBytes,
+      tree_size: availableTreeSize,
     };
     const staking = {
       app: appStake,
       total: appStakesTotal,
-      unstakeable: Math.min(
-        BlockchainNode.calcUnstakeableAmount(
-            appsTreeSizeBudget, freeTreeSizeBudget, usage.tree_size, freeTierTreeSize, appStake, appStakesTotal),
-        BlockchainNode.calcUnstakeableAmount(
-            appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake, appStakesTotal),
-      ),
+      unstakeable: BlockchainNode.calcUnstakeableAmount(
+        appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake,
+        appStakesTotal),
     };
     return {
       usage,
@@ -684,8 +681,7 @@ class BlockchainNode {
       proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
+        CommonUtil.finishWithStackTrace(logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
         return false;
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);

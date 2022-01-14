@@ -18,11 +18,13 @@ const {
   getEnvVariables,
   TimerFlags,
   TimerFlagEnabledBandageMap,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const P2pUtil = require('./p2p-util');
 const {
   sendGetRequest
 } = require('../common/network-util');
+const { Block } = require('../blockchain/block');
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -130,6 +132,23 @@ class P2pClient {
       nodeConfigs: NodeConfigs,
       timerFlags: TimerFlags,
       bandageMap: this.getBandageMap(),
+      timerFlagStatus: this.getTimerFlagStatus(),
+    };
+  }
+
+  getTimerFlagStatus() {
+    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const flagStates = {};
+    for (const flagName of Object.keys(TimerFlags)) {
+      flagStates[flagName] = isEnabledTimerFlag(flagName, lastBlockNumber);
+    }
+    return {
+      lastBlockNumber,
+      flagStates: flagStates,
+      numFlags: Object.keys(TimerFlags).length,
+      numEnabledFlags: Object.values(flagStates).reduce((acc, state) => {
+        return acc + (state ? 1 : 0);
+      }, 0),
     };
   }
 
@@ -511,7 +530,7 @@ class P2pClient {
 
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
-    socket.on('message', (message) => {
+    socket.on('message', async (message) => {
       const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
       const peerNetworkId = _.get(parsedMessage, 'networkId');
@@ -623,7 +642,7 @@ class P2pClient {
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
-          this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
+          await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
         default:
           logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
@@ -675,11 +694,58 @@ class P2pClient {
     return true;
   }
 
-  handleChainSegment(number, chainSegment, catchUpInfo, socket) {
+  precheckChainSegment(chainSegment, peerAddress) {
+    const LOG_HEADER = 'precheckChainSegment';
+
+    const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
+    for (let i = 0; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
+      if (!Block.hasRequiredFields(block)) {
+        logger.error(
+            `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) is in a non-standard format: ${JSON.stringify(block)}`
+            + `\n${new Error().stack}.`);
+        // non-standard format case
+        return false;
+      }
+      if (i === 0) {
+        const genesisBlockHash = this.server.node.bc.genesisBlockHash;
+        if (block.number === 0 && block.hash !== genesisBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] Genesis block from ${peerAddress} (${p2pUrl}) has a mismatched hash: ${block.hash} / ${genesisBlockHash}`
+              + `\n${new Error().stack}.`);
+          // genesis block hash mismatch case
+          return false;
+        }
+      } else {
+        const lastHash = block.last_hash;
+        const prevBlockHash = chainSegment[i - 1].hash;
+        if (lastHash !== prevBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) has a mismatched last_hash: ${lastHash} / ${prevBlockHash}`
+              + `\n${new Error().stack}.`);
+          // last_hash mismatch case
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // TODO(platfowner): Add peer blacklisting.
+  async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
+
     const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
     // Received from a peer that I didn't request from
     if (_.get(this.chainSyncInProgress, 'address') !== address) {
+      return;
+    }
+    if (!this.precheckChainSegment(chainSegment, address)) {
+      // Buffer time to avoid network resource abusing
+      await CommonUtil.sleep(NodeConfigs.P2P_GENESIS_BLOCK_HASH_MISMATCH_SLEEP_MS);
+      this.resetChainSyncPeer();
+      this.requestChainSegment();
       return;
     }
     if (this.tryInitProcesses(number)) { // Already caught up
@@ -696,10 +762,10 @@ class P2pClient {
     }
     if (mergeResult >= 0) { // Merge success
       this.tryInitProcesses(number);
+      this.server.consensus.catchUp(catchUpInfo);
     } else {
       logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
     }
-    this.server.consensus.catchUp(catchUpInfo);
     if (this.server.node.bc.lastBlockNumber() <= number) {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
