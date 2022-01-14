@@ -749,20 +749,27 @@ class Consensus {
     }
   }
 
-  static validateStateProofHash(expectedStateProofHash, number, db, node, takeSnapshot) {
+  static validateStateProofHash(expectedStateProofHash, block, db, node, takeSnapshot) {
+    const LOG_HEADER = 'validateStateProofHash';
     if (NodeConfigs.LIGHTWEIGHT) return;
+
+    const blockNumber = block.number;
     const stateProofHash = db.getProofHash('/');
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
         // NOTE(platfowner): Write the current snapshot for debugging.
-        const snapshot = node.buildBlockchainSnapshot(number, db.stateRoot);
+        const snapshot = node.buildBlockchainSnapshot(blockNumber, block, db.stateRoot);
         const snapshotChunkSize = node.getBlockchainParam('resource/snapshot_chunk_size');
         // NOTE(liayoo): This write is not awaited.
-        FileUtil.writeSnapshotFile(node.snapshotDir, number, snapshot, snapshotChunkSize, true);
+        FileUtil.writeSnapshotFile(node.snapshotDir, blockNumber, snapshot, snapshotChunkSize, true);
       }
+      const message =
+          `Block of number ${blockNumber} has a mismatched state proof hash: ${stateProofHash} / ${expectedStateProofHash}`
+          + `\n${new Error().stack}.`;
+      logger.error(`[${LOG_HEADER}] ${message}`);
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
-        message: `State proof hashes don't match (${number}): ${stateProofHash} / ${expectedStateProofHash}`,
+        message: message,
         level: 'error'
       });
     }
@@ -846,7 +853,7 @@ class Consensus {
       Consensus.validateAndExecuteTransactions(
           transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node);
       db.applyBandagesForBlockNumber(number);
-      Consensus.validateStateProofHash(state_proof_hash, number, db, node, takeSnapshot);
+      Consensus.validateStateProofHash(state_proof_hash, block, db, node, takeSnapshot);
       Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
       Consensus.addBlockToBlockPool(block, proposalTx, db, node.bp);
     } catch (e) {
@@ -892,10 +899,10 @@ class Consensus {
     const voteTimestamp = ConsensusUtil.getTimestampFromVoteTx(voteTx);
     const blockInfo = this.node.bp.hashToBlockInfo.get(blockHash) ||
         this.node.bp.hashToInvalidBlockInfo.get(blockHash);
-    let block;
+    let block = null;
     if (blockInfo && blockInfo.block) {
       block = blockInfo.block;
-    } else if (blockHash === this.node.bc.lastBlock().hash) {
+    } else if (this.node.bc.lastBlock() && blockHash === this.node.bc.lastBlock().hash) {
       block = this.node.bc.lastBlock();
     }
     if (!block) {
@@ -1048,20 +1055,26 @@ class Consensus {
     this.handleConsensusMessage(consensusMsg);
   }
 
-  catchUp(blockList) {
+  catchUp(catchUpList) {
     const LOG_HEADER = 'catchUp';
-    if (!blockList || !blockList.length) return;
+
+    if (!catchUpList || !catchUpList.length) return;
     let lastVerifiedBlockInfo;
     const lastNotarizedBlock = this.getLastNotarizedBlock();
-    logger.info(`[${LOG_HEADER}] Current lastNotarizedBlock: ` +
-        `${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
-    for (const blockInfo of blockList) {
+    // NOTE(platfowner): lastNotarizedBlock = null in cold start.
+    if (lastNotarizedBlock) {
+      logger.info(`[${LOG_HEADER}] Current lastNotarizedBlock: ` +
+          `${lastNotarizedBlock.number} / ${lastNotarizedBlock.epoch}`);
+    } else {
+      logger.info(`[${LOG_HEADER}] Current lastNotarizedBlock: ${lastNotarizedBlock}`);
+    }
+    for (const blockInfo of catchUpList) {
       logger.debug(`[${LOG_HEADER}] Adding notarized chain's block: ` +
           `${JSON.stringify(blockInfo, null, 2)}`);
       if (!blockInfo.block || !blockInfo.proposal) {
         break;
       }
-      if (blockInfo.block.number < lastNotarizedBlock.number) {
+      if (lastNotarizedBlock && blockInfo.block.number < lastNotarizedBlock.number) {
         continue;
       }
       try {
@@ -1125,7 +1138,8 @@ class Consensus {
 
   getSnapDb(latestBlock) {
     const LOG_HEADER = 'getSnapDb';
-    const lastFinalizedHash = this.node.bc.lastBlock().hash;
+    const lastBlock = this.node.bc.lastBlock();
+    const lastFinalizedHash = lastBlock ? lastBlock.hash : null;
     const chain = [];
     let currBlock = latestBlock;
     let blockHash = currBlock.hash;
