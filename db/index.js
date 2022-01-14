@@ -1485,7 +1485,7 @@ class DB {
       }
     }
     return {
-      code: 0
+      code: TxResultCode.SUCCESS,
     }
   }
 
@@ -1820,7 +1820,7 @@ class DB {
       };
     }
     return {
-      code: 0
+      code: TxResultCode.SUCCESS,
     }
   }
 
