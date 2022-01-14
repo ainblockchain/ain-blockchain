@@ -18,5 +18,9 @@
   "staking_balance_total_sum": {
     "enabled_block": 2,
     "has_bandage": true
+  },
+  "update_max_state_tree_size_per_byte2": {
+    "enabled_block": 3,
+    "has_bandage": true
   }
 }

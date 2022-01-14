@@ -243,7 +243,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/get_value api', () => {
+    describe('get_value api', () => {
       it('get_value', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
@@ -252,7 +252,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_function api', () => {
+    describe('get_function api', () => {
       it('get_function', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=/apps/test/test_function/some/path')
@@ -272,7 +272,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_rule api', () => {
+    describe('get_rule api', () => {
       it('get_rule', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
@@ -288,7 +288,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_owner api', () => {
+    describe('get_owner api', () => {
       it('get_owner', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=/apps/test/test_owner/some/path')
@@ -311,7 +311,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_function api', () => {
+    describe('match_function api', () => {
       it('match_function', () => {
         const ref = "/apps/test/test_function/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
@@ -337,7 +337,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_rule api', () => {
+    describe('match_rule api', () => {
       it('match_rule (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
@@ -463,7 +463,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_owner api', () => {
+    describe('match_owner api', () => {
       it('match_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
@@ -490,7 +490,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/eval_rule api', () => {
+    describe('eval_rule api', () => {
       it('eval_rule returning true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
@@ -522,7 +522,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/eval_owner api', () => {
+    describe('eval_owner api', () => {
       it('eval_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
@@ -727,7 +727,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_state_proof api', () => {
+    describe('get_state_proof api', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/blockchain_params/token/symbol')
             .body.toString('utf-8'));
@@ -745,7 +745,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_proof_hash api', () => {
+    describe('get_proof_hash api', () => {
       it('get_proof_hash', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/blockchain_params/token/symbol')
             .body.toString('utf-8'));
@@ -754,7 +754,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_info api', () => {
+    describe('get_state_info api', () => {
       it('get_state_info', () => {
         const infoBody = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
@@ -777,8 +777,8 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_usage api', () => {
-      it('get_state_usage', () => {
+    describe('get_state_usage api', () => {
+      it('get_state_usage with existing app name', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
@@ -786,7 +786,7 @@ describe('Blockchain Node', () => {
           "available": {
             "tree_bytes": 2474987586,
             "tree_height": 30,
-            "tree_size": 247499934
+            "tree_size": 15468672.412500001
           },
           "staking": {
             "app": 1,
@@ -797,6 +797,29 @@ describe('Blockchain Node', () => {
             "tree_bytes": 12414,
             "tree_height": 24,
             "tree_size": 66
+          }
+        });
+      });
+
+      it('get_state_usage with non-existing app name', () => {
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_usage?app_name=app_non_existing`)
+                .body.toString('utf-8'));
+        assert.deepEqual(body.result, {
+          "available": {
+            "tree_bytes": 25000000,
+            "tree_height": 30,
+            "tree_size": 156250
+          },
+          "staking": {
+            "app": 0,
+            "total": 1,
+            "unstakeable": 0
+          },
+          "usage": {
+            "tree_bytes": 0,
+            "tree_height": 0,
+            "tree_size": 0
           }
         });
       });
@@ -1199,7 +1222,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_getStateUsage api', () => {
-      it('returns correct value', () => {
+      it('with existing app name', () => {
         const request = { app_name: 'test', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
         .then(res => {
@@ -1208,7 +1231,7 @@ describe('Blockchain Node', () => {
             "available": {
               "tree_bytes": 2474819814,
               "tree_height": 30,
-              "tree_size": 247498934
+              "tree_size": 15467623.8375
             },
             "staking": {
               "app": 1,
@@ -1219,6 +1242,31 @@ describe('Blockchain Node', () => {
               "tree_bytes": 180186,
               "tree_height": 24,
               "tree_size": 1066
+            }
+          });
+        })
+      })
+
+      it('with non-existing app name', () => {
+        const request = { app_name: 'app_non_existing', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
+        .then(res => {
+          const stateUsage = res.result.result;
+          assert.deepEqual(stateUsage, {
+            "available": {
+              "tree_bytes": 25000000,
+              "tree_height": 30,
+              "tree_size": 156250
+            },
+            "staking": {
+              "app": 0,
+              "total": 1,
+              "unstakeable": 0
+            },
+            "usage": {
+              "tree_bytes": 0,
+              "tree_height": 0,
+              "tree_size": 0
             }
           });
         })
@@ -1303,7 +1351,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/set_value api', async () => {
+    describe('set_value api', async () => {
       it('set_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1441,7 +1489,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/inc_value api', () => {
+    describe('inc_value api', () => {
       it('inc_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1508,7 +1556,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/dec_value api', () => {
+    describe('dec_value api', () => {
       it('dec_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1575,7 +1623,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_function api', () => {
+    describe('set_function api', () => {
       it('set_function', async () => {
         // Check the original function.
         const resultBefore = parseOrLog(syncRequest(
@@ -1681,7 +1729,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_rule api', () => {
+    describe('set_rule api', () => {
       it('set_rule', async () => {
         // Check the original rule.
         const resultBefore = parseOrLog(syncRequest(
@@ -1769,7 +1817,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_owner api', () => {
+    describe('set_owner api', () => {
       it('set_owner', async () => {
         // Check the original owner.
         const resultBefore = parseOrLog(syncRequest(
@@ -1885,7 +1933,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set api', () => {
+    describe('set api', () => {
       it('set with successful operations', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -2155,7 +2203,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/batch api', () => {
+    describe('batch api', () => {
       it('batch with successful transactions', async () => {
         const address = parseOrLog(syncRequest(
             'GET', server1 + '/get_address').body.toString('utf-8')).result;
