@@ -496,7 +496,8 @@ class BlockchainNode {
     const availableTreeBytes = appStake > 0 ?
         Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
         Math.max(0, freeStateBudget - freeTierTreeBytes);
-    // NOTE(platfowner): availableTreeSize is determined by availableTreeBytes.
+    // NOTE(platfowner): availableTreeSize is just determined by availableTreeBytes
+    // but we provide this for user's reference.
     const availableTreeSize = availableTreeBytes * maxStateTreeSizePerByte;
     const available = {
       tree_height: stateTreeHeightLimit,
