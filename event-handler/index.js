@@ -2,6 +2,7 @@ const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
 const { BlockchainEventTypes } = require('../common/constants');
+const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 
@@ -13,6 +14,7 @@ class EventHandler {
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
+    this.stateEventTree = {};
     this.run();
   }
 
@@ -42,8 +44,71 @@ class EventHandler {
     }
   }
 
-  emitValueChanged() {
-    // TODO(cshcomcom): Implement
+  emitValueChanged(auth, valuePath, beforeValue, afterValue) {
+    const parsedValuePath = CommonUtil.parsePath(valuePath);
+    const matchedEventFilterIdList = this.findMatchedEventFilterIdList(parsedValuePath);
+    if (matchedEventFilterIdList.length > 0) {
+      for (const eventFilterId of matchedEventFilterIdList) {
+        const eventFilter = this.eventFilters[eventFilterId];
+        const targetPath = _.get(eventFilter, 'config.path', null); // /apps/
+        if (!targetPath) {
+          logger.error(`Filter ${eventFilterId} doesn't have config.path`);
+          continue;
+        }
+        const parsedTargetPath = CommonUtil.parsePath(targetPath);
+        if (parsedValuePath.length !== parsedTargetPath.length) {
+          logger.error(`Lengths of parsedValuePath and parsedTargetPath do not match!`);
+        }
+
+        const params = {};
+        for (const [idx, label] of parsedTargetPath.entries()) {
+          if (CommonUtil.isVariableLabel(label)) {
+            params[label.substring(1)] = parsedValuePath[idx];
+          }
+        }
+
+        const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.VALUE_CHANGED, {
+          filter_path: targetPath,
+          matched_path: valuePath,
+          params: params,
+          values: {
+            before: beforeValue,
+            after: afterValue,
+          },
+        });
+        this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+      }
+    }
+  }
+
+  findMatchedEventFilterIdListRecursive(currNode, depth, parsedValuePath) {
+    const matchedEventFilterIds = [];
+    if (parsedValuePath.length === depth) { // Last node case
+      const eventNode = currNode['.event'];
+      if (eventNode) {
+        const filterIdSet = eventNode.filterIdSet;
+        matchedEventFilterIds.push(...filterIdSet);
+      }
+      return matchedEventFilterIds;
+    }
+
+    const wildcardNode = currNode['*'];
+    if (wildcardNode) {
+      matchedEventFilterIds.push(
+          ...this.findMatchedEventFilterIdListRecursive(wildcardNode, depth + 1, parsedValuePath));
+    }
+
+    const nextNode = currNode[parsedValuePath[depth + 1]];
+    if (nextNode) {
+      matchedEventFilterIds.push(
+          ...this.findMatchedEventFilterIdListRecursive(nextNode, depth + 1, parsedValuePath));
+    }
+
+    return matchedEventFilterIds;
+  }
+
+  findMatchedEventFilterIdList(parsedValuePath) {
+    return this.findMatchedEventFilterIdListRecursive(this.stateEventTree, 0, parsedValuePath)
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
