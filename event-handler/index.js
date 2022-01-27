@@ -50,7 +50,7 @@ class EventHandler {
     if (matchedEventFilterIdList.length > 0) {
       for (const eventFilterId of matchedEventFilterIdList) {
         const eventFilter = this.eventFilters[eventFilterId];
-        const targetPath = _.get(eventFilter, 'config.path', null); // /apps/
+        const targetPath = _.get(eventFilter, 'config.path', null);
         if (!targetPath) {
           logger.error(`Filter ${eventFilterId} doesn't have config.path`);
           continue;
@@ -111,6 +111,16 @@ class EventHandler {
     return this.findMatchedEventFilterIdListRecursive(this.stateEventTree, 0, parsedValuePath)
   }
 
+  isValidPathForStateEventTree(parsedPath) {
+    const stateEventTreePathPatternRegex = /^[a-zA-Z_]+$/gm;
+    for (const label of parsedPath) {
+      if (!stateEventTreePathPatternRegex.test(label)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
@@ -123,14 +133,34 @@ class EventHandler {
     return `${channelId}:${clientFilterId}`;
   }
 
+  checkEventFilterConfig(eventType, config) {
+    switch (eventType) {
+      case BlockchainEventTypes.BLOCK_FINALIZED:
+        const blockNumber = _.get(config, 'block_number', null);
+        if (typeof blockNumber === 'number' && blockNumber < 0) {
+          throw Error(`Invalid block_number. It must not be a negative number (${blockNumber})`);
+        } else if (blockNumber !== null) {
+          throw Error(`Invalid block_number type. (${typeof blockNumber})`);
+        }
+        break;
+      case BlockchainEventTypes.VALUE_CHANGED:
+        const path = _.get(config, 'path', null);
+        const parsedPath = CommonUtil.parsePath(path);
+        if (!this.isValidPathForStateEventTree(parsedPath)) {
+          throw Error(`Invalid format path (${path})`);
+        }
+        break;
+      default:
+        throw Error(`Invalid event type (${eventType})`);
+    }
+  }
+
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
     const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
-    if (!Object.keys(BlockchainEventTypes).includes(eventType)) {
-      throw Error(`Invalid event type (${eventType})`);
-    }
+    this.checkEventFilterConfig(eventType, config);
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
     this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
