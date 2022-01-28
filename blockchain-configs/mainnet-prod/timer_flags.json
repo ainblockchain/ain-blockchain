@@ -24,7 +24,7 @@
     "has_bandage": true
   },
   "update_bandwidth_budget_params": {
-    "enabled_block": -1,
+    "enabled_block": null,
     "has_bandage": true
   }
 }
