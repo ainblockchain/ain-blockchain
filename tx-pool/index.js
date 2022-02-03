@@ -181,15 +181,15 @@ class TransactionPool {
     return appStakesTotal > 0 ? appsBandwidthBudgetPerBlock * appStake / appStakesTotal : 0;
   }
 
-  getBandwidthBudgets(blockNumber, stateVersion) {
+  getBandwidthBudgets(stateVersion) {
     const bandwidthBudgetPerBlock = this.node.getBlockchainParam(
-        'resource/bandwidth_budget_per_block', blockNumber, stateVersion);
+        'resource/bandwidth_budget_per_block', null, stateVersion);
     const serviceBandwidthBudgetRatio = this.node.getBlockchainParam(
-        'resource/service_bandwidth_budget_ratio', blockNumber, stateVersion);
+        'resource/service_bandwidth_budget_ratio', null, stateVersion);
     const appsBandwidthBudgetRatio = this.node.getBlockchainParam(
-        'resource/apps_bandwidth_budget_ratio', blockNumber, stateVersion);
+        'resource/apps_bandwidth_budget_ratio', null, stateVersion);
     const freeBandwidthBudgetRatio = this.node.getBlockchainParam(
-        'resource/free_bandwidth_budget_ratio', blockNumber, stateVersion);
+        'resource/free_bandwidth_budget_ratio', null, stateVersion);
     const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * serviceBandwidthBudgetRatio;
     const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * appsBandwidthBudgetRatio;
     const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * freeBandwidthBudgetRatio;
@@ -218,7 +218,7 @@ class TransactionPool {
       serviceBandwidthBudgetPerBlock,
       appsBandwidthBudgetPerBlock,
       freeBandwidthBudgetPerBlock,
-    } = this.getBandwidthBudgets(db.blockNumberSnapshot, db.stateVersion);
+    } = this.getBandwidthBudgets(db.stateVersion);
     for (const tx of txList) {
       const nonce = tx.tx_body.nonce;
       if (addrToDiscardedNoncedTx[tx.address] && nonce >= 0) {

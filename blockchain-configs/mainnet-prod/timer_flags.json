@@ -22,5 +22,9 @@
   "update_max_state_tree_size_per_byte2": {
     "enabled_block": 58300,
     "has_bandage": true
+  },
+  "update_bandwidth_budget_params": {
+    "enabled_block": 130800,
+    "has_bandage": true
   }
 }
