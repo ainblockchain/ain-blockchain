@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 2 ]]; then
-    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--stop-only] [--keep-code|--no-keep-code]\n"
+    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--stop-only] [--keep-code|--no-keep-code] <Testing Option>\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --setup test_unit\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --keep-code test_unit\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --stop-only\n"
