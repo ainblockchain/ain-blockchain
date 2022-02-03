@@ -101,7 +101,7 @@ class EventHandler {
         const blockNumber = _.get(config, 'block_number', null);
         if (typeof blockNumber === 'number' && blockNumber < 0) {
           throw Error(`Invalid block_number. It must not be a negative number (${blockNumber})`);
-        } else if (blockNumber !== null) {
+        } else if (typeof blockNumber !== 'number' && blockNumber !== null) {
           throw Error(`Invalid block_number type. (${typeof blockNumber})`);
         }
         break;
