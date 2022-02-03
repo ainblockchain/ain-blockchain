@@ -466,7 +466,7 @@ class TransactionPool {
     const addrToTimestamp = {};
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
-      const txExecutedAt = _.get(this.transactionTracker.get(voteTx.hash), 'executed_at', -1);
+      const executedAt = _.get(this.transactionTracker.get(voteTx.hash), 'executed_at', -1);
       // voting txs with ordered nonces.
       this.transactionTracker.set(voteTx.hash, {
         state: TransactionStates.FINALIZED,
@@ -477,7 +477,7 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: txExecutedAt,
+        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
       inBlockTxs.add(voteTx.hash);
@@ -487,7 +487,7 @@ class TransactionPool {
       const tx = block.transactions[i];
       const txNonce = tx.tx_body.nonce;
       const txTimestamp = tx.tx_body.timestamp;
-      const txExecutedAt = _.get(this.transactionTracker.get(tx.hash), 'executed_at', -1);
+      const executedAt = _.get(this.transactionTracker.get(tx.hash), 'executed_at', -1);
       // Update transaction tracker.
       this.transactionTracker.set(tx.hash, {
         state: TransactionStates.FINALIZED,
@@ -498,7 +498,7 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: txExecutedAt,
+        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
       inBlockTxs.add(tx.hash);
