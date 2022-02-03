@@ -33,8 +33,9 @@ class TransactionPool {
     this.transactions.get(tx.address).push(tx);
     this.transactionTracker.set(tx.hash, {
       state: isExecutedTx ? TransactionStates.EXECUTED : TransactionStates.PENDING,
-      address: tx.address,
+      number: -1,
       index: this.transactions.get(tx.address).length - 1,
+      address: tx.address,
       timestamp: tx.tx_body.timestamp,
       is_executed: isExecutedTx,
       is_finalized: false,
