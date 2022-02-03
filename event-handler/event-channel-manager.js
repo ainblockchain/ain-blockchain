@@ -88,7 +88,8 @@ class EventChannelManager {
           throw Error(`Invalid message type (${messageType})`);
       }
     } catch (err) {
-      logger.error(`Error while process message (${JSON.stringify(message, null, 2)})`);
+      logger.error(`Error while process message (message: ${JSON.stringify(message, null, 2)}, ` +
+          `error message: ${err.message})`);
       // TODO(cshcomcom): Error handling with client
     }
   }
