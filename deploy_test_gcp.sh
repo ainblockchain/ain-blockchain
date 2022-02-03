@@ -56,7 +56,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # deploy files
-FILES_FOR_TEST="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh"
+FILES_FOR_TEST="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
 
 SEASON="dev"
 printf "SEASON=$SEASON\n"
@@ -77,25 +77,29 @@ printf "########################################################################
 
 # deploy files to GCP instances
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    printf "\n* >> Deploying files for test instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
+    printf "\n* >> Deploying files for instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
     gcloud compute ssh ${TEST_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain" --project $PROJECT_ID --zone ${TEST_ZONE}
     gcloud compute scp --recurse $FILES_FOR_TEST ${TEST_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone ${TEST_ZONE}
 fi
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 if [[ $SETUP_OPTION = "--setup" ]]; then
-    printf "\n* >> Setting up test instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
+    printf "\n* >> Setting up instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
     gcloud compute ssh ${TEST_TARGET_ADDR} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone ${TEST_ZONE}
 fi
 
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Installing node modules..\n'
+    printf "\n* >> Installing node modules on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
     gcloud compute ssh ${TEST_TARGET_ADDR} --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone ${TEST_ZONE}
 fi
 
-printf '\n'
-printf 'Running tests..\n'
+printf "\n* >> Stopping tests on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
+STOP_CMD="cd ./ain-blockchain; . stop_servers_local.sh"
+printf "\nSTOP_CMD=$STOP_CMD\n\n"
+gcloud compute ssh ${TEST_TARGET_ADDR} --command "$STOP_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
+
+printf "\n* >> Running tests on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
 TEST_CMD="cd ./ain-blockchain; yarn run ${TESTING_OPTION}"
 printf "\nTEST_CMD=$TEST_CMD\n\n"
 gcloud compute ssh ${TEST_TARGET_ADDR} --command "$TEST_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
