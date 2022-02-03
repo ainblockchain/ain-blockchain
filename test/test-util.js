@@ -81,7 +81,7 @@ function addBlock(node, txs, votes, validators) {
   const blockNumber = lastBlock.number + 1;
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), node.stateManager.createUniqueVersionName(StateVersions.FINAL),
-      node.bc, true, lastBlock.number, node.stateManager, BlockchainParams.genesis.genesis_addr);
+      node.bc, true, lastBlock.number, node.stateManager);
   finalDb.executeTransactionList(votes, true, false, blockNumber, lastBlock.timestamp);
   finalDb.executeTransactionList(txs, false, true, blockNumber, lastBlock.timestamp);
   finalDb.applyBandagesForBlockNumber(blockNumber);
