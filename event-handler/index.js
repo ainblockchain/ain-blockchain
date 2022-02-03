@@ -1,6 +1,7 @@
 const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
+const StateEventTreeManager = require('./state-event-tree-manager');
 const { BlockchainEventTypes } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
@@ -9,12 +10,12 @@ const BlockchainEvent = require('./blockchain-event');
 class EventHandler {
   constructor() {
     this.eventChannelManager = null;
+    this.stateEventTreeManager = new StateEventTreeManager();
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
-    this.stateEventTree = {};
     this.run();
   }
 
@@ -46,7 +47,8 @@ class EventHandler {
 
   emitValueChanged(auth, valuePath, beforeValue, afterValue) {
     const parsedValuePath = CommonUtil.parsePath(valuePath);
-    const matchedEventFilterIdList = this.findMatchedEventFilterIdList(parsedValuePath);
+    const matchedEventFilterIdList =
+        this.stateEventTreeManager.findMatchedEventFilterIdList(parsedValuePath);
     if (matchedEventFilterIdList.length > 0) {
       for (const eventFilterId of matchedEventFilterIdList) {
         const eventFilter = this.eventFilters[eventFilterId];
@@ -81,46 +83,6 @@ class EventHandler {
     }
   }
 
-  findMatchedEventFilterIdListRecursive(currNode, depth, parsedValuePath) {
-    const matchedEventFilterIds = [];
-    if (parsedValuePath.length === depth) { // Last node case
-      const eventNode = currNode['.event'];
-      if (eventNode) {
-        const filterIdSet = eventNode.filterIdSet;
-        matchedEventFilterIds.push(...filterIdSet);
-      }
-      return matchedEventFilterIds;
-    }
-
-    const wildcardNode = currNode['*'];
-    if (wildcardNode) {
-      matchedEventFilterIds.push(
-          ...this.findMatchedEventFilterIdListRecursive(wildcardNode, depth + 1, parsedValuePath));
-    }
-
-    const nextNode = currNode[parsedValuePath[depth + 1]];
-    if (nextNode) {
-      matchedEventFilterIds.push(
-          ...this.findMatchedEventFilterIdListRecursive(nextNode, depth + 1, parsedValuePath));
-    }
-
-    return matchedEventFilterIds;
-  }
-
-  findMatchedEventFilterIdList(parsedValuePath) {
-    return this.findMatchedEventFilterIdListRecursive(this.stateEventTree, 0, parsedValuePath)
-  }
-
-  isValidPathForStateEventTree(parsedPath) {
-    const stateEventTreePathPatternRegex = /^[a-zA-Z_]+$/gm;
-    for (const label of parsedPath) {
-      if (!stateEventTreePathPatternRegex.test(label)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
@@ -146,7 +108,7 @@ class EventHandler {
       case BlockchainEventTypes.VALUE_CHANGED:
         const path = _.get(config, 'path', null);
         const parsedPath = CommonUtil.parsePath(path);
-        if (!this.isValidPathForStateEventTree(parsedPath)) {
+        if (!this.stateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
           throw Error(`Invalid format path (${path})`);
         }
         break;
@@ -164,6 +126,9 @@ class EventHandler {
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
     this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
+    if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
+      this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
+    }
     return eventFilter;
   }
 }
