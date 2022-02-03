@@ -1,8 +1,10 @@
 #!/bin/bash
 
 if [[ $# -lt 2 ]]; then
-    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--keep-code|--no-keep-code]\n"
-    printf "Example: bash deploy_test_gcp.sh seo 0 --setup --keep-code\n"
+    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--stop-only] [--keep-code|--no-keep-code]\n"
+    printf "Example: bash deploy_test_gcp.sh seo 0 --setup test_unit\n"
+    printf "Example: bash deploy_test_gcp.sh seo 0 --keep-code test_unit\n"
+    printf "Example: bash deploy_test_gcp.sh seo 0 --stop-only\n"
     printf "\n"
     exit
 fi
@@ -24,6 +26,8 @@ function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
         SETUP_OPTION="$option"
+    elif [[ $option = '--stop-only' ]]; then
+        STOP_ONLY_OPTION="$option"
     elif [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ $option = '--no-keep-code' ]]; then
@@ -35,6 +39,7 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
+STOP_ONLY_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 TESTING_OPTION=""
 
@@ -44,6 +49,7 @@ while [ $ARG_INDEX -le $# ]; do
   ((ARG_INDEX++))
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
+printf "STOP_ONLY_OPTION=$STOP_ONLY_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "TESTING_OPTION=$TESTING_OPTION\n"
 
@@ -54,6 +60,13 @@ printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
+
+function stop_servers() {
+    printf "\n* >> Stopping tests on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
+    STOP_CMD="cd ./ain-blockchain; . stop_servers_local.sh"
+    printf "\nSTOP_CMD=$STOP_CMD\n\n"
+    gcloud compute ssh ${TEST_TARGET_ADDR} --command "$STOP_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
+}
 
 # deploy files
 FILES_FOR_TEST="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
@@ -75,6 +88,12 @@ printf "########################################################################
 printf "# Deploying blockchain tests #\n"
 printf "###############################################################################\n\n"
 
+# stop test servers and exit
+if [[ $STOP_ONLY_OPTION = "--stop-only" ]]; then
+    stop_servers
+    exit 0
+fi
+
 # deploy files to GCP instances
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\n* >> Deploying files for instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
@@ -94,10 +113,8 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     gcloud compute ssh ${TEST_TARGET_ADDR} --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone ${TEST_ZONE}
 fi
 
-printf "\n* >> Stopping tests on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
-STOP_CMD="cd ./ain-blockchain; . stop_servers_local.sh"
-printf "\nSTOP_CMD=$STOP_CMD\n\n"
-gcloud compute ssh ${TEST_TARGET_ADDR} --command "$STOP_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
+# stop test servers first
+stop_servers
 
 printf "\n* >> Running tests on instance ${TEST_TARGET_ADDR} *********************************************************\n\n"
 TEST_CMD="cd ./ain-blockchain; yarn run ${TESTING_OPTION}"
