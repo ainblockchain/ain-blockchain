@@ -233,6 +233,20 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     done
 fi
 
+# install node modules on GCP instances
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    printf "\n* >> Installing node modules for parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
+
+    for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
+        NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+        NODE_ZONE=NODE_${node_index}_ZONE
+
+        printf "\n* >> Installing node modules for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone ${!NODE_ZONE}
+    done
+fi
+
 if [[ $KILL_OPTION = "--skip-kill" ]]; then
     printf "\nSkipping process kill...\n"
 else
@@ -375,6 +389,18 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
             gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_1_ZONE
             printf "\n* >> Setting up  shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
             gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_2_ZONE
+        fi
+
+        # install node modules on GCP instances
+        if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+            printf "\n* >> Installing node modules for shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
+            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
+            printf "\n* >> Installing node modules for shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_0_ZONE
+            printf "\n* >> Installing node modules for shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_1_ZONE
+            printf "\n* >> Installing node modules for shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_2_ZONE
         fi
 
         # ssh into each instance, install packages and start up the server
