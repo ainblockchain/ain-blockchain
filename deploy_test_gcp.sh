@@ -4,6 +4,7 @@ if [[ $# -lt 2 ]]; then
     printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--keep-code|--no-keep-code] [--bg] [--cat-log] [--stop-only] <Testing Option>\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --setup test_unit\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --keep-code test_unit\n"
+    printf "Example: bash deploy_test_gcp.sh seo 0 --keep-code test_unit \"-g 'matchFunction NOT'\"\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --keep-code --bg test_unit\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --cat-log\n"
     printf "Example: bash deploy_test_gcp.sh seo 0 --stop-only\n"
