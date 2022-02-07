@@ -963,6 +963,10 @@ class CommonUtil {
     if (!CommonUtil.isNumber(enabledBlockNumber)) {
       return null;
     }
+    const earlyAppliedBlockNumber = process.env.TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER ? Number(process.env.TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER) : null;
+    if (CommonUtil.isNumber(earlyAppliedBlockNumber) && enabledBlockNumber <= earlyAppliedBlockNumber) {
+      return 2;
+    }
     return enabledBlockNumber;
   }
 
@@ -970,6 +974,10 @@ class CommonUtil {
     const disabledBlockNumber = timerFlag['disabled_block'];
     if (!CommonUtil.isNumber(disabledBlockNumber)) {
       return null;
+    }
+    const earlyAppliedBlockNumber = process.env.TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER ? Number(process.env.TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER) : null;
+    if (CommonUtil.isNumber(earlyAppliedBlockNumber) && disabledBlockNumber <= earlyAppliedBlockNumber) {
+      return 2;
     }
     return disabledBlockNumber;
   }
