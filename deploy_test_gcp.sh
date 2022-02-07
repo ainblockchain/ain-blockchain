@@ -82,7 +82,7 @@ function stop_servers() {
 }
 
 # deploy files
-FILES_FOR_TEST="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
+FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
 
 printf "\n"
 SEASON="dev"
