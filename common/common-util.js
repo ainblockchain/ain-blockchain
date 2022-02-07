@@ -941,35 +941,53 @@ class CommonUtil {
 
   static hasTimerFlagEnabled(timerFlags, flagName, blockNumber) {
     const flag = timerFlags[flagName];
-    if (!flag) {
+    if (!CommonUtil.isDict(flag)) {
       return false;
     }
     if (!CommonUtil.isNumber(blockNumber)) {
       return false;
     }
-    const enabledBlock = flag['enabled_block'];
-    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock) ||
-        blockNumber < enabledBlock) {
+    const enabledBlockNumber = CommonUtil.getEnabledBlockNumberFromTimerFlag(flag);
+    if (!CommonUtil.isNumber(enabledBlockNumber) || blockNumber < enabledBlockNumber) {
       return false;
     }
-    const disabledBlock = flag['disabled_block'];
-    if (disabledBlock === undefined || !CommonUtil.isNumber(disabledBlock) ||
-        blockNumber < disabledBlock) {
+    const disabledBlockNumber = CommonUtil.getDisabledBlockNumberFromTimerFlag(flag);
+    if (!CommonUtil.isNumber(disabledBlockNumber) || blockNumber < disabledBlockNumber) {
       return true;
     }
     return false;
   }
 
-  static getTimerFlagEnabledBlock(timerFlags, flagName) {
+  static getEnabledBlockNumberFromTimerFlag(timerFlag) {
+    const enabledBlockNumber = timerFlag['enabled_block'];
+    if (!CommonUtil.isNumber(enabledBlockNumber)) {
+      return null;
+    }
+    return enabledBlockNumber;
+  }
+
+  static getDisabledBlockNumberFromTimerFlag(timerFlag) {
+    const disabledBlockNumber = timerFlag['disabled_block'];
+    if (!CommonUtil.isNumber(disabledBlockNumber)) {
+      return null;
+    }
+    return disabledBlockNumber;
+  }
+
+  static getTimerFlagEnabledBlockNumber(timerFlags, flagName) {
     const flag = timerFlags[flagName];
-    if (!flag) {
+    if (!CommonUtil.isDict(flag)) {
       return null;
     }
-    const enabledBlock = flag['enabled_block'];
-    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock)) {
+    return CommonUtil.getEnabledBlockNumberFromTimerFlag(flag);
+  }
+
+  static getTimerFlagDisabledBlockNumber(timerFlags, flagName) {
+    const flag = timerFlags[flagName];
+    if (!CommonUtil.isDict(flag)) {
       return null;
     }
-    return enabledBlock;
+    return CommonUtil.getDisabledBlockNumberFromTimerFlag(flag);
   }
 
   static createTimerFlagEnabledBandageMap(timerFlags) {
@@ -980,7 +998,7 @@ class CommonUtil {
     for (let i = 0; i < flagNameList.length; i++) {
       const flagName = flagNameList[i];
       const flag = timerFlags[flagName];
-      const enabledBlockNumber = flag['enabled_block'];
+      const enabledBlockNumber = CommonUtil.getEnabledBlockNumberFromTimerFlag(flag);
       if (CommonUtil.isNumber(enabledBlockNumber) && flag['has_bandage'] === true) {
         const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
         console.log(`[${LOG_HEADER}] [${i}] Registering ${bandageFilePath}`);
