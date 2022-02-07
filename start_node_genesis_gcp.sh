@@ -133,12 +133,6 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     CODE_CMD="cd ~; sudo mv ain-blockchain /home; sudo chmod -R 777 /home/ain-blockchain; sudo chown -R root:root /home/ain-blockchain; cd /home/ain-blockchain"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
-
-    printf '\n'
-    printf 'Installing node modules..\n'
-    INSTALL_CMD="sudo yarn install --ignore-engines"
-    printf "\nINSTALL_CMD=$INSTALL_CMD\n"
-    eval $INSTALL_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
