@@ -279,6 +279,9 @@ fi
 
 export STAKE=100000
 printf "STAKE=$STAKE\n"
+# uncomment and set value when necessary
+#export TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER=124440  # summer
+#printf "TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER=$TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
     MAX_OLD_SPACE_SIZE_MB=11000
