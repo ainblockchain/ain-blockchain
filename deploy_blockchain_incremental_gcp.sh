@@ -2,7 +2,7 @@
 
 if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev my_username 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
     printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
@@ -215,11 +215,15 @@ function deploy_node() {
 
     # 3. Start node
     printf "\n\n<<< Starting node $node_index >>>\n\n"
-    if [[ $node_index -gt 4 ]]; then
+
+    if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
-        REST_FUNC_OPTION="--rest-func"
     else
         JSON_RPC_OPTION=""
+    fi
+    if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
+        REST_FUNC_OPTION="--rest-func"
+    else
         REST_FUNC_OPTION=""
     fi
 

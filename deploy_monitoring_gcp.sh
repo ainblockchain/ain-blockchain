@@ -2,7 +2,7 @@
 
 if [[ "$#" -lt 2 ]]; then
     printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username>  [--setup]\n"
-    printf "Example: bash deploy_monitoring_gcp.sh dev seo\n"
+    printf "Example: bash deploy_monitoring_gcp.sh dev my_username\n"
     printf "\n"
     exit
 fi
