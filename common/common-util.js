@@ -998,6 +998,8 @@ class CommonUtil {
     return CommonUtil.getDisabledBlockNumberFromTimerFlag(flag);
   }
 
+  // NOTE(platfowner): Bandage files are applied on 'enabled_block' number but not reverted on
+  // 'disabled_block' number.
   static createTimerFlagEnabledBandageMap(timerFlags) {
     const LOG_HEADER = 'createTimerFlagEnabledBandageMap';
     const map = new Map();
