@@ -2,7 +2,7 @@
 
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev my_username 0 --setup --keystore --no-keep-code\n"
     printf "\n"
     exit
 fi
@@ -323,11 +323,14 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
 
     printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
     
-    if [[ $node_index -gt 4 ]]; then
+    if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
-        REST_FUNC_OPTION="--rest-func"
     else
         JSON_RPC_OPTION=""
+    fi
+    if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
+        REST_FUNC_OPTION="--rest-func"
+    else
         REST_FUNC_OPTION=""
     fi
 

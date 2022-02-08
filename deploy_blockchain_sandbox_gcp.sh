@@ -2,7 +2,7 @@
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh my_username 10 99 --setup\n"
     printf "\n"
     exit
 fi
@@ -411,11 +411,14 @@ printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 node_index=$START_NODE_IDX
 while [ $node_index -le $END_NODE_IDX ]; do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
-    if [[ $node_index -gt 4 ]]; then
+    if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
-        REST_FUNC_OPTION="--rest-func"
     else
         JSON_RPC_OPTION=""
+    fi
+    if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
+        REST_FUNC_OPTION="--rest-func"
+    else
         REST_FUNC_OPTION=""
     fi
     NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
