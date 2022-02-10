@@ -94,7 +94,7 @@ class EventHandler {
     return `${channelId}:${clientFilterId}`;
   }
 
-  checkEventFilterConfig(eventType, config) {
+  validateEventFilterConfig(eventType, config) {
     switch (eventType) {
       case BlockchainEventTypes.BLOCK_FINALIZED:
         const blockNumber = _.get(config, 'block_number', null);
@@ -121,7 +121,7 @@ class EventHandler {
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
-    this.checkEventFilterConfig(eventType, config);
+    this.validateEventFilterConfig(eventType, config);
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
     this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
