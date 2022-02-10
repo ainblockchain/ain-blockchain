@@ -17,6 +17,35 @@ describe('EventHandler Test', () => {
   });
 
   describe('EventHandler', () => {
+    describe('validateEventFilterConfig', () => {
+      it('validate BLOCK_FINALIZED config with right config', () => {
+        expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
+          block_number: 1000,
+        })).to.equal(undefined);
+      });
+      it('validate BLOCK_FINALIZED config with wrong config', () => {
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
+          block_number: -1,
+        })).to.throw('Invalid block_number. It must not be a negative number (-1)');
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
+          block_number: 'dummy',
+        })).to.throw('Invalid block_number type. (string)');
+      });
+      it('validate VALUE_CHANGED config with right config', () => {
+        expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
+          path: '/apps/test',
+        })).to.equal(undefined);
+      });
+      it('validate VALUE_CHANGED config with wrong config', () => {
+        const wrongPathList = ['/apps/test/****', '/apps/$$new_app'];
+        for (const wrongPath of wrongPathList) {
+          expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.VALUE_CHANGED, {
+            path: wrongPath,
+          })).to.throw(`Invalid format path (${wrongPath})`);
+        }
+      });
+    });
+
     it('createAndRegisterFilter', () => {
       const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
       eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(), BlockchainEventTypes.BLOCK_FINALIZED, {
