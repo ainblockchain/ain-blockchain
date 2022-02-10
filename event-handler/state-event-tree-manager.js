@@ -7,7 +7,7 @@ class StateEventTreeManager {
     this.stateEventTree = {};
   }
 
-  isValidPathForStateEventTree(parsedPath) {
+  static isValidPathForStateEventTree(parsedPath) {
     const stateEventTreePathPatternRegex = /^\$?[a-zA-Z_]+$/;
     for (const label of parsedPath) {
       if (stateEventTreePathPatternRegex.test(label) === false) {

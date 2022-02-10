@@ -94,7 +94,7 @@ class EventHandler {
     return `${channelId}:${clientFilterId}`;
   }
 
-  validateEventFilterConfig(eventType, config) {
+  static validateEventFilterConfig(eventType, config) {
     switch (eventType) {
       case BlockchainEventTypes.BLOCK_FINALIZED:
         const blockNumber = _.get(config, 'block_number', null);
@@ -107,7 +107,7 @@ class EventHandler {
       case BlockchainEventTypes.VALUE_CHANGED:
         const path = _.get(config, 'path', null);
         const parsedPath = CommonUtil.parsePath(path);
-        if (!this.stateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
+        if (!StateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
           throw Error(`Invalid format path (${path})`);
         }
         break;
@@ -121,7 +121,7 @@ class EventHandler {
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
-    this.validateEventFilterConfig(eventType, config);
+    EventHandler.validateEventFilterConfig(eventType, config);
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
     this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
