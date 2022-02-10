@@ -45,8 +45,8 @@ class EventHandler {
     }
   }
 
-  emitValueChanged(auth, valuePath, beforeValue, afterValue) {
-    const parsedValuePath = CommonUtil.parsePath(valuePath);
+  emitValueChanged(auth, parsedValuePath, beforeValue, afterValue) {
+    const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList =
         this.stateEventTreeManager.findMatchedEventFilterIdList(parsedValuePath);
     if (matchedEventFilterIdList.length > 0) {
@@ -59,7 +59,7 @@ class EventHandler {
         }
         const parsedTargetPath = CommonUtil.parsePath(targetPath);
         if (parsedValuePath.length !== parsedTargetPath.length) {
-          logger.error(`Lengths of parsedValuePath and parsedTargetPath do not match!`);
+          logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
         }
 
         const params = {};
