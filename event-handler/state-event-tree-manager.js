@@ -1,5 +1,6 @@
 const logger = new (require('../logger'))('STATE_EVENT_TREE_MANAGER');
 const CommonUtil = require('../common/common-util');
+const { isValidStateLabel } = require('../db/state-util');
 const EVENT_NODE_LABEL = '.event';
 
 class StateEventTreeManager {
@@ -8,9 +9,8 @@ class StateEventTreeManager {
   }
 
   static isValidPathForStateEventTree(parsedPath) {
-    const stateEventTreePathPatternRegex = /^\$?[a-zA-Z_]+$/;
     for (const label of parsedPath) {
-      if (stateEventTreePathPatternRegex.test(label) === false) {
+      if (isValidStateLabel(label) === false) {
         return false;
       }
     }
