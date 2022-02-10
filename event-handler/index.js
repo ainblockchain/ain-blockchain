@@ -73,6 +73,7 @@ class EventHandler {
           filter_path: targetPath,
           matched_path: valuePath,
           params: params,
+          auth: auth,
           values: {
             before: beforeValue,
             after: afterValue,
