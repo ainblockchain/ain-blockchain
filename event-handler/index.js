@@ -49,38 +49,36 @@ class EventHandler {
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList =
         this.stateEventTreeManager.findMatchedEventFilterIdList(parsedValuePath);
-    if (matchedEventFilterIdList.length > 0) {
-      for (const eventFilterId of matchedEventFilterIdList) {
-        const eventFilter = this.eventFilters[eventFilterId];
-        const targetPath = _.get(eventFilter, 'config.path', null);
-        if (!targetPath) {
-          logger.error(`Filter ${eventFilterId} doesn't have config.path`);
-          continue;
-        }
-        const parsedTargetPath = CommonUtil.parsePath(targetPath);
-        if (parsedValuePath.length !== parsedTargetPath.length) {
-          logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
-        }
-
-        const params = {};
-        for (const [idx, label] of parsedTargetPath.entries()) {
-          if (CommonUtil.isVariableLabel(label)) {
-            params[label.substring(1)] = parsedValuePath[idx];
-          }
-        }
-
-        const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.VALUE_CHANGED, {
-          filter_path: targetPath,
-          matched_path: valuePath,
-          params: params,
-          auth: auth,
-          values: {
-            before: beforeValue,
-            after: afterValue,
-          },
-        });
-        this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+    for (const eventFilterId of matchedEventFilterIdList) {
+      const eventFilter = this.eventFilters[eventFilterId];
+      const targetPath = _.get(eventFilter, 'config.path', null);
+      if (!targetPath) {
+        logger.error(`Filter ${eventFilterId} doesn't have config.path`);
+        continue;
       }
+      const parsedTargetPath = CommonUtil.parsePath(targetPath);
+      if (parsedValuePath.length !== parsedTargetPath.length) {
+        logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+      }
+
+      const params = {};
+      for (const [idx, label] of parsedTargetPath.entries()) {
+        if (CommonUtil.isVariableLabel(label)) {
+          params[label.substring(1)] = parsedValuePath[idx];
+        }
+      }
+
+      const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.VALUE_CHANGED, {
+        filter_path: targetPath,
+        matched_path: valuePath,
+        params: params,
+        auth: auth,
+        values: {
+          before: beforeValue,
+          after: afterValue,
+        },
+      });
+      this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
     }
   }
 
