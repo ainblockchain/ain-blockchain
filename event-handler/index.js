@@ -113,18 +113,24 @@ class EventHandler {
   }
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
-    if (this.eventFilters[eventFilterId]) {
-      throw Error(`Event filter ID ${eventFilterId} is already in use`);
+    try {
+      const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
+      if (this.eventFilters[eventFilterId]) {
+        throw Error(`Event filter ID ${eventFilterId} is already in use`);
+      }
+      EventHandler.validateEventFilterConfig(eventType, config);
+      const eventFilter = new EventFilter(eventFilterId, eventType, config);
+      this.eventFilters[eventFilterId] = eventFilter;
+      this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
+      if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
+        this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
+      }
+      return eventFilter;
+    } catch (err) {
+      logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
+          `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, err: ${err.message})`);
+      throw err;
     }
-    EventHandler.validateEventFilterConfig(eventType, config);
-    const eventFilter = new EventFilter(eventFilterId, eventType, config);
-    this.eventFilters[eventFilterId] = eventFilter;
-    this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
-    if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
-      this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
-    }
-    return eventFilter;
   }
 }
 
