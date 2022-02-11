@@ -2,6 +2,7 @@ const logger = new (require('../logger'))('STATE_EVENT_TREE_MANAGER');
 const CommonUtil = require('../common/common-util');
 const { isValidStateLabel } = require('../db/state-util');
 const EVENT_NODE_LABEL = '.event';
+const WILDCARD_LABEL = '*';
 
 class StateEventTreeManager {
   constructor() {
@@ -22,7 +23,7 @@ class StateEventTreeManager {
     let currNode = this.stateEventTree;
     for (let [idx, label] of parsedValuePath.entries()) {
       if (CommonUtil.isVariableLabel(label)) {
-        label = '*';
+        label = WILDCARD_LABEL;
       }
       if (!currNode[label]) {
         currNode[label] = {};
@@ -55,7 +56,7 @@ class StateEventTreeManager {
       return matchedEventFilterIds;
     }
 
-    const wildcardNode = currNode['*'];
+    const wildcardNode = currNode[WILDCARD_LABEL];
     if (wildcardNode) {
       matchedEventFilterIds.push(
           ...this.findMatchedEventFilterIdListRecursive(wildcardNode, depth + 1, parsedValuePath));
