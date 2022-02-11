@@ -47,7 +47,7 @@ class StateEventTreeManager {
 
   matchEventFilterPathRecursive(currNode, depth, parsedValuePath) {
     const matchedEventFilterIds = [];
-    if (depth === parsedValuePath.length - 1) { // Last node case
+    if (depth === parsedValuePath.length) { // Last node case
       const eventNode = currNode[EVENT_NODE_LABEL];
       if (eventNode) {
         const filterIdSet = eventNode.filterIdSet;
@@ -72,7 +72,7 @@ class StateEventTreeManager {
   }
 
   matchEventFilterPath(parsedValuePath) {
-    return this.matchEventFilterPathRecursive(this.stateEventTree, -1, parsedValuePath)
+    return this.matchEventFilterPathRecursive(this.stateEventTree, 0, parsedValuePath)
   }
 }
 
