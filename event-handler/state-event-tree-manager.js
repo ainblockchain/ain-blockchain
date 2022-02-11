@@ -42,7 +42,7 @@ class StateEventTreeManager {
   }
 
   deregisterEventFilterId(filterId) {
-    // TODO(cshcomcom): Implement and connect with ain-js
+    // TODO(cshcomcom): Implement and connect with ain-js.
   }
 
   findMatchedEventFilterIdListRecursive(currNode, depth, parsedValuePath) {
