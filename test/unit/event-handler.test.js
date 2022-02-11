@@ -46,13 +46,32 @@ describe('EventHandler Test', () => {
       });
     });
 
-    it('createAndRegisterFilter', () => {
-      const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-      eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(), BlockchainEventTypes.BLOCK_FINALIZED, {
-        block_number: 100,
+    describe('createAndRegisterFilter', () => {
+      beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       });
-      const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
-      expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+
+      it('create and register with right config', () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+            BlockchainEventTypes.BLOCK_FINALIZED, {
+              block_number: 100,
+            });
+        const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+      });
+
+      it('create and register with wrong config', () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        try { // NOTE(cshcomcom): createAndRegisterEventFilter throws error in this case.
+          eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+              BlockchainEventTypes.BLOCK_FINALIZED, {
+                block_number: -1,
+              });
+        } catch (err) {}
+        const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
     });
   });
 
