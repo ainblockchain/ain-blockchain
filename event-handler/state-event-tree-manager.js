@@ -45,7 +45,7 @@ class StateEventTreeManager {
     // TODO(cshcomcom): Implement and connect with ain-js.
   }
 
-  findMatchedEventFilterIdListRecursive(currNode, depth, parsedValuePath) {
+  matchEventFilterPathRecursive(currNode, depth, parsedValuePath) {
     const matchedEventFilterIds = [];
     if (depth === parsedValuePath.length - 1) { // Last node case
       const eventNode = currNode[EVENT_NODE_LABEL];
@@ -59,20 +59,20 @@ class StateEventTreeManager {
     const wildcardNode = currNode[WILDCARD_LABEL];
     if (wildcardNode) {
       matchedEventFilterIds.push(
-          ...this.findMatchedEventFilterIdListRecursive(wildcardNode, depth + 1, parsedValuePath));
+          ...this.matchEventFilterPathRecursive(wildcardNode, depth + 1, parsedValuePath));
     }
 
     const nextNode = currNode[parsedValuePath[depth + 1]];
     if (nextNode) {
       matchedEventFilterIds.push(
-          ...this.findMatchedEventFilterIdListRecursive(nextNode, depth + 1, parsedValuePath));
+          ...this.matchEventFilterPathRecursive(nextNode, depth + 1, parsedValuePath));
     }
 
     return matchedEventFilterIds;
   }
 
-  findMatchedEventFilterIdList(parsedValuePath) {
-    return this.findMatchedEventFilterIdListRecursive(this.stateEventTree, -1, parsedValuePath)
+  matchEventFilterPath(parsedValuePath) {
+    return this.matchEventFilterPathRecursive(this.stateEventTree, -1, parsedValuePath)
   }
 }
 

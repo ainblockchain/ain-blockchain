@@ -47,8 +47,7 @@ class EventHandler {
 
   emitValueChanged(auth, parsedValuePath, beforeValue, afterValue) {
     const valuePath = CommonUtil.formatPath(parsedValuePath);
-    const matchedEventFilterIdList =
-        this.stateEventTreeManager.findMatchedEventFilterIdList(parsedValuePath);
+    const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
     for (const eventFilterId of matchedEventFilterIdList) {
       const eventFilter = this.eventFilters[eventFilterId];
       const targetPath = _.get(eventFilter, 'config.path', null);
