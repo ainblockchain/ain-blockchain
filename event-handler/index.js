@@ -54,6 +54,7 @@ class EventHandler {
       const parsedTargetPath = CommonUtil.parsePath(targetPath);
       if (parsedValuePath.length !== parsedTargetPath.length) {
         logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+        continue;
       }
 
       const params = {};
