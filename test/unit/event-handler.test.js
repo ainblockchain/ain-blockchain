@@ -75,7 +75,7 @@ describe('EventHandler Test', () => {
     });
   });
 
-  describe('EvenChannelManager', () => {
+  describe('EventChannelManager', () => {
     let eventChannelManager;
 
     before(() => {
