@@ -17,6 +17,21 @@ describe('EventHandler Test', () => {
   });
 
   describe('EventHandler', () => {
+    describe('getClientFilterIdFromGlobalFilterId', () => {
+      it('getClientFilterIdFromGlobalFilterId', () => {
+        expect(eventHandler.getClientFilterIdFromGlobalFilterId('channelId:clientFilterId'))
+        .to.equal('clientFilterId');
+      });
+    });
+
+    describe('getGlobalFilterId', () => {
+      it('getGlobalFilterId', () => {
+        expect(eventHandler.getGlobalFilterId('channelId', 'clientFilterId')).
+            to.
+            equal('channelId:clientFilterId');
+      });
+    });
+
     describe('validateEventFilterConfig', () => {
       it('validate BLOCK_FINALIZED config with right config', () => {
         expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
