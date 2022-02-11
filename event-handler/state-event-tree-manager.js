@@ -6,7 +6,7 @@ const WILDCARD_LABEL = '*';
 
 class StateEventTreeManager {
   constructor() {
-    this.stateEventTree = {};
+    this.stateEventTree = {}; // TODO(cshcomcom): Use Map.
   }
 
   static isValidPathForStateEventTree(parsedPath) {
