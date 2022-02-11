@@ -63,7 +63,11 @@ function isEnabledTimerFlag(flagName, blockNumber) {
 }
 
 function isTimerFlagEnabledAt(flagName, blockNumber) {
-  return CommonUtil.getTimerFlagEnabledBlock(TimerFlags, flagName) === blockNumber;
+  return CommonUtil.getTimerFlagEnabledBlockNumber(TimerFlags, flagName) === blockNumber;
+}
+
+function isTimerFlagDisabledAt(flagName, blockNumber) {
+  return CommonUtil.getTimerFlagDisabledBlockNumber(TimerFlags, flagName) === blockNumber;
 }
 
 const TimerFlagEnabledBandageMap = CommonUtil.createTimerFlagEnabledBandageMap(TimerFlags);
@@ -763,6 +767,7 @@ module.exports = {
   TimerFlags,
   isEnabledTimerFlag,
   isTimerFlagEnabledAt,
+  isTimerFlagDisabledAt,
   TimerFlagEnabledBandageMap,
   BlockchainParams,
   NodeConfigs,
