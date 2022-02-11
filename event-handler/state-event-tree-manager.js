@@ -56,7 +56,7 @@ class StateEventTreeManager {
       return matchedEventFilterIds;
     }
 
-    const nextNode = currNode[parsedValuePath[depth + 1]];
+    const nextNode = currNode[parsedValuePath[depth]];
     if (nextNode) {
       matchedEventFilterIds.push(
           ...this.matchEventFilterPathRecursive(nextNode, depth + 1, parsedValuePath));
