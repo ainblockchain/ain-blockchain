@@ -51,10 +51,6 @@ class EventHandler {
     for (const eventFilterId of matchedEventFilterIdList) {
       const eventFilter = this.eventFilters[eventFilterId];
       const targetPath = _.get(eventFilter, 'config.path', null);
-      if (!targetPath) {
-        logger.error(`Filter ${eventFilterId} doesn't have config.path`);
-        continue;
-      }
       const parsedTargetPath = CommonUtil.parsePath(targetPath);
       if (parsedValuePath.length !== parsedTargetPath.length) {
         logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
