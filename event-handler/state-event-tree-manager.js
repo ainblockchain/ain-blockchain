@@ -56,16 +56,16 @@ class StateEventTreeManager {
       return matchedEventFilterIds;
     }
 
-    const wildcardNode = currNode[WILDCARD_LABEL];
-    if (wildcardNode) {
-      matchedEventFilterIds.push(
-          ...this.matchEventFilterPathRecursive(wildcardNode, depth + 1, parsedValuePath));
-    }
-
     const nextNode = currNode[parsedValuePath[depth + 1]];
     if (nextNode) {
       matchedEventFilterIds.push(
           ...this.matchEventFilterPathRecursive(nextNode, depth + 1, parsedValuePath));
+    }
+
+    const wildcardNode = currNode[WILDCARD_LABEL];
+    if (wildcardNode) {
+      matchedEventFilterIds.push(
+          ...this.matchEventFilterPathRecursive(wildcardNode, depth + 1, parsedValuePath));
     }
 
     return matchedEventFilterIds;
