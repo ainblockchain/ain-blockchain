@@ -120,7 +120,7 @@ function getIpAddress(internal = false) {
 }
 
 function convertIpv6ToIpv4(address) {
-  return address.replace('::ffff:', '');
+  return CommonUtil.isString(address) ? address.replace('::ffff:', '') : '';
 }
 
 module.exports = {
