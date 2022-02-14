@@ -73,6 +73,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -99,6 +100,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -113,6 +115,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -137,6 +140,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -163,6 +167,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -177,6 +182,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
