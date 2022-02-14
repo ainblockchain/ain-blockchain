@@ -25,6 +25,7 @@ class EventHandler {
     logger.info(`Event handler started!`);
   }
 
+  // TODO(cshcomcom): Add tests.
   emitBlockFinalized(blockNumber) {
     if (!blockNumber) {
       return;
@@ -45,6 +46,7 @@ class EventHandler {
     }
   }
 
+  // TODO(cshcomcom): Add tests.
   emitValueChanged(auth, parsedValuePath, beforeValue, afterValue) {
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
