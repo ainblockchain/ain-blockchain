@@ -20,6 +20,7 @@ UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289be
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -32,6 +33,7 @@ UNSAFE_PRIVATE_KEY=921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -44,6 +46,7 @@ UNSAFE_PRIVATE_KEY=41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 15
@@ -68,6 +71,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -93,6 +97,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -106,6 +111,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
+  ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 15
