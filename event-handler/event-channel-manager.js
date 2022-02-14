@@ -35,24 +35,24 @@ class EventChannelManager {
 
   handleConnection(webSocket) {
     const channelId = Date.now(); // NOTE: Only used in blockchain
-    if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic
+    if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
       throw Error(`Channel ID ${channelId} is already in use`);
     }
     const channel = new EventChannel(channelId, webSocket);
     this.channels[channelId] = channel;
-    // TODO(cshcomcom): Handle MAX connections
+    // TODO(cshcomcom): Handle MAX connections.
 
     logger.info(`New connection (${channelId})`);
     webSocket.on('message', (message) => {
       this.handleMessage(channel, message);
     });
     webSocket.on('close', (message) => {
-      // TODO(cshcomcom): Delete unused variables
+      // TODO(cshcomcom): Delete unused variables.
     });
-    // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490)
+    // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490).
   }
 
-  handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION
+  handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
     try {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
@@ -82,14 +82,15 @@ class EventChannelManager {
           this.filterIdToChannelId[filter.id] = channel.id;
           break;
         case BlockchainEventMessageTypes.DEREGISTER_FILTER:
-          // TODO(cshcomcom): Implement
+          // TODO(cshcomcom): Implement.
           break;
         default:
           throw Error(`Invalid message type (${messageType})`);
       }
     } catch (err) {
-      logger.error(`Error while process message (${JSON.stringify(message, null, 2)})`);
-      // TODO(cshcomcom): Error handling with client
+      logger.error(`Error while process message (message: ${JSON.stringify(message, null, 2)}, ` +
+          `error message: ${err.message})`);
+      // TODO(cshcomcom): Error handling with client.
     }
   }
 
@@ -121,7 +122,7 @@ class EventChannelManager {
   close() {
     this.wsServer.close(() => {
       logger.info(`Closed event channel manager's socket`);
-      // TODO(cshcomcom): Clear all data
+      // TODO(cshcomcom): Clear all data.
     });
   }
 }

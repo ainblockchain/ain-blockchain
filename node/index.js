@@ -58,7 +58,7 @@ class BlockchainNode {
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
-        this.stateManager);
+        this.stateManager, eventHandler);
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     if (account === null) {
@@ -291,7 +291,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager, this.eh);
   }
 
   syncDbAndNonce(newVersion) {
