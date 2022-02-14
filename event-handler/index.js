@@ -1,13 +1,16 @@
 const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
+const StateEventTreeManager = require('./state-event-tree-manager');
 const { BlockchainEventTypes } = require('../common/constants');
+const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 
 class EventHandler {
   constructor() {
     this.eventChannelManager = null;
+    this.stateEventTreeManager = new StateEventTreeManager();
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
     for (const eventType of Object.keys(BlockchainEventTypes)) {
@@ -22,6 +25,7 @@ class EventHandler {
     logger.info(`Event handler started!`);
   }
 
+  // TODO(cshcomcom): Add tests.
   emitBlockFinalized(blockNumber) {
     if (!blockNumber) {
       return;
@@ -42,8 +46,38 @@ class EventHandler {
     }
   }
 
-  emitValueChanged() {
-    // TODO(cshcomcom): Implement
+  // TODO(cshcomcom): Add tests.
+  emitValueChanged(auth, parsedValuePath, beforeValue, afterValue) {
+    const valuePath = CommonUtil.formatPath(parsedValuePath);
+    const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
+    for (const eventFilterId of matchedEventFilterIdList) {
+      const eventFilter = this.eventFilters[eventFilterId];
+      const targetPath = _.get(eventFilter, 'config.path', null);
+      const parsedTargetPath = CommonUtil.parsePath(targetPath);
+      if (parsedValuePath.length !== parsedTargetPath.length) {
+        logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+        continue;
+      }
+
+      const params = {};
+      for (const [idx, label] of parsedTargetPath.entries()) {
+        if (CommonUtil.isVariableLabel(label)) {
+          params[label.substring(1)] = parsedValuePath[idx];
+        }
+      }
+
+      const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.VALUE_CHANGED, {
+        filter_path: targetPath,
+        matched_path: valuePath,
+        params: params,
+        auth: auth,
+        values: {
+          before: beforeValue,
+          after: afterValue,
+        },
+      });
+      this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+    }
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
@@ -58,18 +92,47 @@ class EventHandler {
     return `${channelId}:${clientFilterId}`;
   }
 
+  static validateEventFilterConfig(eventType, config) {
+    switch (eventType) {
+      case BlockchainEventTypes.BLOCK_FINALIZED:
+        const blockNumber = _.get(config, 'block_number', null);
+        if (CommonUtil.isNumber(blockNumber) && blockNumber < 0) {
+          throw Error(`Invalid block_number. It must not be a negative number (${blockNumber})`);
+        } else if (!CommonUtil.isNumber(blockNumber) && blockNumber !== null) {
+          throw Error(`Invalid block_number type. (${typeof blockNumber})`);
+        }
+        break;
+      case BlockchainEventTypes.VALUE_CHANGED:
+        const path = _.get(config, 'path', null);
+        const parsedPath = CommonUtil.parsePath(path);
+        if (!StateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
+          throw Error(`Invalid format path (${path})`);
+        }
+        break;
+      default:
+        throw Error(`Invalid event type (${eventType})`);
+    }
+  }
+
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
-    if (this.eventFilters[eventFilterId]) {
-      throw Error(`Event filter ID ${eventFilterId} is already in use`);
+    try {
+      const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
+      if (this.eventFilters[eventFilterId]) {
+        throw Error(`Event filter ID ${eventFilterId} is already in use`);
+      }
+      EventHandler.validateEventFilterConfig(eventType, config);
+      const eventFilter = new EventFilter(eventFilterId, eventType, config);
+      this.eventFilters[eventFilterId] = eventFilter;
+      this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
+      if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
+        this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
+      }
+      return eventFilter;
+    } catch (err) {
+      logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
+          `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, err: ${err.message})`);
+      throw err;
     }
-    if (!Object.keys(BlockchainEventTypes).includes(eventType)) {
-      throw Error(`Invalid event type (${eventType})`);
-    }
-    const eventFilter = new EventFilter(eventFilterId, eventType, config);
-    this.eventFilters[eventFilterId] = eventFilter;
-    this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
-    return eventFilter;
   }
 }
 

@@ -51,7 +51,7 @@ const RuleUtil = require('./rule-util');
 const PathUtil = require('../common/path-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager, eventHandler) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -65,6 +65,7 @@ class DB {
     this.stateManager = stateManager;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
+    this.eh = eventHandler;
   }
 
   static formatRawRestFunctionsWhitelist(raw) {
@@ -298,7 +299,7 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
+  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager, eventHandler) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -312,7 +313,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager, eventHandler);
   }
 
   takeStateSnapshot() {
@@ -321,7 +322,7 @@ class DB {
     }
     return this.stateRoot.toStateSnapshot();
   }
- 
+
   takeRadixSnapshot() {
     if (this.stateRoot === null) {
       return null;
@@ -961,6 +962,9 @@ class DB {
           this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
       logger.debug(
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
+    }
+    if (this.eh) {
+      this.eh.emitValueChanged(auth, localPath, prevValueCopy, valueCopy);
     }
 
     return CommonUtil.returnTxResult(
