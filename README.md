@@ -148,7 +148,6 @@ source setup_node_gcp.sh
 bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 ```
 
-<!--
 ### Running with Docker
 
 - Build Docker image
@@ -157,13 +156,16 @@ docker build -t ain-blockchain .
 ```
 - Pull Docker image
 ```
-docker pull ainblockchain/blockchain-database
+docker pull ainblockchain/ain-blockchain
 ```
 - Run with Docker image
 ```
-docker run -e ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=your_private_key --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH=/path/to/keystore" --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic" --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
+<!--
 #### Enter Docker container and inspect blockchain files
 
 ```
