@@ -46,7 +46,7 @@ gcloud init
 # For one-off deploy
 bash deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+bash deploy_blockchain_incremental_gcp.sh {dev|staging|exp|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -133,7 +133,7 @@ gcloud init
 # For one-off deploy
 bash deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+bash deploy_blockchain_incremental_gcp.sh {dev|staging|exp|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
