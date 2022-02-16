@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev my_username 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
     printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
@@ -10,7 +10,7 @@ if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
 fi
 printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
     if [[ "$1" = 'mainnet' ]]; then
         PROJECT_ID="mainnet-prod-ground"
@@ -125,7 +125,7 @@ if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
-        KEYSTORE_DIR="testnet_dev_staging_keys/"
+        KEYSTORE_DIR="testnet_dev_staging_exp_keys/"
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
