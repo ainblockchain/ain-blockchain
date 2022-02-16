@@ -386,7 +386,7 @@ function getGenesisBlockTxs() {
 function executeGenesisTxsAndGetData(genesisTxs) {
   const tempGenesisDb = new DB(
       new StateNode(StateVersions.EMPTY),
-      StateVersions.EMPTY, null, -1, null, GenesisAccounts.owner.address);
+      StateVersions.EMPTY, null, -1, null, null);
   tempGenesisDb.initDb();
   const resList = [];
   for (const tx of genesisTxs) {
