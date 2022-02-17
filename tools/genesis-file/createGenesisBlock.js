@@ -386,7 +386,7 @@ function getGenesisBlockTxs() {
 function executeGenesisTxsAndGetData(genesisTxs) {
   const tempGenesisDb = new DB(
       new StateNode(StateVersions.EMPTY),
-      StateVersions.EMPTY, null, -1, null, GenesisAccounts.owner.address);
+      StateVersions.EMPTY, null, -1, null, null);
   tempGenesisDb.initDb();
   const resList = [];
   for (const tx of genesisTxs) {
@@ -462,6 +462,7 @@ function usage() {
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-exp node tools/genesis-file/createGenesisBlock.js');
 
   process.exit(0);
 }

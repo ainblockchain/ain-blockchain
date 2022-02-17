@@ -13,6 +13,7 @@ rm blockchain-configs/sim-shard/genesis_block.json.gz
 rm blockchain-configs/testnet-dev/genesis_block.json.gz
 rm blockchain-configs/testnet-staging/genesis_block.json.gz
 rm blockchain-configs/testnet-sandbox/genesis_block.json.gz
+rm blockchain-configs/testnet-exp/genesis_block.json.gz
 rm blockchain-configs/testnet-prod/genesis_block.json.gz
 
 printf "\n[[[ Rebuilding block files... ]]]\n\n"
@@ -57,6 +58,11 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging \
 
 printf "\n[ blockchain-configs/testnet-sandbox... ]\n\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox \
+  BLOCKCHAIN_DATA_DIR=./ain_blockchain_data \
+  node tools/genesis-file/createGenesisBlock.js
+
+printf "\n[ blockchain-configs/testnet-exp... ]\n\n"
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-exp \
   BLOCKCHAIN_DATA_DIR=./ain_blockchain_data \
   node tools/genesis-file/createGenesisBlock.js
 
