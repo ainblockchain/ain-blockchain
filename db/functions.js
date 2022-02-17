@@ -868,7 +868,7 @@ class Functions {
       const validatorStake = votes[validatorAddr].stake;
       const blockReward = blockRewardMultiplier * validatorStake;
       let txFee = 0;
-      if (gasCostTotal > 0) {
+      if (DevFlags.enableGasFeeCollection && gasCostTotal > 0) {
         if (index === validators.length - 1) {
           txFee = gasCostTotal - txFeeSum;
         } else {

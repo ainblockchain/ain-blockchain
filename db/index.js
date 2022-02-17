@@ -1776,7 +1776,9 @@ class DB {
       }
     }
     if (!skipFees) {
-      this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
+      if (DevFlags.enableGasFeeCollection) {
+        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
+      }
       if (DevFlags.enableTxReceiptRecording) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
       }

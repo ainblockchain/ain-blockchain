@@ -25,6 +25,8 @@ const DevFlags = {
   enableP2pMessageTagsChecking: false,
   // Enables tx receipt recording.
   enableTxReceiptRecording: true,
+  // Enables gas fee collection.
+  enableGasFeeCollection: true,
 };
 
 // ** Blockchain configs **
