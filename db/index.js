@@ -5,6 +5,7 @@ const path = require('path');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
+  DevFlags,
   NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
@@ -1776,7 +1777,9 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
-      this.recordReceipt(auth, tx, blockNumber, executionResult);
+      if (DevFlags.enableTxReceiptRecording) {
+        this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
     }
     return executionResult;
   }
