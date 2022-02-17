@@ -847,6 +847,9 @@ class Functions {
       // Does nothing for null value.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    if (!DevFlags.enableGasFeeDistribution) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumber = context.params.number;
     // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
     //               rewards to, we're distributing the rewards from the (N-1)th block when a

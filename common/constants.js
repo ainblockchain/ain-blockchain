@@ -27,6 +27,8 @@ const DevFlags = {
   enableTxReceiptRecording: true,
   // Enables gas fee collection.
   enableGasFeeCollection: true,
+  // Enables gas fee distribution.
+  enableGasFeeDistribution: true,
 };
 
 // ** Blockchain configs **
