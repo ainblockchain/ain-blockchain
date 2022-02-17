@@ -47,12 +47,9 @@ class P2pClient {
     await this.server.listen();
     if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (P2pUtil.areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
-          _.get(this.server.urls, 'jsonRpc.url', ''))) {
-        await this.startBlockchainNode(0);
-      } else {
-        await this.startBlockchainNode(1);
-      }
+      const isFirstNode = P2pUtil.areIdenticalUrls(
+          NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
+      await this.startBlockchainNode(isFirstNode);
     }
     await this.discoverPeerWithGuardingFlag();
     this.setIntervalForPeerCandidatesConnection();
@@ -383,16 +380,17 @@ class P2pClient {
     clearInterval(this.intervalPeerCandidatesConnection);
   }
 
-  async startBlockchainNode(numLivePeers) {
+  async startBlockchainNode(isFirstNode) {
     const LOG_HEADER = 'startBlockchainNode';
 
-    if (numLivePeers === 0) {
-      logger.info(`[${LOG_HEADER}] Starting blockchain node without peers..`);
-      if (!(await this.server.node.initNode(true))) {
-        this.server.node.state = BlockchainNodeStates.STOPPED;
-        logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
-        return;
-      }
+    logger.info(`[${LOG_HEADER}] Starting blockchain node with isFirstNode = ${isFirstNode} ..`);
+    if (!(await this.server.node.initNode(isFirstNode))) {
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
+      return;
+    }
+    logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
+    if (isFirstNode) {
       logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
       // TODO(liayoo): Move this to after node account is injected.
       if (await this.server.tryInitializeShard()) {
@@ -406,14 +404,8 @@ class P2pClient {
       this.server.consensus.initConsensus();
       logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
     } else {
-      // Consensus will be initialized after syncing with peers
-      logger.info(`[${LOG_HEADER}] Starting blockchain node with ${numLivePeers} peers..`);
-      if (!(await this.server.node.initNode(false))) {
-        this.server.node.state = BlockchainNodeStates.STOPPED;
-        logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
-        return;
-      }
-      logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
+      // Does nothing.
+      // NOTE: Consensus will be initialized after syncing with peers
     }
   }
 
