@@ -125,7 +125,7 @@ if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
-        KEYSTORE_DIR="testnet_dev_staging_exp_keys/"
+        KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
