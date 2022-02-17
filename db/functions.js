@@ -847,6 +847,9 @@ class Functions {
       // Does nothing for null value.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    if (!DevFlags.enableGasFeeDistribution) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumber = context.params.number;
     // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
     //               rewards to, we're distributing the rewards from the (N-1)th block when a
@@ -868,7 +871,7 @@ class Functions {
       const validatorStake = votes[validatorAddr].stake;
       const blockReward = blockRewardMultiplier * validatorStake;
       let txFee = 0;
-      if (gasCostTotal > 0) {
+      if (DevFlags.enableGasFeeCollection && gasCostTotal > 0) {
         if (index === validators.length - 1) {
           txFee = gasCostTotal - txFeeSum;
         } else {
