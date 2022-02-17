@@ -159,7 +159,7 @@ else
 fi
 
 
-KEYSTORE_DIR=testnet_dev_staging_exp_keys
+KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc

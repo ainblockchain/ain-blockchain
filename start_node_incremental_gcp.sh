@@ -89,7 +89,7 @@ fi
 # 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_UPDATE_JSON_RPC_URL, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
-KEYSTORE_DIR=testnet_dev_staging_exp_keys
+KEYSTORE_DIR=testnet_dev_staging_keys
 
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
