@@ -64,9 +64,13 @@ class DB {
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
-    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
-    this.updateRestFunctionsUrlWhitelistCache();
     this.eh = eventHandler;
+    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
+    this.appStateUsageCache = { hash: null, value: null };
+    this.appStakeCache = { hash: null, value: new Set() };
+    this.stateFreeTierUsageCache = null;
+    this.updateRestFunctionsUrlWhitelistCache();
+    this.updateStateFreeTierUsageCache();
   }
 
   static formatRawRestFunctionsWhitelist(raw) {
@@ -86,14 +90,14 @@ class DB {
    * the latest hash and the mapping of whitelisted REST function urls.
    */
   updateRestFunctionsUrlWhitelistCache() {
-    const currentHash = this.restFunctionsUrlWhitelistCache.hash;
+    const cachedHash = this.restFunctionsUrlWhitelistCache.hash;
     const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
-    const updatedHash = this.getProofHash(
+    const currentHash = this.getProofHash(
         CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, restFunctionsUrlWhitelistPath));
-    if (!currentHash || currentHash !== updatedHash) {
+    if (!cachedHash || cachedHash !== currentHash) {
       const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
       const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
-      this.restFunctionsUrlWhitelistCache = { hash: updatedHash, whitelist };
+      this.restFunctionsUrlWhitelistCache = { hash: currentHash, whitelist };
     }
   }
 
@@ -1375,8 +1379,68 @@ class DB {
     tx.setExtraField('gas', txGas);
   }
 
-  // TODO(liayoo): reduce computation by remembering & reusing the computed values.
+  updateAppStateUsageCache() {
+    const cachedHash = this.appStateUsageCache.hash;
+    const appsPrefix = PredefinedDbPaths.APPS;
+    const currentHash = CommonUtil.hashString(
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.OWNERS_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.FUNCTIONS_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.RULES_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, appsPrefix))}`
+    );
+    if (!cachedHash || cachedHash !== currentHash) {
+      this.appStateUsageCache.hash = currentHash;
+      const newValue = {};
+      const apps = DB.getValueFromStateRoot(this.stateRoot, appsPrefix, true) || {};
+      for (const appName of Object.keys(apps)) {
+        newValue[appName] = this.getStateUsageAtPath(`${appsPrefix}/${appName}`);
+      }
+      this.appStateUsageCache.value = newValue;
+      return true;
+    }
+    return false;
+  }
+
+  updateAppStakeCache() {
+    const cachedHash = this.appStakeCache.hash;
+    const currentHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING));
+    if (!cachedHash || cachedHash !== currentHash) {
+      this.appStakeCache.hash = currentHash;
+      const newValue = new Set();
+      const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING, true) || {};
+      for (const appName of Object.keys(apps)) {
+        const stake = DB.getValueFromStateRoot(
+          this.stateRoot,
+          `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`);
+        if (stake) newValue.add(appName);
+      }
+      this.appStakeCache.value = newValue;
+      return true;
+    }
+    return false;
+  }
+
+  updateStateFreeTierUsageCache() {
+    const appStateUsageCached = this.updateAppStateUsageCache();
+    const freeTierAppCached = this.updateAppStakeCache();
+    if (appStateUsageCached || freeTierAppCached) {
+      const usage = {};
+      for (const appName in this.appStateUsageCache.value) {
+        if (!this.appStakeCache.value.has(appName)) {
+          CommonUtil.mergeNumericJsObjects(usage, this.appStateUsageCache.value[appName]);
+        }
+      }
+      this.stateFreeTierUsageCache = usage;
+    }
+  }
+
   getStateFreeTierUsage() {
+    if (DevFlags.enableGetStateFreeTierUsageOptimization) {
+      this.updateStateFreeTierUsageCache();
+      return this.stateFreeTierUsageCache;
+    }
+    // legacy logic
     const usage = {};
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
     for (const appName of Object.keys(apps)) {
