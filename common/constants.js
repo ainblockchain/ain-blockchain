@@ -23,12 +23,16 @@ const DevFlags = {
   // Enables p2p message tags checking.
   // TODO(liayoo): Add some security measures before turning this flag on.
   enableP2pMessageTagsChecking: false,
+
+  // NOTE(liayoo): Below flags are added for performance optimization testing purposes.
   // Enables tx receipt recording.
   enableTxReceiptRecording: true,
   // Enables gas fee collection.
   enableGasFeeCollection: true,
   // Enables gas fee distribution.
   enableGasFeeDistribution: true,
+  // Enables getStateFreeTierUsage() optimization.
+  enableGetStateFreeTierUsageOptimization: true,
 };
 
 // ** Blockchain configs **
