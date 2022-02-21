@@ -1412,8 +1412,7 @@ class DB {
       const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING, true) || {};
       for (const appName of Object.keys(apps)) {
         const stake = DB.getValueFromStateRoot(
-          this.stateRoot,
-          `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`);
+            this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName));
         if (stake) newValue.add(appName);
       }
       this.appStakeCache = {
@@ -1449,8 +1448,7 @@ class DB {
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
     for (const appName of Object.keys(apps)) {
       if (!DB.getValueFromStateRoot(
-          this.stateRoot,
-          `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
+          this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName))) {
         CommonUtil.mergeNumericJsObjects(
             usage, this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`));
       }
