@@ -1389,13 +1389,15 @@ class DB {
       `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, appsPrefix))}`
     );
     if (!cachedHash || cachedHash !== currentHash) {
-      this.appStateUsageCache.hash = currentHash;
       const newValue = {};
       const apps = DB.getValueFromStateRoot(this.stateRoot, appsPrefix, true) || {};
       for (const appName of Object.keys(apps)) {
         newValue[appName] = this.getStateUsageAtPath(`${appsPrefix}/${appName}`);
       }
-      this.appStateUsageCache.value = newValue;
+      this.appStateUsageCache = {
+        hash: currentHash,
+        value: newValue
+      };
       return true;
     }
     return false;
@@ -1406,7 +1408,6 @@ class DB {
     const currentHash = this.getProofHash(
         CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING));
     if (!cachedHash || cachedHash !== currentHash) {
-      this.appStakeCache.hash = currentHash;
       const newValue = new Set();
       const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING, true) || {};
       for (const appName of Object.keys(apps)) {
@@ -1415,7 +1416,10 @@ class DB {
           `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`);
         if (stake) newValue.add(appName);
       }
-      this.appStakeCache.value = newValue;
+      this.appStakeCache = {
+        hash: currentHash,
+        value: newValue
+      };
       return true;
     }
     return false;
