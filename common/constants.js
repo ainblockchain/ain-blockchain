@@ -152,7 +152,8 @@ const MessageTypes = {
  */
 const BlockchainNodeStates = {
   STARTING: 'STARTING',
-  SYNCING: 'SYNCING',
+  STATE_LOADING: 'STATE_LOADING',
+  CHAIN_SYNCING: 'CHAIN_SYNCING',
   SERVING: 'SERVING',
   STOPPED: 'STOPPED',
 };

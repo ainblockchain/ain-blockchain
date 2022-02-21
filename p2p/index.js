@@ -384,7 +384,13 @@ class P2pClient {
     const LOG_HEADER = 'startBlockchainNode';
 
     logger.info(`[${LOG_HEADER}] Starting blockchain node with isFirstNode = ${isFirstNode} ..`);
-    if (!(await this.server.node.initNode(isFirstNode))) {
+    if (!(await this.server.node.loadSnapshot())) {
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Failed to load blockchain snapshot!`);
+      return;
+    }
+    logger.info(`[${LOG_HEADER}] Blockchain snapshot loaded!`);
+    if (!this.server.node.initNode(isFirstNode)) {
       this.server.node.state = BlockchainNodeStates.STOPPED;
       logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
       return;
@@ -442,7 +448,7 @@ class P2pClient {
    */
   requestChainSegment() {
     const LOG_HEADER = 'requestChainSegment';
-    if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+    if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
       this.server.node.state !== BlockchainNodeStates.SERVING) {
       return;
     }
@@ -609,7 +615,7 @@ class P2pClient {
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
-          if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
+          if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
               this.server.node.state !== BlockchainNodeStates.SERVING) {
             logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
                 `Node state: ${this.server.node.state}.`);

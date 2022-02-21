@@ -56,7 +56,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
   const latestDb = node.createTempDb(
       node.db.stateVersion, `${StateVersions.LOAD}:${snapshotBlockNumber}`, snapshotBlockNumber);
   node.bp.addToHashToDbMap(snapshotBlock.hash, latestDb);
-  node.state = BlockchainNodeStates.SYNCING;
+  node.state = BlockchainNodeStates.CHAIN_SYNCING;
 
   console.log(`\n<< [0]: ${snapshotFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
   console.log(`\n* Verifying state tree proof hashes...`);

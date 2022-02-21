@@ -300,7 +300,7 @@ class Consensus {
         // FIXME(liayoo): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        // this.node.state = BlockchainNodeStates.SYNCING;
+        // this.node.state = BlockchainNodeStates.CHAIN_SYNCING;
         this.server.client.requestChainSegment();
         return;
       }
