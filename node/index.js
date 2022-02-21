@@ -225,37 +225,43 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
+  checkSyncMode() {
+    const LOG_HEADER = 'checkSyncMode';
+
+    if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
+      this.state = BlockchainNodeStates.STATE_LOADING;
+      logger.info(`[${LOG_HEADER}] Now node in STATE_LOADING state!`);
+    } else if (NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'peer' mode..`);
+      this.state = BlockchainNodeStates.STATE_SYNCING;
+      logger.info(`[${LOG_HEADER}] Now node in STATE_SYNCING state!`);
+    } else {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
+      this.state = BlockchainNodeStates.INIT_READY;
+      logger.info(`[${LOG_HEADER}] Now node in INIT_READY state!`);
+    }
+  }
+
   async loadSnapshot() {
     const LOG_HEADER = 'loadSnapshot';
 
-    // 1. Node status changed: STARTING -> STATE_LOADING.
-    this.state = BlockchainNodeStates.STATE_LOADING;
-    logger.info(`[${LOG_HEADER}] Now node in STATE_LOADING state!`);
-
-
-    // 2. Get the latest snapshot if in the "fast" sync mode.
-    if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
-      logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
-      const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
-      this.latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
-      if (this.latestSnapshotPath) {
-        try {
-          this.latestSnapshot = await FileUtil.readChunkedJsonAsync(this.latestSnapshotPath);
-          this.latestSnapshotBlockNumber =
-              this.latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
-        } catch (err) {
-          CommonUtil.finishWithStackTrace(
-              logger,
-              `[${LOG_HEADER}] Failed to read latest snapshot file (${this.latestSnapshotPath}) ` +
-              `with error: ${err.stack}`);
-          return false;
-        }
+    const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
+    this.latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
+    if (this.latestSnapshotPath) {
+      try {
+        this.latestSnapshot = await FileUtil.readChunkedJsonAsync(this.latestSnapshotPath);
+        this.latestSnapshotBlockNumber =
+            this.latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
+      } catch (err) {
+        CommonUtil.finishWithStackTrace(
+            logger,
+            `[${LOG_HEADER}] Failed to load latest snapshot file (${this.latestSnapshotPath}) ` +
+            `with error: ${err.stack}`);
+        return false;
       }
-      logger.info(
-          `[${LOG_HEADER}] Fast mode DB snapshot loading done for ${this.latestSnapshotPath}!`);
-    } else {
-      logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
+    logger.info(`[${LOG_HEADER}] Loaded latest snapshot file ${this.latestSnapshotPath}!`);
 
     return true;
   }
@@ -263,20 +269,20 @@ class BlockchainNode {
   initNode(isFirstNode) {
     const LOG_HEADER = 'initNode';
 
-    // 3. Initialize DB (with the latest snapshot, if it exists)
+    // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, this.latestSnapshotBlockNumber,
         this.stateManager);
     startingDb.initDb(this.latestSnapshot);
 
-    // 4. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
+    // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
-    const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
+    const wasBlockDirEmpty = this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
 
-    // 5. Execute the chain on the DB and finalize it.
+    // 3. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
+    const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
     if (!wasBlockDirEmpty || isGenesisStart) {
       if (!this.loadAndExecuteChainOnDb(
           this.latestSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
@@ -284,13 +290,13 @@ class BlockchainNode {
       }
     }
 
-    // 6. Execute transactions from the pool.
+    // 4. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
         this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
         this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
 
-    // 7. Node status changed: STATE_LOADING -> CHAIN_SYNCING.
+    // 5. Node status changed: STATE_LOADING/STATE_SYNCING -> CHAIN_SYNCING.
     this.state = BlockchainNodeStates.CHAIN_SYNCING;
     logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
