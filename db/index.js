@@ -67,7 +67,7 @@ class DB {
     this.eh = eventHandler;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.appStateUsageCache = { hash: null, value: null };
-    this.appStakeCache = { hash: null, value: new Set() };
+    this.stakedAppSetCache = { hash: null, value: new Set() };
     this.stateFreeTierUsageCache = null;
     this.updateRestFunctionsUrlWhitelistCache();
     this.updateStateFreeTierUsageCache();
@@ -1404,7 +1404,7 @@ class DB {
   }
 
   updateAppStakeCache() {
-    const cachedHash = this.appStakeCache.hash;
+    const cachedHash = this.stakedAppSetCache.hash;
     const currentHash = this.getProofHash(
         CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING));
     if (!cachedHash || cachedHash !== currentHash) {
@@ -1417,7 +1417,7 @@ class DB {
           newValue.add(appName);
         }
       }
-      this.appStakeCache = {
+      this.stakedAppSetCache = {
         hash: currentHash,
         value: newValue
       };
@@ -1432,7 +1432,7 @@ class DB {
     if (appStateUsageCached || freeTierAppCached) {
       const usage = {};
       for (const appName in this.appStateUsageCache.value) {
-        if (!this.appStakeCache.value.has(appName)) {
+        if (!this.stakedAppSetCache.value.has(appName)) {
           CommonUtil.mergeNumericJsObjects(usage, this.appStateUsageCache.value[appName]);
         }
       }
