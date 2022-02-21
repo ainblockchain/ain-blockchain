@@ -384,35 +384,55 @@ class P2pClient {
     const LOG_HEADER = 'startBlockchainNode';
 
     logger.info(`[${LOG_HEADER}] Starting blockchain node with isFirstNode = ${isFirstNode} ..`);
-    if (!(await this.server.node.loadSnapshot())) {
-      this.server.node.state = BlockchainNodeStates.STOPPED;
-      logger.error(`[${LOG_HEADER}] Failed to load blockchain snapshot!`);
+    this.server.node.checkSyncMode();
+    if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
+      // TODO(platfowner): Implement this.
+      return;
+    } else if (this.server.node.state === BlockchainNodeStates.STATE_LOADING) {
+      if (!(await this.server.node.loadSnapshot())) {
+        this.server.node.state = BlockchainNodeStates.STOPPED;
+        logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
+        return;
+      }
+      this.server.node.state = BlockchainNodeStates.INIT_READY;
+      logger.info(`[${LOG_HEADER}] Now blockchain node in INIT_READY state!`);
+    }
+    await this.initBlockchainNode(isFirstNode);
+  }
+
+  async initBlockchainNode(isFirstNode) {
+    const LOG_HEADER = 'initBlockchainNode';
+
+    if (this.server.node.state !== BlockchainNodeStates.INIT_READY) {
+      logger.error(
+          `[${LOG_HEADER}] Blockchain node is not in INIT_READY state: ${this.server.node.state}`);
       return;
     }
-    logger.info(`[${LOG_HEADER}] Blockchain snapshot loaded!`);
     if (!this.server.node.initNode(isFirstNode)) {
-      this.server.node.state = BlockchainNodeStates.STOPPED;
       logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
     logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
-    if (isFirstNode) {
-      logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
-      // TODO(liayoo): Move this to after node account is injected.
-      if (await this.server.tryInitializeShard()) {
-        logger.info(`[${LOG_HEADER}] Shard initialization done!`);
-      } else {
-        logger.info(`[${LOG_HEADER}] No need to initialize shard.`);
-      }
-      this.server.node.state = BlockchainNodeStates.SERVING;
-      logger.info(`[${LOG_HEADER}] Now blockchain node in SERVING state!`);
-      logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
-      this.server.consensus.initConsensus();
-      logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
-    } else {
+
+    if (!isFirstNode) {
       // Does nothing.
       // NOTE: Consensus will be initialized after syncing with peers
+      return;
     }
+    logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
+    // TODO(liayoo): Move this to after node account is injected.
+    if (await this.server.tryInitializeShard()) {
+      logger.info(`[${LOG_HEADER}] Shard initialization done!`);
+    } else {
+      logger.info(`[${LOG_HEADER}] No need to initialize shard.`);
+    }
+    this.server.node.state = BlockchainNodeStates.SERVING;
+    logger.info(`[${LOG_HEADER}] Now blockchain node in SERVING state!`);
+    logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
+    this.server.consensus.initConsensus();
+    logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {

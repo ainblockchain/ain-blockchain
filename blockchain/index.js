@@ -42,7 +42,6 @@ class Blockchain {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
     }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
-    let isGenesisStart = false;
     if (wasBlockDirEmpty) {
       if (isFirstNode) {
         logger.info('\n');
@@ -52,7 +51,6 @@ class Blockchain {
         logger.info('\n');
         // Copy the genesis block from the genesis configs dir to the blockchain dir.
         this.writeBlock(this.genesisBlock);
-        isGenesisStart = true;
       } else {
         logger.info('\n');
         logger.info('#############################################################');
@@ -75,10 +73,7 @@ class Blockchain {
         logger.info('\n');
       }
     }
-    return {
-      wasBlockDirEmpty,
-      isGenesisStart,
-    };
+    return wasBlockDirEmpty;
   }
 
   /**

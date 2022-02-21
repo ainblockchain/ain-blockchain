@@ -153,6 +153,8 @@ const MessageTypes = {
 const BlockchainNodeStates = {
   STARTING: 'STARTING',
   STATE_LOADING: 'STATE_LOADING',
+  STATE_SYNCING: 'STATE_SYNCING',
+  INIT_READY: 'INIT_READY',
   CHAIN_SYNCING: 'CHAIN_SYNCING',
   SERVING: 'SERVING',
   STOPPED: 'STOPPED',
@@ -585,8 +587,9 @@ const StateVersions = {
  * @enum {string}
  */
 const SyncModeOptions = {
-  FULL: 'full',
   FAST: 'fast',
+  FULL: 'full',
+  PEER: 'peer',
 };
 
 const TrafficEventTypes = {
