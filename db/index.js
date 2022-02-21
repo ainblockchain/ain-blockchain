@@ -1413,7 +1413,9 @@ class DB {
       for (const appName of Object.keys(apps)) {
         const stake = DB.getValueFromStateRoot(
             this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName));
-        if (stake) newValue.add(appName);
+        if (CommonUtil.isNumber(stake) && stake > 0) {
+          newValue.add(appName);
+        }
       }
       this.appStakeCache = {
         hash: currentHash,
