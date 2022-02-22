@@ -172,6 +172,10 @@ class TransactionPool {
     // Merge lists of transactions while ordering by gas price and timestamp.
     // Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Array.from(addrToTxList.values()));
+    if (!DevFlags.enableTxBandwidthCheckPerBlock) {
+      tempDb.destroyDb();
+      return merged;
+    }
     const checkedTxs = this.performBandwidthChecks(merged, tempDb);
     tempDb.destroyDb();
     return checkedTxs;
