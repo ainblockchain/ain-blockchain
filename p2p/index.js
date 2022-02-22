@@ -36,6 +36,7 @@ class P2pClient {
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
+    this.stateSyncInProgress = null;
     this.chainSyncInProgress = null;
     this.peerConnectionStartedAt = null;
     logger.info(`Now p2p network in STARTING state!`);
@@ -43,16 +44,29 @@ class P2pClient {
   }
 
   async run() {
-    if (CommonUtil.isEmpty(this.server.node.account)) return;
+    // 1. Check node account
+    if (CommonUtil.isEmpty(this.server.node.account)) {
+      return;
+    }
+
+    // 2. Start p2p server
     await this.server.listen();
-    if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
+
+    // 3. Set interval for tracker updates
+    if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) {
+      this.setIntervalForTrackerUpdate();
+    }
+
+    // 4. Start peer discovery process
+    await this.discoverPeerWithGuardingFlag();
+    this.setIntervalForPeerCandidatesConnection();
+
+    // 5. Set up blockchain node
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       const isFirstNode = P2pUtil.areIdenticalUrls(
           NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
-      await this.startBlockchainNode(isFirstNode);
+      await this.setUpBlockchainNode(isFirstNode);
     }
-    await this.discoverPeerWithGuardingFlag();
-    this.setIntervalForPeerCandidatesConnection();
   }
 
   getConnectionStatus() {
@@ -233,6 +247,31 @@ class P2pClient {
 
   /**
    * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing
+   * the states.
+   * @returns {Object|Null} The socket of the peer.
+   */
+  assignRandomPeerForStateSync() {
+    if (Object.keys(this.outbound).length === 0) {
+      return null;
+    }
+    const currentPeer = this.stateSyncInProgress ? this.stateSyncInProgress.address : null;
+    if (this.stateSyncInProgress === null || !this.outbound[this.stateSyncInProgress.address]) {
+      const candidates = Object.keys(this.outbound).filter((addr) => {
+        return addr !== currentPeer &&
+            _.get(this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
+      });
+      const selectedAddr = _.shuffle(candidates)[0];
+      if (!selectedAddr) {
+        return null;
+      }
+      this.setStateSyncPeer(selectedAddr);
+    }
+    const socket = this.outbound[this.stateSyncInProgress.address].socket;
+    return socket;
+  }
+
+  /**
+   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing
    * the chain.
    * @returns {Object|Null} The socket of the peer.
    */
@@ -380,13 +419,15 @@ class P2pClient {
     clearInterval(this.intervalPeerCandidatesConnection);
   }
 
-  async startBlockchainNode(isFirstNode) {
-    const LOG_HEADER = 'startBlockchainNode';
+  async setUpBlockchainNode(isFirstNode) {
+    const LOG_HEADER = 'setUpBlockchainNode';
 
     logger.info(`[${LOG_HEADER}] Starting blockchain node with isFirstNode = ${isFirstNode} ..`);
     this.server.node.checkSyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
-      // TODO(platfowner): Implement this.
+      // Wait until some peer connections are made.
+      await CommonUtil.sleep(NodeConfigs.P2P_SNAPSHOT_CHUNK_REQUEST_SLEEP_MS);
+      this.requestSnapshotChunks();
       return;
     } else if (this.server.node.state === BlockchainNodeStates.STATE_LOADING) {
       if (!(await this.server.node.loadSnapshot())) {
@@ -462,8 +503,34 @@ class P2pClient {
   }
 
   /**
-   * Request a chain segment to sync with from a peer.
-   * The peer to request from is randomly selected & maintained until it's disconnected, it gives
+   * Send a request for snapshot chunks to a peer.
+   * The peer is randomly selected and maintained until it's disconnected, it gives
+   * an invalid chain, or we're fully synced.
+   */
+  requestSnapshotChunks() {
+    const LOG_HEADER = 'requestSnapshotChunks';
+
+    if (this.server.node.state !== BlockchainNodeStates.STATE_SYNCING &&
+      this.server.node.state !== BlockchainNodeStates.SERVING) {
+      return;
+    }
+    const socket = this.assignRandomPeerForStateSync();
+    if (!socket) {
+      logger.info(`[${LOG_HEADER}] Failed to get a peer for SNAPSHOT_CHUNK_REQUEST`);
+      return;
+    }
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.SNAPSHOT_CHUNK_REQUEST, {});
+    if (!payload) {
+      logger.error(`[${LOG_HEADER}] The request for snapshot chunks couldn't be sent because ` +
+          `of msg encapsulation failure.`);
+      return;
+    }
+    socket.send(JSON.stringify(payload));
+  }
+
+  /**
+   * Send a request for a chain segment to a peer.
+   * The peer is randomly selected and maintained until it's disconnected, it gives
    * an invalid chain, or we're fully synced.
    */
   requestChainSegment() {
@@ -486,7 +553,7 @@ class P2pClient {
     }
     const payload = P2pUtil.encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
-      logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because ` +
+      logger.error(`[${LOG_HEADER}] The request for chain segment couldn't be sent because ` +
           `of msg encapsulation failure.`);
       return;
     }
@@ -634,6 +701,37 @@ class P2pClient {
             this.updateNodeInfoToTracker();
           }
           break;
+        case MessageTypes.SNAPSHOT_CHUNK_RESPONSE:
+          if (this.server.node.state !== BlockchainNodeStates.STATE_SYNCING &&
+              this.server.node.state !== BlockchainNodeStates.SERVING) {
+            logger.error(`[${LOG_HEADER}] Not ready to process snapshot chunk response.\n` +
+                `Node state: ${this.server.node.state}.`);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
+            return;
+          }
+          const dataVersionCheckForSnapshotChunk =
+              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.SNAPSHOT_CHUNK_RESPONSE);
+          if (dataVersionCheckForSnapshotChunk > 0) {
+            logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
+                `version(${dataProtoVer}). Discard the SNAPSHOT_CHUNK_RESPONSE message.`);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
+            return;
+          } else if (dataVersionCheckForSnapshotChunk < 0) {
+            // TODO(minsulee2): need to convert message when updating SNAPSHOT_CHUNK_RESPONSE.
+            // this.convertSnapshotChunkResponseMessage();
+          }
+          const snapshotChunk = _.get(parsedMessage, 'data.snapshotChunk');
+          const blockNumber = _.get(parsedMessage, 'data.blockNumber');
+          const chunkIndex = _.get(parsedMessage, 'data.chunkIndex');
+          const numChunks = _.get(parsedMessage, 'data.numChunks');
+          logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk: ` +
+              `${JSON.stringify(snapshotChunk, null, 2)}\n` +
+              `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, ` +
+              `and numChunks ${numChunks}`);
+          await this.handleSnapshotChunk(snapshotChunk, blockNumber, chunkIndex, numChunks, socket);
+          break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
               this.server.node.state !== BlockchainNodeStates.SERVING) {
@@ -748,6 +846,22 @@ class P2pClient {
     }
 
     return true;
+  }
+
+  // TODO(platfowner): Add peer blacklisting.
+  async handleSnapshotChunk(snapshotChunk, blockNumber, chunkIndex, numChunks, socket) {
+    const LOG_HEADER = 'handleSnapshotChunk';
+
+    const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    // Received from a peer that I didn't request from
+    if (_.get(this.stateSyncInProgress, 'address') !== address) {
+      return;
+    }
+    this.updateStateSyncPeer(chunkIndex, blockNumber, numChunks);
+    logger.info(`[${LOG_HEADER}] Handling a snapshot chunk: ` +
+        `${JSON.stringify(snapshotChunk, null, 2)}\n` +
+        `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, and numChunks ${numChunks}`);
+    // TODO(platfowner): Implement this part.
   }
 
   // TODO(platfowner): Add peer blacklisting.
@@ -890,6 +1004,32 @@ class P2pClient {
     }
     logger.info(`[${LOG_HEADER}] Try to connect(${JSON.stringify(newPeerP2pUrlListWithoutMyUrl)})`);
     this.connectWithPeerUrlList(_.shuffle(newPeerP2pUrlListWithoutMyUrl));
+  }
+
+  setStateSyncPeer(address) {
+    this.stateSyncInProgress = {
+      address,
+      lastChunkIndex: -1,
+      blockNumber: -1,
+      numChunks: -1,
+      updatedAt: Date.now
+    };
+  }
+
+  updateStateSyncPeer(lastChunkIndex, blockNumber = null, numChunks = null) {
+    if (!this.stateSyncInProgress) return;
+    this.stateSyncInProgress.lastChunkIndex = lastChunkIndex;
+    if (blockNumber !== null) {
+      this.stateSyncInProgress.blockNumber = blockNumber;
+    }
+    if (numChunks !== null) {
+      this.stateSyncInProgress.numChunks = numChunks;
+    }
+    this.stateSyncInProgress.updatedAt = Date.now();
+  }
+
+  resetStateSyncPeer() {
+    this.stateSyncInProgress = null;
   }
 
   setChainSyncPeer(address) {
