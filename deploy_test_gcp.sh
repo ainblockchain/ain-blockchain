@@ -51,6 +51,7 @@ STOP_ONLY_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 BACKGROUND_OPTION=""
 TESTING_OPTION=""
+SEASON="dev"
 
 ARG_INDEX=3
 while [ $ARG_INDEX -le $# ]; do
@@ -63,6 +64,7 @@ printf "STOP_ONLY_OPTION=$STOP_ONLY_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "BACKGROUND_OPTION=$BACKGROUND_OPTION\n"
 printf "TESTING_OPTION=$TESTING_OPTION\n"
+printf "SEASON=$SEASON\n"
 
 if [[ $CAT_LOG_OPTION != "--cat-log" ]]; then
     # Get confirmation.
@@ -85,9 +87,6 @@ function stop_servers() {
 FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
 
 printf "\n"
-SEASON="dev"
-printf "SEASON=$SEASON\n"
-
 PROJECT_ID="testnet-dev-ground"
 printf "PROJECT_ID=$PROJECT_ID\n"
 

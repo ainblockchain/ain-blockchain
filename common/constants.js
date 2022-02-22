@@ -33,6 +33,8 @@ const DevFlags = {
   enableGasFeeDistribution: true,
   // Enables getStateFreeTierUsage() optimization.
   enableGetStateFreeTierUsageOptimization: true,
+  // Enables transaction bandwidth check per block
+  enableTxBandwidthCheckPerBlock: true,
 };
 
 // ** Blockchain configs **
