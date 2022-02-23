@@ -30,6 +30,7 @@ class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion);
+    this.isFirstNode = false;
     this.peerCandidates = new Map();
     this.isConnectingToPeerCandidates = false;
     this.steadyIntervalCount = 0;
@@ -65,7 +66,8 @@ class P2pClient {
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       const isFirstNode = P2pUtil.areIdenticalUrls(
           NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
-      await this.setUpBlockchainNode(isFirstNode);
+      this.setIsFirstNode(isFirstNode);
+      await this.prepareBlockchainNode(isFirstNode);
     }
   }
 
@@ -419,10 +421,10 @@ class P2pClient {
     clearInterval(this.intervalPeerCandidatesConnection);
   }
 
-  async setUpBlockchainNode(isFirstNode) {
-    const LOG_HEADER = 'setUpBlockchainNode';
+  async prepareBlockchainNode(isFirstNode) {
+    const LOG_HEADER = 'prepareBlockchainNode';
 
-    logger.info(`[${LOG_HEADER}] Setting up blockchain node with isFirstNode = ${isFirstNode} ..`);
+    logger.info(`[${LOG_HEADER}] Preparing blockchain node with isFirstNode = ${isFirstNode} ..`);
     this.server.node.checkSyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
       // Wait until some peer connections are made.
@@ -435,27 +437,27 @@ class P2pClient {
         logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
         return;
       }
-      this.server.node.state = BlockchainNodeStates.INIT_READY;
-      logger.info(`[${LOG_HEADER}] Now blockchain node in INIT_READY state!`);
+      this.server.node.state = BlockchainNodeStates.READY_TO_START;
+      logger.info(`[${LOG_HEADER}] Now blockchain node in READY_TO_START state!`);
     }
-    await this.initBlockchainNode(isFirstNode);
+    await this.startBlockchainNode(isFirstNode);
   }
 
-  async initBlockchainNode(isFirstNode) {
-    const LOG_HEADER = 'initBlockchainNode';
+  async startBlockchainNode(isFirstNode) {
+    const LOG_HEADER = 'startBlockchainNode';
 
-    if (this.server.node.state !== BlockchainNodeStates.INIT_READY) {
+    if (this.server.node.state !== BlockchainNodeStates.READY_TO_START) {
       logger.error(
-          `[${LOG_HEADER}] Blockchain node is not in INIT_READY state: ${this.server.node.state}`);
+          `[${LOG_HEADER}] Blockchain node is not in READY_TO_START state: ${this.server.node.state}`);
       return;
     }
     if (!this.server.node.initNode(isFirstNode)) {
-      logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
+      logger.error(`[${LOG_HEADER}] Failed to start blockchain node!`);
       this.server.node.state = BlockchainNodeStates.STOPPED;
       logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
-    logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
+    logger.info(`[${LOG_HEADER}] Blockchain node started!`);
 
     if (!isFirstNode) {
       // Does nothing.
@@ -1013,6 +1015,10 @@ class P2pClient {
     }
     logger.info(`[${LOG_HEADER}] Try to connect(${JSON.stringify(newPeerP2pUrlListWithoutMyUrl)})`);
     this.connectWithPeerUrlList(_.shuffle(newPeerP2pUrlListWithoutMyUrl));
+  }
+
+  setIsFirstNode(isFirstNode) {
+    this.isFirstNode = isFirstNode;
   }
 
   setStateSyncPeer(address) {

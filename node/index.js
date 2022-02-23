@@ -59,7 +59,7 @@ class BlockchainNode {
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
-    this.latestSnapshotPath = null;
+    this.latestSnapshotSource = null;
     this.latestSnapshot = null;
     this.latestSnapshotBlockNumber = -1;
     this.state = BlockchainNodeStates.STARTING;
@@ -225,8 +225,8 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
-  setLatestSnapshot(path, snapshot) {
-    this.latestSnapshotPath = path;
+  setLatestSnapshot(source, snapshot) {
+    this.latestSnapshotSource = source;
     this.latestSnapshot = snapshot;
     this.latestSnapshotBlockNumber =
         _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
@@ -249,8 +249,8 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Now node in STATE_SYNCING state!`);
     } else {
       logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
-      this.state = BlockchainNodeStates.INIT_READY;
-      logger.info(`[${LOG_HEADER}] Now node in INIT_READY state!`);
+      this.state = BlockchainNodeStates.READY_TO_START;
+      logger.info(`[${LOG_HEADER}] Now node in READY_TO_START state!`);
     }
   }
 
@@ -301,7 +301,7 @@ class BlockchainNode {
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(
-        `[${LOG_HEADER}] Initializing DB with latest snapshot ${this.latestSnapshotPath}..`);
+        `[${LOG_HEADER}] Initializing DB with latest snapshot ${this.latestSnapshotSource}..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, this.latestSnapshotBlockNumber,
         this.stateManager);
@@ -309,7 +309,7 @@ class BlockchainNode {
 
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(
-        `[${LOG_HEADER}] Initializing blockchain with latest snapshot ${this.latestSnapshotPath}..`);
+        `[${LOG_HEADER}] Initializing blockchain with latest snapshot ${this.latestSnapshotSource}..`);
     const wasBlockDirEmpty = this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
 
     // 3. Execute the chain on the DB and finalize it.
