@@ -62,7 +62,6 @@ class BlockchainNode {
     this.latestSnapshotPath = null;
     this.latestSnapshot = null;
     this.latestSnapshotBlockNumber = -1;
-    this.latestSnapshotChunkIndex = -1;
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
 
@@ -231,15 +230,10 @@ class BlockchainNode {
     this.latestSnapshot = snapshot;
     this.latestSnapshotBlockNumber =
         _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
-    this.latestSnapshotChunkIndex = -1;
   }
 
   resetLatestSnapshot() {
     this.setLatestSnapshot(null, null);
-  }
-
-  setLatestSnapshotChunkIndex(chunkIndex) {
-    this.latestSnapshotChunkIndex = chunkIndex;
   }
 
   checkSyncMode() {
@@ -272,12 +266,32 @@ class BlockchainNode {
       } catch (err) {
         CommonUtil.finishWithStackTrace(
             logger,
-            `[${LOG_HEADER}] Failed to load latest snapshot file (${this.latestSnapshotPath}) ` +
+            `[${LOG_HEADER}] Failed to load latest snapshot file ${latestSnapshotPath} ` +
             `with error: ${err.stack}`);
         return false;
       }
     }
-    logger.info(`[${LOG_HEADER}] Loaded latest snapshot file ${this.latestSnapshotPath}!`);
+    logger.info(`[${LOG_HEADER}] Loaded latest snapshot file ${latestSnapshotPath}!`);
+
+    return true;
+  }
+
+  async processLatestSnapshot(chunkCallback, endCallback) {
+    const LOG_HEADER = 'processLatestSnapshot';
+    const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
+    const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
+    if (latestSnapshotPath) {
+      try {
+        await FileUtil.processChunkedJsonAsync(latestSnapshotPath, chunkCallback, endCallback);
+      } catch (err) {
+        CommonUtil.finishWithStackTrace(
+            logger,
+            `[${LOG_HEADER}] Failed to process latest snapshot file (${latestSnapshotPath}) ` +
+            `with error: ${err.stack}`);
+        return false;
+      }
+    }
+    logger.info(`[${LOG_HEADER}] Processed latest snapshot file ${latestSnapshotPath}!`);
 
     return true;
   }
@@ -286,14 +300,16 @@ class BlockchainNode {
     const LOG_HEADER = 'initNode';
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
-    logger.info(`[${LOG_HEADER}] Initializing DB..`);
+    logger.info(
+        `[${LOG_HEADER}] Initializing DB with latest snapshot ${this.latestSnapshotPath}..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, this.latestSnapshotBlockNumber,
         this.stateManager);
     startingDb.initDb(this.latestSnapshot);
 
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
-    logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
+    logger.info(
+        `[${LOG_HEADER}] Initializing blockchain with latest snapshot ${this.latestSnapshotPath}..`);
     const wasBlockDirEmpty = this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
 
     // 3. Execute the chain on the DB and finalize it.

@@ -722,15 +722,13 @@ class P2pClient {
             // TODO(minsulee2): need to convert message when updating SNAPSHOT_CHUNK_RESPONSE.
             // this.convertSnapshotChunkResponseMessage();
           }
-          const snapshotChunk = _.get(parsedMessage, 'data.snapshotChunk');
-          const blockNumber = _.get(parsedMessage, 'data.blockNumber');
+          const chunk = _.get(parsedMessage, 'data.chunk');
           const chunkIndex = _.get(parsedMessage, 'data.chunkIndex');
           const numChunks = _.get(parsedMessage, 'data.numChunks');
           logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk: ` +
-              `${JSON.stringify(snapshotChunk, null, 2)}\n` +
-              `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, ` +
-              `and numChunks ${numChunks}`);
-          await this.handleSnapshotChunk(snapshotChunk, blockNumber, chunkIndex, numChunks, socket);
+              `${JSON.stringify(chunk, null, 2)}\n` +
+              `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
+          await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, socket);
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
@@ -849,18 +847,27 @@ class P2pClient {
   }
 
   // TODO(platfowner): Add peer blacklisting.
-  async handleSnapshotChunk(snapshotChunk, blockNumber, chunkIndex, numChunks, socket) {
+  async handleSnapshotChunk(chunk, chunkIndex, numChunks, socket) {
     const LOG_HEADER = 'handleSnapshotChunk';
-
-    const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
-    // Received from a peer that I didn't request from
-    if (_.get(this.stateSyncInProgress, 'address') !== address) {
+    const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    const peerAddress = _.get(this.stateSyncInProgress, 'address', null);
+    if (senderAddress !== peerAddress) {
+      // Received from a peer that I didn't request from
+      logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
       return;
     }
-    this.updateStateSyncPeer(chunkIndex, blockNumber, numChunks);
-    logger.info(`[${LOG_HEADER}] Handling a snapshot chunk: ` +
-        `${JSON.stringify(snapshotChunk, null, 2)}\n` +
-        `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, and numChunks ${numChunks}`);
+    if (numChunks > 0) {
+      const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
+      if (numChunks !== chunkArraySize) {
+        logger.error(`[${LOG_HEADER}] Mismatched numChunks: ${numChunks} !== ${chunkArraySize}`);
+        return;
+      }
+    } else {
+      this.updateStateSyncPeer(chunk, chunkIndex);
+    }
+    logger.error(`[${LOG_HEADER}] Handling a snapshot chunk: ` +
+        `${JSON.stringify(chunk, null, 2)}\n` +
+        `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
     // TODO(platfowner): Implement this part.
   }
 
@@ -868,12 +875,14 @@ class P2pClient {
   async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
 
-    const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
-    // Received from a peer that I didn't request from
-    if (_.get(this.chainSyncInProgress, 'address') !== address) {
+    const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    const peerAddress = _.get(this.chainSyncInProgress, 'address', null);
+    if (senderAddress !== peerAddress) {
+      // Received from a peer that I didn't request from
+      logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
       return;
     }
-    if (!this.precheckChainSegment(chainSegment, address)) {
+    if (!this.precheckChainSegment(chainSegment, senderAddress)) {
       // Buffer time to avoid network resource abusing
       await CommonUtil.sleep(NodeConfigs.P2P_GENESIS_BLOCK_HASH_MISMATCH_SLEEP_MS);
       this.resetChainSyncPeer();
@@ -1009,22 +1018,16 @@ class P2pClient {
   setStateSyncPeer(address) {
     this.stateSyncInProgress = {
       address,
+      chunks: [],
       lastChunkIndex: -1,
-      blockNumber: -1,
-      numChunks: -1,
       updatedAt: Date.now
     };
   }
 
-  updateStateSyncPeer(lastChunkIndex, blockNumber = null, numChunks = null) {
+  updateStateSyncPeer(chunk, lastChunkIndex) {
     if (!this.stateSyncInProgress) return;
+    this.stateSyncInProgress.chunks.push(chunk);
     this.stateSyncInProgress.lastChunkIndex = lastChunkIndex;
-    if (blockNumber !== null) {
-      this.stateSyncInProgress.blockNumber = blockNumber;
-    }
-    if (numChunks !== null) {
-      this.stateSyncInProgress.numChunks = numChunks;
-    }
     this.stateSyncInProgress.updatedAt = Date.now();
   }
 

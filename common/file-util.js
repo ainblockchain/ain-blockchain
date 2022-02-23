@@ -127,25 +127,58 @@ class FileUtil {
     return _.endsWith(filePath, '.gz');
   }
 
+  static async processChunkedJsonAsync(filePath, chunkCallback, endCallback) {
+    const LOG_HEADER = 'readChunkedJsonAsyncWithCallbacks';
+    try {
+      return new Promise((resolve) => {
+        const transformStream = JSONStream.parse('docs.*');
+        let numChunks = 0;
+        fs.createReadStream(filePath)
+          .pipe(zlib.createGunzip())
+          .pipe(transformStream)
+          .on('data', (data) => {
+            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
+            chunkCallback(data, numChunks);
+            numChunks++;
+          })
+          .on('end', () => {
+            logger.debug(
+                `[${LOG_HEADER}] Reading ${numChunks} chunks done.`);
+            resolve(endCallback(numChunks));
+          })
+          .on('error', (e) => {
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
+            resolve(false);
+          });
+      });
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      return false;
+    }
+  }
+
   static async readChunkedJsonAsync(filePath) {
     const LOG_HEADER = 'readChunkedJsonAsync';
     try {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
         const chunks = [];
+        let numChunks = 0;
         fs.createReadStream(filePath)
           .pipe(zlib.createGunzip())
           .pipe(transformStream)
           .on('data', (data) => {
-            logger.debug(`${LOG_HEADER} Read data: ${JSON.stringify(data)}`);
+            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
             chunks.push(data);
+            numChunks++;
           })
           .on('end', () => {
-            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(chunks)}`);
+            logger.debug(
+                `[${LOG_HEADER}] Reading ${chunks.length} chunks done.`);
             resolve(ObjectUtil.fromChunks(chunks));
           })
           .on('error', (e) => {
-            logger.error(`${LOG_HEADER} Error while reading ${filePath}: ${e}`);
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
             resolve(null);
           });
       });
