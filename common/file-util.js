@@ -175,7 +175,7 @@ class FileUtil {
           .on('end', () => {
             logger.debug(
                 `[${LOG_HEADER}] Reading ${chunks.length} chunks done.`);
-            resolve(ObjectUtil.fromChunks(chunks));
+            resolve(FileUtil.buildObjectFromChunks(chunks));
           })
           .on('error', (e) => {
             logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
@@ -192,11 +192,15 @@ class FileUtil {
     const LOG_HEADER = 'readChunkedJsonSync';
     try {
       const zippedFs = fs.readFileSync(filePath);
-      return ObjectUtil.fromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
+      return FileUtil.buildObjectFromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
+  }
+
+  static buildObjectFromChunks(chunks) {
+    return ObjectUtil.fromChunks(chunks);
   }
 
   static readCompressedJsonSync(filePath) {

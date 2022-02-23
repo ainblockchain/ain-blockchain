@@ -20,6 +20,7 @@ const {
   TimerFlagEnabledBandageMap,
   isEnabledTimerFlag,
 } = require('../common/constants');
+const FileUtil = require('../common/file-util');
 const P2pUtil = require('./p2p-util');
 const {
   sendGetRequest
@@ -67,7 +68,7 @@ class P2pClient {
       const isFirstNode = P2pUtil.areIdenticalUrls(
           NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
       this.setIsFirstNode(isFirstNode);
-      await this.prepareBlockchainNode(isFirstNode);
+      await this.prepareBlockchainNode();
     }
   }
 
@@ -421,10 +422,11 @@ class P2pClient {
     clearInterval(this.intervalPeerCandidatesConnection);
   }
 
-  async prepareBlockchainNode(isFirstNode) {
+  async prepareBlockchainNode() {
     const LOG_HEADER = 'prepareBlockchainNode';
 
-    logger.info(`[${LOG_HEADER}] Preparing blockchain node with isFirstNode = ${isFirstNode} ..`);
+    logger.info(
+        `[${LOG_HEADER}] Preparing blockchain node with isFirstNode = ${this.isFirstNode} ..`);
     this.server.node.checkSyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
       // Wait until some peer connections are made.
@@ -440,10 +442,10 @@ class P2pClient {
       this.server.node.state = BlockchainNodeStates.READY_TO_START;
       logger.info(`[${LOG_HEADER}] Now blockchain node in READY_TO_START state!`);
     }
-    await this.startBlockchainNode(isFirstNode);
+    await this.startBlockchainNode();
   }
 
-  async startBlockchainNode(isFirstNode) {
+  async startBlockchainNode() {
     const LOG_HEADER = 'startBlockchainNode';
 
     if (this.server.node.state !== BlockchainNodeStates.READY_TO_START) {
@@ -451,15 +453,15 @@ class P2pClient {
           `[${LOG_HEADER}] Blockchain node is not in READY_TO_START state: ${this.server.node.state}`);
       return;
     }
-    if (!this.server.node.initNode(isFirstNode)) {
-      logger.error(`[${LOG_HEADER}] Failed to start blockchain node!`);
+    if (!this.server.node.initNode(this.isFirstNode)) {
+      logger.error(`[${LOG_HEADER}] Failed to init blockchain node!`);
       this.server.node.state = BlockchainNodeStates.STOPPED;
       logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
     logger.info(`[${LOG_HEADER}] Blockchain node started!`);
 
-    if (!isFirstNode) {
+    if (!this.isFirstNode) {
       // Does nothing.
       // NOTE: Consensus will be initialized after syncing with peers
       return;
@@ -858,19 +860,39 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
       return;
     }
+    logger.info(`[${LOG_HEADER}] Handling a snapshot chunk of chunkIndex ${chunkIndex} ` +
+        `and numChunks ${numChunks}.`);
+    const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
     if (numChunks > 0) {
-      const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
       if (numChunks !== chunkArraySize) {
         logger.error(`[${LOG_HEADER}] Mismatched numChunks: ${numChunks} !== ${chunkArraySize}`);
         return;
       }
-    } else {
+      await this.buildSnapshotAndStartBlockchainNode();
+    } else if (chunkIndex >= 0) {
+      if (chunkIndex !== chunkArraySize) {
+        logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
+        return;
+      }
       this.updateStateSyncPeer(chunk, chunkIndex);
     }
-    logger.error(`[${LOG_HEADER}] Handling a snapshot chunk: ` +
-        `${JSON.stringify(chunk, null, 2)}\n` +
-        `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
-    // TODO(platfowner): Implement this part.
+  }
+
+  async buildSnapshotAndStartBlockchainNode() {
+    const LOG_HEADER = 'buildSnapshotAndStartBlockchainNode';
+
+    const snapshot = FileUtil.buildObjectFromChunks(this.stateSyncInProgress.chunks);
+    const blockNumber =
+        this.server.node.setLatestSnapshot(this.stateSyncInProgress.address, snapshot);
+    logger.info(`[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} ` +
+        `from ${this.stateSyncInProgress.address}.`);
+    this.server.node.state = BlockchainNodeStates.READY_TO_START;
+    logger.info(`[${LOG_HEADER}] Now blockchain node in READY_TO_START state!`);
+    await this.startBlockchainNode();
+    this.resetStateSyncPeer();
+    /*
+    this.requestChainSegment();
+    */
   }
 
   // TODO(platfowner): Add peer blacklisting.

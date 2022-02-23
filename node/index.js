@@ -230,6 +230,7 @@ class BlockchainNode {
     this.latestSnapshot = snapshot;
     this.latestSnapshotBlockNumber =
         _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
+    return this.latestSnapshotBlockNumber;
   }
 
   resetLatestSnapshot() {
@@ -301,7 +302,7 @@ class BlockchainNode {
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(
-        `[${LOG_HEADER}] Initializing DB with latest snapshot ${this.latestSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing DB with latest snapshot from ${this.latestSnapshotSource}..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, this.latestSnapshotBlockNumber,
         this.stateManager);
@@ -309,7 +310,7 @@ class BlockchainNode {
 
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(
-        `[${LOG_HEADER}] Initializing blockchain with latest snapshot ${this.latestSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing blockchain with latest snapshot from ${this.latestSnapshotSource}..`);
     const wasBlockDirEmpty = this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
 
     // 3. Execute the chain on the DB and finalize it.
