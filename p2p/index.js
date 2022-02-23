@@ -422,7 +422,7 @@ class P2pClient {
   async setUpBlockchainNode(isFirstNode) {
     const LOG_HEADER = 'setUpBlockchainNode';
 
-    logger.info(`[${LOG_HEADER}] Starting blockchain node with isFirstNode = ${isFirstNode} ..`);
+    logger.info(`[${LOG_HEADER}] Setting up blockchain node with isFirstNode = ${isFirstNode} ..`);
     this.server.node.checkSyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
       // Wait until some peer connections are made.
@@ -430,7 +430,7 @@ class P2pClient {
       this.requestSnapshotChunks();
       return;
     } else if (this.server.node.state === BlockchainNodeStates.STATE_LOADING) {
-      if (!(await this.server.node.loadSnapshot())) {
+      if (!(await this.server.node.loadLatestSnapshot())) {
         this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
         return;
