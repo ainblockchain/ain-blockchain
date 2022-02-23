@@ -398,7 +398,7 @@ class P2pServer {
 
   setServerSidePeerEventHandlers(socket, url) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
-    socket.on('message', (message) => {
+    socket.on('message', async (message) => {
       const beginTime = Date.now();
       try {
         const parsedMessage = JSON.parse(message);
@@ -626,22 +626,7 @@ class P2pServer {
               return;
             }
             // Send the chunks of the latest snapshot one by one to the requester.
-            // TODO(platfowner): Implement this part.
-            const snapshotChunk = {};
-            const blockNumber = -1;
-            const chunkIndex = -1;
-            const numChunks = -1;
-            if (snapshotChunk) {
-              logger.debug(
-                  `[${LOG_HEADER}] Sending a snapshot chunk: ` +
-                  `${JSON.stringify(snapshotChunk, null, 2)}\n` +
-                  `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, ` +
-                  `and numChunks ${numChunks}`);
-              this.sendSnapshotChunk(socket, snapshotChunk, blockNumber, chunkIndex, numChunks);
-            } else {
-              logger.info(`[${LOG_HEADER}] No snapshot chunk to send`);
-              this.sendSnapshotChunk(socket, null, -1, -1, -1);
-            }
+            await this.loadAndSetIntervalForLatestSnapshot(socket);
             break;
           case MessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlockNumber = _.get(parsedMessage, 'data.lastBlockNumber');
@@ -724,6 +709,29 @@ class P2pServer {
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
+  }
+
+  async loadAndSetIntervalForLatestSnapshot(socket) {
+    const LOG_HEADER = 'loadAndSetIntervalForLatestSnapshot';
+    if (!(await this.node.loadLatestSnapshot())) {
+      logger.error(`[${LOG_HEADER}] Failed to load latest snapshot!`);
+      return;
+    }
+    const snapshotChunk = {};
+    const blockNumber = -1;
+    const chunkIndex = -1;
+    const numChunks = -1;
+    if (snapshotChunk) {
+      logger.debug(
+          `[${LOG_HEADER}] Sending a snapshot chunk: ` +
+          `${JSON.stringify(snapshotChunk, null, 2)}\n` +
+          `of blockNumber ${blockNumber}, chunkIndex ${chunkIndex}, ` +
+          `and numChunks ${numChunks}`);
+      this.sendSnapshotChunk(socket, snapshotChunk, blockNumber, chunkIndex, numChunks);
+    } else {
+      logger.info(`[${LOG_HEADER}] No snapshot chunk to send`);
+      this.sendSnapshotChunk(socket, null, -1, -1, -1);
+    }
   }
 
   sendSnapshotChunk(socket, snapshotChunk, blockNumber, chunkIndex, numChunks) {

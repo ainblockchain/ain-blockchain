@@ -62,6 +62,7 @@ class BlockchainNode {
     this.latestSnapshotPath = null;
     this.latestSnapshot = null;
     this.latestSnapshotBlockNumber = -1;
+    this.latestSnapshotChunkIndex = -1;
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
 
@@ -225,6 +226,22 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
+  setLatestSnapshot(path, snapshot) {
+    this.latestSnapshotPath = path;
+    this.latestSnapshot = snapshot;
+    this.latestSnapshotBlockNumber =
+        _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
+    this.latestSnapshotChunkIndex = -1;
+  }
+
+  resetLatestSnapshot() {
+    this.setLatestSnapshot(null, null);
+  }
+
+  setLatestSnapshotChunkIndex(chunkIndex) {
+    this.latestSnapshotChunkIndex = chunkIndex;
+  }
+
   checkSyncMode() {
     const LOG_HEADER = 'checkSyncMode';
 
@@ -243,16 +260,15 @@ class BlockchainNode {
     }
   }
 
-  async loadSnapshot() {
-    const LOG_HEADER = 'loadSnapshot';
+  async loadLatestSnapshot() {
+    const LOG_HEADER = 'loadLatestSnapshot';
 
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
-    this.latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
-    if (this.latestSnapshotPath) {
+    const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
+    if (latestSnapshotPath) {
       try {
-        this.latestSnapshot = await FileUtil.readChunkedJsonAsync(this.latestSnapshotPath);
-        this.latestSnapshotBlockNumber =
-            this.latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
+        const latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
+        this.setLatestSnapshot(latestSnapshotPath, latestSnapshot)
       } catch (err) {
         CommonUtil.finishWithStackTrace(
             logger,
@@ -299,6 +315,9 @@ class BlockchainNode {
     // 5. Node status changed: STATE_LOADING/STATE_SYNCING -> CHAIN_SYNCING.
     this.state = BlockchainNodeStates.CHAIN_SYNCING;
     logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
+
+    // 6. Reset latest snapshot.
+    this.resetLatestSnapshot();
 
     return true;
   }
