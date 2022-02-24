@@ -267,7 +267,8 @@ class P2pClient {
       if (!selectedAddr) {
         return null;
       }
-      this.setStateSyncPeer(selectedAddr);
+      const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, selectedAddr);
+      this.setStateSyncPeer(selectedAddr, p2pUrl);
     }
     const socket = this.outbound[this.stateSyncInProgress.address].socket;
     return socket;
@@ -882,10 +883,11 @@ class P2pClient {
     const LOG_HEADER = 'buildSnapshotAndStartBlockchainNode';
 
     const snapshot = FileUtil.buildObjectFromChunks(this.stateSyncInProgress.chunks);
+    const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
     const blockNumber =
-        this.server.node.setLatestSnapshot(this.stateSyncInProgress.address, snapshot);
-    logger.info(`[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} ` +
-        `from ${this.stateSyncInProgress.address}.`);
+        this.server.node.setLatestSnapshot(source, snapshot);
+    logger.info(
+        `[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} from ${source}.`);
     this.server.node.state = BlockchainNodeStates.READY_TO_START;
     logger.info(`[${LOG_HEADER}] Now blockchain node in READY_TO_START state!`);
     await this.startBlockchainNode();
@@ -940,7 +942,8 @@ class P2pClient {
     setTimeout(() => {
       const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
         if (address) {
-          logger.info(`Received address: ${address}`);
+          const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, address);
+          logger.info(`Received address ${address} from ${p2pUrl}`);
           this.requestChainSegment();
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
@@ -1041,9 +1044,10 @@ class P2pClient {
     this.isFirstNode = isFirstNode;
   }
 
-  setStateSyncPeer(address) {
+  setStateSyncPeer(address, p2pUrl) {
     this.stateSyncInProgress = {
       address,
+      p2pUrl,
       chunks: [],
       lastChunkIndex: -1,
       updatedAt: Date.now
