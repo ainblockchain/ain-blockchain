@@ -60,26 +60,79 @@ class FileUtil {
     const snapshotPathPrefix = path.join(snapshotPath, BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME);
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
-    let files = [];
+    let fileList = [];
     try {
-      files = fs.readdirSync(snapshotPathPrefix);
+      fileList = fs.readdirSync(snapshotPathPrefix);
     } catch (err) {
-      logger.debug(`[${LOG_HEADER}] Failed to read snapshots: ${err.stack}`);
+      logger.debug(
+          `[${LOG_HEADER}] Failed to read snapshots from ${snapshotPathPrefix}: ${err.stack}`);
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
-    for (const file of files) {
+    for (const file of fileList) {
       // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
       if (_.startsWith(file, BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX)) {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
         continue;
       }
-      const blockNumber = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
-      if (blockNumber !== undefined && blockNumber > latestSnapshotBlockNumber) {
+      const numString = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
+      let blockNumber = Number(numString);
+      blockNumber = CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
+      if (blockNumber !== -1 && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
-        latestSnapshotBlockNumber = Number(blockNumber);
+        latestSnapshotBlockNumber = blockNumber;
       }
     }
     return { latestSnapshotPath, latestSnapshotBlockNumber };
+  }
+
+  static getLatestBlockInfo(chainPath) {
+    const LOG_HEADER = 'getLatestBlockInfo';
+
+    let latestBlockPath = null;
+    let latestBlockNumber = -1;
+
+    const blockDirPathPrefix = path.join(chainPath, BlockchainConsts.CHAINS_N2B_DIR_NAME);
+    let dirList = [];
+    try {
+      dirList = fs.readdirSync(blockDirPathPrefix);
+    } catch (err) {
+      logger.debug(
+          `[${LOG_HEADER}] Failed to read block dirs from ${blockDirPathPrefix}: ${err.stack}`);
+      return { latestBlockPath, latestBlockNumber };
+    }
+    if (dirList.length === 0) {
+      return { latestBlockPath, latestBlockNumber };
+    }
+    const latestBlockDir = dirList.sort((a, b) => {
+      let aNum = Number(a);
+      aNum = CommonUtil.isNumber(aNum) ? aNum : -1;
+      let bNum = Number(b);
+      bNum = CommonUtil.isNumber(bNum) ? bNum : -1;
+      return bNum - aNum;
+    })[0];
+
+    const blockFilePathPrefix = path.join(blockDirPathPrefix, latestBlockDir);
+    let fileList = [];
+    try {
+      fileList = fs.readdirSync(blockFilePathPrefix);
+    } catch (err) {
+      logger.debug(
+          `[${LOG_HEADER}] Failed to read block files from ${blockFilePathPrefix}: ${err.stack}`);
+      return { latestBlockPath, latestBlockNumber };
+    }
+    if (fileList.length === 0) {
+      return { latestBlockPath, latestBlockNumber };
+    }
+    for (const file of fileList) {
+      const numString = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
+      let blockNumber = Number(numString);
+      blockNumber = CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
+      if (blockNumber !== -1 && blockNumber > latestBlockNumber) {
+        latestBlockPath = path.join(blockFilePathPrefix, file);
+        latestBlockNumber = blockNumber;
+      }
+    }
+    return { latestBlockPath, latestBlockNumber };
   }
 
   static getBlockPathList(chainPath, from, size) {
@@ -347,19 +400,6 @@ class FileUtil {
       return 0;
     }
     return fs.readdirSync(path).filter((file) => file.endsWith(JSON_GZIP_FILE_EXTENSION)).length;
-  }
-
-  static getNumBlockFiles(chainPath) {
-    let numBlockFiles = 0;
-    let blockNumber = 0;
-    let numFiles;
-    do {
-      const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
-      numFiles = FileUtil.getNumFiles(blockDirPath);
-      numBlockFiles += numFiles;
-      blockNumber += NodeConfigs.CHAINS_N2B_MAX_NUM_FILES;
-    } while (numFiles > 0);
-    return numBlockFiles;
   }
 }
 

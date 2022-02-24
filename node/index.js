@@ -729,11 +729,15 @@ class BlockchainNode {
   loadAndExecuteChainOnDb(latestSnapshotBlockNumber, latestSnapshotStateVersion, isGenesisStart) {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
-    const numBlockFiles = this.bc.getNumBlockFiles();
+    const latestBlockNumber = this.bc.getLatestBlockNumber();
+    if (latestBlockNumber < 0) {
+      logger.error(`[${LOG_HEADER}] Invalid latest block number: ${latestBlockNumber}`);
+      return false;
+    }
     const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
-    for (let number = fromBlockNumber; number < numBlockFiles; number++) {
+    for (let number = fromBlockNumber; number <= latestBlockNumber; number++) {
       const block = nextBlock ? nextBlock : this.bc.loadBlock(number);
       nextBlock = this.bc.loadBlock(number + 1);
       proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
