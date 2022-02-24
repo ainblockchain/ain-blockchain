@@ -26,7 +26,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
 
     net_syncing: function(args, done) {
       const beginTime = Date.now();
-      const result = (node.state === node.state === BlockchainNodeStates.CHAIN_SYNCING);
+      const result = (node.state === BlockchainNodeStates.CHAIN_SYNCING);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       // TODO(liayoo): Return { starting, latest } with block numbers
