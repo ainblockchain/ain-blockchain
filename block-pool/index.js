@@ -322,7 +322,7 @@ class BlockPool {
     this.hashToDb.set(blockHash, db);
   }
 
-  addSeenBlock(block, proposalTx, isValid = true, isPeerSyncBlock = false) {
+  addSeenBlock(block, proposalTx, isValid = true, isFromSnapshot = false) {
     const LOG_HEADER = 'addSeenBlock';
     logger.info(
         `[${LOG_HEADER}] Adding seen block to the block pool: ${block.hash} / ${block.number} / ${block.epoch} / ${isValid}`);
@@ -335,7 +335,7 @@ class BlockPool {
       this.addToNumberToBlockSet(block);
       this.epochToBlock.set(block.epoch, blockHash);
       this.addToNextBlockSet(block);
-      this.tryUpdateNotarized(blockHash, isPeerSyncBlock);
+      this.tryUpdateNotarized(blockHash, isFromSnapshot);
       // FIXME: update all descendants, not just the immediate ones
       if (this.hashToNextBlockSet.has(blockHash)) {
         for (const val of this.hashToNextBlockSet.get(blockHash)) {
@@ -438,7 +438,7 @@ class BlockPool {
     logger.debug(`[${LOG_HEADER}] Proposal tx for block added: ${blockHash}`);
   }
 
-  tryUpdateNotarized(blockHash, isPeerSyncBlock = false) {
+  tryUpdateNotarized(blockHash, isFromSnapshot = false) {
     const LOG_HEADER = 'tryUpdateNotarized';
     const currentBlockInfo = this.hashToBlockInfo.get(blockHash);
     if (!currentBlockInfo || !currentBlockInfo.block) {
@@ -448,7 +448,7 @@ class BlockPool {
     if (currentBlockInfo.notarized) {
       return;
     }
-    if (currentBlockInfo.block.number === 0 || isPeerSyncBlock) {
+    if (currentBlockInfo.block.number === 0 || isFromSnapshot) {
       currentBlockInfo.notarized = true;
       this.updateLongestNotarizedChains();
       return;

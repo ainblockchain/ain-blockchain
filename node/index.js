@@ -311,7 +311,9 @@ class BlockchainNode {
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(
         `[${LOG_HEADER}] Initializing blockchain with latest snapshot from ${this.latestSnapshotSource}..`);
-    const wasBlockDirEmpty = this.bc.initBlockchain(isFirstNode, this.latestSnapshot);
+    const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+    const wasBlockDirEmpty = this.bc.initBlockchain(
+        isFirstNode, this.latestSnapshot, this.snapshotDir, snapshotChunkSize);
 
     // 3. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
@@ -413,7 +415,7 @@ class BlockchainNode {
     const LOG_HEADER = 'writeSnapshot';
 
     const block = this.bc.getBlockByNumber(blockNumber);
-    const snapshot = this.buildBlockchainSnapshot(blockNumber, block, this.stateManager.getFinalRoot());
+    const snapshot = this.buildBlockchainSnapshot(block, this.stateManager.getFinalRoot());
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
       logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
@@ -425,7 +427,8 @@ class BlockchainNode {
     FileUtil.deleteSnapshotFile(this.snapshotDir, blockNumber);
   }
 
-  buildBlockchainSnapshot(blockNumber, block, stateRoot) {
+  buildBlockchainSnapshot(block, stateRoot) {
+    const blockNumber = CommonUtil.isDict(block) ? block.number : null;
     const blockTimestamp = CommonUtil.isDict(block) ? block.timestamp : null;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
@@ -754,8 +757,7 @@ class BlockchainNode {
             (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ||
             NodeConfigs.SYNC_MODE === SyncModeOptions.PEER)) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
-          if (!this.bp.addSeenBlock(
-              block, proposalTx, true, NodeConfigs.SYNC_MODE === SyncModeOptions.PEER)) {
+          if (!this.bp.addSeenBlock(block, proposalTx, true, true)) {
             return false;
           }
           const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
