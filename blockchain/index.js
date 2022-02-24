@@ -60,6 +60,9 @@ class Blockchain {
         if (snapshot) {
           // Write the block from the snapshot to the blockchain dir.
           this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
+        } else {
+          // Copy the genesis block from the genesis configs dir to the blockchain dir.
+          this.writeBlock(this.genesisBlock);
         }
       }
     } else {

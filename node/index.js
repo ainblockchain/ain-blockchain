@@ -316,7 +316,7 @@ class BlockchainNode {
     // 3. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
     const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
-    if (!wasBlockDirEmpty || isGenesisStart) {
+    if (!wasBlockDirEmpty || isGenesisStart || NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
       if (!this.loadAndExecuteChainOnDb(
           this.latestSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
         return false;
@@ -734,7 +734,9 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Invalid latest block number: ${latestBlockNumber}`);
       return false;
     }
-    const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    const fromBlockNumber = (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ||
+        NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) ?
+        Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number <= latestBlockNumber; number++) {
@@ -748,9 +750,12 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        if (latestSnapshotBlockNumber === number && NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+        if (latestSnapshotBlockNumber === number &&
+            (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ||
+            NodeConfigs.SYNC_MODE === SyncModeOptions.PEER)) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
-          if (!this.bp.addSeenBlock(block, proposalTx)) {
+          if (!this.bp.addSeenBlock(
+              block, proposalTx, true, NodeConfigs.SYNC_MODE === SyncModeOptions.PEER)) {
             return false;
           }
           const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
