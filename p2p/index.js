@@ -521,7 +521,7 @@ class P2pClient {
     }
     const socket = this.assignRandomPeerForStateSync();
     if (!socket) {
-      logger.info(`[${LOG_HEADER}] Failed to get a peer for SNAPSHOT_CHUNK_REQUEST`);
+      logger.error(`[${LOG_HEADER}] Failed to get a peer for SNAPSHOT_CHUNK_REQUEST`);
       return;
     }
     const payload = P2pUtil.encapsulateMessage(MessageTypes.SNAPSHOT_CHUNK_REQUEST, {});
@@ -546,7 +546,7 @@ class P2pClient {
     }
     const socket = this.assignRandomPeerForChainSync();
     if (!socket) {
-      logger.info(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
+      logger.error(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
