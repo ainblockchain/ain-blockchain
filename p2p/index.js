@@ -890,9 +890,7 @@ class P2pClient {
     logger.info(`[${LOG_HEADER}] Now blockchain node in READY_TO_START state!`);
     await this.startBlockchainNode();
     this.resetStateSyncPeer();
-    /*
     this.requestChainSegment();
-    */
   }
 
   // TODO(platfowner): Add peer blacklisting.
