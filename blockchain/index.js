@@ -57,6 +57,10 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
+        if (snapshot) {
+          // Write the block from the snapshot to the blockchain dir.
+          this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
+        }
       }
     } else {
       if (isFirstNode) {
@@ -274,8 +278,9 @@ class Blockchain {
     return validBlocks;
   }
 
-  getNumBlockFiles() {
-    return FileUtil.getNumBlockFiles(this.blockchainPath);
+  getLatestBlockNumber() {
+    const latestBlockInfo = FileUtil.getLatestBlockInfo(this.blockchainPath);
+    return latestBlockInfo.latestBlockNumber;
   }
 
   loadBlock(blockNumber) {
