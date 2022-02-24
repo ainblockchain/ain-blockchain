@@ -7,6 +7,7 @@ const FileUtil = require('../common/file-util');
 const {
   NodeConfigs,
   BlockchainSnapshotProperties,
+  SyncModeOptions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -40,6 +41,13 @@ class Blockchain {
   initBlockchain(isFirstNode, snapshot, snapshotDir, snapshotChunkSize) {
     if (snapshot) {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
+      if (NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
+        const blockNumber = snapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
+        // NOTE(platfowner): This write is not awaited.
+        FileUtil.writeSnapshotFile(snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+        // Write the block from the snapshot to the blockchain dir.
+        this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
+      }
     }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
     if (wasBlockDirEmpty) {
@@ -57,16 +65,6 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
-        if (snapshot) {
-          const blockNumber = snapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
-          // NOTE(platfowner): This write is not awaited.
-          FileUtil.writeSnapshotFile(snapshotDir, blockNumber, snapshot, snapshotChunkSize);
-          // Write the block from the snapshot to the blockchain dir.
-          this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
-        } else {
-          // Copy the genesis block from the genesis configs dir to the blockchain dir.
-          this.writeBlock(this.genesisBlock);
-        }
       }
     } else {
       if (isFirstNode) {
