@@ -37,7 +37,7 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  initBlockchain(isFirstNode, snapshot) {
+  initBlockchain(isFirstNode, snapshot, snapshotDir, snapshotChunkSize) {
     if (snapshot) {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
     }
@@ -58,6 +58,9 @@ class Blockchain {
         logger.info('#############################################################');
         logger.info('\n');
         if (snapshot) {
+          const blockNumber = snapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
+          // NOTE(platfowner): This write is not awaited.
+          FileUtil.writeSnapshotFile(snapshotDir, blockNumber, snapshot, snapshotChunkSize);
           // Write the block from the snapshot to the blockchain dir.
           this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
         } else {
