@@ -52,6 +52,24 @@ class EventChannelManager {
     // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490).
   }
 
+  handleRegisterFilterMessage(channel, messageData) {
+    const clientFilterId = messageData.id;
+    const eventType = messageData.type;
+    if (!eventType) {
+      throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
+    }
+    const config = messageData.config;
+    if (!config) {
+      throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
+    }
+
+    const filter =
+        this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
+            eventType, config);
+    channel.addEventFilterId(filter.id);
+    this.filterIdToChannelId[filter.id] = channel.id;
+  }
+
   handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
     try {
       const parsedMessage = JSON.parse(message);
@@ -59,27 +77,13 @@ class EventChannelManager {
       if (!messageType) {
         throw Error(`Can't find type from message (${JSON.stringify(message)})`);
       }
-      const data = parsedMessage.data;
-      if (!data) {
+      const messageData = parsedMessage.data;
+      if (!messageData) {
         throw Error(`Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
         case BlockchainEventMessageTypes.REGISTER_FILTER:
-          const clientFilterId = data.id
-          const eventType = data.type;
-          if (!eventType) {
-            throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
-          }
-          const config = data.config;
-          if (!config) {
-            throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
-          }
-
-          const filter =
-              this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
-                  eventType, config);
-          channel.addEventFilterId(filter.id);
-          this.filterIdToChannelId[filter.id] = channel.id;
+          this.handleRegisterFilterMessage(channel, messageData);
           break;
         case BlockchainEventMessageTypes.DEREGISTER_FILTER:
           // TODO(cshcomcom): Implement.
