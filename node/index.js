@@ -237,8 +237,8 @@ class BlockchainNode {
     this.setLatestSnapshot(null, null);
   }
 
-  checkSyncMode() {
-    const LOG_HEADER = 'checkSyncMode';
+  setNodeStateBySyncMode() {
+    const LOG_HEADER = 'setNodeStateBySyncMode';
 
     if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);

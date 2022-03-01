@@ -428,7 +428,7 @@ class P2pClient {
 
     logger.info(
         `[${LOG_HEADER}] Preparing blockchain node with isFirstNode = ${this.isFirstNode} ..`);
-    this.server.node.checkSyncMode();
+    this.server.node.setNodeStateBySyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
       this.requestSnapshotChunks();
       return;
