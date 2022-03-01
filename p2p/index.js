@@ -561,7 +561,7 @@ class P2pClient {
           `of msg encapsulation failure.`);
       return;
     }
-    this.updateChainSyncPeer(lastBlockNumber);
+    this.updateChainSyncStatus(lastBlockNumber);
     socket.send(JSON.stringify(payload));
   }
 
@@ -874,7 +874,7 @@ class P2pClient {
         logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
         return;
       }
-      this.updateStateSyncPeer(chunk, chunkIndex);
+      this.updateStateSyncStatus(chunk, chunkIndex);
     }
   }
 
@@ -1056,10 +1056,12 @@ class P2pClient {
     };
   }
 
-  updateStateSyncPeer(chunk, lastChunkIndex) {
-    if (!this.stateSyncInProgress) return;
+  updateStateSyncStatus(chunk, chunkIndex) {
+    if (!this.stateSyncInProgress) {
+      return;
+    }
     this.stateSyncInProgress.chunks.push(chunk);
-    this.stateSyncInProgress.lastChunkIndex = lastChunkIndex;
+    this.stateSyncInProgress.lastChunkIndex = chunkIndex;
     this.stateSyncInProgress.updatedAt = Date.now();
   }
 
@@ -1075,8 +1077,10 @@ class P2pClient {
     };
   }
 
-  updateChainSyncPeer(lastBlockNumber) {
-    if (!this.chainSyncInProgress) return;
+  updateChainSyncStatus(lastBlockNumber) {
+    if (!this.chainSyncInProgress) {
+      return;
+    }
     this.chainSyncInProgress.lastBlockNumber = lastBlockNumber;
     this.chainSyncInProgress.updatedAt = Date.now();
   }
