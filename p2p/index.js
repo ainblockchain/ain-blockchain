@@ -430,8 +430,6 @@ class P2pClient {
         `[${LOG_HEADER}] Preparing blockchain node with isFirstNode = ${this.isFirstNode} ..`);
     this.server.node.checkSyncMode();
     if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
-      // Wait until some peer connections are made.
-      await CommonUtil.sleep(NodeConfigs.P2P_SNAPSHOT_CHUNK_REQUEST_SLEEP_MS);
       this.requestSnapshotChunks();
       return;
     } else if (this.server.node.state === BlockchainNodeStates.STATE_LOADING) {
@@ -515,8 +513,9 @@ class P2pClient {
   requestSnapshotChunks() {
     const LOG_HEADER = 'requestSnapshotChunks';
 
-    if (this.server.node.state !== BlockchainNodeStates.STATE_SYNCING &&
-      this.server.node.state !== BlockchainNodeStates.SERVING) {
+    if (this.server.node.state !== BlockchainNodeStates.STATE_SYNCING ||
+        this.stateSyncInProgress !== null ||
+        Object.keys(this.outbound).length === 0) {
       return;
     }
     const socket = this.assignRandomPeerForStateSync();
@@ -884,8 +883,7 @@ class P2pClient {
 
     const snapshot = FileUtil.buildObjectFromChunks(this.stateSyncInProgress.chunks);
     const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
-    const blockNumber =
-        this.server.node.setLatestSnapshot(source, snapshot);
+    const blockNumber = this.server.node.setLatestSnapshot(source, snapshot);
     logger.info(
         `[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} from ${source}.`);
     this.server.node.state = BlockchainNodeStates.READY_TO_START;
@@ -944,7 +942,11 @@ class P2pClient {
         if (address) {
           const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, address);
           logger.info(`Received address ${address} from ${p2pUrl}`);
-          this.requestChainSegment();
+          if (this.server.node.state === BlockchainNodeStates.STATE_SYNCING) {
+            this.requestSnapshotChunks();
+          } else {
+            this.requestChainSegment();
+          }
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
             this.server.consensus.stakeTx = null;
