@@ -713,7 +713,7 @@ class P2pServer {
 
   async loadAndStreamLatestSnapshot(socket) {
     const LOG_HEADER = 'loadAndStreamLatestSnapshot';
-    if (!(await this.node.processLatestSnapshot(
+    if (!(await this.node.loadAndStreamLatestSnapshotChunks(
         this.chunkCallback.bind(this, socket), this.endCallback.bind(this, socket)))) {
       logger.error(`[${LOG_HEADER}] Failed to process latest snapshot!`);
       return;
