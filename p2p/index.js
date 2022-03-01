@@ -881,6 +881,11 @@ class P2pClient {
   async buildSnapshotAndStartBlockchainNode() {
     const LOG_HEADER = 'buildSnapshotAndStartBlockchainNode';
 
+    const chunks = _.get(this.stateSyncInProgress, 'chunks', null);
+    if (!chunks || chunks.length === 0) {
+      logger.error(`[${LOG_HEADER}] Invalid chunks: ${JSON.stringify(chunks)}`);
+      return;
+    }
     const snapshot = FileUtil.buildObjectFromChunks(this.stateSyncInProgress.chunks);
     const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
     const blockNumber = this.server.node.setLatestSnapshot(source, snapshot);
