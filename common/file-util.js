@@ -64,7 +64,7 @@ class FileUtil {
     try {
       fileList = fs.readdirSync(snapshotPathPrefix);
     } catch (err) {
-      logger.debug(
+      logger.error(
           `[${LOG_HEADER}] Failed to read snapshots from ${snapshotPathPrefix}: ${err.stack}`);
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
@@ -96,7 +96,7 @@ class FileUtil {
     try {
       dirList = fs.readdirSync(blockDirPathPrefix);
     } catch (err) {
-      logger.debug(
+      logger.error(
           `[${LOG_HEADER}] Failed to read block dirs from ${blockDirPathPrefix}: ${err.stack}`);
       return { latestBlockPath, latestBlockNumber };
     }
@@ -116,7 +116,7 @@ class FileUtil {
     try {
       fileList = fs.readdirSync(blockFilePathPrefix);
     } catch (err) {
-      logger.debug(
+      logger.error(
           `[${LOG_HEADER}] Failed to read block files from ${blockFilePathPrefix}: ${err.stack}`);
       return { latestBlockPath, latestBlockNumber };
     }
@@ -181,7 +181,7 @@ class FileUtil {
   }
 
   static async processChunkedJsonAsync(filePath, chunkCallback, endCallback) {
-    const LOG_HEADER = 'readChunkedJsonAsyncWithCallbacks';
+    const LOG_HEADER = 'processChunkedJsonAsync';
     try {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
