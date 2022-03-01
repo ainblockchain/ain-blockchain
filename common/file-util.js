@@ -74,9 +74,7 @@ class FileUtil {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
         continue;
       }
-      const numString = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
-      let blockNumber = Number(numString);
-      blockNumber = CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
+      const blockNumber = FileUtil.getBlockNumberFromGzipFilename(file);
       if (blockNumber !== -1 && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
         latestSnapshotBlockNumber = blockNumber;
@@ -124,15 +122,19 @@ class FileUtil {
       return { latestBlockPath, latestBlockNumber };
     }
     for (const file of fileList) {
-      const numString = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
-      let blockNumber = Number(numString);
-      blockNumber = CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
+      const blockNumber = FileUtil.getBlockNumberFromGzipFilename(file);
       if (blockNumber !== -1 && blockNumber > latestBlockNumber) {
         latestBlockPath = path.join(blockFilePathPrefix, file);
         latestBlockNumber = blockNumber;
       }
     }
     return { latestBlockPath, latestBlockNumber };
+  }
+
+  static getBlockNumberFromGzipFilename(filename) {
+    const numString = _.get(_.split(filename, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
+    let blockNumber = Number(numString);
+    return CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
   }
 
   static getBlockPathList(chainPath, from, size) {
