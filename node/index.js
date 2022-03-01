@@ -297,8 +297,8 @@ class BlockchainNode {
     return true;
   }
 
-  initNode(isFirstNode) {
-    const LOG_HEADER = 'initNode';
+  startNode(isFirstNode) {
+    const LOG_HEADER = 'startNode';
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(
@@ -331,7 +331,7 @@ class BlockchainNode {
         this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
         this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
 
-    // 5. Node status changed: STATE_LOADING/STATE_SYNCING -> CHAIN_SYNCING.
+    // 5. Node status changed: READY_TO_START -> CHAIN_SYNCING.
     this.state = BlockchainNodeStates.CHAIN_SYNCING;
     logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 

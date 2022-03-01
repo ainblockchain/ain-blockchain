@@ -33,7 +33,7 @@ async function setNodeForTesting(
   const accounts = readConfigFile(accountsFile);
   node.setAccountForTesting(accounts.others[accountIndex]);
 
-  await node.initNode(true);
+  await node.startNode(true);
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
