@@ -863,13 +863,13 @@ class P2pClient {
     logger.info(`[${LOG_HEADER}] Handling a snapshot chunk of chunkIndex ${chunkIndex} ` +
         `and numChunks ${numChunks}.`);
     const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
-    if (numChunks > 0) {
+    if (chunkIndex === -1) {  // 'end' message
       if (numChunks !== chunkArraySize) {
         logger.error(`[${LOG_HEADER}] Mismatched numChunks: ${numChunks} !== ${chunkArraySize}`);
         return;
       }
       await this.buildSnapshotAndStartBlockchainNode();
-    } else if (chunkIndex >= 0) {
+    } else {  // 'data' message
       if (chunkIndex !== chunkArraySize) {
         logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
         return;

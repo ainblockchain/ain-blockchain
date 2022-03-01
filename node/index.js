@@ -277,8 +277,9 @@ class BlockchainNode {
     return true;
   }
 
-  async processLatestSnapshot(chunkCallback, endCallback) {
-    const LOG_HEADER = 'processLatestSnapshot';
+  // TODO(platfowner): Add some traffic control for the streaming.
+  async loadAndStreamLatestSnapshotChunks(chunkCallback, endCallback) {
+    const LOG_HEADER = 'loadAndStreamLatestSnapshotChunks';
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
     const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
     if (latestSnapshotPath) {
