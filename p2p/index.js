@@ -886,7 +886,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Invalid chunks: ${JSON.stringify(chunks)}`);
       return;
     }
-    const snapshot = FileUtil.buildObjectFromChunks(this.stateSyncInProgress.chunks);
+    const snapshot = FileUtil.buildObjectFromChunks(chunks);
     const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
     const blockNumber = this.server.node.setLatestSnapshot(source, snapshot);
     logger.info(
