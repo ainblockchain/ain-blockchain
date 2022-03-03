@@ -322,7 +322,7 @@ class BlockPool {
     this.hashToDb.set(blockHash, db);
   }
 
-  addSeenBlock(block, proposalTx, isValid = true) {
+  addSeenBlock(block, proposalTx, isValid = true, isFromSnapshot = false) {
     const LOG_HEADER = 'addSeenBlock';
     logger.info(
         `[${LOG_HEADER}] Adding seen block to the block pool: ${block.hash} / ${block.number} / ${block.epoch} / ${isValid}`);
@@ -335,7 +335,7 @@ class BlockPool {
       this.addToNumberToBlockSet(block);
       this.epochToBlock.set(block.epoch, blockHash);
       this.addToNextBlockSet(block);
-      this.tryUpdateNotarized(blockHash);
+      this.tryUpdateNotarized(blockHash, isFromSnapshot);
       // FIXME: update all descendants, not just the immediate ones
       if (this.hashToNextBlockSet.has(blockHash)) {
         for (const val of this.hashToNextBlockSet.get(blockHash)) {
@@ -438,7 +438,7 @@ class BlockPool {
     logger.debug(`[${LOG_HEADER}] Proposal tx for block added: ${blockHash}`);
   }
 
-  tryUpdateNotarized(blockHash) {
+  tryUpdateNotarized(blockHash, isFromSnapshot = false) {
     const LOG_HEADER = 'tryUpdateNotarized';
     const currentBlockInfo = this.hashToBlockInfo.get(blockHash);
     if (!currentBlockInfo || !currentBlockInfo.block) {
@@ -448,7 +448,7 @@ class BlockPool {
     if (currentBlockInfo.notarized) {
       return;
     }
-    if (currentBlockInfo.block.number === 0) {
+    if (currentBlockInfo.block.number === 0 || isFromSnapshot) {
       currentBlockInfo.notarized = true;
       this.updateLongestNotarizedChains();
       return;
@@ -464,7 +464,8 @@ class BlockPool {
           this.node.bc.getBlockByHash(lastHash);
     }
     if (!prevBlock) {
-      logger.info(`[${LOG_HEADER}] Prev block is unavailable`);
+      logger.error(
+          `[${LOG_HEADER}] Prev block of block ${currentBlockInfo.block.number} is unavailable`);
       return;
     }
     const totalAtStake = Object.values(prevBlock.validators).reduce((acc, cur) => {

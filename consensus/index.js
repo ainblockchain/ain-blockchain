@@ -300,7 +300,7 @@ class Consensus {
         // FIXME(liayoo): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
-        // this.node.state = BlockchainNodeStates.SYNCING;
+        // this.node.state = BlockchainNodeStates.CHAIN_SYNCING;
         this.server.client.requestChainSegment();
         return;
       }
@@ -514,7 +514,7 @@ class Consensus {
     if (!prevBlockInfo || !prevBlockInfo.block) {
       throw new ConsensusError({
         code: ConsensusErrorCode.MISSING_PREV_BLOCK,
-        message: `No notarized block at number ${number - 1} with hash ${lastHash}`,
+        message: `No previous block of number ${number - 1} and hash ${lastHash}`,
         level: 'error'
       });
     }
@@ -758,7 +758,7 @@ class Consensus {
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
         // NOTE(platfowner): Write the current snapshot for debugging.
-        const snapshot = node.buildBlockchainSnapshot(blockNumber, block, db.stateRoot);
+        const snapshot = node.buildBlockchainSnapshot(block, db.stateRoot);
         const snapshotChunkSize = node.getBlockchainParam('resource/snapshot_chunk_size');
         // NOTE(liayoo): This write is not awaited.
         FileUtil.writeSnapshotFile(node.snapshotDir, blockNumber, snapshot, snapshotChunkSize, true);
