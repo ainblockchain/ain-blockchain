@@ -138,6 +138,8 @@ setNodeConfigs();
 const MessageTypes = {
   ADDRESS_REQUEST: 'ADDRESS_REQUEST',
   ADDRESS_RESPONSE: 'ADDRESS_RESPONSE',
+  SNAPSHOT_CHUNK_REQUEST: 'SNAPSHOT_CHUNK_REQUEST',
+  SNAPSHOT_CHUNK_RESPONSE: 'SNAPSHOT_CHUNK_RESPONSE',
   CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
   CHAIN_SEGMENT_RESPONSE: 'CHAIN_SEGMENT_RESPONSE',
   TRANSACTION: 'TRANSACTION',
@@ -152,7 +154,10 @@ const MessageTypes = {
  */
 const BlockchainNodeStates = {
   STARTING: 'STARTING',
-  SYNCING: 'SYNCING',
+  STATE_LOADING: 'STATE_LOADING',
+  STATE_SYNCING: 'STATE_SYNCING',
+  READY_TO_START: 'READY_TO_START',
+  CHAIN_SYNCING: 'CHAIN_SYNCING',
   SERVING: 'SERVING',
   STOPPED: 'STOPPED',
 };
@@ -584,8 +589,9 @@ const StateVersions = {
  * @enum {string}
  */
 const SyncModeOptions = {
-  FULL: 'full',
   FAST: 'fast',
+  FULL: 'full',
+  PEER: 'peer',
 };
 
 const TrafficEventTypes = {

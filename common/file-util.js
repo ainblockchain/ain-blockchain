@@ -60,26 +60,81 @@ class FileUtil {
     const snapshotPathPrefix = path.join(snapshotPath, BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME);
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
-    let files = [];
+    let fileList = [];
     try {
-      files = fs.readdirSync(snapshotPathPrefix);
+      fileList = fs.readdirSync(snapshotPathPrefix);
     } catch (err) {
-      logger.debug(`[${LOG_HEADER}] Failed to read snapshots: ${err.stack}`);
+      logger.error(
+          `[${LOG_HEADER}] Failed to read snapshots from ${snapshotPathPrefix}: ${err.stack}`);
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
-    for (const file of files) {
+    for (const file of fileList) {
       // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
       if (_.startsWith(file, BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX)) {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
         continue;
       }
-      const blockNumber = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
-      if (blockNumber !== undefined && blockNumber > latestSnapshotBlockNumber) {
+      const blockNumber = FileUtil.getBlockNumberFromGzipFilename(file);
+      if (blockNumber !== -1 && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
-        latestSnapshotBlockNumber = Number(blockNumber);
+        latestSnapshotBlockNumber = blockNumber;
       }
     }
     return { latestSnapshotPath, latestSnapshotBlockNumber };
+  }
+
+  static getLatestBlockInfo(chainPath) {
+    const LOG_HEADER = 'getLatestBlockInfo';
+
+    let latestBlockPath = null;
+    let latestBlockNumber = -1;
+
+    const blockDirPathPrefix = path.join(chainPath, BlockchainConsts.CHAINS_N2B_DIR_NAME);
+    let dirList = [];
+    try {
+      dirList = fs.readdirSync(blockDirPathPrefix);
+    } catch (err) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to read block dirs from ${blockDirPathPrefix}: ${err.stack}`);
+      return { latestBlockPath, latestBlockNumber };
+    }
+    if (dirList.length === 0) {
+      return { latestBlockPath, latestBlockNumber };
+    }
+    const latestBlockDir = dirList.sort((a, b) => {
+      let aNum = Number(a);
+      aNum = CommonUtil.isNumber(aNum) ? aNum : -1;
+      let bNum = Number(b);
+      bNum = CommonUtil.isNumber(bNum) ? bNum : -1;
+      return bNum - aNum;
+    })[0];
+
+    const blockFilePathPrefix = path.join(blockDirPathPrefix, latestBlockDir);
+    let fileList = [];
+    try {
+      fileList = fs.readdirSync(blockFilePathPrefix);
+    } catch (err) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to read block files from ${blockFilePathPrefix}: ${err.stack}`);
+      return { latestBlockPath, latestBlockNumber };
+    }
+    if (fileList.length === 0) {
+      return { latestBlockPath, latestBlockNumber };
+    }
+    for (const file of fileList) {
+      const blockNumber = FileUtil.getBlockNumberFromGzipFilename(file);
+      if (blockNumber !== -1 && blockNumber > latestBlockNumber) {
+        latestBlockPath = path.join(blockFilePathPrefix, file);
+        latestBlockNumber = blockNumber;
+      }
+    }
+    return { latestBlockPath, latestBlockNumber };
+  }
+
+  static getBlockNumberFromGzipFilename(filename) {
+    const numString = _.get(_.split(filename, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
+    let blockNumber = Number(numString);
+    return CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
   }
 
   static getBlockPathList(chainPath, from, size) {
@@ -127,25 +182,58 @@ class FileUtil {
     return _.endsWith(filePath, '.gz');
   }
 
+  static async processChunkedJsonAsync(filePath, chunkCallback, endCallback) {
+    const LOG_HEADER = 'processChunkedJsonAsync';
+    try {
+      return new Promise((resolve) => {
+        const transformStream = JSONStream.parse('docs.*');
+        let numChunks = 0;
+        fs.createReadStream(filePath)
+          .pipe(zlib.createGunzip())
+          .pipe(transformStream)
+          .on('data', (data) => {
+            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
+            chunkCallback(data, numChunks);
+            numChunks++;
+          })
+          .on('end', () => {
+            logger.debug(
+                `[${LOG_HEADER}] Reading ${numChunks} chunks done.`);
+            resolve(endCallback(numChunks));
+          })
+          .on('error', (e) => {
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
+            resolve(false);
+          });
+      });
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      return false;
+    }
+  }
+
   static async readChunkedJsonAsync(filePath) {
     const LOG_HEADER = 'readChunkedJsonAsync';
     try {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
         const chunks = [];
+        let numChunks = 0;
         fs.createReadStream(filePath)
           .pipe(zlib.createGunzip())
           .pipe(transformStream)
           .on('data', (data) => {
-            logger.debug(`${LOG_HEADER} Read data: ${JSON.stringify(data)}`);
+            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
             chunks.push(data);
+            numChunks++;
           })
           .on('end', () => {
-            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(chunks)}`);
-            resolve(ObjectUtil.fromChunks(chunks));
+            logger.debug(
+                `[${LOG_HEADER}] Reading ${chunks.length} chunks done.`);
+            resolve(FileUtil.buildObjectFromChunks(chunks));
           })
           .on('error', (e) => {
-            logger.error(`${LOG_HEADER} Error while reading ${filePath}: ${e}`);
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
             resolve(null);
           });
       });
@@ -159,11 +247,15 @@ class FileUtil {
     const LOG_HEADER = 'readChunkedJsonSync';
     try {
       const zippedFs = fs.readFileSync(filePath);
-      return ObjectUtil.fromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
+      return FileUtil.buildObjectFromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
+  }
+
+  static buildObjectFromChunks(chunks) {
+    return ObjectUtil.fromChunks(chunks);
   }
 
   static readCompressedJsonSync(filePath) {
@@ -310,19 +402,6 @@ class FileUtil {
       return 0;
     }
     return fs.readdirSync(path).filter((file) => file.endsWith(JSON_GZIP_FILE_EXTENSION)).length;
-  }
-
-  static getNumBlockFiles(chainPath) {
-    let numBlockFiles = 0;
-    let blockNumber = 0;
-    let numFiles;
-    do {
-      const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
-      numFiles = FileUtil.getNumFiles(blockDirPath);
-      numBlockFiles += numFiles;
-      blockNumber += NodeConfigs.CHAINS_N2B_MAX_NUM_FILES;
-    } while (numFiles > 0);
-    return numBlockFiles;
   }
 }
 
