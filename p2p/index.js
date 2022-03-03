@@ -866,12 +866,16 @@ class P2pClient {
     if (chunkIndex === -1) {  // 'end' message
       if (numChunks !== chunkArraySize) {
         logger.error(`[${LOG_HEADER}] Mismatched numChunks: ${numChunks} !== ${chunkArraySize}`);
+        this.server.node.state = BlockchainNodeStates.STOPPED;
+        logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
         return;
       }
       await this.buildSnapshotAndStartBlockchainNode();
     } else {  // 'data' message
       if (chunkIndex !== chunkArraySize) {
         logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
+        this.server.node.state = BlockchainNodeStates.STOPPED;
+        logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
         return;
       }
       this.updateStateSyncStatus(chunk, chunkIndex);
@@ -883,7 +887,9 @@ class P2pClient {
 
     const chunks = _.get(this.stateSyncInProgress, 'chunks', null);
     if (!chunks || chunks.length === 0) {
-      logger.error(`[${LOG_HEADER}] Invalid chunks: ${JSON.stringify(chunks)}`);
+      logger.error(`[${LOG_HEADER}] Empty chunks.`);
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
     const snapshot = FileUtil.buildObjectFromChunks(chunks);
