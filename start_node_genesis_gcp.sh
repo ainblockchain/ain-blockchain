@@ -106,8 +106,9 @@ if [[ $SYNC_MODE_OPTION = "--full-sync" ]]; then
 else
     export SYNC_MODE=fast
 fi
-if [[ $SEASON = "staging" ]]; then
-    # for performance test pipeline
+if [[ $SEASON = "staging" ]] || [[ $SEASON = "exp" ]]; then
+    # staging: for performance test pipeline
+    # exp: for performance test
     export ENABLE_EXPRESS_RATE_LIMIT=false
 else
     export ENABLE_EXPRESS_RATE_LIMIT=true
