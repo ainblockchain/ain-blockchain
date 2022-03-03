@@ -450,6 +450,8 @@ class P2pClient {
     if (this.server.node.state !== BlockchainNodeStates.READY_TO_START) {
       logger.error(
           `[${LOG_HEADER}] Blockchain node is not in READY_TO_START state: ${this.server.node.state}`);
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
     if (!this.server.node.startNode(this.isFirstNode)) {
