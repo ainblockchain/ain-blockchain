@@ -731,10 +731,11 @@ class P2pClient {
           const chunk = _.get(parsedMessage, 'data.chunk');
           const chunkIndex = _.get(parsedMessage, 'data.chunkIndex');
           const numChunks = _.get(parsedMessage, 'data.numChunks');
+          const blockNumber = _.get(parsedMessage, 'data.blockNumber');
           logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk: ` +
               `${JSON.stringify(chunk, null, 2)}\n` +
               `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
-          await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, socket);
+          await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, blockNumber, socket);
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
           if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
@@ -853,8 +854,12 @@ class P2pClient {
   }
 
   // TODO(platfowner): Add peer blacklisting.
-  async handleSnapshotChunk(chunk, chunkIndex, numChunks, socket) {
+  async handleSnapshotChunk(chunk, chunkIndex, numChunks, blockNumber, socket) {
     const LOG_HEADER = 'handleSnapshotChunk';
+
+    logger.info(
+        `[${LOG_HEADER}] Handling a snapshot chunk ${chunkIndex} / ${numChunks} of ` +
+        `block number ${blockNumber}.`);
     const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
     const peerAddress = _.get(this.stateSyncInProgress, 'address', null);
     if (senderAddress !== peerAddress) {
@@ -862,8 +867,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
       return;
     }
-    logger.info(`[${LOG_HEADER}] Handling a snapshot chunk of chunkIndex ${chunkIndex} ` +
-        `and numChunks ${numChunks}.`);
+
     if (numChunks === 0) {
       const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
       logger.error(`[${LOG_HEADER}] Snapshot chunk request was rejected by peer ${source}`);
@@ -871,6 +875,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
+
     const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
     if (chunkIndex !== chunkArraySize) {
       logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
@@ -879,6 +884,7 @@ class P2pClient {
       return;
     }
     this.updateStateSyncStatus(chunk, chunkIndex);
+
     // Last chunk
     if (chunkIndex === numChunks - 1) {
       await this.buildSnapshotAndStartBlockchainNode();

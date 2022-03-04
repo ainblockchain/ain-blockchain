@@ -720,12 +720,12 @@ class P2pServer {
     }
   }
 
-  sendSnapshotChunk(socket, numChunks, chunkIndex, chunk) {
+  sendSnapshotChunk(socket, blockNumber, numChunks, chunkIndex, chunk) {
     const LOG_HEADER = 'sendSnapshotChunk';
-    logger.debug(
-        `[${LOG_HEADER}] Sending a snapshot chunk of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
+    logger.info(
+        `[${LOG_HEADER}] Sending a snapshot chunk ${chunkIndex} / ${numChunks} of blockNumber ${blockNumber}.`);
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { numChunks, chunkIndex, chunk });
+        MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { blockNumber, numChunks, chunkIndex, chunk });
     if (!payload) {
       logger.error("The snapshot chunk couldn't be sent because of msg encapsulation failure.");
       return;

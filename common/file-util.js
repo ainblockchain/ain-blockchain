@@ -422,16 +422,16 @@ class FileUtil {
     FileUtil.createDir(chunkDirPath);
     const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(chunk)));
     fs.writeFileSync(chunkPath, compressed);
-    logger.debug(`[${LOG_HEADER}] Snapshot chunk written at ${chunkPath}`);
+    logger.info(`[${LOG_HEADER}] A snapshot chunk written at ${chunkPath}`);
   }
 
   static deleteSnapshotChunkFiles(snapshotPath, blockNumber) {
     const LOG_HEADER = 'deleteSnapshotChunkFiles';
 
-    logger.info(`[${LOG_HEADER}] Deleting snapshot chunk files with block number: ${blockNumber}`);
     const chunkDirPath = FileUtil.getSnapshotChunkDirPath(snapshotPath, blockNumber);
     if (fs.existsSync(chunkDirPath)) {
       fs.rmSync(chunkDirPath, { recursive: true, force: true });
+      logger.info(`[${LOG_HEADER}] Snapshot chunk files deleted from ${chunkDirPath}`);
     }
   }
 
