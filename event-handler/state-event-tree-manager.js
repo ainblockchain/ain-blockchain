@@ -7,6 +7,7 @@ const WILDCARD_LABEL = '*';
 class StateEventTreeManager {
   constructor() {
     this.stateEventTree = {}; // TODO(cshcomcom): Use Map.
+    this.filterIdToParsedPath = {};
   }
 
   static isValidPathForStateEventTree(parsedPath) {
@@ -39,10 +40,79 @@ class StateEventTreeManager {
         currNode = currNode[label];
       }
     }
+    this.filterIdToParsedPath[filterId] = parsedValuePath;
+  }
+
+  visitNodes(labels) {
+    const visitNodeList = [];
+    let currNode = this.stateEventTree;
+    for (let label of labels) {
+      if (CommonUtil.isVariableLabel(label)) {
+        label = WILDCARD_LABEL;
+      }
+      if (!currNode[label]) {
+        throw Error(`Can't visit next node (${label})`);
+      }
+      currNode = currNode[label];
+      visitNodeList.push(currNode);
+    }
+    return visitNodeList;
+  }
+
+  deleteEmptyNodes(labelList, nodeList) {
+    // Since it is a tree structure, it proceeds in the opposite direction.
+    for (let i = nodeList.length - 1; i >= 0; i--) {
+      const currNode = nodeList[i];
+      const eventNode = currNode[EVENT_NODE_LABEL];
+
+      // Delete event node with no filter Ids.
+      if (eventNode) {
+        const filterIdSet = eventNode.filterIdSet;
+        if (filterIdSet.values().length > 0) { // Non-empty
+          break;
+        }
+        delete eventNode.filterIdSet;
+        delete currNode[EVENT_NODE_LABEL];
+      }
+
+      // Delete a node with no sub nodes.
+      if (Object.keys(currNode).length === 0) {
+        const prevNode = i > 0 ? nodeList[i - 1] : this.stateEventTree;
+        const label = CommonUtil.isVariableLabel(labelList[i]) ? WILDCARD_LABEL : labelList[i];
+        delete prevNode[label];
+      }
+    }
+  }
+
+  deleteFilterIdFromEventNode(eventNode, filterId) {
+    if (!eventNode || !eventNode.filterIdSet) {
+      throw Error(`Can't find filterIdSet (eventNode: ${JSON.stringify(eventNode)})`);
+    }
+    if (!eventNode.filterIdSet.delete(filterId)) {
+      throw Error(`Can't delete filter id from filterIdSet ` +
+          `(${JSON.stringify(eventNode.filterIdSet.values())})`);
+    }
   }
 
   deregisterEventFilterId(filterId) {
-    // TODO(cshcomcom): Implement and connect with ain-js.
+    const parsedPath = this.filterIdToParsedPath[filterId];
+    if (!parsedPath) {
+      throw Error(`Can't find parsedPath from filterIdToParsedPath (${filterId})`);
+    }
+    delete this.filterIdToParsedPath[filterId];
+
+    const visitNodeList = this.visitNodes(parsedPath);
+    if (visitNodeList.length === 0) {
+      throw Error(`visitNodeList.length === 0 (${filterId})`);
+    }
+
+    // Delete filterId from filterIdSet.
+    const lastNode = visitNodeList[visitNodeList.length - 1];
+    const eventNode = lastNode[EVENT_NODE_LABEL];
+    this.deleteFilterIdFromEventNode(eventNode, filterId);
+
+    // Delete empty nodes.
+    this.deleteEmptyNodes(parsedPath, visitNodeList);
   }
 
   matchEventFilterPathRecursive(currNode, depth, parsedValuePath) {
