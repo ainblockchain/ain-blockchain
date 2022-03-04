@@ -50,8 +50,8 @@ class StateEventTreeManager {
       if (CommonUtil.isVariableLabel(label)) {
         label = WILDCARD_LABEL;
       }
-      if (!currNode[label]) {
-        throw Error(`Can't visit next node (${label})`);
+      if (!currNode[label]) { // Already deleted case.
+        return visitNodeList;
       }
       currNode = currNode[label];
       visitNodeList.push(currNode);
@@ -103,7 +103,7 @@ class StateEventTreeManager {
 
     const visitNodeList = this.visitNodes(parsedPath);
     if (visitNodeList.length === 0) {
-      throw Error(`visitNodeList.length === 0 (${filterId})`);
+      return;
     }
 
     // Delete filterId from filterIdSet.
