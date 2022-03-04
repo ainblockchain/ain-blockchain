@@ -148,19 +148,15 @@ class EventChannelManager {
     });
   }
 
-  closeChannel(channelId) {
+  closeChannel(channel) {
     try {
-      logger.info(`Close channel ${channelId}`);
-      const channel = this.channels[channelId];
-      if (!channel) {
-        throw Error(`Can't find channel (${channelId})`);
-      }
+      logger.info(`Close channel ${channel.id}`);
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
         this.deregisterFilter(channel, filterId);
       }
-      delete this.channels[channelId];
+      delete this.channels[channel.id];
     } catch (err) {
       logger.error(`Error while close channel (${err.message})`);
     }
