@@ -305,7 +305,7 @@ class BlockchainNode {
             latestSnapshotPath,
             this.chunkCallback.bind(this, latestSnapshotBlockNumber),
             this.endCallback.bind(this, latestSnapshotBlockNumber));
-        this.streamRequestedSnapshotChunks(sendSnapshotChunk);
+        await this.streamRequestedSnapshotChunks(sendSnapshotChunk);
         FileUtil.deleteSnapshotChunkFiles(this.snapshotDir, latestSnapshotBlockNumber);
         this.resetRequestedSnapshot();
       } catch (err) {
@@ -337,11 +337,12 @@ class BlockchainNode {
     return true;
   }
 
-  streamRequestedSnapshotChunks(sendSnapshotChunk) {
+  async streamRequestedSnapshotChunks(sendSnapshotChunk) {
     for (let i = 0; i < this.requestedSnapshotNumChunks; i++) {
       const chunk = FileUtil.readSnapshotChunkFile(
           this.snapshotDir, this.requestedSnapshotBlockNumber, i);
       sendSnapshotChunk(this.requestedSnapshotNumChunks, i, chunk);
+      await CommonUtil.sleep(NodeConfigs.SEND_SNAPSHOT_CHUNK_SLEEP_TIME_MS);
     }
   }
 
