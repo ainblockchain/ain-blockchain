@@ -50,6 +50,7 @@ const BlockchainConsts = {
   CHAINS_N2B_DIR_NAME: 'n2b', // Number-to-block directory name.
   CHAINS_H2N_DIR_NAME: 'h2n', // Hash-to-number directory name.
   SNAPSHOTS_N2S_DIR_NAME: 'n2s', // Number-to-snapshot directory name.
+  SNAPSHOTS_N2C_DIR_NAME: 'n2c', // Number-to-chunks directory name.
   DEBUG_SNAPSHOT_FILE_PREFIX: 'debug_', // Prefix for debug snapshot files.
 };
 if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
