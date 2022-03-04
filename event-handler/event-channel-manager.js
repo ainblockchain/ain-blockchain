@@ -154,7 +154,8 @@ class EventChannelManager {
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
-        this.deregisterFilter(channel, filterId);
+        const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(filterId);
+        this.deregisterFilter(channel, clientFilterId);
       }
       delete this.channels[channel.id];
     } catch (err) {
