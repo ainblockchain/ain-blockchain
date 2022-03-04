@@ -864,6 +864,13 @@ class P2pClient {
     }
     logger.info(`[${LOG_HEADER}] Handling a snapshot chunk of chunkIndex ${chunkIndex} ` +
         `and numChunks ${numChunks}.`);
+    if (numChunks === 0) {
+      const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
+      logger.error(`[${LOG_HEADER}] Snapshot chunk request was rejected by peer ${source}`);
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
+      return;
+    }
     const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
     if (chunkIndex !== chunkArraySize) {
       logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);

@@ -292,9 +292,14 @@ class BlockchainNode {
     return true;
   }
 
-  // TODO(platfowner): Add some traffic control for the streaming.
   async loadAndStreamLatestSnapshotChunks(sendSnapshotChunk) {
     const LOG_HEADER = 'loadAndStreamLatestSnapshotChunks';
+    if (this.requestedSnapshotBlockNumber !== -1) {
+      // As it's already handling a snapshot chunk request, it notifies that it cannot accept
+      // this request.
+      sendSnapshotChunk(0, 0, null);
+      return true;
+    }
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
     const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
     const latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
