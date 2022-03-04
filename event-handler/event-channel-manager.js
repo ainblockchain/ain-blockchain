@@ -32,7 +32,7 @@ class EventChannelManager {
     this.wsServer.on('connection', (ws) => {
       this.handleConnection(ws);
     });
-    this.startHeartbeat(wsServer);
+    this.startHeartbeat(this.wsServer);
   }
 
   handleConnection(webSocket) {
