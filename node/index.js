@@ -59,9 +59,11 @@ class BlockchainNode {
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
-    this.latestSnapshotSource = null;
-    this.latestSnapshot = null;
-    this.latestSnapshotBlockNumber = -1;
+    this.preparedSnapshotSource = null;
+    this.preparedSnapshot = null;
+    this.preparedSnapshotBlockNumber = -1;
+    this.requestedSnapshotBlockNumber = -1;
+    this.requestedSnapshotNumChunks = 0;
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
 
@@ -225,16 +227,29 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
-  setLatestSnapshot(source, snapshot) {
-    this.latestSnapshotSource = source;
-    this.latestSnapshot = snapshot;
-    this.latestSnapshotBlockNumber =
+  setPreparedSnapshot(source, snapshot) {
+    this.preparedSnapshotSource = source;
+    this.preparedSnapshot = snapshot;
+    this.preparedSnapshotBlockNumber =
         _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
-    return this.latestSnapshotBlockNumber;
+    return this.preparedSnapshotBlockNumber;
   }
 
-  resetLatestSnapshot() {
-    this.setLatestSnapshot(null, null);
+  resetPreparedSnapshot() {
+    this.setPreparedSnapshot(null, null);
+  }
+
+  setRequestedSnapshotBlockNumber(blockNumber) {
+    this.requestedSnapshotBlockNumber = blockNumber;
+  }
+
+  setRequestedSnapshotNumChunks(numChunks) {
+    this.requestedSnapshotNumChunks = numChunks;
+  }
+
+  resetRequestedSnapshot() {
+    this.setRequestedSnapshotBlockNumber(-1);
+    this.setRequestedSnapshotNumChunks(0);
   }
 
   setNodeStateBySyncMode() {
@@ -263,7 +278,7 @@ class BlockchainNode {
     if (latestSnapshotPath) {
       try {
         const latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
-        this.setLatestSnapshot(latestSnapshotPath, latestSnapshot)
+        this.setPreparedSnapshot(latestSnapshotPath, latestSnapshot)
       } catch (err) {
         CommonUtil.finishWithStackTrace(
             logger,
@@ -278,13 +293,21 @@ class BlockchainNode {
   }
 
   // TODO(platfowner): Add some traffic control for the streaming.
-  async loadAndStreamLatestSnapshotChunks(chunkCallback, endCallback) {
+  async loadAndStreamLatestSnapshotChunks(sendSnapshotChunk) {
     const LOG_HEADER = 'loadAndStreamLatestSnapshotChunks';
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
     const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
+    const latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
+    this.setRequestedSnapshotBlockNumber(latestSnapshotBlockNumber);
     if (latestSnapshotPath) {
       try {
-        await FileUtil.processChunkedJsonAsync(latestSnapshotPath, chunkCallback, endCallback);
+        await FileUtil.processChunkedJsonAsync(
+            latestSnapshotPath,
+            this.chunkCallback.bind(this, latestSnapshotBlockNumber),
+            this.endCallback.bind(this, latestSnapshotBlockNumber));
+        this.streamRequestedSnapshotChunks(sendSnapshotChunk);
+        FileUtil.deleteSnapshotChunkFiles(this.snapshotDir, latestSnapshotBlockNumber);
+        this.resetRequestedSnapshot();
       } catch (err) {
         CommonUtil.finishWithStackTrace(
             logger,
@@ -298,30 +321,54 @@ class BlockchainNode {
     return true;
   }
 
+  chunkCallback(blockNumber, chunkIndex, chunk) {
+    const LOG_HEADER = 'chunkCallback';
+    logger.debug(
+        `[${LOG_HEADER}] Writing a snapshot chunk of blockNumber ${blockNumber} ` +
+        `and chunkIndex ${chunkIndex}.`);
+    FileUtil.writeSnapshotChunkFile(this.snapshotDir, blockNumber, chunkIndex, chunk);
+  }
+
+  endCallback(blockNumber, numChunks) {
+    const LOG_HEADER = 'endCallback';
+    logger.debug(
+        `[${LOG_HEADER}] Closing writing ${numChunks} chunks of blockNumber ${blockNumber}.`);
+    this.setRequestedSnapshotNumChunks(numChunks);
+    return true;
+  }
+
+  streamRequestedSnapshotChunks(sendSnapshotChunk) {
+    for (let i = 0; i < this.requestedSnapshotNumChunks; i++) {
+      const chunk = FileUtil.readSnapshotChunkFile(
+          this.snapshotDir, this.requestedSnapshotBlockNumber, i);
+      sendSnapshotChunk(this.requestedSnapshotNumChunks, i, chunk);
+    }
+  }
+
   startNode(isFirstNode) {
     const LOG_HEADER = 'startNode';
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(
-        `[${LOG_HEADER}] Initializing DB with latest snapshot from ${this.latestSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing DB with latest snapshot from ${this.preparedSnapshotSource}..`);
     const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, true, this.latestSnapshotBlockNumber,
+        StateVersions.EMPTY, StateVersions.START, this.bc, true, this.preparedSnapshotBlockNumber,
         this.stateManager);
-    startingDb.initDb(this.latestSnapshot);
+    startingDb.initDb(this.preparedSnapshot);
 
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(
-        `[${LOG_HEADER}] Initializing blockchain with latest snapshot from ${this.latestSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing blockchain with latest snapshot from ${this.preparedSnapshotSource}..`);
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     const wasBlockDirEmpty = this.bc.initBlockchain(
-        isFirstNode, this.latestSnapshot, this.snapshotDir, snapshotChunkSize);
+        isFirstNode, this.preparedSnapshot, this.snapshotDir, snapshotChunkSize);
 
     // 3. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
     const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
     if (!wasBlockDirEmpty || isGenesisStart || NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
       if (!this.loadAndExecuteChainOnDb(
-          this.latestSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
+          this.preparedSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
         return false;
       }
     }
@@ -337,7 +384,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
     // 6. Reset latest snapshot.
-    this.resetLatestSnapshot();
+    this.resetPreparedSnapshot();
 
     return true;
   }

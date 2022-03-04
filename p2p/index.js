@@ -865,22 +865,16 @@ class P2pClient {
     logger.info(`[${LOG_HEADER}] Handling a snapshot chunk of chunkIndex ${chunkIndex} ` +
         `and numChunks ${numChunks}.`);
     const chunkArraySize = _.get(this.stateSyncInProgress, 'chunks.length', null);
-    if (chunkIndex === -1) {  // 'end' message
-      if (numChunks !== chunkArraySize) {
-        logger.error(`[${LOG_HEADER}] Mismatched numChunks: ${numChunks} !== ${chunkArraySize}`);
-        this.server.node.state = BlockchainNodeStates.STOPPED;
-        logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
-        return;
-      }
+    if (chunkIndex !== chunkArraySize) {
+      logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
+      this.server.node.state = BlockchainNodeStates.STOPPED;
+      logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
+      return;
+    }
+    this.updateStateSyncStatus(chunk, chunkIndex);
+    // Last chunk
+    if (chunkIndex === numChunks - 1) {
       await this.buildSnapshotAndStartBlockchainNode();
-    } else {  // 'data' message
-      if (chunkIndex !== chunkArraySize) {
-        logger.error(`[${LOG_HEADER}] Mismatched chunkIndex: ${chunkIndex} !== ${chunkArraySize}`);
-        this.server.node.state = BlockchainNodeStates.STOPPED;
-        logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
-        return;
-      }
-      this.updateStateSyncStatus(chunk, chunkIndex);
     }
   }
 
@@ -896,7 +890,7 @@ class P2pClient {
     }
     const snapshot = FileUtil.buildObjectFromChunks(chunks);
     const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
-    const blockNumber = this.server.node.setLatestSnapshot(source, snapshot);
+    const blockNumber = this.server.node.setPreparedSnapshot(source, snapshot);
     logger.info(
         `[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} from ${source}.`);
     this.server.node.state = BlockchainNodeStates.READY_TO_START;
