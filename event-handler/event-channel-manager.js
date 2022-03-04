@@ -13,6 +13,7 @@ class EventChannelManager {
     this.wsServer = null;
     this.channels = {};
     this.filterIdToChannelId = {};
+    this.heartbeatInterval = null;
   }
 
   async getNetworkInfo() {
@@ -31,6 +32,7 @@ class EventChannelManager {
     this.wsServer.on('connection', (ws) => {
       this.handleConnection(ws);
     });
+    this.startHeartbeat(wsServer);
   }
 
   handleConnection(webSocket) {
@@ -46,10 +48,15 @@ class EventChannelManager {
     webSocket.on('message', (message) => {
       this.handleMessage(channel, message);
     });
-    webSocket.on('close', (message) => {
-      // TODO(cshcomcom): Delete unused variables.
+    webSocket.on('close', (_) => {
+      this.closeChannel(channel);
     });
-    // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490).
+
+    // Heartbeat (
+    webSocket.on('pong', (_) => {
+      webSocket.isAlive = true;
+    })
+    webSocket.isAlive = true;
   }
 
   handleRegisterFilterMessage(channel, messageData) {
@@ -70,20 +77,15 @@ class EventChannelManager {
     this.filterIdToChannelId[filter.id] = channel.id;
   }
 
-  handleDeregisterFilterMessage(channel, messageData) {
-    const clientFilterId = messageData.id;
-    const eventType = messageData.type;
-    if (!eventType) {
-      throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
-    }
-    const config = messageData.config;
-    if (!config) {
-      throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
-    }
-
+  deregisterFilter(channel, clientFilterId) {
     const filter = this.eventHandler.deregisterEventFilter(clientFilterId, channel.id);
     channel.deleteEventFilterId(filter.id);
     delete this.filterIdToChannelId[filter.id];
+  }
+
+  handleDeregisterFilterMessage(channel, messageData) {
+    const clientFilterId = messageData.id;
+    this.deregisterFilter(channel, clientFilterId);
   }
 
   handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
@@ -140,10 +142,44 @@ class EventChannelManager {
   }
 
   close() {
+    this.stopHeartbeat();
     this.wsServer.close(() => {
       logger.info(`Closed event channel manager's socket`);
-      // TODO(cshcomcom): Clear all data.
     });
+  }
+
+  closeChannel(channelId) {
+    try {
+      logger.info(`Close channel ${channelId}`);
+      const channel = this.channels[channelId];
+      if (!channel) {
+        throw Error(`Can't find channel (${channelId})`);
+      }
+      channel.webSocket.terminate();
+      const filterIds = channel.getAllFilterIds();
+      for (const filterId of filterIds) {
+        this.deregisterFilter(channel, filterId);
+      }
+      delete this.channels[channelId];
+    } catch (err) {
+      logger.error(`Error while close channel (${err.message})`);
+    }
+  }
+
+  startHeartbeat(wsServer) {
+    this.heartbeatInterval = setInterval(() => {
+      wsServer.clients.forEach((ws) => {
+        if (ws.isAlive === false) {
+          return ws.terminate();
+        }
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS || 15000);
+  }
+
+  stopHeartbeat() {
+    clearInterval(this.heartbeatInterval);
   }
 }
 

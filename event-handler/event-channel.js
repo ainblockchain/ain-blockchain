@@ -5,6 +5,10 @@ class EventChannel {
     this.eventFilterIds = new Set();
   }
 
+  getAllFilterIds() {
+    return this.eventFilterIds.values();
+  }
+
   addEventFilterId(filterId) {
     this.eventFilterIds.add(filterId);
   }
