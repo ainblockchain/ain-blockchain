@@ -297,7 +297,7 @@ class BlockchainNode {
     if (this.requestedSnapshotBlockNumber !== -1) {
       // As it's already handling a snapshot chunk request, it notifies that it cannot accept
       // this request.
-      sendSnapshotChunk(0, 0, null);
+      sendSnapshotChunk(-1, 0, -1, null);
       return true;
     }
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
@@ -328,16 +328,15 @@ class BlockchainNode {
 
   chunkCallback(blockNumber, chunkIndex, chunk) {
     const LOG_HEADER = 'chunkCallback';
-    logger.debug(
-        `[${LOG_HEADER}] Writing a snapshot chunk of blockNumber ${blockNumber} ` +
-        `and chunkIndex ${chunkIndex}.`);
+    logger.info(
+        `[${LOG_HEADER}] Writing a snapshot chunk ${chunkIndex} of block number ${blockNumber}.`);
     FileUtil.writeSnapshotChunkFile(this.snapshotDir, blockNumber, chunkIndex, chunk);
   }
 
   endCallback(blockNumber, numChunks) {
     const LOG_HEADER = 'endCallback';
-    logger.debug(
-        `[${LOG_HEADER}] Closing writing ${numChunks} chunks of blockNumber ${blockNumber}.`);
+    logger.info(
+        `[${LOG_HEADER}] Finished writing ${numChunks} chunks of block number ${blockNumber}.`);
     this.setRequestedSnapshotNumChunks(numChunks);
     return true;
   }
@@ -346,7 +345,8 @@ class BlockchainNode {
     for (let i = 0; i < this.requestedSnapshotNumChunks; i++) {
       const chunk = FileUtil.readSnapshotChunkFile(
           this.snapshotDir, this.requestedSnapshotBlockNumber, i);
-      sendSnapshotChunk(this.requestedSnapshotNumChunks, i, chunk);
+      sendSnapshotChunk(
+          this.requestedSnapshotBlockNumber, this.requestedSnapshotNumChunks, i, chunk);
       await CommonUtil.sleep(NodeConfigs.SEND_SNAPSHOT_CHUNK_SLEEP_TIME_MS);
     }
   }
