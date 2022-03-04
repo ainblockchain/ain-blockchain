@@ -127,10 +127,35 @@ class EventHandler {
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
       }
+      logger.info(`New filter is registered. (eventFilterId: ${eventFilterId}, ` +
+          `eventType: ${eventType}, config: ${JSON.stringify(config)})`);
       return eventFilter;
     } catch (err) {
       logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
           `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, err: ${err.message})`);
+      throw err;
+    }
+  }
+
+  deregisterEventFilter(clientFilterId, channelId) {
+    try {
+      const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
+      const eventFilter = this.eventFilters[eventFilterId];
+      if (!eventFilter) {
+        throw Error(`Can't find filter by filter id`);
+      }
+      delete this.eventFilters[eventFilterId];
+      if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
+        throw Error(`Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`);
+      }
+      if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
+        this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
+      }
+      logger.info(`Filter is deregistered. (eventFilterId: ${eventFilterId})`);
+      return eventFilter;
+    } catch (err) {
+      logger.error(`Can't deregister event filter (clientFilterId: ${clientFilterId}, ` +
+          `channelId: ${channelId}, err: ${err.message})`);
       throw err;
     }
   }
