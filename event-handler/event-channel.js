@@ -6,7 +6,11 @@ class EventChannel {
   }
 
   addEventFilterId(filterId) {
-    this.eventFilterIds.add(filterId)
+    this.eventFilterIds.add(filterId);
+  }
+
+  deleteEventFilterId(filterId) {
+    return this.eventFilterIds.delete(filterId);
   }
 }
 
