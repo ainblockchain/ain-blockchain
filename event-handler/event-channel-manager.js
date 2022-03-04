@@ -70,6 +70,22 @@ class EventChannelManager {
     this.filterIdToChannelId[filter.id] = channel.id;
   }
 
+  handleDeregisterFilterMessage(channel, messageData) {
+    const clientFilterId = messageData.id;
+    const eventType = messageData.type;
+    if (!eventType) {
+      throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
+    }
+    const config = messageData.config;
+    if (!config) {
+      throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
+    }
+
+    const filter = this.eventHandler.deregisterEventFilter(clientFilterId, channel.id);
+    channel.deleteEventFilterId(filter.id);
+    delete this.filterIdToChannelId[filter.id];
+  }
+
   handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
     try {
       const parsedMessage = JSON.parse(message);
@@ -86,7 +102,7 @@ class EventChannelManager {
           this.handleRegisterFilterMessage(channel, messageData);
           break;
         case BlockchainEventMessageTypes.DEREGISTER_FILTER:
-          // TODO(cshcomcom): Implement.
+          this.handleDeregisterFilterMessage(channel, messageData);
           break;
         default:
           throw Error(`Invalid message type (${messageType})`);
