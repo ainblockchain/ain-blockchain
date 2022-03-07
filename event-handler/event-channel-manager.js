@@ -11,8 +11,8 @@ class EventChannelManager {
   constructor(eventHandler) {
     this.eventHandler = eventHandler;
     this.wsServer = null;
-    this.channels = {};
-    this.filterIdToChannelId = {};
+    this.channels = {}; // [channelId]: Channel
+    this.filterIdToChannelId = {}; // [globalFilterId]: channelId
     this.heartbeatInterval = null;
   }
 
