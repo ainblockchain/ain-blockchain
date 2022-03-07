@@ -6,11 +6,13 @@ const {
   DevFlags,
   NodeConfigs,
   TransactionStates,
+  isTxInBlock,
   WriteDbOperations,
   StateVersions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('./transaction');
+const { isFailedTx } = require('../common/common-util');
 
 class TransactionPool {
   constructor(node) {
@@ -396,7 +398,7 @@ class TransactionPool {
       }
       addrToInvalidTxSet.get(address).add(hash);
       const tracked = this.transactionTracker.get(hash);
-      if (tracked && tracked.state !== TransactionStates.FINALIZED) {
+      if (tracked && !isTxInBlock(tracked.state)) {
         tracked.state = TransactionStates.FAILED;
       }
     });
@@ -494,7 +496,7 @@ class TransactionPool {
       const executedAt = _.get(this.transactionTracker.get(tx.hash), 'executed_at', -1);
       // Update transaction tracker.
       this.transactionTracker.set(tx.hash, {
-        state: TransactionStates.FINALIZED,
+        state: isFailedTx(block.receipts[i]) ? TransactionStates.REVERTED : TransactionStates.FINALIZED,
         number: block.number,
         index: i,
         address: tx.address,

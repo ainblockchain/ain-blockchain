@@ -556,11 +556,16 @@ const WriteDbOperations = {
  */
 const TransactionStates = {
   FINALIZED: 'FINALIZED',
+  REVERTED: 'REVERTED',
   EXECUTED: 'EXECUTED',
   FAILED: 'FAILED',
   PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
 };
+
+function isTxInBlock(state) {
+  return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
+}
 
 /**
  * State versions.
@@ -808,6 +813,7 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStates,
+  isTxInBlock,
   StateVersions,
   getBlockchainConfig,
   SyncModeOptions,
