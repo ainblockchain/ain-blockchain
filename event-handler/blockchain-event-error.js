@@ -1,7 +1,7 @@
 class BlockchainEventError extends Error {
   constructor(filterId, message) {
     super(message);
-    this.filterId = filterId;
+    this.filterId = filterId; // globalFilterId
   }
 }
 
