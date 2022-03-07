@@ -83,7 +83,8 @@ class EventHandler {
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
-      throw Error(`Can't get client filter ID from global filter ID (nodeFilterId: ${globalFilterId})`);
+      throw Error(`Can't get client filter ID from global filter ID ` +
+          `(nodeFilterId: ${globalFilterId})`);
     }
     return clientFilterId;
   }
@@ -104,6 +105,9 @@ class EventHandler {
         break;
       case BlockchainEventTypes.VALUE_CHANGED:
         const path = _.get(config, 'path', null);
+        if (!path) {
+          throw Error(`config.path is missing (${JSON.stringify(config)})`);
+        }
         const parsedPath = CommonUtil.parsePath(path);
         if (!StateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
           throw Error(`Invalid format path (${path})`);
@@ -132,7 +136,8 @@ class EventHandler {
       return eventFilter;
     } catch (err) {
       logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
-          `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, err: ${err.message})`);
+          `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, ` +
+          `err: ${err.message})`);
       throw err;
     }
   }
