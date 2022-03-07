@@ -714,33 +714,18 @@ class P2pServer {
   async loadAndStreamLatestSnapshot(socket) {
     const LOG_HEADER = 'loadAndStreamLatestSnapshot';
     if (!(await this.node.loadAndStreamLatestSnapshotChunks(
-        this.chunkCallback.bind(this, socket), this.endCallback.bind(this, socket)))) {
+        this.sendSnapshotChunk.bind(this, socket)))) {
       logger.error(`[${LOG_HEADER}] Failed to process latest snapshot!`);
       return;
     }
   }
 
-  chunkCallback(socket, chunk, chunkIndex) {
-    const LOG_HEADER = 'chunkCallback';
-    logger.debug(
-        `[${LOG_HEADER}] Sending a snapshot chunk: ` +
-        `${JSON.stringify(chunk, null, 2)}\n` +
-        `of chunkIndex ${chunkIndex}.`);
-    this.sendSnapshotChunk(socket, chunk, chunkIndex, -1);
-  }
-
-  endCallback(socket, numChunks) {
-    const LOG_HEADER = 'endCallback';
-    logger.debug(
-        `[${LOG_HEADER}] Sending an end-of-chunk message ` +
-        `of numChunks ${numChunks}.`);
-    this.sendSnapshotChunk(socket, null, -1, numChunks);  // with chunk = null
-    return true;
-  }
-
-  sendSnapshotChunk(socket, chunk, chunkIndex, numChunks) {
+  sendSnapshotChunk(socket, blockNumber, numChunks, chunkIndex, chunk) {
+    const LOG_HEADER = 'sendSnapshotChunk';
+    logger.info(
+        `[${LOG_HEADER}] Sending a snapshot chunk ${chunkIndex} / ${numChunks} of blockNumber ${blockNumber}.`);
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { chunk, chunkIndex, numChunks });
+        MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { blockNumber, numChunks, chunkIndex, chunk });
     if (!payload) {
       logger.error("The snapshot chunk couldn't be sent because of msg encapsulation failure.");
       return;

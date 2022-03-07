@@ -54,6 +54,23 @@ class FileUtil {
     return FileUtil.getBlockFilenameByNumber(block.number);
   }
 
+  static getSnapshotChunkDirPath(snapshotPath, blockNumber) {
+    return path.join(
+        snapshotPath,
+        BlockchainConsts.SNAPSHOTS_N2C_DIR_NAME,
+        `${blockNumber}`);
+  }
+
+  static getSnapshotChunkPath(snapshotPath, blockNumber, chunkIndex) {
+    return path.join(
+        FileUtil.getSnapshotChunkDirPath(snapshotPath, blockNumber),
+        FileUtil.getChunkFilenameByIndex(chunkIndex));
+  }
+
+  static getChunkFilenameByIndex(chunkIndex) {
+    return `${chunkIndex}.${JSON_GZIP_FILE_EXTENSION}`;
+  }
+
   static getLatestSnapshotInfo(snapshotPath) {
     const LOG_HEADER = 'getLatestSnapshotInfo';
 
@@ -193,7 +210,7 @@ class FileUtil {
           .pipe(transformStream)
           .on('data', (data) => {
             logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
-            chunkCallback(data, numChunks);
+            chunkCallback(numChunks, data);
             numChunks++;
           })
           .on('end', () => {
@@ -390,6 +407,32 @@ class FileUtil {
   static hasSnapshotFile(snapshotPath, blockNumber, isDebug = false) {
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
     return fs.existsSync(filePath);
+  }
+
+  static readSnapshotChunkFile(snapshotPath, blockNumber, chunkIndex) {
+    const chunkPath = FileUtil.getSnapshotChunkPath(snapshotPath, blockNumber, chunkIndex);
+    return FileUtil.readCompressedJsonSync(chunkPath);
+  }
+
+  static writeSnapshotChunkFile(snapshotPath, blockNumber, chunkIndex, chunk) {
+    const LOG_HEADER = 'writeSnapshotChunkFile';
+
+    const chunkPath = FileUtil.getSnapshotChunkPath(snapshotPath, blockNumber, chunkIndex);
+    const chunkDirPath = FileUtil.getSnapshotChunkDirPath(snapshotPath, blockNumber);
+    FileUtil.createDir(chunkDirPath);
+    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(chunk)));
+    fs.writeFileSync(chunkPath, compressed);
+    logger.info(`[${LOG_HEADER}] A snapshot chunk written at ${chunkPath}`);
+  }
+
+  static deleteSnapshotChunkFiles(snapshotPath, blockNumber) {
+    const LOG_HEADER = 'deleteSnapshotChunkFiles';
+
+    const chunkDirPath = FileUtil.getSnapshotChunkDirPath(snapshotPath, blockNumber);
+    if (fs.existsSync(chunkDirPath)) {
+      fs.rmSync(chunkDirPath, { recursive: true, force: true });
+      logger.info(`[${LOG_HEADER}] Snapshot chunk files deleted from ${chunkDirPath}`);
+    }
   }
 
   static getAccountFromKeystoreFile(keystorePath, password) {
