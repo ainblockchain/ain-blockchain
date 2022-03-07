@@ -59,9 +59,9 @@ class BlockchainNode {
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
-    this.preparedSnapshotSource = null;
-    this.preparedSnapshot = null;
-    this.preparedSnapshotBlockNumber = -1;
+    this.bootstrapSnapshotSource = null;
+    this.bootstrapSnapshot = null;
+    this.bootstrapSnapshotBlockNumber = -1;
     this.requestedSnapshotBlockNumber = -1;
     this.requestedSnapshotNumChunks = 0;
     this.state = BlockchainNodeStates.STARTING;
@@ -227,16 +227,16 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
-  setPreparedSnapshot(source, snapshot) {
-    this.preparedSnapshotSource = source;
-    this.preparedSnapshot = snapshot;
-    this.preparedSnapshotBlockNumber =
+  setBootstrapSnapshot(source, snapshot) {
+    this.bootstrapSnapshotSource = source;
+    this.bootstrapSnapshot = snapshot;
+    this.bootstrapSnapshotBlockNumber =
         _.get(snapshot, BlockchainSnapshotProperties.BLOCK_NUMBER, -1);
-    return this.preparedSnapshotBlockNumber;
+    return this.bootstrapSnapshotBlockNumber;
   }
 
-  resetPreparedSnapshot() {
-    this.setPreparedSnapshot(null, null);
+  resetBootstrapSnapshot() {
+    this.setBootstrapSnapshot(null, null);
   }
 
   setRequestedSnapshotBlockNumber(blockNumber) {
@@ -278,7 +278,7 @@ class BlockchainNode {
     if (latestSnapshotPath) {
       try {
         const latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
-        this.setPreparedSnapshot(latestSnapshotPath, latestSnapshot)
+        this.setBootstrapSnapshot(latestSnapshotPath, latestSnapshot)
       } catch (err) {
         CommonUtil.finishWithStackTrace(
             logger,
@@ -356,25 +356,25 @@ class BlockchainNode {
 
     // 1. Initialize DB (with the latest snapshot, if it exists)
     logger.info(
-        `[${LOG_HEADER}] Initializing DB with latest snapshot from ${this.preparedSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing DB with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
     const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, true, this.preparedSnapshotBlockNumber,
+        StateVersions.EMPTY, StateVersions.START, this.bc, true, this.bootstrapSnapshotBlockNumber,
         this.stateManager);
-    startingDb.initDb(this.preparedSnapshot);
+    startingDb.initDb(this.bootstrapSnapshot);
 
-    // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
+    // 2. Initialize the blockchain, starting from `bootstrapSnapshotBlockNumber`.
     logger.info(
-        `[${LOG_HEADER}] Initializing blockchain with latest snapshot from ${this.preparedSnapshotSource}..`);
+        `[${LOG_HEADER}] Initializing blockchain with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
     const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
     const wasBlockDirEmpty = this.bc.initBlockchain(
-        isFirstNode, this.preparedSnapshot, this.snapshotDir, snapshotChunkSize);
+        isFirstNode, this.bootstrapSnapshot, this.snapshotDir, snapshotChunkSize);
 
     // 3. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
     const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
     if (!wasBlockDirEmpty || isGenesisStart || NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
       if (!this.loadAndExecuteChainOnDb(
-          this.preparedSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
+          this.bootstrapSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
         return false;
       }
     }
@@ -389,8 +389,8 @@ class BlockchainNode {
     this.state = BlockchainNodeStates.CHAIN_SYNCING;
     logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
-    // 6. Reset latest snapshot.
-    this.resetPreparedSnapshot();
+    // 6. Reset bootstrap snapshot.
+    this.resetBootstrapSnapshot();
 
     return true;
   }
