@@ -141,6 +141,25 @@ class EventChannelManager {
     this.transmitEvent(channel, eventObj);
   }
 
+  transmitEventError(channel, eventErrObj) {
+    const errorMessage = this.makeMessage(BlockchainEventMessageTypes.EMIT_ERROR, eventErrObj);
+    channel.webSocket.send(JSON.stringify(errorMessage));
+  }
+
+  transmitEventErrorByEventFilterId(eventFilterId, eventErr) {
+    const channelId = this.filterIdToChannelId[eventFilterId];
+    const channel = this.channels[channelId];
+    if (!channel) {
+      logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
+      return;
+    }
+    const errObj = eventErr.toObject();
+    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    Object.assign(errObj, { filter_id: clientFilterId });
+    this.transmitEventError(channel, errObj);
+  }
+
+
   close() {
     this.stopHeartbeat();
     this.wsServer.close(() => {
