@@ -903,7 +903,7 @@ class P2pClient {
     }
     const snapshot = FileUtil.buildObjectFromChunks(chunks);
     const source = `${this.stateSyncInProgress.address} (${this.stateSyncInProgress.p2pUrl})`;
-    const blockNumber = this.server.node.setPreparedSnapshot(source, snapshot);
+    const blockNumber = this.server.node.setBootstrapSnapshot(source, snapshot);
     logger.info(
         `[${LOG_HEADER}] Set a latest snapshot of block number ${blockNumber} from ${source}.`);
     this.server.node.state = BlockchainNodeStates.READY_TO_START;
