@@ -16,6 +16,7 @@ const {
   ShardingProperties,
   ShardingProtocols,
   TransactionStates,
+  isTxInBlock,
   StateVersions,
   SyncModeOptions,
   WriteDbOperations,
@@ -451,7 +452,7 @@ class BlockchainNode {
       return null;
     }
 
-    if (transactionInfo.state === TransactionStates.FINALIZED) {
+    if (isTxInBlock(transactionInfo.state)) {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
