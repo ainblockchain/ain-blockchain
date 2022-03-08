@@ -556,9 +556,9 @@ const WriteDbOperations = {
  */
 const TransactionStates = {
   FINALIZED: 'FINALIZED',
-  REVERTED: 'REVERTED',
+  REVERTED: 'REVERTED', // Reverted means it's failed but included in a block
   EXECUTED: 'EXECUTED',
-  FAILED: 'FAILED',
+  FAILED: 'FAILED', // Failed means it's failed and is NOT included in a block
   PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
 };
