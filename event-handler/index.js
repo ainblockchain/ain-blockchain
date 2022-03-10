@@ -6,6 +6,8 @@ const { BlockchainEventTypes } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
+const EventError = require('./blockchain-event-error');
+const { EventHandlerErrorCode } = require('../common/result-code');
 
 class EventHandler {
   constructor() {
@@ -83,8 +85,9 @@ class EventHandler {
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
-      throw Error(`Can't get client filter ID from global filter ID ` +
-          `(nodeFilterId: ${globalFilterId})`);
+      throw new EventError(EventHandlerErrorCode.PARSING_GLOBAL_FILTER_ID_FAILURE,
+          `Can't get client filter ID from global filter ID (globalFilterId: ${globalFilterId})`,
+          globalFilterId);
     }
     return clientFilterId;
   }
@@ -98,23 +101,28 @@ class EventHandler {
       case BlockchainEventTypes.BLOCK_FINALIZED:
         const blockNumber = _.get(config, 'block_number', null);
         if (CommonUtil.isNumber(blockNumber) && blockNumber < 0) {
-          throw Error(`Invalid block_number. It must not be a negative number (${blockNumber})`);
+          throw new EventError(EventHandlerErrorCode.NEGATIVE_BLOCK_NUMBER,
+              `Invalid block_number. It must not be a negative number (${blockNumber})`);
         } else if (!CommonUtil.isNumber(blockNumber) && blockNumber !== null) {
-          throw Error(`Invalid block_number type. (${typeof blockNumber})`);
+          throw new EventError(EventHandlerErrorCode.INVALID_BLOCK_NUMBER_TYPE,
+              `Invalid block_number type. (${typeof blockNumber})`);
         }
         break;
       case BlockchainEventTypes.VALUE_CHANGED:
         const path = _.get(config, 'path', null);
         if (!path) {
-          throw Error(`config.path is missing (${JSON.stringify(config)})`);
+          throw new EventError(EventHandlerErrorCode.MISSING_PATH_IN_CONFIG,
+              `config.path is missing (${JSON.stringify(config)})`);
         }
         const parsedPath = CommonUtil.parsePath(path);
         if (!StateEventTreeManager.isValidPathForStateEventTree(parsedPath)) {
-          throw Error(`Invalid format path (${path})`);
+          throw new EventError(EventHandlerErrorCode.INVALID_FORMAT_PATH,
+              `Invalid format path (${path})`);
         }
         break;
       default:
-        throw Error(`Invalid event type (${eventType})`);
+        throw new EventError(EventHandlerErrorCode.INVALID_EVENT_TYPE_IN_VALIDATE_FUNC,
+            `Invalid event type (${eventType})`);
     }
   }
 
@@ -122,7 +130,8 @@ class EventHandler {
     try {
       const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
       if (this.eventFilters[eventFilterId]) {
-        throw Error(`Event filter ID ${eventFilterId} is already in use`);
+        throw new EventError(EventHandlerErrorCode.DUPLICATED_GLOBAL_FILTER_ID,
+            `Event filter ID ${eventFilterId} is already in use`, eventFilterId);
       }
       EventHandler.validateEventFilterConfig(eventType, config);
       const eventFilter = new EventFilter(eventFilterId, eventType, config);
@@ -136,8 +145,9 @@ class EventHandler {
       return eventFilter;
     } catch (err) {
       logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
-          `channelId: ${channelId}, eventType: ${eventType}, config: ${config}, ` +
+          `channelId: ${channelId}, eventType: ${eventType}, config: ${JSON.stringify(config)}, ` +
           `err: ${err.message})`);
+      err.clientFilterId = clientFilterId;
       throw err;
     }
   }
@@ -147,11 +157,14 @@ class EventHandler {
       const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
       const eventFilter = this.eventFilters[eventFilterId];
       if (!eventFilter) {
-        throw Error(`Can't find filter by filter id`);
+        throw new EventError(EventHandlerErrorCode.CANT_FIND_MATCHING_FILTER,
+            `Can't find filter by filter id`, eventFilterId);
       }
       delete this.eventFilters[eventFilterId];
       if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
-        throw Error(`Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`);
+        throw new EventError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_TYPE_TO_FILTER_IDS,
+            `Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`,
+            eventFilterId);
       }
       if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
@@ -161,7 +174,7 @@ class EventHandler {
     } catch (err) {
       logger.error(`Can't deregister event filter (clientFilterId: ${clientFilterId}, ` +
           `channelId: ${channelId}, err: ${err.message})`);
-      throw err;
+      // NOTE(cshcomcom): After deregister, no error propagation because the callback is not valid.
     }
   }
 }
