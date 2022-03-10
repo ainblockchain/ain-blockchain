@@ -21,6 +21,7 @@
     "test_integration_dapp": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/dapp.test.js",
     "test_integration_blockchain": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/blockchain.test.js",
     "test_integration_consensus": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/consensus.test.js",
+    "test_integration_event_handler": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/event_handler.test.js",
     "test_integration_function": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/function.test.js",
     "test_integration_node": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/node.test.js",
     "test_integration_he_protocol": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes ./node_modules/mocha/bin/mocha --timeout 640000 test/integration/he_protocol.test.js",
