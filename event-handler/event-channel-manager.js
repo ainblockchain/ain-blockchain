@@ -203,7 +203,7 @@ class EventChannelManager {
       }
       delete this.channels[channel.id];
     } catch (err) {
-      logger.error(`Error while close channel (${err.message})`);
+      logger.error(`Error while close channel (channelId: ${channel.id}, message:${err.message})`);
     }
   }
 
