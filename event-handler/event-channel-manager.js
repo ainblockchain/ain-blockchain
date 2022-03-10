@@ -6,6 +6,8 @@ const {
   BlockchainEventMessageTypes,
   NodeConfigs,
 } = require('../common/constants');
+const EventError = require('./blockchain-event-error');
+const { EventHandlerErrorCode } = require('../common/result-code');
 
 class EventChannelManager {
   constructor(eventHandler) {
@@ -36,38 +38,48 @@ class EventChannelManager {
   }
 
   handleConnection(webSocket) {
-    const channelId = Date.now(); // NOTE: Only used in blockchain
-    if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
-      throw Error(`Channel ID ${channelId} is already in use`);
-    }
-    const channel = new EventChannel(channelId, webSocket);
-    this.channels[channelId] = channel;
-    // TODO(cshcomcom): Handle MAX connections.
+    try {
+      const channelId = Date.now(); // NOTE: Only used in blockchain
+      if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
+        throw new EventError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
+            `Channel ID ${channelId} is already in use`);
+      }
+      const channel = new EventChannel(channelId, webSocket);
+      this.channels[channelId] = channel;
+      // TODO(cshcomcom): Handle MAX connections.
 
-    logger.info(`New connection (${channelId})`);
-    webSocket.on('message', (message) => {
-      this.handleMessage(channel, message);
-    });
-    webSocket.on('close', (_) => {
-      this.closeChannel(channel);
-    });
+      logger.info(`New connection (${channelId})`);
+      webSocket.on('message', (message) => {
+        this.handleMessage(channel, message);
+      });
+      webSocket.on('close', (_) => {
+        this.closeChannel(channel);
+      });
 
-    // Heartbeat (
-    webSocket.on('pong', (_) => {
+      // Heartbeat (
+      webSocket.on('pong', (_) => {
+        webSocket.isAlive = true;
+      })
       webSocket.isAlive = true;
-    })
-    webSocket.isAlive = true;
+    } catch (err) {
+      webSocket.terminate();
+      logger.error(`Error while handle connection (${err.message})`);
+    }
   }
 
   handleRegisterFilterMessage(channel, messageData) {
     const clientFilterId = messageData.id;
     const eventType = messageData.type;
     if (!eventType) {
-      throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
+      throw new EventError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
+          `Can't find eventType from message.data (${JSON.stringify(message)})`,
+          null, clientFilterId);
     }
     const config = messageData.config;
     if (!config) {
-      throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
+      throw new EventError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
+          `Can't find config from message.data (${JSON.stringify(message)})`,
+          null, clientFilterId);
     }
 
     const filter =
@@ -88,16 +100,36 @@ class EventChannelManager {
     this.deregisterFilter(channel, clientFilterId);
   }
 
+  handleEventError(channel, eventErr) {
+    try {
+      const globalFilterId = eventErr.globalFilterId;
+      const clientFilterId = eventErr.clientFilterId ||
+          this.eventHandler.getClientFilterIdFromGlobalFilterId(globalFilterId);
+      if (!clientFilterId) {
+        throw Error(`Can't find client filter ID (${eventErr.message})`);
+      }
+      this.transmitEventError(channel, clientFilterId, eventErr);
+      if (clientFilterId) {
+        this.deregisterFilter(channel, clientFilterId);
+      }
+    } catch (err) {
+      logger.error(`Error while handle event error (errorMessage: ${eventErr.message}, ` +
+          `handleEventMessage: ${err.message})`);
+    }
+  }
+
   handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
     try {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
       if (!messageType) {
-        throw Error(`Can't find type from message (${JSON.stringify(message)})`);
+        throw new EventError(EventHandlerErrorCode.MISSING_MESSAGE_TYPE_IN_MSG,
+            `Can't find type from message (${JSON.stringify(message)})`);
       }
       const messageData = parsedMessage.data;
       if (!messageData) {
-        throw Error(`Can't find data from message (${JSON.stringify(message)})`);
+        throw new EventError(EventHandlerErrorCode.MISSING_MESSAGE_DATA_IN_MSG,
+            `Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
         case BlockchainEventMessageTypes.REGISTER_FILTER:
@@ -107,12 +139,13 @@ class EventChannelManager {
           this.handleDeregisterFilterMessage(channel, messageData);
           break;
         default:
-          throw Error(`Invalid message type (${messageType})`);
+          throw new EventError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
+              `Invalid message type (${messageType})`);
       }
     } catch (err) {
       logger.error(`Error while process message (message: ${JSON.stringify(message, null, 2)}, ` +
           `error message: ${err.message})`);
-      // TODO(cshcomcom): Error handling with client.
+      this.handleEventError(channel, err);
     }
   }
 
@@ -123,7 +156,7 @@ class EventChannelManager {
     };
   }
 
-  transmitEvent(channel, eventObj) {
+  transmitEventObj(channel, eventObj) {
     const eventMessage = this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT, eventObj);
     channel.webSocket.send(JSON.stringify(eventMessage));
   }
@@ -138,27 +171,19 @@ class EventChannelManager {
     const eventObj = event.toObject();
     const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
     Object.assign(eventObj, { filter_id: clientFilterId });
-    this.transmitEvent(channel, eventObj);
+    this.transmitEventObj(channel, eventObj);
   }
 
-  transmitEventError(channel, eventErrObj) {
+  transmitEventErrorObj(channel, eventErrObj) {
     const errorMessage = this.makeMessage(BlockchainEventMessageTypes.EMIT_ERROR, eventErrObj);
     channel.webSocket.send(JSON.stringify(errorMessage));
   }
 
-  transmitEventErrorByEventFilterId(eventFilterId, eventErr) {
-    const channelId = this.filterIdToChannelId[eventFilterId];
-    const channel = this.channels[channelId];
-    if (!channel) {
-      logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
-      return;
-    }
+  transmitEventError(channel, clientFilterId, eventErr) {
     const errObj = eventErr.toObject();
-    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
-    Object.assign(errObj, { filter_id: clientFilterId });
-    this.transmitEventError(channel, errObj);
+    Object.assign(errObj, { filter_id: clientFilterId }); // Client needs client filter ID.
+    this.transmitEventErrorObj(channel, errObj);
   }
-
 
   close() {
     this.stopHeartbeat();
