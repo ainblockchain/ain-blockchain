@@ -56,7 +56,7 @@ class EventChannelManager {
         this.closeChannel(channel);
       });
 
-      // Heartbeat (
+      // Heartbeat
       webSocket.on('pong', (_) => {
         webSocket.isAlive = true;
       })
