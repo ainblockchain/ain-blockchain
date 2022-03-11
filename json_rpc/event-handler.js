@@ -13,5 +13,21 @@ module.exports = function getEventHandlerApis(eventHandler) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       return JsonRpcUtil.addProtocolVersion({ result });
     },
+
+    ain_getEventHandlerFilterInfo: function() {
+      const beginTime = Date.now();
+      const result = eventHandler.getFilterInfo();
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      return JsonRpcUtil.addProtocolVersion({ result });
+    },
+
+    ain_getEventHandlerChannelInfo: function() {
+      const beginTime = Date.now();
+      const result = eventHandler.eventChannelManager.getChannelInfo();
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      return JsonRpcUtil.addProtocolVersion({ result });
+    },
   };
 };
