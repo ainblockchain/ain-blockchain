@@ -128,6 +128,7 @@ function setValue(nodeEndpoint, ref, value) {
   }).body.toString('utf-8'));
 }
 
+// TODO(cshcomcom): Add to deploy_test_gcp.sh
 describe('Event Handler Test', function() {
   let tracker_proc, server_proc_list = [];
 
