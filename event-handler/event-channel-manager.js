@@ -27,6 +27,13 @@ class EventChannelManager {
     }
   }
 
+  getChannelInfo() {
+    const channelInfo = {};
+    for (const [channelId, channel] of Object.entries(this.channels)) {
+      channelInfo[channelId] = channel.toObject();
+    }
+  }
+
   startListening() {
     this.wsServer = new ws.Server({
       port: NodeConfigs.EVENT_HANDLER_PORT,
