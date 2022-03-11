@@ -27,6 +27,14 @@ class EventHandler {
     logger.info(`Event handler started!`);
   }
 
+  getFilterInfo() {
+    const filterInfo = {};
+    for (const [filterId, filter] of Object.entries(this.eventFilters)) {
+      filterInfo[filterId] = filter.toObject();
+    }
+    return filterInfo;
+  }
+
   // TODO(cshcomcom): Add tests.
   emitBlockFinalized(blockNumber) {
     if (!blockNumber) {
