@@ -16,6 +16,13 @@ class EventChannel {
   deleteEventFilterId(filterId) {
     return this.eventFilterIds.delete(filterId);
   }
+
+  toObject() {
+    return {
+      id: this.id,
+      eventFilterIds: [...this.eventFilterIds],
+    };
+  }
 }
 
 module.exports = EventChannel;
