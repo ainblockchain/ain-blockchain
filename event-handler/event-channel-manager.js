@@ -32,6 +32,7 @@ class EventChannelManager {
     for (const [channelId, channel] of Object.entries(this.channels)) {
       channelInfo[channelId] = channel.toObject();
     }
+    return channelInfo;
   }
 
   startListening() {
