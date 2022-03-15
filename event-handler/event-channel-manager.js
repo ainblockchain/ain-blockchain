@@ -119,8 +119,8 @@ class EventChannelManager {
       this.transmitEventError(channel, clientFilterId, eventErr);
       this.deregisterFilter(channel, clientFilterId);
     } catch (err) {
-      logger.error(`Error while handle event error (errorMessage: ${eventErr.message}, ` +
-          `handleEventMessage: ${err.message})`);
+      logger.error(`Error while handle event error (errorMessage: ${err.message}, ` +
+          `eventErr: ${eventErr.message})`);
     }
   }
 
