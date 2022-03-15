@@ -3,7 +3,7 @@ const CommonUtil = require('../common/common-util');
 const { isValidStateLabel } = require('../db/state-util');
 const EVENT_NODE_LABEL = '.event';
 const WILDCARD_LABEL = '*';
-const EventError = require('./event-handler-error');
+const HandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 
 class StateEventTreeManager {
@@ -88,11 +88,11 @@ class StateEventTreeManager {
 
   deleteFilterIdFromEventNode(eventNode, filterId) {
     if (!eventNode || !eventNode.filterIdSet) {
-      throw new EventError(EventHandlerErrorCode.MISSING_FILTER_ID_SET,
+      throw new HandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_SET,
           `Can't find filterIdSet (eventNode: ${JSON.stringify(eventNode)})`, filterId);
     }
     if (!eventNode.filterIdSet.delete(filterId)) {
-      throw new EventError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_SET,
+      throw new HandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_SET,
           `Can't delete filter id from filterIdSet ` +
           `(${JSON.stringify(eventNode.filterIdSet.values())})`, filterId);
     }
@@ -101,7 +101,7 @@ class StateEventTreeManager {
   deregisterEventFilterId(filterId) {
     const parsedPath = this.filterIdToParsedPath[filterId];
     if (!parsedPath) {
-      throw new EventError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_TO_PARSED_PATH,
+      throw new HandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_TO_PARSED_PATH,
           `Can't find parsedPath from filterIdToParsedPath (${filterId})`, filterId);
     }
     delete this.filterIdToParsedPath[filterId];
