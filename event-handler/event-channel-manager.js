@@ -80,13 +80,13 @@ class EventChannelManager {
     const eventType = messageData.type;
     if (!eventType) {
       throw new HandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
-          `Can't find eventType from message.data (${JSON.stringify(message)})`,
+          `Can't find eventType from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
     const config = messageData.config;
     if (!config) {
       throw new HandlerError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
-          `Can't find config from message.data (${JSON.stringify(message)})`,
+          `Can't find config from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
 
