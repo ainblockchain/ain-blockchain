@@ -1,4 +1,4 @@
-class BlockchainEventError extends Error {
+class EventHandlerError extends Error {
   constructor(code, message, globalFilterId = null, clientFilterId = null) {
     super(message);
     this.code = code;
@@ -14,4 +14,4 @@ class BlockchainEventError extends Error {
   }
 }
 
-module.exports = BlockchainEventError;
+module.exports = EventHandlerError;

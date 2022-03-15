@@ -3,7 +3,7 @@ const CommonUtil = require('../common/common-util');
 const { isValidStateLabel } = require('../db/state-util');
 const EVENT_NODE_LABEL = '.event';
 const WILDCARD_LABEL = '*';
-const EventError = require('./blockchain-event-error');
+const EventError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 
 class StateEventTreeManager {
