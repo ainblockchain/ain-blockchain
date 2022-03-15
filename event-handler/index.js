@@ -6,7 +6,7 @@ const { BlockchainEventTypes } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
-const EventError = require('./blockchain-event-error');
+const EventError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 
 class EventHandler {

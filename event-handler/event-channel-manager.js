@@ -6,7 +6,7 @@ const {
   BlockchainEventMessageTypes,
   NodeConfigs,
 } = require('../common/constants');
-const EventError = require('./blockchain-event-error');
+const EventError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 
 class EventChannelManager {
