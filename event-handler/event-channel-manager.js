@@ -117,9 +117,7 @@ class EventChannelManager {
         throw Error(`Can't find client filter ID (${eventErr.message})`);
       }
       this.transmitEventError(channel, clientFilterId, eventErr);
-      if (clientFilterId) {
-        this.deregisterFilter(channel, clientFilterId);
-      }
+      this.deregisterFilter(channel, clientFilterId);
     } catch (err) {
       logger.error(`Error while handle event error (errorMessage: ${eventErr.message}, ` +
           `handleEventMessage: ${err.message})`);
