@@ -40,6 +40,8 @@ class P2pClient {
     this.peerConnectionsInProgress = new Map();
     this.stateSyncInProgress = null;
     this.chainSyncInProgress = null;
+    this.oldChainSyncInProgress = null;
+    this.oldChainSyncDone = false;
     this.peerConnectionStartedAt = null;
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
@@ -260,8 +262,8 @@ class P2pClient {
     const currentPeer = this.stateSyncInProgress ? this.stateSyncInProgress.address : null;
     if (this.stateSyncInProgress === null || !this.outbound[this.stateSyncInProgress.address]) {
       const candidates = Object.keys(this.outbound).filter((addr) => {
-        return addr !== currentPeer &&
-            _.get(this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
+        return addr !== currentPeer && _.get(
+            this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
       });
       const selectedAddr = _.shuffle(candidates)[0];
       if (!selectedAddr) {
@@ -286,8 +288,8 @@ class P2pClient {
     const currentPeer = this.chainSyncInProgress ? this.chainSyncInProgress.address : null;
     if (this.chainSyncInProgress === null || !this.outbound[this.chainSyncInProgress.address]) {
       const candidates = Object.keys(this.outbound).filter((addr) => {
-        return addr !== currentPeer &&
-            _.get(this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
+        return addr !== currentPeer && _.get(
+            this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
       });
       const selectedAddr = _.shuffle(candidates)[0];
       if (!selectedAddr) {
@@ -296,6 +298,33 @@ class P2pClient {
       this.setChainSyncPeer(selectedAddr);
     }
     const socket = this.outbound[this.chainSyncInProgress.address].socket;
+    return socket;
+  }
+
+  /**
+   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing
+   * the old chain (after 'peer' sync mode cold start).
+   * @returns {Object|Null} The socket of the peer.
+   */
+  assignRandomPeerForOldChainSync() {
+    if (Object.keys(this.outbound).length === 0) {
+      return null;
+    }
+    const currentPeer = this.oldChainSyncInProgress ? this.oldChainSyncInProgress.address : null;
+    if (this.oldChainSyncInProgress === null ||
+        !this.outbound[this.oldChainSyncInProgress.address]) {
+      const candidates = Object.keys(this.outbound).filter((addr) => {
+        return addr !== currentPeer && _.get(
+            this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
+      });
+      const selectedAddr = _.shuffle(candidates)[0];
+      if (!selectedAddr) {
+        return null;
+      }
+      const oldestBlockNumber = this.server.node.bc.oldestBlockNumber();
+      this.setOldChainSyncPeer(selectedAddr, oldestBlockNumber);
+    }
+    const socket = this.outbound[this.oldChainSyncInProgress.address].socket;
     return socket;
   }
 
@@ -567,6 +596,41 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
+  /**
+   * Send a request for an 'old' chain segment to a peer.
+   * The peer is randomly selected and maintained until it's disconnected, it gives
+   * an invalid chain, or we're fully synced.
+   */
+  requestOldChainSegment() {
+    const LOG_HEADER = 'requestOldChainSegment';
+    if (this.oldChainSyncDone === true) {
+      return;
+    }
+    if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
+      this.server.node.state !== BlockchainNodeStates.SERVING) {
+      return;
+    }
+    const socket = this.assignRandomPeerForOldChainSync();
+    if (!socket) {
+      logger.error(`[${LOG_HEADER}] Failed to get a peer for OLD_CHAIN_SEGMENT_REQUEST`);
+      return;
+    }
+    const oldestBlockNumber = this.oldChainSyncInProgress.oldestBlockNumber;
+    if (oldestBlockNumber === 0) {
+      this.resetOldChainSyncPeer();
+      logger.info(`[${LOG_HEADER}] Old chain is already synced.`);
+      return;
+    }
+    const payload = P2pUtil.encapsulateMessage(
+        MessageTypes.OLD_CHAIN_SEGMENT_REQUEST, { oldestBlockNumber });
+    if (!payload) {
+      logger.error(`[${LOG_HEADER}] The request for old chain segment couldn't be sent because ` +
+          `of msg encapsulation failure.`);
+      return;
+    }
+    socket.send(JSON.stringify(payload));
+  }
+
   broadcastTransaction(transaction, tags = []) {
     tags.push(this.server.node.account.address);
     const payload = P2pUtil.encapsulateMessage(MessageTypes.TRANSACTION, { transaction, tags });
@@ -765,6 +829,16 @@ class P2pClient {
               `${JSON.stringify(chainSegment, null, 2)}`);
           await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
+        case MessageTypes.OLD_CHAIN_SEGMENT_RESPONSE:
+          const oldChainSegment = _.get(parsedMessage, 'data.oldChainSegment');
+          const segmentSize = CommonUtil.isArray(oldChainSegment) ? oldChainSegment.length : 0;
+          const fromBlockNumber = segmentSize > 0 ? oldChainSegment[0].number : -1;
+          const toBlockNumber = segmentSize > 0 ? oldChainSegment[segmentSize - 1].number : -1;
+          logger.info(
+              `[${LOG_HEADER}] Receiving an old chain segment of size ${segmentSize} ` +
+              `(${fromBlockNumber} ~ ${toBlockNumber})`);
+          // TODO(platfowner): Implement this.
+          break;
         default:
           logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
               `specified. Igonore the message.`);
@@ -911,6 +985,7 @@ class P2pClient {
     await this.startBlockchainNode();
     this.resetStateSyncPeer();
     this.requestChainSegment();
+    this.requestOldChainSegment();
   }
 
   // TODO(platfowner): Add peer blacklisting.
@@ -1107,6 +1182,27 @@ class P2pClient {
 
   resetChainSyncPeer() {
     this.chainSyncInProgress = null;
+  }
+
+  setOldChainSyncPeer(address, oldestBlockNumber) {
+    this.oldChainSyncInProgress = {
+      address,
+      oldestBlockNumber, // less than -1 (initialized)
+      updatedAt: Date.now
+    };
+  }
+
+  updateOldChainSyncStatus(oldestBlockNumber) {
+    if (!this.oldChainSyncInProgress) {
+      return;
+    }
+    this.oldChainSyncInProgress.oldestBlockNumber = oldestBlockNumber;
+    this.oldChainSyncInProgress.updatedAt = Date.now();
+  }
+
+  resetOldChainSyncPeer() {
+    this.oldChainSyncInProgress = null;
+    this.oldChainSyncDone = true;
   }
 
   connectToPeer(url) {
