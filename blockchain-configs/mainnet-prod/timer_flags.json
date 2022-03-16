@@ -29,7 +29,6 @@
   },
   "disable_tx_receipt_recording": {
     "enabled_block": null,
-    "has_bandage": false,
-    "_note": "Remove this flag or set disabled_block to 2 if you need to run with the tx receipt recording feature"
+    "has_bandage": false
   }
 }
