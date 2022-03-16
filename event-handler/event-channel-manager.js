@@ -13,6 +13,7 @@ class EventChannelManager {
   constructor(eventHandler) {
     this.eventHandler = eventHandler;
     this.wsServer = null;
+    // TODO(cshcomcom): Use Map data structure.
     this.channels = {}; // [channelId]: Channel
     this.filterIdToChannelId = {}; // [globalFilterId]: channelId
     this.heartbeatInterval = null;
