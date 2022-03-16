@@ -26,5 +26,10 @@
   "update_bandwidth_budget_params": {
     "enabled_block": 2,
     "has_bandage": true
+  },
+  "disable_tx_receipt_recording": {
+    "enabled_block": 2,
+    "has_bandage": false,
+    "_note": "Remove this flag or set disabled_block to 2 if you need to run with the tx receipt recording feature"
   }
 }
