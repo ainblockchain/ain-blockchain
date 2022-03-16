@@ -46,6 +46,7 @@ class EventChannelManager {
   }
 
   handleConnection(webSocket) {
+    const LOG_HEADER = 'handleConnection';
     try {
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
@@ -56,7 +57,7 @@ class EventChannelManager {
       this.channels[channelId] = channel;
       // TODO(cshcomcom): Handle MAX connections.
 
-      logger.info(`New connection (${channelId})`);
+      logger.info(`[${LOG_HEADER}] New connection (${channelId})`);
       webSocket.on('message', (message) => {
         this.handleMessage(channel, message);
       });
@@ -71,7 +72,7 @@ class EventChannelManager {
       webSocket.isAlive = true;
     } catch (err) {
       webSocket.terminate();
-      logger.error(`Error while handle connection (${err.message})`);
+      logger.error(`[${LOG_HEADER}] ${err.message}`);
     }
   }
 
@@ -109,22 +110,25 @@ class EventChannelManager {
   }
 
   handleEventError(channel, eventErr) {
+    const LOG_HEADER = 'handleEventError';
     try {
       const globalFilterId = eventErr.globalFilterId;
       const clientFilterId = eventErr.clientFilterId ||
           this.eventHandler.getClientFilterIdFromGlobalFilterId(globalFilterId);
       if (!clientFilterId) {
-        throw Error(`Can't find client filter ID (${eventErr.message})`);
+        logger.error(`[${LOG_HEADER}] Can't find client filter ID (${eventErr.message})`);
+        return;
       }
       this.transmitEventError(channel, clientFilterId, eventErr);
       this.deregisterFilter(channel, clientFilterId);
     } catch (err) {
-      logger.error(`Error while handle event error (errorMessage: ${err.message}, ` +
-          `eventErr: ${eventErr.message})`);
+      logger.error(`[${LOG_HEADER}] errorMessage: ${err.message}, ` +
+          `eventErr: ${eventErr.message}`);
     }
   }
 
   handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
+    const LOG_HEADER = 'handleMessage';
     try {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
@@ -149,7 +153,8 @@ class EventChannelManager {
               `Invalid message type (${messageType})`);
       }
     } catch (err) {
-      logger.error(`Error while process message (message: ${JSON.stringify(message, null, 2)}, ` +
+      logger.error(`[${LOG_HEADER}] Error while process message ` +
+          `(message: ${JSON.stringify(message, null, 2)}, ` +
           `error message: ${err.message})`);
       this.handleEventError(channel, err);
     }
@@ -168,10 +173,12 @@ class EventChannelManager {
   }
 
   transmitEventByEventFilterId(eventFilterId, event) {
+    const LOG_HEADER = 'transmitEventByEventFilterId';
     const channelId = this.filterIdToChannelId[eventFilterId];
     const channel = this.channels[channelId];
     if (!channel) {
-      logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
+      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
+          `(eventFilterId: ${eventFilterId})`);
       return;
     }
     const eventObj = event.toObject();
@@ -192,15 +199,17 @@ class EventChannelManager {
   }
 
   close() {
+    const LOG_HEADER = 'close';
     this.stopHeartbeat();
     this.wsServer.close(() => {
-      logger.info(`Closed event channel manager's socket`);
+      logger.info(`[${LOG_HEADER}] Closed event channel manager's socket`);
     });
   }
 
   closeChannel(channel) {
+    const LOG_HEADER = 'closeChannel';
     try {
-      logger.info(`Close channel ${channel.id}`);
+      logger.info(`[${LOG_HEADER}] Close channel ${channel.id}`);
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
@@ -209,7 +218,8 @@ class EventChannelManager {
       }
       delete this.channels[channel.id];
     } catch (err) {
-      logger.error(`Error while close channel (channelId: ${channel.id}, message:${err.message})`);
+      logger.error(`[${LOG_HEADER}] Error while close channel (channelId: ${channel.id}, ` +
+          `message:${err.message})`);
     }
   }
 
