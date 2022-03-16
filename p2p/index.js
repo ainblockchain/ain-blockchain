@@ -837,7 +837,8 @@ class P2pClient {
           logger.info(
               `[${LOG_HEADER}] Receiving an old chain segment of size ${segmentSize} ` +
               `(${fromBlockNumber} ~ ${toBlockNumber})`);
-          // TODO(platfowner): Implement this.
+          await this.handleOldChainSegment(
+              oldChainSegment, segmentSize, fromBlockNumber, toBlockNumber, socket);
           break;
         default:
           logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
@@ -886,44 +887,6 @@ class P2pClient {
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
     }
-    return true;
-  }
-
-  precheckChainSegment(chainSegment, peerAddress) {
-    const LOG_HEADER = 'precheckChainSegment';
-
-    const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
-    for (let i = 0; i < chainSegment.length; i++) {
-      const block = chainSegment[i];
-      if (!Block.hasRequiredFields(block)) {
-        logger.error(
-            `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) is in a non-standard format: ${JSON.stringify(block)}`
-            + `\n${new Error().stack}.`);
-        // non-standard format case
-        return false;
-      }
-      if (i === 0) {
-        const genesisBlockHash = this.server.node.bc.genesisBlockHash;
-        if (block.number === 0 && block.hash !== genesisBlockHash) {
-          logger.error(
-              `[${LOG_HEADER}] Genesis block from ${peerAddress} (${p2pUrl}) has a mismatched hash: ${block.hash} / ${genesisBlockHash}`
-              + `\n${new Error().stack}.`);
-          // genesis block hash mismatch case
-          return false;
-        }
-      } else {
-        const lastHash = block.last_hash;
-        const prevBlockHash = chainSegment[i - 1].hash;
-        if (lastHash !== prevBlockHash) {
-          logger.error(
-              `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) has a mismatched last_hash: ${lastHash} / ${prevBlockHash}`
-              + `\n${new Error().stack}.`);
-          // last_hash mismatch case
-          return false;
-        }
-      }
-    }
-
     return true;
   }
 
@@ -1001,7 +964,7 @@ class P2pClient {
     }
     if (!this.precheckChainSegment(chainSegment, senderAddress)) {
       // Buffer time to avoid network resource abusing
-      await CommonUtil.sleep(NodeConfigs.P2P_GENESIS_BLOCK_HASH_MISMATCH_SLEEP_MS);
+      await CommonUtil.sleep(NodeConfigs.CHAIN_SEGMENT_PRECHECK_SLEEP_MS);
       this.resetChainSyncPeer();
       this.requestChainSegment();
       return;
@@ -1029,6 +992,75 @@ class P2pClient {
       // your local blockchain matches the height of the consensus blockchain.
       this.requestChainSegment();
     }
+  }
+
+  precheckChainSegment(chainSegment, peerAddress) {
+    const LOG_HEADER = 'precheckChainSegment';
+
+    const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
+    for (let i = 0; i < chainSegment.length; i++) {
+      const block = chainSegment[i];
+      if (!Block.hasRequiredFields(block)) {
+        logger.error(
+            `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) is in a non-standard format: ${JSON.stringify(block)}`
+            + `\n${new Error().stack}.`);
+        // non-standard format case
+        return false;
+      }
+      if (i === 0) {
+        const genesisBlockHash = this.server.node.bc.genesisBlockHash;
+        if (block.number === 0 && block.hash !== genesisBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] Genesis block from ${peerAddress} (${p2pUrl}) has a mismatched hash: ${block.hash} / ${genesisBlockHash}`
+              + `\n${new Error().stack}.`);
+          // genesis block hash mismatch case
+          return false;
+        }
+      } else {
+        const lastHash = block.last_hash;
+        const prevBlockHash = chainSegment[i - 1].hash;
+        if (lastHash !== prevBlockHash) {
+          logger.error(
+              `[${LOG_HEADER}] chainSegment[${i}] from ${peerAddress} (${p2pUrl}) has a mismatched last_hash: ${lastHash} / ${prevBlockHash}`
+              + `\n${new Error().stack}.`);
+          // last_hash mismatch case
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  // TODO(platfowner): Add peer blacklisting.
+  async handleOldChainSegment(
+      oldChainSegment, segmentSize, fromBlockNumber, toBlockNumber, socket) {
+    const LOG_HEADER = 'handleOldChainSegment';
+
+    const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    const peerAddress = _.get(this.oldChainSyncInProgress, 'address', null);
+    if (senderAddress !== peerAddress) {
+      // Received from a peer that I didn't request from
+      logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
+      return;
+    }
+    if (!this.precheckOldChainSegment(oldChainSegment, senderAddress)) {
+      logger.error(
+          `[${LOG_HEADER}] Precheck failed for an old chain segment of size ${segmentSize} ` +
+          `(${fromBlockNumber} ~ ${toBlockNumber}) from ${senderAddress}`);
+      return;
+    }
+    // Buffer time to avoid network resource abusing
+    await CommonUtil.sleep(NodeConfigs.OLD_CHAIN_SEGMENT_SLEEP_MS);
+    //this.requestOldChainSegment();
+  }
+
+  precheckOldChainSegment(oldChainSegment, peerAddress) {
+    const LOG_HEADER = 'precheckOldChainSegment';
+
+    // TODO(platfowner): Implement this.
+
+    return true;
   }
 
   setTimerForPeerAddressResponse(socket) {
