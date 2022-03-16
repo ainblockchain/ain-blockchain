@@ -22,9 +22,10 @@ class EventHandler {
   }
 
   run() {
+    const LOG_HEADER = 'run';
     this.eventChannelManager = new EventChannelManager(this);
     this.eventChannelManager.startListening();
-    logger.info(`Event handler started!`);
+    logger.info(`[${LOG_HEADER}] Event handler started!`);
   }
 
   getFilterInfo() {
@@ -58,6 +59,7 @@ class EventHandler {
 
   // TODO(cshcomcom): Add tests.
   emitValueChanged(auth, parsedValuePath, beforeValue, afterValue) {
+    const LOG_HEADER = 'emitValueChanged';
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
     for (const eventFilterId of matchedEventFilterIdList) {
@@ -65,7 +67,7 @@ class EventHandler {
       const targetPath = _.get(eventFilter, 'config.path', null);
       const parsedTargetPath = CommonUtil.parsePath(targetPath);
       if (parsedValuePath.length !== parsedTargetPath.length) {
-        logger.error(`Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+        logger.error(`[${LOG_HEADER}] Lengths of parsedLocalPath and parsedTargetPath do not match!`);
         continue;
       }
 
@@ -135,6 +137,7 @@ class EventHandler {
   }
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
+    const LOG_HEADER = 'createAndRegisterEventFilter';
     try {
       const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
       if (this.eventFilters[eventFilterId]) {
@@ -148,19 +151,20 @@ class EventHandler {
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
       }
-      logger.info(`New filter is registered. (eventFilterId: ${eventFilterId}, ` +
+      logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
           `eventType: ${eventType}, config: ${JSON.stringify(config)})`);
       return eventFilter;
     } catch (err) {
-      logger.error(`Can't create and register event filter (clientFilterId: ${clientFilterId}, ` +
-          `channelId: ${channelId}, eventType: ${eventType}, config: ${JSON.stringify(config)}, ` +
-          `err: ${err.message})`);
+      logger.error(`[${LOG_HEADER}] Can't create and register event filter ` +
+          `(clientFilterId: ${clientFilterId}, channelId: ${channelId}, eventType: ${eventType}, ` +
+          `config: ${JSON.stringify(config)}, err: ${err.message})`);
       err.clientFilterId = clientFilterId;
       throw err;
     }
   }
 
   deregisterEventFilter(clientFilterId, channelId) {
+    const LOG_HEADER = 'deregisterEventFilter';
     try {
       const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
       const eventFilter = this.eventFilters[eventFilterId];
@@ -177,11 +181,11 @@ class EventHandler {
       if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
       }
-      logger.info(`Filter is deregistered. (eventFilterId: ${eventFilterId})`);
+      logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
       return eventFilter;
     } catch (err) {
-      logger.error(`Can't deregister event filter (clientFilterId: ${clientFilterId}, ` +
-          `channelId: ${channelId}, err: ${err.message})`);
+      logger.error(`[${LOG_HEADER}] Can't deregister event filter ` +
+          `(clientFilterId: ${clientFilterId}, channelId: ${channelId}, err: ${err.message})`);
       // NOTE(cshcomcom): After deregister, no error propagation because the callback is not valid.
     }
   }
