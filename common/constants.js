@@ -25,8 +25,6 @@ const DevFlags = {
   enableP2pMessageTagsChecking: false,
 
   // NOTE(liayoo): Below flags are added for performance optimization testing purposes.
-  // Enables tx receipt recording.
-  enableTxReceiptRecording: true,
   // Enables gas fee collection.
   enableGasFeeCollection: true,
   // Enables gas fee distribution.

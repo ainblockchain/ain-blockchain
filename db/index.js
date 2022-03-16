@@ -19,6 +19,7 @@ const {
   buildOwnerPermissions,
   BlockchainParams,
   TimerFlagEnabledBandageMap,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -1847,7 +1848,7 @@ class DB {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
       }
-      if (DevFlags.enableTxReceiptRecording) {
+      if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
       }
     }
