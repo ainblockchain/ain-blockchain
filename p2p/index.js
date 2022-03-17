@@ -965,7 +965,7 @@ class P2pClient {
     }
     if (!this.precheckChainSegment(chainSegment, senderAddress)) {
       // Buffer time to avoid network resource abusing
-      await CommonUtil.sleep(NodeConfigs.CHAIN_SEGMENT_PRECHECK_SLEEP_MS);
+      await CommonUtil.sleep(NodeConfigs.CHAIN_SEGMENT_SLEEP_MS);
       this.resetChainSyncPeer();
       this.requestChainSegment();
       return;
