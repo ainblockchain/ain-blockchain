@@ -306,12 +306,13 @@ class P2pClient {
    * the old chain (after 'peer' sync mode cold start).
    * @returns {Object|Null} The socket of the peer.
    */
-  assignRandomPeerForOldChainSync() {
+  assignRandomPeerForOldChainSync(forceToReset = false) {
     if (Object.keys(this.outbound).length === 0) {
       return null;
     }
-    const currentPeer = this.oldChainSyncInProgress ? this.oldChainSyncInProgress.address : null;
-    if (this.oldChainSyncInProgress === null ||
+    const currentPeer = this.oldChainSyncInProgress ?  this.oldChainSyncInProgress.address : null;
+    if (forceToReset ||
+        this.oldChainSyncInProgress === null ||
         !this.outbound[this.oldChainSyncInProgress.address]) {
       const candidates = Object.keys(this.outbound).filter((addr) => {
         return addr !== currentPeer && _.get(
@@ -601,7 +602,7 @@ class P2pClient {
    * The peer is randomly selected and maintained until it's disconnected, it gives
    * an invalid chain, or we're fully synced.
    */
-  requestOldChainSegment() {
+  requestOldChainSegment(forceToReset = false) {
     const LOG_HEADER = 'requestOldChainSegment';
     if (this.oldChainSyncDone === true) {
       return;
@@ -610,7 +611,7 @@ class P2pClient {
       this.server.node.state !== BlockchainNodeStates.SERVING) {
       return;
     }
-    const socket = this.assignRandomPeerForOldChainSync();
+    const socket = this.assignRandomPeerForOldChainSync(forceToReset);
     if (!socket) {
       logger.error(`[${LOG_HEADER}] Failed to get a peer for OLD_CHAIN_SEGMENT_REQUEST`);
       return;
@@ -1049,6 +1050,9 @@ class P2pClient {
         logger.error(
             `[${LOG_HEADER}] Precheck failed for an old chain segment of size ${segmentSize} ` +
             `(${fromBlockNumber} ~ ${toBlockNumber}) from ${senderAddress}`);
+        // Buffer time to avoid network resource abusing
+        await CommonUtil.sleep(NodeConfigs.OLD_CHAIN_SEGMENT_SLEEP_MS);
+        this.requestOldChainSegment(true);
         return;
       }
       this.writeOldChainSegment(oldChainSegment);
