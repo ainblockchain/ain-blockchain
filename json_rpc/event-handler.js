@@ -6,6 +6,7 @@ const JsonRpcUtil = require('./json-rpc-util');
 
 module.exports = function getEventHandlerApis(eventHandler) {
   return {
+    // NOTE(cshcomcom): Async function doesn't need a done parameter. (Ref: https://www.npmjs.com/package/jayson#promises)
     net_getEventHandlerNetworkInfo: async function(args) {
       const beginTime = Date.now();
       const result = await eventHandler.eventChannelManager.getNetworkInfo();
