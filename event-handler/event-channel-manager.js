@@ -6,7 +6,7 @@ const {
   BlockchainEventMessageTypes,
   NodeConfigs,
 } = require('../common/constants');
-const HandlerError = require('./event-handler-error');
+const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 
 class EventChannelManager {
@@ -51,7 +51,7 @@ class EventChannelManager {
     try {
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
-        throw new HandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
+        throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
             `Channel ID ${channelId} is already in use`);
       }
       const channel = new EventChannel(channelId, webSocket);
@@ -81,13 +81,13 @@ class EventChannelManager {
     const clientFilterId = messageData.id;
     const eventType = messageData.type;
     if (!eventType) {
-      throw new HandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
+      throw new EventHandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
           `Can't find eventType from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
     const config = messageData.config;
     if (!config) {
-      throw new HandlerError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
+      throw new EventHandlerError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
           `Can't find config from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
@@ -134,12 +134,12 @@ class EventChannelManager {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
       if (!messageType) {
-        throw new HandlerError(EventHandlerErrorCode.MISSING_MESSAGE_TYPE_IN_MSG,
+        throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_TYPE_IN_MSG,
             `Can't find type from message (${JSON.stringify(message)})`);
       }
       const messageData = parsedMessage.data;
       if (!messageData) {
-        throw new HandlerError(EventHandlerErrorCode.MISSING_MESSAGE_DATA_IN_MSG,
+        throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_DATA_IN_MSG,
             `Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
@@ -150,7 +150,7 @@ class EventChannelManager {
           this.handleDeregisterFilterMessage(channel, messageData);
           break;
         default:
-          throw new HandlerError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
+          throw new EventHandlerError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
               `Invalid message type (${messageType})`);
       }
     } catch (err) {
