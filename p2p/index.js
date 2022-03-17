@@ -310,7 +310,7 @@ class P2pClient {
     if (Object.keys(this.outbound).length === 0) {
       return null;
     }
-    const currentPeer = this.oldChainSyncInProgress ?  this.oldChainSyncInProgress.address : null;
+    const currentPeer = this.oldChainSyncInProgress ? this.oldChainSyncInProgress.address : null;
     if (forceToReset ||
         this.oldChainSyncInProgress === null ||
         !this.outbound[this.oldChainSyncInProgress.address]) {
