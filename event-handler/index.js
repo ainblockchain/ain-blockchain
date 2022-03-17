@@ -169,7 +169,7 @@ class EventHandler {
       const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
       const eventFilter = this.eventFilters[eventFilterId];
       if (!eventFilter) {
-        throw new HandlerError(EventHandlerErrorCode.NO_MATCHING_FILTER,
+        throw new HandlerError(EventHandlerErrorCode.NO_MATCHED_FILTERS,
             `Can't find filter by filter id`, eventFilterId);
       }
       delete this.eventFilters[eventFilterId];
