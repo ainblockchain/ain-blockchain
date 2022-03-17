@@ -618,7 +618,7 @@ class P2pClient {
     const oldestBlockNumber = this.oldChainSyncInProgress.oldestBlockNumber;
     if (oldestBlockNumber === 0) {
       this.resetOldChainSyncPeer();
-      logger.info(`[${LOG_HEADER}] Old chain is already synced.`);
+      logger.info(`[${LOG_HEADER}] Old chain is already synced!`);
       return;
     }
     const payload = P2pUtil.encapsulateMessage(
@@ -1044,23 +1044,71 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
       return;
     }
-    if (!this.precheckOldChainSegment(oldChainSegment, senderAddress)) {
-      logger.error(
-          `[${LOG_HEADER}] Precheck failed for an old chain segment of size ${segmentSize} ` +
-          `(${fromBlockNumber} ~ ${toBlockNumber}) from ${senderAddress}`);
-      return;
+    if (segmentSize > 0) {
+      if (!this.precheckOldChainSegment(oldChainSegment, senderAddress)) {
+        logger.error(
+            `[${LOG_HEADER}] Precheck failed for an old chain segment of size ${segmentSize} ` +
+            `(${fromBlockNumber} ~ ${toBlockNumber}) from ${senderAddress}`);
+        return;
+      }
+      this.writeOldChainSegment(oldChainSegment);
+      this.updateOldChainSyncStatus(toBlockNumber);
+      logger.info(
+          `[${LOG_HEADER}] Old chain segment of size ${segmentSize} ` +
+          `(${fromBlockNumber} ~ ${toBlockNumber}) from ${senderAddress} was written.`);
+    } 
+
+    const oldestBlockNumber = this.oldChainSyncInProgress.oldestBlockNumber;
+    if (oldestBlockNumber > 0) {
+      // Buffer time to avoid network resource abusing
+      await CommonUtil.sleep(NodeConfigs.OLD_CHAIN_SEGMENT_SLEEP_MS);
+      this.requestOldChainSegment();
+    } else {
+      this.resetOldChainSyncPeer();
+      logger.info(`[${LOG_HEADER}] Old chain is now synced!`);
     }
-    // Buffer time to avoid network resource abusing
-    await CommonUtil.sleep(NodeConfigs.OLD_CHAIN_SEGMENT_SLEEP_MS);
-    //this.requestOldChainSegment();
   }
 
   precheckOldChainSegment(oldChainSegment, peerAddress) {
     const LOG_HEADER = 'precheckOldChainSegment';
 
-    // TODO(platfowner): Implement this.
+    const p2pUrl = P2pUtil.getP2pUrlFromAddress(this.outbound, peerAddress);
+    for (let i = 0; i < oldChainSegment.length; i++) {
+      const block = oldChainSegment[i];
+      const number = block.number;
+      if (!Block.hasRequiredFields(block)) {
+        logger.error(
+            `[${LOG_HEADER}] oldChainSegment[${i}] (${number}) from ${peerAddress} (${p2pUrl}) is in a non-standard format: ${JSON.stringify(block)}`
+            + `\n${new Error().stack}.`);
+        // non-standard format case
+        return false;
+      }
+      let nextBlock = null;
+      if (i === 0) {
+        const nextBlockList = this.server.node.bc.getBlockList(number + 1, number + 2);
+        nextBlock = CommonUtil.isArray(nextBlockList) && nextBlockList.length > 0 ?
+            nextBlockList[0] : null;
+      } else {
+        nextBlock = oldChainSegment[i - 1];
+      }
+      const lastBlockHash = nextBlock ? nextBlock.last_hash : null;
+      const blockHash = block.hash;
+      if (blockHash !== lastBlockHash) {
+        logger.error(
+            `[${LOG_HEADER}] oldChainSegment[${i}] (${number}) from ${peerAddress} (${p2pUrl}) has a mismatched hash: ${blockHash} / ${lastBlockHash}`
+            + `\n${new Error().stack}.`);
+        // mismatched last_hash case
+        return false;
+      }
+    }
 
     return true;
+  }
+
+  writeOldChainSegment(oldChainSegment) {
+    for (const block of oldChainSegment) {
+      this.server.node.bc.writeBlock(block);
+    }
   }
 
   setTimerForPeerAddressResponse(socket) {
