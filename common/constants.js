@@ -650,6 +650,7 @@ const BlockchainEventMessageTypes = {
   REGISTER_FILTER: 'REGISTER_FILTER',
   DEREGISTER_FILTER: 'DEREGISTER_FILTER',
   EMIT_EVENT: 'EMIT_EVENT',
+  EMIT_ERROR: 'EMIT_ERROR',
 };
 
 // ** Lists & Sets **
