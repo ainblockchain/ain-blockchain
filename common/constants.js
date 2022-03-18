@@ -42,7 +42,7 @@ const BlockchainConsts = {
   // *** Protocol Versions ***
   CURRENT_PROTOCOL_VERSION: require('../package.json').version,
   PROTOCOL_VERSIONS: path.resolve(__dirname, '../client/protocol_versions.json'),
-  DATA_PROTOCOL_VERSION: '1.0.0',
+  DATA_PROTOCOL_VERSION: '1.1.0',
   CONSENSUS_PROTOCOL_VERSION: '1.0.0',
   // *** Directories & Files ***
   CHAINS_N2B_DIR_NAME: 'n2b', // Number-to-block directory name.
