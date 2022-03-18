@@ -162,18 +162,20 @@ if [[ $INSTANCE_INDEX = "all" ]]; then
         deploy_test 5 test_integration_consensus &
         deploy_test 6 test_integration_dapp &
         deploy_test 7 test_integration_he_protocol &
-        deploy_test 8 test_integration_he_sharding
+        deploy_test 8 test_integration_he_sharding &
+        deploy_test 9 test_integration_event_handler
     else
         # serialized function calls
-        deploy_test 0 test_unit 
-        deploy_test 1 test_integration_function 
-        deploy_test 2 test_integration_node 
-        deploy_test 3 test_integration_sharding 
-        deploy_test 4 test_integration_blockchain 
-        deploy_test 5 test_integration_consensus 
-        deploy_test 6 test_integration_dapp 
-        deploy_test 7 test_integration_he_protocol 
-        deploy_test 8 test_integration_he_sharding 
+        deploy_test 0 test_unit
+        deploy_test 1 test_integration_function
+        deploy_test 2 test_integration_node
+        deploy_test 3 test_integration_sharding
+        deploy_test 4 test_integration_blockchain
+        deploy_test 5 test_integration_consensus
+        deploy_test 6 test_integration_dapp
+        deploy_test 7 test_integration_he_protocol
+        deploy_test 8 test_integration_he_sharding
+        deploy_test 9 test_integration_event_handler
     fi
 else
     deploy_test "$INSTANCE_INDEX" "$TESTING_OPTION"
