@@ -1089,9 +1089,7 @@ class P2pClient {
       }
       let nextBlock = null;
       if (i === 0) {
-        const nextBlockList = this.server.node.bc.getBlockList(number + 1, number + 2);
-        nextBlock = CommonUtil.isArray(nextBlockList) && nextBlockList.length > 0 ?
-            nextBlockList[0] : null;
+        nextBlock = this.server.node.bc.getBlockByNumber(number + 1);
       } else {
         nextBlock = oldChainSegment[i - 1];
       }
