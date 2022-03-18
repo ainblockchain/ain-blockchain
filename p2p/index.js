@@ -1066,7 +1066,8 @@ class P2pClient {
     if (oldestBlockNumber > 0) {
       // Buffer time to avoid network resource abusing
       await CommonUtil.sleep(NodeConfigs.OLD_CHAIN_SEGMENT_SLEEP_MS);
-      this.requestOldChainSegment();
+      const forceToReset = segmentSize === 0;
+      this.requestOldChainSegment(forceToReset);
     } else {
       this.resetOldChainSyncPeer();
       logger.info(`[${LOG_HEADER}] Old chain is now synced!`);
