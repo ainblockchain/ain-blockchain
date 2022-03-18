@@ -154,6 +154,14 @@ class FileUtil {
     return CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
   }
 
+  /**
+   * Returns a list of paths to blocks from 'from' block number (inclusive)
+   * to 'from' + 'size' block number (exclusive).
+   * 
+   * @param {*} chainPath path to the chain root directory
+   * @param {*} from from block number (inclusive)
+   * @param {*} size size of the list
+   */
   static getBlockPathList(chainPath, from, size) {
     const LOG_HEADER = 'getBlockPathList';
 
@@ -171,6 +179,14 @@ class FileUtil {
     return blockPathList;
   }
 
+  /**
+   * Returns a list of paths to blocks from 'from' block number (inclusive)
+   * to 'from' - 'size' block number (exclusive).
+   * 
+   * @param {*} chainPath path to the chain root directory
+   * @param {*} from from block number (inclusive)
+   * @param {*} size size of the list
+   */
   static getOldBlockPathList(chainPath, from, size) {
     const LOG_HEADER = 'getOldBlockPathList';
 
