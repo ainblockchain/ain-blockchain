@@ -28,7 +28,7 @@
     "has_bandage": true
   },
   "disable_tx_receipt_recording": {
-    "enabled_block": null,
+    "enabled_block": 2,
     "has_bandage": false
   }
 }
