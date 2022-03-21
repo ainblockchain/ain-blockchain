@@ -26,5 +26,9 @@
   "update_bandwidth_budget_params": {
     "enabled_block": 2,
     "has_bandage": true
+  },
+  "disable_tx_receipt_recording": {
+    "enabled_block": null,
+    "has_bandage": false
   }
 }
