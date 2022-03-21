@@ -154,21 +154,54 @@ class FileUtil {
     return CommonUtil.isNumber(blockNumber) ? blockNumber : -1;
   }
 
+  /**
+   * Returns a list of paths to blocks from 'from' block number (inclusive)
+   * to 'from' + 'size' block number (exclusive).
+   * 
+   * @param chainPath path to the chain root directory
+   * @param from from block number (inclusive)
+   * @param size size of the list
+   */
   static getBlockPathList(chainPath, from, size) {
     const LOG_HEADER = 'getBlockPathList';
 
-    const blockPaths = [];
-    if (size <= 0) return blockPaths;
+    const blockPathList = [];
+    if (size <= 0) return blockPathList;
     for (let number = from; number < from + size; number++) {
       const blockFile = FileUtil.getBlockPath(chainPath, number);
       if (fs.existsSync(blockFile)) {
-        blockPaths.push(blockFile);
+        blockPathList.push(blockFile);
       } else {
         logger.debug(`[${LOG_HEADER}] blockFile (${blockFile}) does not exist`);
-        return blockPaths;
+        return blockPathList;
       }
     }
-    return blockPaths;
+    return blockPathList;
+  }
+
+  /**
+   * Returns a list of paths to blocks from 'from' block number (inclusive)
+   * to 'from' - 'size' block number (exclusive).
+   * 
+   * @param chainPath path to the chain root directory
+   * @param from from block number (inclusive)
+   * @param size size of the list
+   */
+  static getOldBlockPathList(chainPath, from, size) {
+    const LOG_HEADER = 'getOldBlockPathList';
+
+    const oldBlockPathList = [];
+    if (size <= 0) return oldBlockPathList;
+    for (let number = from; number > from - size && number >= 0; number--) {
+      const blockFile = FileUtil.getBlockPath(chainPath, number);
+      if (fs.existsSync(blockFile)) {
+        oldBlockPathList.push(blockFile);
+      } else {
+        logger.debug(`[${LOG_HEADER}] blockFile (${blockFile}) does not exist`);
+        return oldBlockPathList;
+      }
+    }
+    return oldBlockPathList;
   }
 
   static createBlockchainDir(chainPath) {
