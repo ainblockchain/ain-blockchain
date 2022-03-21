@@ -22,6 +22,15 @@ class TransactionPool {
     this.txCountTotal = 0;
   }
 
+  updateTxListPerAddress(address, txList) {
+    // Update txList per address in transaction pool
+    if (txList.length === 0) {
+      this.transactions.delete(address);
+      return;
+    }
+    this.transactions.set(address, txList);
+  }
+
   addTransaction(tx, isExecutedTx = false) {
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being added.
@@ -358,27 +367,19 @@ class TransactionPool {
   }
 
   removeTimedOutTxsFromPool(blockTimestamp) {
-    // Get timed-out transactions.
-    const timedOutTxs = new Set();
-    for (const txList of this.transactions.values()) {
-      txList.forEach((tx) => {
-        if (this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp)) {
-          timedOutTxs.add(tx.hash);
-        }
-      });
+    // Remove timed-out transactions from the pool.
+    const sizeBefore = this.txCountTotal;
+    for (const [address, txListBefore] of this.transactions.entries()) {
+      const txListAfter = txListBefore.filter((tx) => !this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp));
+      this.updateTxListPerAddress(address, txListAfter);
+      this.txCountTotal += txListAfter.length - txListBefore.length;
     }
-    // Remove transactions from the pool.
-    for (const [address, txList] of this.transactions.entries()) {
-      const sizeBefore = txList.length;
-      this.transactions.set(address, txList.filter((tx) => !timedOutTxs.has(tx.hash)));
-      const sizeAfter = this.transactions.get(address).length;
-      this.txCountTotal += sizeAfter - sizeBefore;
-    }
-    return timedOutTxs.size > 0;
+    const sizeAfter = this.txCountTotal;
+    return sizeBefore > sizeAfter;
   }
 
   removeTimedOutTxsFromTracker(blockTimestamp) {
-    // Remove transactions from transactionTracker.
+    // Remove timed-out transactions from transactionTracker.
     let removed = false;
     for (const [hash, txData] of this.transactionTracker.entries()) {
       if (this.isTimedOutFromTracker(txData.tracked_at, blockTimestamp)) {
@@ -404,11 +405,10 @@ class TransactionPool {
     });
     for (const [address, invalidTxSet] of addrToInvalidTxSet.entries()) {
       if (this.transactions.has(address)) {
-        const txList = this.transactions.get(address);
-        const sizeBefore = txList.length;
-        this.transactions.set(address, txList.filter((tx) => !invalidTxSet.has(tx.hash)));
-        const sizeAfter = this.transactions.get(address).length;
-        this.txCountTotal += sizeAfter - sizeBefore;
+        const txListBefore = this.transactions.get(address);
+        const txListAfter = txListBefore.filter((tx) => !invalidTxSet.has(tx.hash));
+        this.updateTxListPerAddress(address, txListAfter);
+        this.txCountTotal += txListAfter.length - txListBefore.length;
       }
     }
   }
@@ -430,12 +430,11 @@ class TransactionPool {
   }
 
   updateTxPoolWithTxHashSet(txHashSet, addrToNonce, addrToTimestamp) {
-    for (const [address, txList] of this.transactions.entries()) {
+    for (const [address, txListBefore] of this.transactions.entries()) {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
-      const sizeBefore = txList.length;
-      this.transactions.set(address, txList.filter((tx) => {
+      const txListAfter = txListBefore.filter((tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
         }
@@ -443,12 +442,9 @@ class TransactionPool {
           return false;
         }
         return !txHashSet.has(tx.hash);
-      }));
-      const sizeAfter = this.transactions.get(address).length;
-      this.txCountTotal += sizeAfter - sizeBefore;
-      if (sizeAfter === 0) {
-        this.transactions.delete(address);
-      }
+      });
+      this.updateTxListPerAddress(address, txListAfter);
+      this.txCountTotal += txListAfter.length - txListBefore.length;
     }
   }
 
