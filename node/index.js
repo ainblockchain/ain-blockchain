@@ -985,7 +985,7 @@ class BlockchainNode {
         this.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
 
         if (this.eh) {
-          this.eh.emitBlockFinalized(blockToFinalize.number);
+          this.eh.emitBlockFinalized(blockToFinalize.number, blockToFinalize.hash);
         }
         this.addTrafficEventsForBlock(blockToFinalize);
       } else {

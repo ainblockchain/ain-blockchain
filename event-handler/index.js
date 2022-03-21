@@ -37,13 +37,14 @@ class EventHandler {
   }
 
   // TODO(cshcomcom): Add tests.
-  emitBlockFinalized(blockNumber) {
-    if (!blockNumber) {
+  emitBlockFinalized(blockNumber, blockHash) {
+    if (!blockNumber || !blockHash) {
       return;
     }
 
     const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.BLOCK_FINALIZED, {
       block_number: blockNumber,
+      block_hash: blockHash,
     });
 
     for (const eventFilterId of this.eventTypeToEventFilterIds[BlockchainEventTypes.BLOCK_FINALIZED]) {
