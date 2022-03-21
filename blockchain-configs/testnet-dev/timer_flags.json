@@ -1,0 +1,34 @@
+{
+  "allow_lower_case_app_names_only": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "create_app_config_sanitization": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "native_service_path_length_check": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "update_max_state_tree_size_per_byte": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "staking_balance_total_sum": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "update_max_state_tree_size_per_byte2": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "update_bandwidth_budget_params": {
+    "enabled_block": 2,
+    "has_bandage": true
+  },
+  "disable_tx_receipt_recording": {
+    "enabled_block": 2,
+    "has_bandage": false
+  }
+}
