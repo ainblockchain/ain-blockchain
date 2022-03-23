@@ -34,13 +34,14 @@ class TransactionPool {
 
   makeFilterFuncForRemovedTx (filterFunc) {
     return (tx) => {
-      if (!filterFunc(tx)) {
-        return false;
+      if (filterFunc(tx)) {
+        return true;
       }
       if (Transaction.isFreeTransaction(tx)) {
         --this.freeTxCountTotal;
       }
-      return true;
+      --this.txCountTotal;
+      return false;
     }
   }
 
@@ -48,7 +49,6 @@ class TransactionPool {
     // Update txList of given address in transaction pool and update txCountTotal and freeTxTotalCount
     const txListAfter = txList.filter(this.makeFilterFuncForRemovedTx(filterFunc));
     this.updateTxList(address, txListAfter);
-    this.txCountTotal += txListAfter.length - txList.length;
   }
 
   addTransaction(tx, isExecutedTx = false) {
@@ -75,7 +75,7 @@ class TransactionPool {
       finalized_at: -1,
     });
     this.txCountTotal++;
-    if (!Transaction.isFreeTransaction(tx)) {
+    if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
     }
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
