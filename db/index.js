@@ -970,7 +970,7 @@ class DB {
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
     if (this.eh) {
-      this.eh.emitValueChanged(auth, localPath, prevValueCopy, valueCopy);
+      this.eh.emitValueChanged(auth, transaction, localPath, prevValueCopy, valueCopy);
     }
 
     return CommonUtil.returnTxResult(
