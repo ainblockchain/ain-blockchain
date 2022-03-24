@@ -21,6 +21,7 @@ class TransactionPool {
     this.transactionTracker = new Map();
     this.txCountTotal = 0;
     this.freeTxCountTotal = 0;
+    this.freeTxCountPerAccount = new Map();
   }
 
   updateTxList(address, txList) {
@@ -45,9 +46,22 @@ class TransactionPool {
     }
   }
 
+  updateFreeTxCountPerAccount(address, change){
+    const freeTxCntBefore = this.freeTxCountPerAccount.get(address) || 0;
+    const freeTxCntAfter = freeTxCntBefore + change;
+    if (freeTxCntAfter === 0) {
+      this.freeTxCountPerAccount.delete(address);
+    } else {
+      this.freeTxCountPerAccount.set(address, freeTxCntAfter);
+    }
+  }
+
   updateTxListAndTotalCount(address, txList, filterFunc) {
     // Update txList of given address in transaction pool and update txCountTotal and freeTxTotalCount
-    const txListAfter = txList.filter(this.makeFilterFuncForRemovedTx(filterFunc));
+    const freeTxCntTotalBefore = this.freeTxCountTotal;
+    const txListAfter = txList.filter(this.makeCountUpdateWrapperForFilterFunction(filterFunc));
+    const freeTxCntTotalAfter = this.freeTxCountTotal;
+    this.updateFreeTxCountPerAccount(address, freeTxCntTotalAfter - freeTxCntTotalBefore);
     this.updateTxList(address, txListAfter);
   }
 
@@ -77,6 +91,8 @@ class TransactionPool {
     this.txCountTotal++;
     if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
+      const freeTxCountPerAddressBefore = this.freeTxCountPerAccount.get(tx.address) || 0
+      this.freeTxCountPerAccount.set(tx.address, freeTxCountPerAddressBefore + 1);
     }
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
@@ -560,7 +576,7 @@ class TransactionPool {
   }
 
   getPerAccountFreePoolSize(address) {
-    return this.transactions.has(address) ? this.transactions.get(address).filter(Transaction.isFreeTransaction).length : 0;
+    return this.freeTxCountPerAccount.has(address) ? this.freeTxCountPerAccount.get(address) : 0;
   }
 }
 
