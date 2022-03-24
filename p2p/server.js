@@ -618,9 +618,9 @@ class P2pServer {
             }
             break;
           case MessageTypes.SNAPSHOT_CHUNK_REQUEST:
-            logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk request`);
+            logger.info(`[${LOG_HEADER}] Receiving a snapshot chunk request`);
             if (this.node.state !== BlockchainNodeStates.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to accept snapshot chunk requests.\n` +
+              logger.info(`[${LOG_HEADER}] Not ready to accept snapshot chunk requests.\n` +
                   `My node status is now in ${this.node.state}.`);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -638,7 +638,7 @@ class P2pServer {
               return;
             }
             if (this.node.state !== BlockchainNodeStates.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
+              logger.info(`[${LOG_HEADER}] Not ready to accept a chain segment request.\n` +
                   `My node status is now in ${this.node.state}.`);
               this.client.requestChainSegment();
               const latency = Date.now() - beginTime;
@@ -670,6 +670,26 @@ class P2pServer {
                   null
               );
             }
+            break;
+          case MessageTypes.OLD_CHAIN_SEGMENT_REQUEST:
+            const oldestBlockNumber = _.get(parsedMessage, 'data.oldestBlockNumber');
+            logger.info(`[${LOG_HEADER}] Receiving an old chain segment request: ${oldestBlockNumber}`);
+            if (!CommonUtil.isNumber(oldestBlockNumber) || oldestBlockNumber <= 0) {
+              logger.error(`[${LOG_HEADER}] Invalid oldestBlockNumber: ${oldestBlockNumber}.`);
+              this.sendOldChainSegment(socket, null);
+              const latency = Date.now() - beginTime;
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
+              return;
+            }
+            if (this.client.oldChainSyncInProgress !== null) {
+              logger.info(`[${LOG_HEADER}] Not ready to accept an old chain segment request.`);
+              this.sendOldChainSegment(socket, null);
+              const latency = Date.now() - beginTime;
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
+              return;
+            }
+            const oldChainSegment = this.node.bc.getOldBlockList(oldestBlockNumber - 1);
+            this.sendOldChainSegment(socket, oldChainSegment);
             break;
           case MessageTypes.PEER_INFO_UPDATE:
             const updatePeerInfo = parsedMessage.data;
@@ -728,17 +748,38 @@ class P2pServer {
     const payload = P2pUtil.encapsulateMessage(
         MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { blockNumber, numChunks, chunkIndex, chunk });
     if (!payload) {
-      logger.error("The snapshot chunk couldn't be sent because of msg encapsulation failure.");
+      logger.error(
+          `[${LOG_HEADER}] The snapshot chunk couldn't be sent because of msg encapsulation failure.`);
       return;
     }
     socket.send(JSON.stringify(payload));
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
+    const LOG_HEADER = 'sendChainSegment';
     const payload = P2pUtil.encapsulateMessage(
         MessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo });
     if (!payload) {
-      logger.error("The chain segment couldn't be sent because of msg encapsulation failure.");
+      logger.error(
+          `[${LOG_HEADER}] The chain segment couldn't be sent because of msg encapsulation failure.`);
+      return;
+    }
+    socket.send(JSON.stringify(payload));
+  }
+
+  sendOldChainSegment(socket, oldChainSegment) {
+    const LOG_HEADER = 'sendOldChainSegment';
+    const segmentSize = CommonUtil.isArray(oldChainSegment) ? oldChainSegment.length : 0;
+    const fromBlockNumber = segmentSize > 0 ? oldChainSegment[0].number : -1;
+    const toBlockNumber = segmentSize > 0 ? oldChainSegment[segmentSize - 1].number : -1;
+    logger.info(
+        `[${LOG_HEADER}] Sending an old chain segment of size ${segmentSize} ` +
+        `(${fromBlockNumber} ~ ${toBlockNumber})`);
+    const payload = P2pUtil.encapsulateMessage(
+        MessageTypes.OLD_CHAIN_SEGMENT_RESPONSE, { oldChainSegment });
+    if (!payload) {
+      logger.error(
+          `[${LOG_HEADER}] The old chain segment couldn't be sent because of msg encapsulation failure.`);
       return;
     }
     socket.send(JSON.stringify(payload));

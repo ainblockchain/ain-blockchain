@@ -4,7 +4,6 @@ const { expect, assert } = chai;
 const { getIpAddress } = require('../../common/network-util');
 const { NodeConfigs, BlockchainEventTypes } = require('../../common/constants');
 
-// TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {
   let eventHandler;
 
