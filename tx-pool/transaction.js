@@ -253,7 +253,7 @@ class Transaction {
     return tx && CommonUtil.isArray(tx.tx_list);
   }
   static isFreeTransaction(tx) {
-    return NodeConfigs.ENABLE_GAS_FEE_WORKAROUND && (tx.tx_body.gas_price === undefined || tx.tx_body.gas_price === 0);
+    return tx.tx_body.gas_price === undefined || tx.tx_body.gas_price === 0;
   }
 }
 
