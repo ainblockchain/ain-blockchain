@@ -725,7 +725,7 @@ class BlockchainNode {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_FREE_TX,
-          `[${LOG_HEADER}] Tx pool does NOT have enough room for free transaction ` +
+          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${this.tp.getFreePoolSize()}).`);
     }
     if (!this.tp.hasRoomForNewTransaction()) {
@@ -767,7 +767,7 @@ class BlockchainNode {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_FREE_TX_FOR_ACCOUNT,
-          `[${LOG_HEADER}] Tx pool does NOT have enough room for free transaction ` +
+          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
