@@ -721,10 +721,11 @@ class BlockchainNode {
     if (DevFlags.enableRichTransactionLogging) {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
-    if (Transaction.isFreeTransaction(tx) && !this.tp.hasRoomForNewFreeTransaction()) {
+    const isFreeTx = Transaction.isFreeTransaction(tx);
+    if (isFreeTx && !this.tp.hasRoomForNewFreeTransaction()) {
       return CommonUtil.logAndReturnTxResult(
           logger,
-          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_FREE_TX,
+          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${this.tp.getFreePoolSize()}).`);
     }
@@ -766,7 +767,7 @@ class BlockchainNode {
       const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
           logger,
-          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_FREE_TX_FOR_ACCOUNT,
+          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM_FOR_ACCOUNT,
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }

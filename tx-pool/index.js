@@ -32,7 +32,7 @@ class TransactionPool {
     this.transactions.set(address, txList);
   }
 
-  makeFilterFuncForRemovedTx (filterFunc) {
+  makeCountUpdateWrapperForFilterFunction(filterFunc) {
     return (tx) => {
       if (filterFunc(tx)) {
         return true;

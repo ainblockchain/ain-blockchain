@@ -74,10 +74,12 @@ describe('TransactionPool', () => {
 
   describe('Transaction pool counting', async () => {
     const currentTime = Date.now();
+
     beforeEach(async () => {
       node = new BlockchainNode();
       await setNodeForTesting(node);
     })
+
     it('Add paid transactions and free transactions', async () => {
       let initialNonce = node.getNonce();
       for (let i = 0; i < 10; i++) {
@@ -111,6 +113,7 @@ describe('TransactionPool', () => {
       assert.equal(node.tp.getPoolSize(), 15);
       assert.equal(node.tp.getFreePoolSize(), 5);
     })
+
     it('Remove invalid transactions', async () => {
       let initialNonce = node.getNonce();
       const invalidTxs = [];
@@ -154,6 +157,7 @@ describe('TransactionPool', () => {
       assert.equal(node.tp.getPoolSize(), 10);
       assert.equal(node.tp.getFreePoolSize(), 2);
     })
+
     it('Remove timed out transactions', async () => {
       let initialNonce = node.getNonce();
       for (let i = 0; i < 10; i++) {
@@ -189,7 +193,6 @@ describe('TransactionPool', () => {
       node.tp.removeTimedOutTxsFromPool(currentTime + 2 + NodeConfigs.TX_POOL_TIMEOUT_MS);
       assert.equal(node.tp.getPoolSize(), 9);
       assert.equal(node.tp.getFreePoolSize(), 2);
-
     })
   })
 
