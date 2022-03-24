@@ -160,8 +160,12 @@ docker pull ainblockchain/ain-blockchain
 ```
 - Run with Docker image
 ```
-docker run -e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=your_private_key --network="host" -d ainblockchain/ain-blockchain:latest
-docker run -e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH=/path/to/keystore" --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev) -e SYNC_MODE=(fast|full|fast) -e ENABLE_REST_FUNCTION_CALL=(true|false) -e STAKE=(your_desired_stake) --network="host" -d ainblockchain/ain-blockchain:latest
+```
+- Run with Docker image (Inject your account automatically)
+```
+docker run -e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=(your_private_key) --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" --network="host" -d ainblockchain/ain-blockchain:latest
 docker run -e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic" --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
