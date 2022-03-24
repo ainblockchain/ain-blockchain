@@ -638,9 +638,15 @@ class BlockchainNode {
     if (address) { // Per account
       result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
+      result.free_limit = Math.floor(
+        NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO_PER_ACCOUNT);
+      result.free_used = this.tp.getPerAccountFreePoolSize(address);
     } else { // Total
       result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
+      result.free_limit = Math.floor(
+        NodeConfigs.TX_POOL_SIZE_LIMIT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO);
+      result.free_used = this.tp.getFreePoolSize();
     }
     return result;
   }
