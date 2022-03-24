@@ -722,14 +722,14 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
     const isFreeTx = Transaction.isFreeTransaction(tx);
-    if (isFreeTx && !this.tp.hasRoomForNewFreeTransaction()) {
+    if (isFreeTx && !this.tp.hasFreeRoom()) {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${this.tp.getFreePoolSize()}).`);
     }
-    if (!this.tp.hasRoomForNewTransaction()) {
+    if (!this.tp.hasRoom()) {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
@@ -763,7 +763,7 @@ class BlockchainNode {
             `[${LOG_HEADER}] Invalid signature`);
       }
     }
-    if (Transaction.isFreeTransaction(tx) && !this.tp.hasPerAccountRoomForNewFreeTransaction(executableTx.address)) {
+    if (Transaction.isFreeTransaction(tx) && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
       const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
           logger,
@@ -771,7 +771,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }
-    if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
+    if (!this.tp.hasPerAccountRoom(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
           logger,
