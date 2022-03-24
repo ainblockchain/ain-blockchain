@@ -128,6 +128,21 @@ class Blockchain {
     return this.numberToBlockInfo[blockNumber];
   }
 
+  oldestBlock() {
+    if (this.chain.length === 0) {
+      return null;
+    }
+    return this.chain[0];
+  }
+
+  oldestBlockNumber() {
+    const oldestBlock = this.oldestBlock();
+    if (oldestBlock) {
+      return oldestBlock.number;
+    }
+    return -1;
+  }
+
   lastBlock() {
     if (this.chain.length === 0) {
       return null;
@@ -296,12 +311,12 @@ class Blockchain {
   }
 
   /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
+    * Returns a section of the chain up to CHAIN_SEGMENT_LENGTH blocks, starting from
     * the `from` block number (included) up till `to` block number (excluded).
     *
     * @param {Number} from - The lowest block number to get (included)
     * @param {Number} to - The highest block number to geet (excluded)
-    * @return {list} A list of Blocks, up to a maximuim length of CHAIN_SEGMENT_LENGTH
+    * @return {list} A list of blocks, up to CHAIN_SEGMENT_LENGTH blocks
     */
   getBlockList(from, to) {
     const blockList = [];
@@ -323,8 +338,33 @@ class Blockchain {
     if (to - from > NodeConfigs.CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + NodeConfigs.CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
-    for (const blockPath of blockPaths) {
+    const blockPathList = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
+    for (const blockPath of blockPathList) {
+      blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
+    }
+    return blockList;
+  }
+
+  /**
+    * Returns a segment of the old chain up to OLD_CHAIN_SEGMENT_LENGTH blocks,
+    * starting from the `from` block number (included).
+    *
+    * @param {Number} from - The highest block number to get (included)
+    * @return {list} A list of blocks, up to OLD_CHAIN_SEGMENT_LENGTH blocks
+    */
+  getOldBlockList(from) {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return null;
+    }
+    if (from > lastBlock.number) {
+      logger.info(`The requested old chain segment is out of the range of this blockchain`);
+      return null;
+    }
+    const blockPathList = FileUtil.getOldBlockPathList(
+        this.blockchainPath, from, NodeConfigs.OLD_CHAIN_SEGMENT_LENGTH);
+    const blockList = [];
+    for (const blockPath of blockPathList) {
       blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
     }
     return blockList;
