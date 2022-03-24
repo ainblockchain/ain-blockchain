@@ -158,15 +158,28 @@ docker build -t ain-blockchain .
 ```
 docker pull ainblockchain/ain-blockchain
 ```
-- Run with Docker image
+- Run with Docker image example
 ```
-docker run -e SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev) -e SYNC_MODE=(fast|full|fast) -e ENABLE_REST_FUNCTION_CALL=(true|false) -e STAKE=(your_desired_stake) --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e SEASON=mainnet -e SYNC_MODE=fast -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:latest
 ```
-- Run with Docker image (Inject your account automatically)
+Each environment variables have the following options.
 ```
-docker run -e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=(your_private_key) --network="host" -d ainblockchain/ain-blockchain:latest
-docker run -e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" --network="host" -d ainblockchain/ain-blockchain:latest
-docker run -e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic" --network="host" -d ainblockchain/ain-blockchain:latest
+-e SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev)
+-e SYNC_MODE=(fast|full|peer)
+-e ENABLE_REST_FUNCTION_CALL=(true|false)
+-e STAKE=(your_target_stake)
+```
+After the node is executed, you should inject your account into the node.
+```
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --private-key
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --keystore
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --mnemonic
+```
+If you want to inject your account automatically, add one of these environment variables before running the node.
+```
+-e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=(your_private_key)
+-e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" -e PASSWORD=(your_password)
+-e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic"
 ```
 
 <!--
