@@ -97,19 +97,19 @@ class TransactionPool {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, NodeConfigs.TX_TRACKER_TIMEOUT_MS);
   }
 
-  hasRoomForNewTransaction() {
+  hasRoom() {
     return this.getPoolSize() < NodeConfigs.TX_POOL_SIZE_LIMIT;
   }
 
-  hasRoomForNewFreeTransaction() {
+  hasFreeRoom() {
     return this.getFreePoolSize() < Math.floor(NodeConfigs.TX_POOL_SIZE_LIMIT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO);
   }
 
-  hasPerAccountRoomForNewTransaction(address) {
+  hasPerAccountRoom(address) {
     return this.getPerAccountPoolSize(address) < NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
   }
   
-  hasPerAccountRoomForNewFreeTransaction(address) {
+  hasPerAccountFreeRoom(address) {
     return this.getPerAccountFreePoolSize(address) < Math.floor(NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO_PER_ACCOUNT);
   }
 
