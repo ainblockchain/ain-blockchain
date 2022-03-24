@@ -91,8 +91,7 @@ class TransactionPool {
     this.txCountTotal++;
     if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
-      const freeTxCountPerAddressBefore = this.freeTxCountPerAccount.get(tx.address) || 0
-      this.freeTxCountPerAccount.set(tx.address, freeTxCountPerAddressBefore + 1);
+      this.updateFreeTxCountPerAccount(tx.address, 1);
     }
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
