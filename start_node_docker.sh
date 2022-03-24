@@ -38,7 +38,11 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
         printf "Must provide a KEYSTORE_FILE_PATH\n"
         exit
     fi
-    node inject_account_gcp.js $NODE_ENDPOINT --keystore
+    if [[ -z "$PASSWORD" ]]; then
+        printf "Must provide a PASSWORD\n"
+        exit
+    fi
+    echo $PASSWORD | node inject_account_gcp.js $NODE_ENDPOINT --keystore
 elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
     if [[ -z "$MNEMONIC" ]]; then
         printf "Must provide a MNEMONIC\n"
