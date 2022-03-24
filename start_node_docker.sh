@@ -14,8 +14,7 @@ elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 fi
 
-ENABLE_REST_FUNCTION_CALL=true \
-  nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
+nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
 
 sleep 1
 
