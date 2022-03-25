@@ -28,6 +28,10 @@ class EventChannelManager {
     }
   }
 
+  getNumberOfChannels() {
+    return Object.keys(this.channels);
+  }
+
   getChannelInfo() {
     const channelInfo = {};
     for (const [channelId, channel] of Object.entries(this.channels)) {
