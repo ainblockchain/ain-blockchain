@@ -638,9 +638,15 @@ class BlockchainNode {
     if (address) { // Per account
       result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
+      result.free_limit = Math.floor(
+        NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO_PER_ACCOUNT);
+      result.free_used = this.tp.getPerAccountFreePoolSize(address);
     } else { // Total
       result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
+      result.free_limit = Math.floor(
+        NodeConfigs.TX_POOL_SIZE_LIMIT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO);
+      result.free_used = this.tp.getFreePoolSize();
     }
     return result;
   }
@@ -721,7 +727,15 @@ class BlockchainNode {
     if (DevFlags.enableRichTransactionLogging) {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
-    if (!this.tp.hasRoomForNewTransaction()) {
+    const isFreeTx = Transaction.isFreeTransaction(tx);
+    if (isFreeTx && !this.tp.hasFreeRoom()) {
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM,
+          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
+          `(${this.tp.getFreePoolSize()}).`);
+    }
+    if (!this.tp.hasRoom()) {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
@@ -755,7 +769,15 @@ class BlockchainNode {
             `[${LOG_HEADER}] Invalid signature`);
       }
     }
-    if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
+    if (isFreeTx && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
+      const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM_FOR_ACCOUNT,
+          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
+          `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
+    }
+    if (!this.tp.hasPerAccountRoom(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
           logger,

@@ -9,6 +9,7 @@ const BlockchainNode = require('../../node');
 const {
   TransactionStates,
   BlockchainParams,
+  NodeConfigs,
 } = require('../../common/constants');
 const {
   setNodeForTesting,
@@ -70,6 +71,130 @@ describe('TransactionPool', () => {
       expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
     });
   });
+
+  describe('Transaction pool counting', async () => {
+    const currentTime = Date.now();
+
+    beforeEach(async () => {
+      node = new BlockchainNode();
+      await setNodeForTesting(node);
+    })
+
+    it('Add paid transactions and free transactions', async () => {
+      let initialNonce = node.getNonce();
+      for (let i = 0; i < 10; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 1
+        });
+        tx.extra.created_at = currentTime;
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      for (let i = 0; i < 5; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 0
+        });
+        tx.extra.created_at = currentTime;
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      assert.equal(node.tp.getPoolSize(), 15);
+      assert.equal(node.tp.getFreePoolSize(), 5);
+    })
+
+    it('Remove invalid transactions', async () => {
+      let initialNonce = node.getNonce();
+      const invalidTxs = [];
+      for (let i = 0; i < 10; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 1
+        });
+        tx.extra.created_at = currentTime;
+        if (i < 2) {
+          invalidTxs.push(tx);
+        }
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      for (let i = 0; i < 5; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 0
+        });
+        tx.extra.created_at = currentTime;
+        if (i < 3) {
+          invalidTxs.push(tx);
+        }
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      assert.equal(node.tp.getPoolSize(), 15);
+      assert.equal(node.tp.getFreePoolSize(), 5);
+      node.tp.removeInvalidTxsFromPool(invalidTxs);
+      assert.equal(node.tp.getPoolSize(), 10);
+      assert.equal(node.tp.getFreePoolSize(), 2);
+    })
+
+    it('Remove timed out transactions', async () => {
+      let initialNonce = node.getNonce();
+      for (let i = 0; i < 10; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 1
+        });
+        tx.extra.created_at = currentTime + i;
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      for (let i = 0; i < 5; i++) {
+        const tx = getTransaction(node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: 'REF',
+            value: 'VALUE',
+          },
+          nonce: initialNonce++,
+          gas_price: 0
+        });
+        tx.extra.created_at = currentTime + i;
+        node.tp.addTransaction(tx);
+        await CommonUtil.sleep(1);
+      }
+      assert.equal(node.tp.getPoolSize(), 15);
+      assert.equal(node.tp.getFreePoolSize(), 5);
+      node.tp.removeTimedOutTxsFromPool(currentTime + 2 + NodeConfigs.TX_POOL_TIMEOUT_MS);
+      assert.equal(node.tp.getPoolSize(), 9);
+      assert.equal(node.tp.getFreePoolSize(), 2);
+    })
+  })
 
   describe('Transaction ordering', async () => {
     let node2; let node3; let node4;

@@ -274,6 +274,7 @@ class P2pServer {
   getTxStatus() {
     return {
       txPoolSize: this.node.tp.getPoolSize(),
+      freeTxPoolSize: this.node.tp.getFreePoolSize(),
       txTrackerSize: this.node.tp.transactionTracker.size,
     };
   }

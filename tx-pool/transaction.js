@@ -252,6 +252,9 @@ class Transaction {
   static isBatchTransaction(tx) {
     return tx && CommonUtil.isArray(tx.tx_list);
   }
+  static isFreeTransaction(tx) {
+    return tx.tx_body.gas_price === undefined || tx.tx_body.gas_price === 0;
+  }
 }
 
 module.exports = Transaction;
