@@ -8,6 +8,9 @@ const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
+const {
+  NodeConfigs,
+} = require('../common/constants');
 
 class EventHandler {
   constructor() {
@@ -26,6 +29,10 @@ class EventHandler {
     this.eventChannelManager = new EventChannelManager(this);
     this.eventChannelManager.startListening();
     logger.info(`[${LOG_HEADER}] Event handler started!`);
+  }
+
+  getEventHandlerHealth() {
+    return this.eventChannelManager.getNumberOfChannels() < NodeConfigs.MAX_NUM_EVENT_CHANNEL;
   }
 
   getFilterInfo() {
