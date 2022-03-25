@@ -161,6 +161,7 @@ docker pull ainblockchain/ain-blockchain
 - Run with Docker image example
 ```
 docker run -e SEASON=mainnet -e SYNC_MODE=fast -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e SEASON=dev -e SYNC_MODE=peer -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 Each environment variables have the following options.
 ```
