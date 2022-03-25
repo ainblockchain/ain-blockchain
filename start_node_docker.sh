@@ -34,6 +34,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
     echo $PRIVATE_KEY | node inject_account_gcp.js $NODE_ENDPOINT --private-key
     unset PRIVATE_KEY
 elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
+    # TODO(kriii): Support keystore file upload.
     if [[ -z "$KEYSTORE_FILE_PATH" ]]; then
         printf "Must provide a KEYSTORE_FILE_PATH\n"
         exit
