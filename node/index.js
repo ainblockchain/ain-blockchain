@@ -769,7 +769,7 @@ class BlockchainNode {
             `[${LOG_HEADER}] Invalid signature`);
       }
     }
-    if (Transaction.isFreeTransaction(tx) && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
+    if (isFreeTx && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
       const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
           logger,
