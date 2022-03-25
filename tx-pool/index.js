@@ -418,7 +418,7 @@ class TransactionPool {
     const sizeBefore = this.txCountTotal;
     for (const [address, txList] of this.transactions.entries()) {
       const filterFunc = (tx) => !this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp);
-      this.updateTxListAndTotalCount(address, txList, filterFunc);
+      this.updateTxListAndCounts(address, txList, filterFunc);
     }
     const sizeAfter = this.txCountTotal;
     return sizeBefore > sizeAfter;
@@ -453,7 +453,7 @@ class TransactionPool {
       if (this.transactions.has(address)) {
         const txList = this.transactions.get(address);
         const filterFunc = (tx) => !invalidTxSet.has(tx.hash);
-        this.updateTxListAndTotalCount(address, txList, filterFunc);
+        this.updateTxListAndCounts(address, txList, filterFunc);
       }
     }
   }
@@ -488,7 +488,7 @@ class TransactionPool {
         }
         return !txHashSet.has(tx.hash);
       };
-      this.updateTxListAndTotalCount(address, txList, filterFunc);
+      this.updateTxListAndCounts(address, txList, filterFunc);
     }
   }
 
