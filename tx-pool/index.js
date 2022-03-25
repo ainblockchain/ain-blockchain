@@ -56,8 +56,9 @@ class TransactionPool {
     }
   }
 
-  updateTxListAndTotalCount(address, txList, filterFunc) {
-    // Update txList of given address in transaction pool and update txCountTotal and freeTxTotalCount
+  updateTxListAndCounts(address, txList, filterFunc) {
+    // Update txList of given address in transaction pool and update txCountTotal,
+    // freeTxTotalCount, and freeTxCountPerAccount
     const freeTxCntTotalBefore = this.freeTxCountTotal;
     const txListAfter = txList.filter(this.makeCountUpdateWrapperForFilterFunction(filterFunc));
     const freeTxCntTotalAfter = this.freeTxCountTotal;
