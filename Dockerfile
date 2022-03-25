@@ -1,7 +1,6 @@
-FROM node:10.14
-WORKDIR /app
-COPY package.json /app
-RUN npm install
-COPY . /app
+FROM node:16.14
+WORKDIR /app/ain-blockchain
+COPY . /app/ain-blockchain
+RUN yarn install
 EXPOSE 8080 5000
-CMD node client/index.js
+ENTRYPOINT bash ./start_node_docker.sh
