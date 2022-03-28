@@ -23,6 +23,16 @@ const DevFlags = {
   // Enables p2p message tags checking.
   // TODO(liayoo): Add some security measures before turning this flag on.
   enableP2pMessageTagsChecking: false,
+
+  // NOTE(liayoo): Below flags are added for performance optimization testing purposes.
+  // Enables gas fee collection.
+  enableGasFeeCollection: true,
+  // Enables gas fee distribution.
+  enableGasFeeDistribution: true,
+  // Enables getStateFreeTierUsage() optimization.
+  enableGetStateFreeTierUsageOptimization: true,
+  // Enables transaction bandwidth check per block
+  enableTxBandwidthCheckPerBlock: true,
 };
 
 // ** Blockchain configs **
@@ -32,12 +42,13 @@ const BlockchainConsts = {
   // *** Protocol Versions ***
   CURRENT_PROTOCOL_VERSION: require('../package.json').version,
   PROTOCOL_VERSIONS: path.resolve(__dirname, '../client/protocol_versions.json'),
-  DATA_PROTOCOL_VERSION: '1.0.0',
+  DATA_PROTOCOL_VERSION: '1.1.0',
   CONSENSUS_PROTOCOL_VERSION: '1.0.0',
   // *** Directories & Files ***
   CHAINS_N2B_DIR_NAME: 'n2b', // Number-to-block directory name.
   CHAINS_H2N_DIR_NAME: 'h2n', // Hash-to-number directory name.
   SNAPSHOTS_N2S_DIR_NAME: 'n2s', // Number-to-snapshot directory name.
+  SNAPSHOTS_N2C_DIR_NAME: 'n2c', // Number-to-chunks directory name.
   DEBUG_SNAPSHOT_FILE_PREFIX: 'debug_', // Prefix for debug snapshot files.
 };
 if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
@@ -128,9 +139,13 @@ const MessageTypes = {
   ADDRESS_RESPONSE: 'ADDRESS_RESPONSE',
   CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
   CHAIN_SEGMENT_RESPONSE: 'CHAIN_SEGMENT_RESPONSE',
-  TRANSACTION: 'TRANSACTION',
   CONSENSUS: 'CONSENSUS',
-  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
+  OLD_CHAIN_SEGMENT_REQUEST: 'OLD_CHAIN_SEGMENT_REQUEST',
+  OLD_CHAIN_SEGMENT_RESPONSE: 'OLD_CHAIN_SEGMENT_RESPONSE',
+  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE',
+  SNAPSHOT_CHUNK_REQUEST: 'SNAPSHOT_CHUNK_REQUEST',
+  SNAPSHOT_CHUNK_RESPONSE: 'SNAPSHOT_CHUNK_RESPONSE',
+  TRANSACTION: 'TRANSACTION',
 };
 
 /**
@@ -140,7 +155,10 @@ const MessageTypes = {
  */
 const BlockchainNodeStates = {
   STARTING: 'STARTING',
-  SYNCING: 'SYNCING',
+  STATE_LOADING: 'STATE_LOADING',
+  STATE_SYNCING: 'STATE_SYNCING',
+  READY_TO_START: 'READY_TO_START',
+  CHAIN_SYNCING: 'CHAIN_SYNCING',
   SERVING: 'SERVING',
   STOPPED: 'STOPPED',
 };
@@ -539,11 +557,16 @@ const WriteDbOperations = {
  */
 const TransactionStates = {
   FINALIZED: 'FINALIZED',
+  REVERTED: 'REVERTED', // Reverted means it's failed but included in a block
   EXECUTED: 'EXECUTED',
-  FAILED: 'FAILED',
+  FAILED: 'FAILED', // Failed means it's failed and is NOT included in a block
   PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
 };
+
+function isTxInBlock(state) {
+  return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
+}
 
 /**
  * State versions.
@@ -572,8 +595,9 @@ const StateVersions = {
  * @enum {string}
  */
 const SyncModeOptions = {
-  FULL: 'full',
   FAST: 'fast',
+  FULL: 'full',
+  PEER: 'peer',
 };
 
 const TrafficEventTypes = {
@@ -628,6 +652,7 @@ const BlockchainEventMessageTypes = {
   REGISTER_FILTER: 'REGISTER_FILTER',
   DEREGISTER_FILTER: 'DEREGISTER_FILTER',
   EMIT_EVENT: 'EMIT_EVENT',
+  EMIT_ERROR: 'EMIT_ERROR',
 };
 
 // ** Lists & Sets **
@@ -790,6 +815,7 @@ module.exports = {
   ReadDbOperations,
   WriteDbOperations,
   TransactionStates,
+  isTxInBlock,
   StateVersions,
   getBlockchainConfig,
   SyncModeOptions,

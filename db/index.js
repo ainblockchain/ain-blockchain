@@ -5,6 +5,7 @@ const path = require('path');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
+  DevFlags,
   NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
@@ -18,6 +19,7 @@ const {
   buildOwnerPermissions,
   BlockchainParams,
   TimerFlagEnabledBandageMap,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -51,7 +53,7 @@ const RuleUtil = require('./rule-util');
 const PathUtil = require('../common/path-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager, eventHandler) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -63,8 +65,13 @@ class DB {
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
+    this.eh = eventHandler;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
+    this.appStateUsageCache = { hash: null, value: null };
+    this.stakedAppSetCache = { hash: null, value: new Set() };
+    this.stateFreeTierUsageCache = null;
     this.updateRestFunctionsUrlWhitelistCache();
+    this.updateStateFreeTierUsageCache();
   }
 
   static formatRawRestFunctionsWhitelist(raw) {
@@ -84,14 +91,14 @@ class DB {
    * the latest hash and the mapping of whitelisted REST function urls.
    */
   updateRestFunctionsUrlWhitelistCache() {
-    const currentHash = this.restFunctionsUrlWhitelistCache.hash;
+    const cachedHash = this.restFunctionsUrlWhitelistCache.hash;
     const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
-    const updatedHash = this.getProofHash(
+    const currentHash = this.getProofHash(
         CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, restFunctionsUrlWhitelistPath));
-    if (!currentHash || currentHash !== updatedHash) {
+    if (!cachedHash || cachedHash !== currentHash) {
       const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
       const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
-      this.restFunctionsUrlWhitelistCache = { hash: updatedHash, whitelist };
+      this.restFunctionsUrlWhitelistCache = { hash: currentHash, whitelist };
     }
   }
 
@@ -298,7 +305,7 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
+  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager, eventHandler) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -312,7 +319,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager, eventHandler);
   }
 
   takeStateSnapshot() {
@@ -321,7 +328,7 @@ class DB {
     }
     return this.stateRoot.toStateSnapshot();
   }
- 
+
   takeRadixSnapshot() {
     if (this.stateRoot === null) {
       return null;
@@ -962,6 +969,9 @@ class DB {
       logger.debug(
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
+    if (this.eh) {
+      this.eh.emitValueChanged(auth, localPath, prevValueCopy, valueCopy);
+    }
 
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
@@ -1370,14 +1380,78 @@ class DB {
     tx.setExtraField('gas', txGas);
   }
 
-  // TODO(liayoo): reduce computation by remembering & reusing the computed values.
+  updateAppStateUsageCache() {
+    const cachedHash = this.appStateUsageCache.hash;
+    const appsPrefix = PredefinedDbPaths.APPS;
+    const currentHash = CommonUtil.hashString(
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.OWNERS_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.FUNCTIONS_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.RULES_ROOT, appsPrefix))}` +
+      `${this.getProofHash(CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, appsPrefix))}`
+    );
+    if (!cachedHash || cachedHash !== currentHash) {
+      const newValue = {};
+      const apps = DB.getValueFromStateRoot(this.stateRoot, appsPrefix, true) || {};
+      for (const appName of Object.keys(apps)) {
+        newValue[appName] = this.getStateUsageAtPath(`${appsPrefix}/${appName}`);
+      }
+      this.appStateUsageCache = {
+        hash: currentHash,
+        value: newValue
+      };
+      return true;
+    }
+    return false;
+  }
+
+  updateAppStakeCache() {
+    const cachedHash = this.stakedAppSetCache.hash;
+    const currentHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING));
+    if (!cachedHash || cachedHash !== currentHash) {
+      const newValue = new Set();
+      const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING, true) || {};
+      for (const appName of Object.keys(apps)) {
+        const stake = DB.getValueFromStateRoot(
+            this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName));
+        if (CommonUtil.isNumber(stake) && stake > 0) {
+          newValue.add(appName);
+        }
+      }
+      this.stakedAppSetCache = {
+        hash: currentHash,
+        value: newValue
+      };
+      return true;
+    }
+    return false;
+  }
+
+  updateStateFreeTierUsageCache() {
+    const appStateUsageCached = this.updateAppStateUsageCache();
+    const freeTierAppCached = this.updateAppStakeCache();
+    if (appStateUsageCached || freeTierAppCached) {
+      const usage = {};
+      for (const appName in this.appStateUsageCache.value) {
+        if (!this.stakedAppSetCache.value.has(appName)) {
+          CommonUtil.mergeNumericJsObjects(usage, this.appStateUsageCache.value[appName]);
+        }
+      }
+      this.stateFreeTierUsageCache = usage;
+    }
+  }
+
   getStateFreeTierUsage() {
+    if (DevFlags.enableGetStateFreeTierUsageOptimization) {
+      this.updateStateFreeTierUsageCache();
+      return this.stateFreeTierUsageCache;
+    }
+    // legacy logic
     const usage = {};
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
     for (const appName of Object.keys(apps)) {
       if (!DB.getValueFromStateRoot(
-          this.stateRoot,
-          `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
+          this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName))) {
         CommonUtil.mergeNumericJsObjects(
             usage, this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`));
       }
@@ -1771,8 +1845,12 @@ class DB {
       }
     }
     if (!skipFees) {
-      this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
-      this.recordReceipt(auth, tx, blockNumber, executionResult);
+      if (DevFlags.enableGasFeeCollection) {
+        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
+      }
+      if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
+        this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
     }
     return executionResult;
   }
