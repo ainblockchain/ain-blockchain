@@ -238,12 +238,15 @@ class P2pClient {
     this.intervalTrackerUpdate = null;
   }
 
+  getConnectionsInProgress() {
+    return Object.keys(this.outbound).length + this.peerConnectionsInProgress.size;
+  }
+
   /**
    * Returns either true or false and also set p2pState.
    */
   updateP2pState() {
-    if (Object.keys(this.outbound).length + this.peerConnectionsInProgress.size <
-        NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
+    if (this.getConnectionsInProgress() < NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
@@ -355,6 +358,7 @@ class P2pClient {
 
   async discoverPeerWithGuardingFlag() {
     const LOG_HEADER = 'discoverPeerWithGuardingFlag';
+    console.log(this.p2pState, this.outbound, this.peerConnectionsInProgress);
     if (!this.isConnectingToPeerCandidates) {
       this.peerConnectionStartedAt = Date.now();
       try {
@@ -423,9 +427,10 @@ class P2pClient {
   }
 
   async tryReorgPeerConnections() {
-    const numOutbound = Object.keys(this.outbound).length;
-    if (numOutbound < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
-      trafficStatsManager.addEvent(TrafficEventTypes.PEER_REORG_BELOW_MIN_OUTBOUND, numOutbound);
+    const allConnectionsInProgress = this.getConnectionsInProgress();
+    if (allConnectionsInProgress < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+      trafficStatsManager.addEvent(
+          TrafficEventTypes.PEER_REORG_BELOW_MIN_OUTBOUND, allConnectionsInProgress);
       return;
     }
     if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
@@ -433,20 +438,18 @@ class P2pClient {
     } else {
       this.steadyIntervalCount = 0;
       this.disconnectRandomPeer();
-      this.updateP2pState();
       await this.discoverPeerWithGuardingFlag();
     }
   }
 
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
-      this.updateP2pState();
       if (this.p2pState === P2pNetworkStates.EXPANDING) {
         await this.discoverPeerWithGuardingFlag();
       } else if (this.p2pState === P2pNetworkStates.STEADY) {
         await this.tryReorgPeerConnections();
       }
-    }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
+    }, 5000/* odeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS*/);
   }
 
   clearIntervalForPeerCandidateConnection() {
