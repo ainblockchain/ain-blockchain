@@ -1,14 +1,14 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev my_username 0 --setup --keystore --no-keep-code\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_genesis_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
     if [[ "$1" = 'mainnet' ]]; then
         PROJECT_ID="mainnet-prod-ground"
@@ -322,7 +322,7 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
     NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-    
+
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
     else

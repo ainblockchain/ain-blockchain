@@ -199,8 +199,8 @@ describe("P2p", () => {
         assert.deepEqual(actual, {
           health: false,
           address: p2pServer.getNodeAddress(),
-          state: 'SYNCING',
-          stateNumeric: 1,
+          state: 'CHAIN_SYNCING',
+          stateNumeric: 4,
           nonce: 0,
           dbStatus: {
             rootStateInfo: {

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
@@ -139,6 +139,15 @@ elif [[ $SEASON = 'staging' ]]; then
     fi
     # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
     # (https://staging-api.ainetwork.ai/json-rpc) is used.
+elif [[ $SEASON = 'exp' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-exp
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+    else
+        export PEER_CANDIDATE_JSON_RPC_URL="http://34.81.178.195:8080/json-rpc"
+    fi
+    # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
+    # (https://exp-api.ainetwork.ai/json-rpc) is used.
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
@@ -296,7 +305,7 @@ else
     eval $CODE_CMD
 fi
 
-# 4. Kill old node server 
+# 4. Kill old node server
 printf "\n#### [Step 4] Kill old node server ####\n\n"
 
 KILL_CMD="sudo killall node"

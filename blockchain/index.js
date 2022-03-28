@@ -7,6 +7,7 @@ const FileUtil = require('../common/file-util');
 const {
   NodeConfigs,
   BlockchainSnapshotProperties,
+  SyncModeOptions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -37,12 +38,18 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  initBlockchain(isFirstNode, snapshot) {
+  initBlockchain(isFirstNode, snapshot, snapshotDir, snapshotChunkSize) {
     if (snapshot) {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
+      if (NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
+        const blockNumber = snapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
+        // NOTE(platfowner): This write is not awaited.
+        FileUtil.writeSnapshotFile(snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+        // Write the block from the snapshot to the blockchain dir.
+        this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
+      }
     }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
-    let isGenesisStart = false;
     if (wasBlockDirEmpty) {
       if (isFirstNode) {
         logger.info('\n');
@@ -52,7 +59,6 @@ class Blockchain {
         logger.info('\n');
         // Copy the genesis block from the genesis configs dir to the blockchain dir.
         this.writeBlock(this.genesisBlock);
-        isGenesisStart = true;
       } else {
         logger.info('\n');
         logger.info('#############################################################');
@@ -75,10 +81,7 @@ class Blockchain {
         logger.info('\n');
       }
     }
-    return {
-      wasBlockDirEmpty,
-      isGenesisStart,
-    };
+    return wasBlockDirEmpty;
   }
 
   /**
@@ -123,6 +126,21 @@ class Blockchain {
     const blockNumber = CommonUtil.toNumberOrNaN(number);
     if (!CommonUtil.isNumber(blockNumber)) return null;
     return this.numberToBlockInfo[blockNumber];
+  }
+
+  oldestBlock() {
+    if (this.chain.length === 0) {
+      return null;
+    }
+    return this.chain[0];
+  }
+
+  oldestBlockNumber() {
+    const oldestBlock = this.oldestBlock();
+    if (oldestBlock) {
+      return oldestBlock.number;
+    }
+    return -1;
   }
 
   lastBlock() {
@@ -279,8 +297,9 @@ class Blockchain {
     return validBlocks;
   }
 
-  getNumBlockFiles() {
-    return FileUtil.getNumBlockFiles(this.blockchainPath);
+  getLatestBlockNumber() {
+    const latestBlockInfo = FileUtil.getLatestBlockInfo(this.blockchainPath);
+    return latestBlockInfo.latestBlockNumber;
   }
 
   loadBlock(blockNumber) {
@@ -292,12 +311,12 @@ class Blockchain {
   }
 
   /**
-    * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
+    * Returns a section of the chain up to CHAIN_SEGMENT_LENGTH blocks, starting from
     * the `from` block number (included) up till `to` block number (excluded).
     *
     * @param {Number} from - The lowest block number to get (included)
     * @param {Number} to - The highest block number to geet (excluded)
-    * @return {list} A list of Blocks, up to a maximuim length of CHAIN_SEGMENT_LENGTH
+    * @return {list} A list of blocks, up to CHAIN_SEGMENT_LENGTH blocks
     */
   getBlockList(from, to) {
     const blockList = [];
@@ -319,8 +338,33 @@ class Blockchain {
     if (to - from > NodeConfigs.CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + NodeConfigs.CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
-    for (const blockPath of blockPaths) {
+    const blockPathList = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
+    for (const blockPath of blockPathList) {
+      blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
+    }
+    return blockList;
+  }
+
+  /**
+    * Returns a segment of the old chain up to OLD_CHAIN_SEGMENT_LENGTH blocks,
+    * starting from the `from` block number (included).
+    *
+    * @param {Number} from - The highest block number to get (included)
+    * @return {list} A list of blocks, up to OLD_CHAIN_SEGMENT_LENGTH blocks
+    */
+  getOldBlockList(from) {
+    const lastBlock = this.lastBlock();
+    if (!lastBlock) {
+      return null;
+    }
+    if (from > lastBlock.number) {
+      logger.info(`The requested old chain segment is out of the range of this blockchain`);
+      return null;
+    }
+    const blockPathList = FileUtil.getOldBlockPathList(
+        this.blockchainPath, from, NodeConfigs.OLD_CHAIN_SEGMENT_LENGTH);
+    const blockList = [];
+    for (const blockPath of blockPathList) {
       blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
     }
     return blockList;

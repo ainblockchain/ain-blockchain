@@ -4,6 +4,14 @@ class EventFilter {
     this.type = type;
     this.config = config;
   }
+
+  toObject() {
+    return {
+      id: this.id,
+      type: this.type,
+      config: this.config,
+    };
+  }
 }
 
 module.exports = EventFilter;
