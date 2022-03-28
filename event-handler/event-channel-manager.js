@@ -25,7 +25,7 @@ class EventChannelManager {
     return {
       url: eventHandlerUrl.toString(),
       port: NodeConfigs.EVENT_HANDLER_PORT,
-      eventChannelLimit: NodeConfigs.MAX_NUM_EVENT_CHANNEL,
+      eventChannelLimit: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
       numberOfEventChannels: this.getNumberOfChannels(),
     }
   }
@@ -55,9 +55,9 @@ class EventChannelManager {
   handleConnection(webSocket) {
     const LOG_HEADER = 'handleConnection';
     try {
-      if (this.getNumberOfChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNEL) {
+      if (this.getNumberOfChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
         throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_NUM_LIMIT,
-            `Number of event channel exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_CHANNEL})`);
+            `Number of event channel exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
       }
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
