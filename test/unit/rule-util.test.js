@@ -73,14 +73,44 @@ describe("RuleUtil", () => {
       expect(util.isIntegerString(-1)).to.equal(false);
       expect(util.isIntegerString(15.5)).to.equal(false);
       expect(util.isIntegerString('15.5')).to.equal(false);
-    });
+    })
 
     it("when valid input", () => {
       expect(util.isIntegerString('0')).to.equal(true);
       expect(util.isIntegerString('10')).to.equal(true);
       expect(util.isIntegerString('-1')).to.equal(true);
     })
-  });
+  })
+
+  describe("isFloatString", () => {
+    it("when invalid input", () => {
+      expect(util.isFloatString(true)).to.equal(false);
+      expect(util.isFloatString(false)).to.equal(false);
+      expect(util.isFloatString(null)).to.equal(false);
+      expect(util.isFloatString(undefined)).to.equal(false);
+      expect(util.isFloatString(Infinity)).to.equal(false);
+      expect(util.isFloatString(NaN)).to.equal(false);
+      expect(util.isFloatString('')).to.equal(false);
+      expect(util.isFloatString('abc')).to.equal(false);
+      expect(util.isFloatString({})).to.equal(false);
+      expect(util.isFloatString({a: 'A'})).to.equal(false);
+      expect(util.isFloatString([])).to.equal(false);
+      expect(util.isFloatString([10])).to.equal(false);
+      expect(util.isFloatString(0)).to.equal(false);
+      expect(util.isFloatString(10)).to.equal(false);
+      expect(util.isFloatString(-1)).to.equal(false);
+      expect(util.isFloatString(15.5)).to.equal(false);
+      expect(util.isFloatString('0')).to.equal(false);
+      expect(util.isFloatString('-1.')).to.equal(false);
+      expect(util.isFloatString('.234')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isFloatString('1.1')).to.equal(true);
+      expect(util.isFloatString('0.3')).to.equal(true);
+      expect(util.isFloatString('-1.34')).to.equal(true);
+    })
+  })
 
   describe("isInteger", () => {
     it("when invalid input", () => {
