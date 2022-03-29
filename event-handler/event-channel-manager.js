@@ -26,11 +26,11 @@ class EventChannelManager {
       url: eventHandlerUrl.toString(),
       port: NodeConfigs.EVENT_HANDLER_PORT,
       maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
-      numEventChannels: this.getNumberOfChannels(),
+      numEventChannels: this.getNumEventChannels(),
     }
   }
 
-  getNumberOfChannels() {
+  getNumEventChannels() {
     return Object.keys(this.channels).length;
   }
 
@@ -55,7 +55,7 @@ class EventChannelManager {
   handleConnection(webSocket) {
     const LOG_HEADER = 'handleConnection';
     try {
-      if (this.getNumberOfChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+      if (this.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
         throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_SIZE_LIMIT,
             `The number of event channels exceeds its limit ` +
             `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
