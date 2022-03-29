@@ -25,8 +25,8 @@ class EventChannelManager {
     return {
       url: eventHandlerUrl.toString(),
       port: NodeConfigs.EVENT_HANDLER_PORT,
-      eventChannelLimit: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
-      numberOfEventChannels: this.getNumberOfChannels(),
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: this.getNumberOfChannels(),
     }
   }
 
