@@ -103,7 +103,7 @@ function setNodeConfigs() {
     if (valFromEnvVar !== undefined) {
       if (CommonUtil.isBool(valFromNodeParams)) {
         NodeConfigs[param] = CommonUtil.convertEnvVarInputToBool(valFromEnvVar);
-      } else if (!isNaN(valFromEnvVar)) {
+      } else if (CommonUtil.isIntegerString(valFromEnvVar) || CommonUtil.isFloatString(valFromEnvVar)) {
         NodeConfigs[param] = Number(valFromEnvVar);
       } else if (CommonUtil.isArray(valFromNodeParams) || CommonUtil.isWildcard(valFromNodeParams)) {
         NodeConfigs[param] = CommonUtil.getWhitelistFromString(valFromEnvVar);
