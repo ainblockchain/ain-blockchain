@@ -816,6 +816,17 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   });
 }
 
+if (eventHandler) {
+  // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
+  app.get('/eh_load_balancer_health_check', (req, res, next) => {
+    const result = eventHandler.getEventHandlerHealth();
+    res.status(200)
+      .set('Content-Type', 'text/plain')
+      .send(result)
+      .end();
+  });
+}
+
 const server = app.listen(NodeConfigs.PORT, () => {
   logger.info(`App listening on port ${NodeConfigs.PORT}`);
   logger.info(`Press Ctrl+C to quit.`);
