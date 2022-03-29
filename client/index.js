@@ -817,6 +817,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 }
 
 if (eventHandler) {
+  // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
   app.get('/eh_load_balancer_health_check', (req, res, next) => {
     const result = eventHandler.getEventHandlerHealth();
     res.status(200)
