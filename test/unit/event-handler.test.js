@@ -105,8 +105,8 @@ describe('EventHandler Test', () => {
       const intUrl = new URL(`ws://${intIp}:${NodeConfigs.EVENT_HANDLER_PORT}`);
       const networkInfo = await eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
-        eventChannelLimit: NodeConfigs.MAX_NUM_EVENT_CHANNEL,
-        numberOfEventChannels: 0,
+        maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+        numEventChannels: 0,
         url: intUrl.toString(),
         port: NodeConfigs.EVENT_HANDLER_PORT,
       });
