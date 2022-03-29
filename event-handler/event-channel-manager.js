@@ -57,7 +57,8 @@ class EventChannelManager {
     try {
       if (this.getNumberOfChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
         throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_SIZE_LIMIT,
-            `Number of event channel exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
+            `The number of event channels exceeds its limit ` +
+            `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
       }
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
