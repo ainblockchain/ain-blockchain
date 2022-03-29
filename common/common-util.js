@@ -86,7 +86,11 @@ class CommonUtil {
 
   static isIntegerString(value) {
     return ruleUtil.isIntegerString(value);
-}
+  }
+
+  static isFloatString(value) {
+    return ruleUtil.isFloatString(value);
+  }
 
   static isInteger(value) {
     return ruleUtil.isInteger(value);
