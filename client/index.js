@@ -817,7 +817,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 }
 
 if (eventHandler) {
-  app.get('/eh_health_check', (req, res, next) => {
+  app.get('/eh_load_balancer_health_check', (req, res, next) => {
     const result = eventHandler.getEventHandlerHealth();
     res.status(200)
       .set('Content-Type', 'text/plain')
