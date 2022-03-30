@@ -32,6 +32,8 @@ function parse_options() {
         REST_FUNC_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
+    elif [[ $option = '--event-handler' ]]; then
+        EVENT_HANDLER_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -62,6 +64,7 @@ KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
+EVENT_HANDLER_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]; do
@@ -80,6 +83,7 @@ printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -261,6 +265,11 @@ if [[ $REST_FUNC_OPTION ]]; then
     export ENABLE_REST_FUNCTION_CALL=true
 else
     export ENABLE_REST_FUNCTION_CALL=false
+fi
+if [[ $EVENT_HANDLER_OPTION ]]; then
+    export ENABLE_EVENT_HANDLER=true
+else
+    export ENABLE_EVENT_HANDLER=false
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
