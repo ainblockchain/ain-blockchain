@@ -226,6 +226,11 @@ function deploy_node() {
     else
         REST_FUNC_OPTION=""
     fi
+    if [[ $node_index -ge 8 ]] && [[ $node_index -lt 10 ]]; then
+        EVENT_HANDLER_OPTION="--event-handler"
+    else
+        EVENT_HANDLER_OPTION=""
+    fi
 
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
@@ -233,9 +238,10 @@ function deploy_node() {
     printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+    printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
