@@ -303,16 +303,6 @@ NODE_99_ZONE="europe-west4-a"
 # deploy files
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
-# Work in progress spinner
-spin="-\|/"
-
-i=0
-spinner() {
-    i=$(( (i+1) %4 ))
-    printf "\r${spin:$i:1}"
-    sleep .1
-}
-
 if [[ $KILL_OPTION = "--skip-kill" ]]; then
     printf "\nSkipping process kill...\n"
 else
@@ -325,14 +315,9 @@ else
 
         KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-        # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
-        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-            eval $KILL_NODE_CMD &> /dev/null &
-        else
-            eval $KILL_NODE_CMD &> /dev/null
-        fi
+        printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+        eval $KILL_NODE_CMD &> /dev/null
         ((index++))
-        spinner
     done
     printf "Kill all processes done.\n\n";
 fi
@@ -353,14 +338,9 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone ${!NODE_ZONE}
         DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-        # printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
-        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-            eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null &
-        else
-            eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null
-        fi
+        printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
+        eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null
         ((index++))
-        spinner
     done
     printf "Deploy files done.\n\n";
 fi
@@ -375,16 +355,26 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 
         SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-        # printf "SETUP_BLOCKCHAIN_CMD=$SETUP_BLOCKCHAIN_CMD\n"
-        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-            eval $SETUP_BLOCKCHAIN_CMD &> /dev/null &
-        else
-            eval $SETUP_BLOCKCHAIN_CMD &> /dev/null
-        fi
+        printf "SETUP_BLOCKCHAIN_CMD=$SETUP_BLOCKCHAIN_CMD\n"
+        eval $SETUP_BLOCKCHAIN_CMD &> /dev/null
         ((index++))
-        spinner
     done
     printf "Setting up blockchain nodes done.\n\n";
+fi
+
+# install node modules on GCP instances
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    printf "\nInstalling node modules for parent node\n"
+    index=$START_NODE_IDX
+    while [ $index -le $END_NODE_IDX ]; do
+        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+        NODE_ZONE=NODE_${index}_ZONE
+
+        INSTALL_NODE_MODULE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'cd ./ain-blockchain; sudo yarn install --ignore-engines' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        printf "INSTALL_NODE_MODULE_CMD=$INSTALL_NODE_MODULE_CMD\n"
+        eval $INSTALL_NODE_MODULE_CMD
+        ((index++))
+    done
 fi
 
 printf "\nStarting blockchain servers...\n\n"
