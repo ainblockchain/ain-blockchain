@@ -4303,80 +4303,82 @@ describe('Blockchain Node', () => {
     });
   });
 
-  describe('Tx Receipts', () => {
-    it(`records a transaction receipt`, async () => {
-      const txSignerAddress = parseOrLog(syncRequest(
-          'GET', server1 + '/get_address').body.toString('utf-8')).result;
-      const request = {
-        ref: '/apps/test/test_receipts/some/path',
-        value: "some value"
-      };
-      const body = parseOrLog(syncRequest(
-          'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-      assert.deepEqual(_.get(body, 'result.result.code'), 0);
-      expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-      expect(body.code).to.equal(0);
-      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        console.error(`Failed to check finalization of tx.`);
-      }
+  // NOTE(liayoo): Commenting out the test cases for the tx receipts. We can safely delete them once
+  //               we deprecate the feature completely.
+  // describe('Tx Receipts', () => {
+  //   it(`records a transaction receipt`, async () => {
+  //     const txSignerAddress = parseOrLog(syncRequest(
+  //         'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  //     const request = {
+  //       ref: '/apps/test/test_receipts/some/path',
+  //       value: "some value"
+  //     };
+  //     const body = parseOrLog(syncRequest(
+  //         'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+  //     assert.deepEqual(_.get(body, 'result.result.code'), 0);
+  //     expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+  //     expect(body.code).to.equal(0);
+  //     if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+  //       console.error(`Failed to check finalization of tx.`);
+  //     }
 
-      const receipt = parseOrLog(syncRequest(
-          'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(body.result.tx_hash)}`)
-          .body.toString('utf-8')).result;
-      assert.deepEqual(receipt.address, txSignerAddress);
-      assert.deepEqual(receipt.exec_result, {
-        "code": 0,
-        "gas_amount_charged": 0,
-        "gas_cost_total": 0
-      });
-    });
+  //     const receipt = parseOrLog(syncRequest(
+  //         'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(body.result.tx_hash)}`)
+  //         .body.toString('utf-8')).result;
+  //     assert.deepEqual(receipt.address, txSignerAddress);
+  //     assert.deepEqual(receipt.exec_result, {
+  //       "code": 0,
+  //       "gas_amount_charged": 0,
+  //       "gas_cost_total": 0
+  //     });
+  //   });
 
-    it('failed transaction', async () => {
-      const server1Address = parseOrLog(syncRequest(
-        'GET', server1 + '/get_address').body.toString('utf-8')).result;
-      const server2Address = parseOrLog(syncRequest(
-        'GET', server2 + '/get_address').body.toString('utf-8')).result;
-      const failingTx = {
-        ref: `/transfer/${server1Address}/${server2Address}/${Date.now()}/value`,
-        value: 10000000000,
-        gas_price: 1
-      }
-      const body = parseOrLog(syncRequest(
-        'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
-      assert.deepEqual(body.result.result.code, 12103);
-      assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
-      assert.deepEqual(body.result.result.gas_amount_total, {
-        "bandwidth": {
-          "service": 1
-        },
-        "state": {
-          "service": 0
-        }
-      });
-      assert.deepEqual(body.result.result.gas_cost_total, 0.000001);
+  //   it('failed transaction', async () => {
+  //     const server1Address = parseOrLog(syncRequest(
+  //       'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  //     const server2Address = parseOrLog(syncRequest(
+  //       'GET', server2 + '/get_address').body.toString('utf-8')).result;
+  //     const failingTx = {
+  //       ref: `/transfer/${server1Address}/${server2Address}/${Date.now()}/value`,
+  //       value: 10000000000,
+  //       gas_price: 1
+  //     }
+  //     const body = parseOrLog(syncRequest(
+  //       'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
+  //     assert.deepEqual(body.result.result.code, 12103);
+  //     assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
+  //     assert.deepEqual(body.result.result.gas_amount_total, {
+  //       "bandwidth": {
+  //         "service": 1
+  //       },
+  //       "state": {
+  //         "service": 0
+  //       }
+  //     });
+  //     assert.deepEqual(body.result.result.gas_cost_total, 0.000001);
       
-      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        console.error(`Failed to check finalization of tx.`);
-      }
+  //     if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+  //       console.error(`Failed to check finalization of tx.`);
+  //     }
 
-      // Failed tx's receipt is in state
-      const txHash = body.result.tx_hash;
-      const receipt = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
-      expect(receipt).to.not.equal(null);
-      assert.deepEqual(receipt.exec_result, DB.trimExecutionResult(body.result.result));
+  //     // Failed tx's receipt is in state
+  //     const txHash = body.result.tx_hash;
+  //     const receipt = parseOrLog(syncRequest(
+  //       'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
+  //     expect(receipt).to.not.equal(null);
+  //     assert.deepEqual(receipt.exec_result, DB.trimExecutionResult(body.result.result));
 
-      // Failed tx's gas fees have been collected
-      const blockNumber = receipt.block_number;
-      const gasFeeCollected = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=/gas_fee/collect/${blockNumber}/${server1Address}/${txHash}/amount`
-      ).body.toString('utf-8')).result;
-      assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
+  //     // Failed tx's gas fees have been collected
+  //     const blockNumber = receipt.block_number;
+  //     const gasFeeCollected = parseOrLog(syncRequest(
+  //       'GET', server2 + `/get_value?ref=/gas_fee/collect/${blockNumber}/${server1Address}/${txHash}/amount`
+  //     ).body.toString('utf-8')).result;
+  //     assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
 
-      // Failed tx is in a block
-      const block = getBlockByNumber(server2, blockNumber);
-      expect(block).to.not.equal(undefined);
-      expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
-    });
-  });
+  //     // Failed tx is in a block
+  //     const block = getBlockByNumber(server2, blockNumber);
+  //     expect(block).to.not.equal(undefined);
+  //     expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
+  //   });
+  // });
 });
