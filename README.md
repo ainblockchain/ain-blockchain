@@ -150,22 +150,22 @@ bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 
 ### Running with Docker
 
-- Build Docker image
+- Pull Docker image from Docker Hub
 ```
-docker build -t ain-blockchain .
+docker pull ainblockchain/ain-blockchain:(mainnet|summer|spring|sandbox|staging|exp|dev)
+docker pull ainblockchain/ain-blockchain:(mainnet|summer|spring|sandbox|staging|exp|dev)-(package-version)
 ```
-- Pull Docker image
+- Or build Docker image yourself
 ```
-docker pull ainblockchain/ain-blockchain
+docker build -t ain-blockchain --build-arg SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev) .
 ```
 - Run with Docker image example
 ```
-docker run -e SEASON=mainnet -e SYNC_MODE=fast -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:latest
-docker run -e SEASON=dev -e SYNC_MODE=peer -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e SYNC_MODE=fast -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
+docker run -e SYNC_MODE=peer -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
 ```
 Each environment variables have the following options.
 ```
--e SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev)
 -e SYNC_MODE=(fast|full|peer)
 -e ENABLE_REST_FUNCTION_CALL=(true|false)
 -e STAKE=(your_target_stake)
