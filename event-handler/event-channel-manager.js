@@ -94,7 +94,7 @@ class EventChannelManager {
     const clientFilterId = messageData.id;
     if (this.eventHandler.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
       throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT,
-          `The number of event channels exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`);
+          `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`);
     }
     const eventType = messageData.type;
     if (!eventType) {
