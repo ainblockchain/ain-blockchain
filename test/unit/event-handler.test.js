@@ -107,6 +107,8 @@ describe('EventHandler Test', () => {
       assert.deepEqual(networkInfo, {
         maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
         numEventChannels: 0,
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
         url: intUrl.toString(),
         port: NodeConfigs.EVENT_HANDLER_PORT,
       });
