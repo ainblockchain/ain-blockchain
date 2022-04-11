@@ -35,6 +35,10 @@ class EventHandler {
     return this.eventChannelManager.getNumEventChannels() < NodeConfigs.MAX_NUM_EVENT_CHANNELS;
   }
 
+  getNumEventFilters() {
+    return Object.keys(this.eventFilters).length;
+  }
+
   getFilterInfo() {
     const filterInfo = {};
     for (const [filterId, filter] of Object.entries(this.eventFilters)) {
