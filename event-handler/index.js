@@ -32,7 +32,13 @@ class EventHandler {
   }
 
   getEventHandlerHealth() {
-    return this.eventChannelManager.getNumEventChannels() < NodeConfigs.MAX_NUM_EVENT_CHANNELS;
+    if (this.eventChannelManager.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+      return false;
+    }
+    if (this.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
+      return false;
+    }
+    return true;
   }
 
   getNumEventFilters() {
