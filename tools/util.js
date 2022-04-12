@@ -4,9 +4,9 @@ const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
-function signAndSendTx(endpointUrl, txBody, privateKey) {
+function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
   console.log('\n*** signAndSendTx():');
-  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, 2); // TODO(liayoo): get chainId from configs / command line input
+  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, chainId);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
