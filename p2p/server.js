@@ -99,6 +99,8 @@ class P2pServer {
         P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
         P2pUtil.closeSocketSafe(this.inbound, socket);
       }
+      console.log(this.client.p2pState, Object.keys(this.client.outbound), this.client.peerConnectionsInProgress);
+      console.log(Object.keys(this.inbound), this.peerConnectionsInProgress);
     });
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
@@ -722,6 +724,8 @@ class P2pServer {
       if (address in this.client.outbound) {
         P2pUtil.closeSocketSafeByAddress(this.client.outbound, address);
       }
+      console.log(this.client.p2pState, Object.keys(this.client.outbound), this.client.peerConnectionsInProgress);
+      console.log(Object.keys(this.inbound), this.peerConnectionsInProgress);
       logger.info(`Disconnected from a peer: ${address || url}`);
     });
 

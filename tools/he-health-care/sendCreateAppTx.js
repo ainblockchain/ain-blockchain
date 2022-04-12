@@ -12,6 +12,7 @@ function buildCreateAppTxBody(appName, timestamp) {
         },
       },
     },
+    gas_price: 500,
     timestamp,
     nonce: -1,
   };

@@ -1,9 +1,9 @@
 module.exports = {
-  serviceOwnerAddr: '0xb2585543Cfcfb79CF73a1a14b2DfBC411913940F',
-  serviceOwnerPrivateKey: 'd910c1835eaa89f15452aa3f0bd95f61fb9a04464150e37d617a40ed0071558c',
-  userAddr: '0x282cc0b0c38Bcf800F4CD620F5476F9960837E3A',
-  userPrivateKey: 'd64c90a4c5c07418c3db8da0cb786f341ba59fa10550babfbd40c8f6f8c57b81',
-  endpointUrl: 'http://localhost:8081',
-  healthCareAppName: 'he_health_care',
+  serviceOwnerAddr: '0xAAAf6f50A0304F12119D218b94bea8082642515B',
+  serviceOwnerPrivateKey: 'a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba',
+  userAddr: '0xAAAf6f50A0304F12119D218b94bea8082642515B',
+  userPrivateKey: 'a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba',
+  endpointUrl: 'https://dev-api.ainetwork.ai',
+  healthCareAppName: '_test',
   healthCareServiceName: 'https://ainetwork.ai',
 };

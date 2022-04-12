@@ -6,7 +6,7 @@ const CommonUtil = require('../common/common-util');
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, 0); // TODO(liayoo): get chainId from configs / command line input
+  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, 2); // TODO(liayoo): get chainId from configs / command line input
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
