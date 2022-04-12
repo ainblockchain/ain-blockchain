@@ -162,13 +162,12 @@ docker build -t ain-blockchain --build-arg SEASON={mainnet|summer|spring|sandbox
 ```
 - Run with Docker image example
 ```
-docker run -e SYNC_MODE=fast -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
-docker run -e SYNC_MODE=peer -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
+docker run -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
+docker run -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
 ```
-Each environment variables have the following options.
+You can use some environment variables, and these have the following options.
 ```
 -e SYNC_MODE={fast|full|peer}
--e ENABLE_REST_FUNCTION_CALL={true|false}
 -e STAKE=<YOUR_TARGET_STAKE>
 ```
 After the node is executed, you should inject your account into the node.
