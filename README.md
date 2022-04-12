@@ -150,14 +150,15 @@ bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 
 ### Running with Docker
 
-- Pull Docker image from Docker Hub
+- Pull Docker image from [Docker Hub](https://hub.docker.com/repository/docker/ainblockchain/ain-blockchain)
 ```
-docker pull ainblockchain/ain-blockchain:(mainnet|summer|spring|sandbox|staging|exp|dev)
-docker pull ainblockchain/ain-blockchain:(mainnet|summer|spring|sandbox|staging|exp|dev)-(package-version)
+docker pull ainblockchain/ain-blockchain:dev
+docker pull ainblockchain/ain-blockchain:dev-1.0.6
+docker pull ainblockchain/ain-blockchain:{mainnet|summer|spring|sandbox|staging|exp|dev}-<PACKAGE_VERSION>
 ```
 - Or build Docker image yourself
 ```
-docker build -t ain-blockchain --build-arg SEASON=(mainnet|summer|spring|sandbox|staging|exp|dev) .
+docker build -t ain-blockchain --build-arg SEASON={mainnet|summer|spring|sandbox|staging|exp|dev} .
 ```
 - Run with Docker image example
 ```
@@ -166,9 +167,9 @@ docker run -e SYNC_MODE=peer -e ENABLE_REST_FUNCTION_CALL=true -e STAKE=10000 --
 ```
 Each environment variables have the following options.
 ```
--e SYNC_MODE=(fast|full|peer)
--e ENABLE_REST_FUNCTION_CALL=(true|false)
--e STAKE=(your_target_stake)
+-e SYNC_MODE={fast|full|peer}
+-e ENABLE_REST_FUNCTION_CALL={true|false}
+-e STAKE=<YOUR_TARGET_STAKE>
 ```
 After the node is executed, you should inject your account into the node.
 ```
@@ -178,8 +179,8 @@ node inject_account_gcp.js <NODE_ENDPOINT_URL> --mnemonic
 ```
 If you want to inject your account automatically, add one of these environment variables before running the node.
 ```
--e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=(your_private_key)
--e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" -e PASSWORD=(your_password)
+-e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=<YOUR_PRIVATE_KEY>
+-e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" -e PASSWORD=<YOUR_PASSWORD>
 -e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic"
 ```
 
