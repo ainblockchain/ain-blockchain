@@ -864,8 +864,6 @@ class P2pClient {
       if (address in this.server.inbound) {
         P2pUtil.closeSocketSafeByAddress(this.server.inbound, address);
       }
-      console.log(this.p2pState, Object.keys(this.outbound), this.peerConnectionsInProgress);
-      console.log(Object.keys(this.server.inbound), this.server.peerConnectionsInProgress);
       logger.info(`Disconnected from a peer: ${address || socket.url}`);
     });
 
@@ -1301,8 +1299,6 @@ class P2pClient {
         P2pUtil.addPeerConnection(this.peerConnectionsInProgress, url);
         this.updateP2pState();
         this.setTimerForPeerAddressResponse(socket);
-        console.log(this.p2pState, Object.keys(this.outbound), this.peerConnectionsInProgress);
-        console.log(Object.keys(this.server.inbound), this.server.peerConnectionsInProgress);
       }
     });
   }
