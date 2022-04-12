@@ -162,11 +162,12 @@ docker build -t ain-blockchain --build-arg SEASON={mainnet|summer|spring|sandbox
 ```
 - Run with Docker image example
 ```
-docker run -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
-docker run -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
+docker run -e ACCOUNT_INJECTION_OPTION=private_key -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
+docker run -e ACCOUNT_INJECTION_OPTION=keystore -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
 ```
 You can use some environment variables, and these have the following options.
 ```
+-e ACCOUNT_INJECTION_OPTION={private_key|keystore|mnemonic}
 -e SYNC_MODE={fast|full|peer}
 -e STAKE=<YOUR_TARGET_STAKE>
 ```
