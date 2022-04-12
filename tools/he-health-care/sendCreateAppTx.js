@@ -20,12 +20,11 @@ function buildCreateAppTxBody(appName, timestamp) {
 
 function usage() {
   console.log('\nExample commandlines:\n  node sendCreateAppTx.js chainId\n');
-  process.exit(0);
 }
 
 async function main() {
   // TODO(cshcomcom): Support 'node sendCreateAppTx.js chainId <config_filename>' and check args
-  if (process.argv.length !== 2 && process.argv.length !== 3) {
+  if (process.argv.length !== 3) {
     usage();
     process.exit(0);
   }
