@@ -10,6 +10,7 @@ function buildSetValueTxBody(appName, timestamp) {
       value: dummy,
     },
     timestamp,
+    gas_price: 500,
     nonce: -1,
   };
 }

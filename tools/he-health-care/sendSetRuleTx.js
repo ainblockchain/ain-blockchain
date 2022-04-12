@@ -13,6 +13,7 @@ function buildSetRuleTxBody(appName, timestamp) {
       },
     },
     timestamp,
+    gas_price: 500,
     nonce: -1,
   };
 }
