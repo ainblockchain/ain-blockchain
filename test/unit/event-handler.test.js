@@ -67,12 +67,14 @@ describe('EventHandler Test', () => {
 
       it('create and register with right config', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+        const now = Date.now();
+        eventHandler.createAndRegisterEventFilter(now, now,
             BlockchainEventTypes.BLOCK_FINALIZED, {
               block_number: 100,
             });
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        eventHandler.deregisterEventFilter(now, now);
       });
 
       it('create and register with wrong config', () => {
@@ -107,6 +109,8 @@ describe('EventHandler Test', () => {
       assert.deepEqual(networkInfo, {
         maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
         numEventChannels: 0,
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
         url: intUrl.toString(),
         port: NodeConfigs.EVENT_HANDLER_PORT,
       });
