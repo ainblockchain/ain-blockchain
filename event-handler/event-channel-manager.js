@@ -97,7 +97,7 @@ class EventChannelManager {
           `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`,
           null, clientFilterId);
     }
-    if (channel.getAllFilterIds().length >= NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
+    if (channel.getFilterIdsSize() >= NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
       throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT_PER_CHANNEL,
           `The number of event filters exceeds its limit per channel ` +
           `(${NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL})`, null, clientFilterId);
