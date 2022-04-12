@@ -15,6 +15,25 @@ fi
 
 SEASON="$1"
 
+# Get confirmation.
+if [[ "$SEASON" = "mainnet" ]]; then
+    printf "\n"
+    printf "Do you want to proceed for $SEASON? Enter [mainnet]: "
+    read CONFIRM
+    printf "\n\n"
+    if [[ ! $CONFIRM = "mainnet" ]]
+    then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+else
+    printf "\n"
+    read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
+    printf "\n\n"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+fi
+
 IMAGE_NAME=ainblockchain/ain-blockchain:$SEASON
 PACKAGE_VERSION=$(jq -r '.version' < package.json)
 IMAGE_NAME_WITH_VERSION=$IMAGE_NAME-$PACKAGE_VERSION
