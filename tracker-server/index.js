@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 8080;
 const tracker = new Tracker();
 
 const app = express();
-const jsonRpcMethods = require('./json-rpc')(tracker);
+const jsonRpcMethods = require('./json-rpc')(tracker, logger);
 app.use(express.json());
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
