@@ -1,4 +1,6 @@
 'use strict';
+const { getGraphData } = require('./network-topology');
+
 /**
  * Defines the list of funtions which are accessibly to clients through the
  * JSON-RPC calls
@@ -7,7 +9,7 @@
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(tracker) {
+module.exports = function getMethods(tracker, logger) {
   const blockchainNodes = tracker.blockchainNodes;
   return {
     getNodeInfoList: function(args, done) {
@@ -41,6 +43,14 @@ module.exports = function getMethods(tracker) {
       const nodeInfo = args;
       tracker.setBlockchainNode(nodeInfo);
       done(null);
+    },
+
+    getNetworkTopology: function(args, done) {
+      const networkStatus = tracker.getNetworkStatus();
+      const graphData = getGraphData(networkStatus);
+      args.isError ? logger.error(`Network Topology:\n${JSON.stringify(graphData)}`) :
+          logger.info(`Network Topology:\n${JSON.stringify(graphData)}`);
+      done(null, graphData);
     }
   };
 };
