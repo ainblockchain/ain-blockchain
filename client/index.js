@@ -14,13 +14,17 @@ const P2pClient = require('../p2p');
 const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
-const { convertIpv6ToIpv4 } = require('../common/network-util');
+const {
+  convertIpv6ToIpv4,
+  sendGetRequest
+} = require('../common/network-util');
 const {
   BlockchainConsts,
   NodeConfigs,
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  DevFlags
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
 
@@ -89,9 +93,17 @@ app.get('/health_check', (req, res, next) => {
 });
 
 // Exports metrics for Prometheus.
-app.get('/metrics', (req, res, next) => {
+app.get('/metrics', async (req, res, next) => {
   const beginTime = Date.now();
-  const result = CommonUtil.objToMetrics(p2pClient.getStatus());
+  const status = p2pClient.getStatus();
+  const result = CommonUtil.objToMetrics(status);
+  if (DevFlags.enableNetworkTopologyLoggingForUnhealthyConsensus) {
+    const consensusStatusHealth = status.consensusStatus.health;
+    if (!consensusStatusHealth) {
+      await sendGetRequest(
+          NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'getNetworkTopology', { isError: true });
+    }
+  }
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
