@@ -48,8 +48,7 @@ module.exports = function getMethods(tracker, logger) {
     getNetworkTopology: function(args, done) {
       const networkStatus = tracker.getNetworkStatus();
       const graphData = getGraphData(networkStatus);
-      args.isError ? logger.error(`Network Topology:\n${JSON.stringify(graphData)}`) :
-          logger.info(`Network Topology:\n${JSON.stringify(graphData)}`);
+      if (args.isError) logger.error(`Network Topology:\n${JSON.stringify(graphData)}`);
       done(null, graphData);
     }
   };
