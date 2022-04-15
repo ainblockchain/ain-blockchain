@@ -97,10 +97,12 @@ app.get('/metrics', async (req, res, next) => {
   const beginTime = Date.now();
   const status = p2pClient.getStatus();
   const result = CommonUtil.objToMetrics(status);
-  const consensusStatusHealth = status.consensusStatus.health;
-  if (!consensusStatusHealth && DevFlags.enableNetworkTopologyLoggingForUnhealthyConsensus) {
-    await sendGetRequest(
-        NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'getNetworkTopology', { isError: true });
+  if (DevFlags.enableNetworkTopologyLoggingForUnhealthyConsensus) {
+    const consensusStatusHealth = status.consensusStatus.health;
+    if (!consensusStatusHealth) {
+      await sendGetRequest(
+          NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'getNetworkTopology', { isError: true });
+    }
   }
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
