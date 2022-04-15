@@ -33,6 +33,8 @@ const DevFlags = {
   enableGetStateFreeTierUsageOptimization: true,
   // Enables transaction bandwidth check per block
   enableTxBandwidthCheckPerBlock: true,
+  // Enables ntpsync library.
+  enableNtpSync: false,
 };
 
 // ** Blockchain configs **
