@@ -24,6 +24,7 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  DevFlags
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
 
@@ -97,7 +98,7 @@ app.get('/metrics', async (req, res, next) => {
   const status = p2pClient.getStatus();
   const result = CommonUtil.objToMetrics(status);
   const consensusStatusHealth = status.consensusStatus.health;
-  if (!consensusStatusHealth) {
+  if (!consensusStatusHealth && DevFlags.enableNetworkTopologyLoggingForUnhealthyConsensus) {
     await sendGetRequest(
         NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'getNetworkTopology', { isError: true });
   }
