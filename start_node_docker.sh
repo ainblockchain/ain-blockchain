@@ -27,8 +27,6 @@ fi
 if [[ -z "$ACCOUNT_INJECTION_OPTION" ]]; then
     printf "You must provide a ACCOUNT_INJECTION_OPTION\n"
     exit
-fi
-
 elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
     if [[ -z "$PRIVATE_KEY" ]]; then
         printf 'You should manually inject your account into this node.\n'
