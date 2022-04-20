@@ -52,6 +52,9 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
         } | node inject_account_gcp.js $NODE_ENDPOINT --mnemonic
         unset MNEMONIC
     fi
+else
+    printf "Invalid ACCOUNT_INJECTION_OPTION:"$ACCOUNT_INJECTION_OPTION"\n"
+    exit
 fi
 
 printf 'Done\n'
