@@ -14,7 +14,8 @@ elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 fi
 
-nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
+IGNORE_KEYSTORE_FILE_PATH=true \
+    nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
 
 sleep 1
 
@@ -35,12 +36,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
         unset PRIVATE_KEY
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
-    # TODO(kriii): Support keystore file upload.
-    if [[ -z "$KEYSTORE_FILE_PATH" ]]; then
-        printf "Must provide a KEYSTORE_FILE_PATH\n"
-        exit
-    fi
-    if [[ -z "$PASSWORD" ]]; then
+    if [[ -z "$KEYSTORE_FILE_PATH" ]] || [[ -z "$PASSWORD" ]]; then
         printf 'You should manually inject your account into this node.\n'
     else
         echo $PASSWORD | node inject_account_gcp.js $NODE_ENDPOINT --keystore
