@@ -82,7 +82,7 @@ class BlockchainNode {
     const LOG_HEADER = 'initAccount';
     switch (NodeConfigs.ACCOUNT_INJECTION_OPTION) {
       case 'keystore':
-        if (!NodeConfigs.KEYSTORE_FILE_PATH) {
+        if (!NodeConfigs.IGNORE_KEYSTORE_FILE_PATH && !NodeConfigs.KEYSTORE_FILE_PATH) {
           throw Error(
               `[${LOG_HEADER}] Must specify KEYSTORE_FILE_PATH as a process env or in node_params.json`);
         }
@@ -137,7 +137,7 @@ class BlockchainNode {
     }
   }
 
-  async injectAccountFromKeystore(encryptedPassword) {
+  async injectAccountFromKeystore(encryptedPassword, encryptedKeystore) {
     const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
@@ -145,7 +145,10 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = NodeConfigs.IGNORE_KEYSTORE_FILE_PATH ?
+          ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(
+          await ainUtil.decryptWithPrivateKey(this.bootstrapAccount.private_key, encryptedKeystore), password)) :
+          FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
