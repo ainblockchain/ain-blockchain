@@ -147,8 +147,8 @@ class BlockchainNode {
           this.bootstrapAccount.private_key, encryptedPassword);
       const accountFromKeystore = NodeConfigs.IGNORE_KEYSTORE_FILE_PATH ?
           ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(
-          await ainUtil.decryptWithPrivateKey(this.bootstrapAccount.private_key, encryptedKeystore), password)) :
-          FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
+              await ainUtil.decryptWithPrivateKey(this.bootstrapAccount.private_key, encryptedKeystore), password))
+          : FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
