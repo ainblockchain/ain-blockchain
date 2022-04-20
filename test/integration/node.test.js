@@ -3269,10 +3269,12 @@ describe('Blockchain Node', () => {
           signature: signature + '0', // invalid signature
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
-          assert.deepEqual(res.result.result.result, {
-            "message": "[executeTransactionAndAddToPool] Invalid signature",
-            "code": 10703,
-            "bandwidth_gas_amount": 0
+          assert.deepEqual(res.result, {
+            result: {
+              code: 30304,
+              message: `Invalid transaction signature.`,
+            },
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -3753,7 +3755,7 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('rejects a batch transaction of invalid transaction format.', () => {
+      it('rejects a batch transaction of invalid format.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
@@ -3825,65 +3827,13 @@ describe('Blockchain Node', () => {
           ],
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
-          res.result.result.forEach((res) => {
-            res.tx_hash = 'erased';
+          assert.deepEqual(res.result, {
+            result: {
+              code: 30406,
+              message: `Invalid signature of transaction[1].`
+            },
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
-          assert.deepEqual(res.result.result, [
-            {
-              "tx_hash": "erased",
-              "result": {
-                "gas_amount_total": {
-                  "bandwidth": {
-                    "service": 0,
-                    "app": {
-                      "test": 1
-                    }
-                  },
-                  "state": {
-                    "service": 0,
-                    "app": {
-                      "test": 380
-                    }
-                  }
-                },
-                "gas_cost_total": 0,
-                "code": 0,
-                "bandwidth_gas_amount": 1,
-                "gas_amount_charged": 0
-              }
-            },
-            {
-              "tx_hash": "erased",
-              "result": {
-                "message": "[executeTransactionAndAddToPool] Invalid signature",
-                "code": 10703,
-                "bandwidth_gas_amount": 0
-              }
-            },
-            {
-              "tx_hash": "erased",
-              "result": {
-                "gas_amount_total": {
-                  "bandwidth": {
-                    "service": 0,
-                    "app": {
-                      "test": 1
-                    }
-                  },
-                  "state": {
-                    "service": 0,
-                    "app": {
-                      "test": 178
-                    }
-                  }
-                },
-                "gas_cost_total": 0,
-                "code": 0,
-                "bandwidth_gas_amount": 1,
-                "gas_amount_charged": 0
-              }
-            }
-          ]);
         })
       })
     })
