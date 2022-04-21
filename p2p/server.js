@@ -602,6 +602,12 @@ class P2pServer {
                       `${JSON.stringify(subTx, null, 2)}`);
                   continue;
                 }
+                if (!NodeConfigs.LIGHTWEIGHT &&
+                    !Transaction.verifyTransaction(createdTx, chainId)) {
+                  logger.info(`[${LOG_HEADER}] Invalid signature of subTx: ` +
+                      `${JSON.stringify(subTx, null, 2)}`);
+                  continue;
+                }
                 newTxList.push(createdTx);
               }
               if (newTxList.length > 0) {
@@ -611,6 +617,10 @@ class P2pServer {
               const createdTx = Transaction.create(tx.tx_body, tx.signature, chainId);
               if (!createdTx) {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
+                    `${JSON.stringify(tx, null, 2)}`);
+              } else if (!NodeConfigs.LIGHTWEIGHT &&
+                  !Transaction.verifyTransaction(createdTx, chainId)) {
+                logger.info(`[${LOG_HEADER}] Invalid signature of tx: ` +
                     `${JSON.stringify(tx, null, 2)}`);
               } else {
                 this.executeAndBroadcastTransaction(createdTx, txTags);
