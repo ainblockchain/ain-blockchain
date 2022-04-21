@@ -603,6 +603,7 @@ class P2pServer {
                   continue;
                 }
                 if (!NodeConfigs.LIGHTWEIGHT &&
+                    NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
                     !Transaction.verifyTransaction(createdTx, chainId)) {
                   logger.info(`[${LOG_HEADER}] Invalid signature of subTx: ` +
                       `${JSON.stringify(subTx, null, 2)}`);
@@ -619,6 +620,7 @@ class P2pServer {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
                     `${JSON.stringify(tx, null, 2)}`);
               } else if (!NodeConfigs.LIGHTWEIGHT &&
+                  NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
                   !Transaction.verifyTransaction(createdTx, chainId)) {
                 logger.info(`[${LOG_HEADER}] Invalid signature of tx: ` +
                     `${JSON.stringify(tx, null, 2)}`);
