@@ -761,13 +761,13 @@ class BlockchainNode {
           TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!NodeConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx, chainId)) {
-        return CommonUtil.logAndReturnTxResult(
-            logger,
-            TxResultCode.TX_INVALID_SIGNATURE,
-            `[${LOG_HEADER}] Invalid signature`);
-      }
+    if (!NodeConfigs.LIGHTWEIGHT &&
+        !NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
+        !Transaction.verifyTransaction(executableTx, chainId)) {
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_INVALID_SIGNATURE,
+          `[${LOG_HEADER}] Invalid signature`);
     }
     if (!this.tp.hasPerAccountRoom(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
