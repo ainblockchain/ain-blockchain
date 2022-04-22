@@ -108,15 +108,15 @@ module.exports = function getTransactionApis(node, p2pServer) {
             }
           }));
         } else {
-          if (!NodeConfigs.LIGHTWEIGHT) {
-            if (!Transaction.verifyTransaction(createdTx, chainId)) {
-              done(null, JsonRpcUtil.addProtocolVersion({
-                result: {
-                  code: JsonRpcApiResultCode.TX_INVALID_SIGNATURE,
-                  message: `Invalid transaction signature.`
-                }
-              }));
-            }
+          if (!NodeConfigs.LIGHTWEIGHT &&
+              NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
+              !Transaction.verifyTransaction(createdTx, chainId)) {
+            done(null, JsonRpcUtil.addProtocolVersion({
+              result: {
+                code: JsonRpcApiResultCode.TX_INVALID_SIGNATURE,
+                message: `Invalid transaction signature.`
+              }
+            }));
           }
           const result = p2pServer.executeAndBroadcastTransaction(createdTx);
           const latency = Date.now() - beginTime;
@@ -186,15 +186,16 @@ module.exports = function getTransactionApis(node, p2pServer) {
             }));
             return;
           }
-          if (!NodeConfigs.LIGHTWEIGHT) {
-            if (!Transaction.verifyTransaction(createdTx, chainId)) {
-              done(null, JsonRpcUtil.addProtocolVersion({
-                result: {
-                  code: JsonRpcApiResultCode.BATCH_TX_INVALID_SIGNATURE,
-                  message: `Invalid signature of transaction[${i}].`
-                }
-              }));
-            }
+          if (!NodeConfigs.LIGHTWEIGHT &&
+              NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
+              !Transaction.verifyTransaction(createdTx, chainId)) {
+            done(null, JsonRpcUtil.addProtocolVersion({
+              result: {
+                code: JsonRpcApiResultCode.BATCH_TX_INVALID_SIGNATURE,
+                message: `Invalid signature of transaction[${i}].`
+              }
+            }));
+            return;
           }
           txList.push(createdTx);
         }
