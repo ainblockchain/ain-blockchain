@@ -2834,7 +2834,7 @@ describe("DB operations", () => {
           value: {
             "new": 12345
           }
-        }, { addr: 'abcd' }, null, { extra: { executed_at: timestamp }}), {
+        }, { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }}), {
           "code": 0,
           "bandwidth_gas_amount": 1
         });
@@ -2893,7 +2893,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -2911,7 +2911,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
-            timestamp, tx), {
+            null, timestamp, tx), {
           "func_results": {
             "_saveLastTx": {
               "op_results": {
@@ -2993,7 +2993,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -3011,7 +3011,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
-            timestamp, tx), {
+            null, timestamp, tx), {
           "func_results": {
             "_saveLastTx": {
               "op_results": {
@@ -3086,7 +3086,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -3104,7 +3104,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
-            timestamp, tx), {
+            null, timestamp, tx), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "subtree_func_results": {
@@ -3209,7 +3209,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -3227,7 +3227,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
-            timestamp, tx), {
+            null, timestamp, tx), {
           "bandwidth_gas_amount": 1,
           "code": 10105,
           "message": "Triggered subtree function call failed",
@@ -3346,7 +3346,7 @@ describe("DB operations", () => {
               }
             }
           }
-        ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { extra: { executed_at: timestamp }}), {
+        ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, { extra: { executed_at: timestamp }}), {
           "result_list": {
             "0": {
               "code": 0,
@@ -3512,7 +3512,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -3542,7 +3542,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
-            { addr: 'abcd' }, timestamp, tx), {
+            { addr: 'abcd' }, null, timestamp, tx), {
           "result_list": {
             "0": {
               "func_results": {
@@ -3634,7 +3634,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        ], { addr: 'abcd' }, null, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -3664,7 +3664,7 @@ describe("DB operations", () => {
         expect(tx).to.not.equal(null);
 
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
-            { addr: 'abcd' }, timestamp, tx), {
+            { addr: 'abcd' }, null, timestamp, tx), {
           "result_list": {
             "0": {
               "func_results": {
