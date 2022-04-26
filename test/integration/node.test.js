@@ -2985,11 +2985,17 @@ describe('Blockchain Node', () => {
         public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
       };
 
-      // for account registration gas amount
+      // for account registration gas amount (single set)
       const account2 = {
         address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
         private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
         public_key: "1e8de35ac153fa52cb61a7e887463c205b0121be659803e9f69dddcae8dfb5a3d4c96570c5c3fafa5755b89a90eb58a2041f8da9d909b9c4b6813c3832d1254a"
+      };
+      // for account registration gas amount (multi set)
+      const account3 = {
+        address: "0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974",
+        private_key: "63200d28b05377f983103b1ac45a379b3d424c415f8a705c7cdd6365f7e828ea",
+        public_key: "0760186e6d1a37107217d68e491b4a4bd89e3b6642acfcf4b320acef24d5d0de1d33bcabd2e868776879c4776937a6785e71ee963efb40c4cf09283b542006ca"
       };
 
       before(async () => {
@@ -2997,7 +3003,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result[".rule"]["write"];
         const newOwners = parseOrLog(syncRequest('GET', server1 + '/get_owner?ref=/apps/test')
           .body.toString('utf-8')).result[".owner"];
-        const newRule = `${currentRule} || auth.addr === '${account.address}' || auth.addr === '${account2.address}'`;
+        const newRule = `${currentRule} || auth.addr === '${account.address}' || auth.addr === '${account2.address}' || auth.addr === '${account3.address}'`;
         newOwners["owners"][account.address] = {
           "branch_owner": true,
           "write_owner": true,
@@ -3279,6 +3285,160 @@ describe('Blockchain Node', () => {
                     }
                   },
                   gas_cost_total: 0,
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a multi-set transaction with account registration gas amount', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account3.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: 'SET_VALUE',
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 5'
+                },
+                {
+                  // Default type: SET_VALUE
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 6'
+                },
+              ],
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account3.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2002
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                  result_list: {
+                    0: {
+                      bandwidth_gas_amount: 2001,
+                      code: 0
+                    },
+                    1: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    }
+                  }
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a multi-set transaction without account registration gas amount', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account3.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: 'SET_VALUE',
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 7'
+                },
+                {
+                  // Default type: SET_VALUE
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 8'
+                },
+              ],
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account3.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                  result_list: {
+                    0: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    },
+                    1: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    }
+                  }
                 },
                 tx_hash: CommonUtil.hashSignature(signature),
               }
