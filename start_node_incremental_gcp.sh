@@ -93,8 +93,6 @@ fi
 # 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_UPDATE_JSON_RPC_URL, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
-KEYSTORE_DIR=testnet_dev_staging_keys
-
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
@@ -104,7 +102,6 @@ if [[ $SEASON = 'mainnet' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://104.199.237.250:8080/json-rpc"
     fi
-    KEYSTORE_DIR=mainnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
@@ -114,7 +111,6 @@ elif [[ $SEASON = 'summer' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
@@ -124,7 +120,6 @@ elif [[ $SEASON = 'spring' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     if [[ $NODE_INDEX -lt 5 ]]; then
@@ -223,7 +218,6 @@ fi
 
 printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
-printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
@@ -356,18 +350,6 @@ fi
 
 # 7. Start a new node server
 printf "\n#### [Step 7] Start new node server ####\n\n"
-
-if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
-    KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
-    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo cp $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
-        printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
-        eval $KEYSTORE_CMD
-    fi
-    export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
-    printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
-fi
 
 export STAKE=100000
 printf "STAKE=$STAKE\n"

@@ -53,12 +53,11 @@ async function injectAccount(endpointUrl, accountInjectionOption) {
         hidden: true
       })
       break;
-    case '--keystore-full':
+    case '--keystore':
       properties.push({
         name: 'keystorePath',
         description: 'Enter keystore path:',
       })
-    case '--keystore':
       properties.push({
         name: 'password',
         description: 'Enter password:',
@@ -109,13 +108,12 @@ async function injectAccount(endpointUrl, accountInjectionOption) {
         encryptedPrivateKey: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.privateKey)
       })
       break;
-    case '--keystore-full':
+    case '--keystore':
+      method = 'ain_injectAccountFromKeystore';
       const keystore = JSON.stringify(JSON.parse(fs.readFileSync(input.keystorePath)));
       Object.assign(params, {
         encryptedKeystore: await ainUtil.encryptWithPublicKey(bootstrapPubKey, keystore)
       })
-    case '--keystore':
-      method = 'ain_injectAccountFromKeystore';
       Object.assign(params, {
         encryptedPassword: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.password)
       })

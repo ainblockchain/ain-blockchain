@@ -14,8 +14,7 @@ elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 fi
 
-IGNORE_KEYSTORE_FILE_PATH=true \
-    nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
+nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
 
 sleep 1
 
@@ -39,7 +38,11 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     if [[ -z "$KEYSTORE_FILE_PATH" ]] || [[ -z "$PASSWORD" ]]; then
         printf 'You should manually inject your account into this node.\n'
     else
-        echo $PASSWORD | node inject_account_gcp.js $NODE_ENDPOINT --keystore
+        {
+            echo $KEYSTORE_FILE_PATH
+            sleep 1
+            echo $PASSWORD
+        } | node inject_account_gcp.js $NODE_ENDPOINT --keystore
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
     if [[ -z "$MNEMONIC" ]]; then
