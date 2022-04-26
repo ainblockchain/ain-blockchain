@@ -132,16 +132,18 @@ class BlockchainNode {
     }
   }
 
-  async injectAccountFromKeystore(encryptedPassword, encryptedKeystore) {
+  async injectAccountFromKeystore(encryptedKeystore, encryptedPassword) {
     const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
     }
     try {
+      const keystore = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedKeystore);
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(
-          await ainUtil.decryptWithPrivateKey(this.bootstrapAccount.private_key, encryptedKeystore), password));
+      const accountFromKeystore = ainUtil.privateToAccount(
+          ainUtil.v3KeystoreToPrivate(keystore, password));
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
