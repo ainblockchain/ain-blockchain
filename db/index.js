@@ -1296,7 +1296,18 @@ class DB {
     tx.setExtraField('gas', gasAmountTotal);
   }
 
+  checkIfNonExistingAccount(tx, auth) {
+    if (tx && auth && auth.addr && !auth.fid) {
+      const curAccountValue =
+          this.getValue(CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, auth.addr]));
+      return curAccountValue === null;
+    }
+    return false;
+  }
+
   executeOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime) {
+    const accountRegistrationGasAmount = DB.getBlockchainParam(
+        'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -1317,6 +1328,7 @@ class DB {
     }
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
+    const wasNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
     if (op.type === WriteDbOperations.SET) {
       Object.assign(
           result,
@@ -1324,6 +1336,15 @@ class DB {
     } else {
       Object.assign(
           result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime));
+    }
+    // Apply account registration gas amount for nonce and timestamp.
+    const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+    if (wasNonExistingAccount && isNonExistingAccount && nonce !== -1) {
+      if (op.type === WriteDbOperations.SET) {
+        // TODO(platfowner): Implement this.
+      } else {
+        result.bandwidth_gas_amount += accountRegistrationGasAmount;
+      }
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
