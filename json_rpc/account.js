@@ -30,7 +30,7 @@ module.exports = function getAccountApis(node, p2pServer) {
     ain_injectAccountFromKeystore: async function(args, done) {
       const beginTime = Date.now();
       let result = false;
-      if (await node.injectAccountFromKeystore(args.encryptedPassword, args.encryptedKeystore)) {
+      if (await node.injectAccountFromKeystore(args.encryptedKeystore, args.encryptedPassword)) {
         result = true;
         p2pServer.client.run();
       }
