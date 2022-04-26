@@ -242,6 +242,10 @@ class Transaction {
       logger.info(`Transaction body is in a non-standard format:\n${diffLines}\n`);
       return false;
     }
+    if (sanitized.operation.type === WriteDbOperations.SET &&
+        CommonUtil.isEmpty(sanitized.operation.op_list)) {
+      return false;
+    }
     return true;
   }
 
