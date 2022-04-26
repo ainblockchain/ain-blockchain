@@ -1341,7 +1341,8 @@ class DB {
     const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
     if (wasNonExistingAccount && isNonExistingAccount && nonce !== -1) {
       if (op.type === WriteDbOperations.SET) {
-        // TODO(platfowner): Implement this.
+        // NOTE: Empty op_list is not allowed (see isInStandardFormat()).
+        result.result_list[0].bandwidth_gas_amount += accountRegistrationGasAmount;
       } else {
         result.bandwidth_gas_amount += accountRegistrationGasAmount;
       }
