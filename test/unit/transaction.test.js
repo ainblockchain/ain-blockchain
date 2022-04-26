@@ -23,6 +23,8 @@ describe('Transaction', () => {
   let txBilling;
   let txBodyForNode;
   let txForNode;
+  let txBodyMultiSet;
+  let txMultiSet;
 
   beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
@@ -92,6 +94,28 @@ describe('Transaction', () => {
       gas_price: 1
     };
     txForNode = getTransaction(node, txBodyForNode);
+
+    txBodyMultiSet = {
+      operation: {
+        type: "SET",
+        op_list: [
+          {
+            type: 'SET_VALUE',
+            ref: 'path',
+            value: 'val',
+          },
+          {
+            // Default type: SET_VALUE
+            ref: 'path2',
+            value: 'val2',
+          },
+        ],
+      },
+      timestamp: 1568798344000,
+      nonce: 10,
+      gas_price: 1
+    };
+    txMultiSet = Transaction.fromTxBody(txBodyMultiSet, node.account.private_key);
   });
 
   afterEach(() => {
@@ -115,6 +139,12 @@ describe('Transaction', () => {
       expect(txParentHash.address).to.equal(node.account.address);
       expect(txParentHash.extra.created_at).to.not.equal(undefined);
       expect(txParentHash.extra.skip_verif).to.equal(undefined);
+
+      expect(txMultiSet).to.not.equal(null);
+      expect(txMultiSet.hash).to.equal(CommonUtil.hashTxBody(txBodyMultiSet));
+      expect(txMultiSet.address).to.equal(node.account.address);
+      expect(txMultiSet.extra.created_at).to.not.equal(undefined);
+      expect(txMultiSet.extra.skip_verif).to.equal(undefined);
     });
 
     it('fail with custom address', () => {
@@ -183,6 +213,12 @@ describe('Transaction', () => {
       txBody.billing = 'app_a|0|1';
       const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
+    });
+
+    it('fail with empty op_list', () => {
+      txBodyMultiSet.operation.op_list = [];
+      const tx4 = Transaction.fromTxBody(txBodyMultiSet, node.account.private_key);
+      assert.deepEqual(tx4, null);
     });
   });
 
@@ -272,6 +308,7 @@ describe('Transaction', () => {
       expect(Transaction.verifyTransaction(tx)).to.equal(true);
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(true);
       expect(Transaction.verifyTransaction(txForNode)).to.equal(true);
+      expect(Transaction.verifyTransaction(txMultiSet)).to.equal(true);
     });
 
     it('fail to verify a transaction with custom address', () => {
