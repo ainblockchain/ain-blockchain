@@ -698,12 +698,12 @@ class Functions {
     }
   }
 
-  isExistingAccount(addrOrServAcnt) {
+  isNonExistingAccount(addrOrServAcnt) {
     const accountPath = CommonUtil.isServAcntName(addrOrServAcnt) ?
         PathUtil.getServiceAccountPathFromAccountName(addrOrServAcnt) :
         PathUtil.getAccountPath(addrOrServAcnt);
     const curAccountValue = this.db.getValue(accountPath);
-    return curAccountValue !== null;
+    return curAccountValue === null;
   }
 
   _transfer(value, context) {
@@ -721,7 +721,7 @@ class Functions {
     }
     let extraGasAmount = 0;
     if (isEnabledTimerFlag('extend_account_registration_gas_amount', context.blockNumber)) {
-      if (!this.isExistingAccount(to)) {  // for either an individual or a service account.
+      if (this.isNonExistingAccount(to)) {  // for either an individual or a service account.
         extraGasAmount = context.accountRegistrationGasAmount;
       }
     } else {
