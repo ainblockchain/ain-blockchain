@@ -1403,10 +1403,10 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with timestamp");
       })
 
-      it('set_value with nonce unordered (-1)', async () => {
+      it('set_value with unordered nonce (-1)', async () => {
         const request = {
           ref: '/apps/test/test_value/some/path',
-          value: "some value with nonce unordered",
+          value: "some value with unordered nonce",
           nonce: -1,
         };
         const body = parseOrLog(syncRequest(
@@ -1422,7 +1422,7 @@ describe('Blockchain Node', () => {
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
             .body.toString('utf-8')).result;
-        assert.deepEqual(resultAfter, "some value with nonce unordered");
+        assert.deepEqual(resultAfter, "some value with unordered nonce");
       })
 
       it('set_value with numbered nonce', async () => {
@@ -2980,16 +2980,16 @@ describe('Blockchain Node', () => {
 
     describe('ain_sendSignedTransaction api', () => {
       const account = {
-        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
-        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
-        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+        address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
+        private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
+        public_key: "1e8de35ac153fa52cb61a7e887463c205b0121be659803e9f69dddcae8dfb5a3d4c96570c5c3fafa5755b89a90eb58a2041f8da9d909b9c4b6813c3832d1254a"
       };
 
       // for account registration gas amount (single set)
       const account2 = {
-        address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
-        private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
-        public_key: "1e8de35ac153fa52cb61a7e887463c205b0121be659803e9f69dddcae8dfb5a3d4c96570c5c3fafa5755b89a90eb58a2041f8da9d909b9c4b6813c3832d1254a"
+        address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+        private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
+        public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
       };
       // for account registration gas amount (multi set)
       const account3 = {
@@ -2997,13 +2997,25 @@ describe('Blockchain Node', () => {
         private_key: "63200d28b05377f983103b1ac45a379b3d424c415f8a705c7cdd6365f7e828ea",
         public_key: "0760186e6d1a37107217d68e491b4a4bd89e3b6642acfcf4b320acef24d5d0de1d33bcabd2e868776879c4776937a6785e71ee963efb40c4cf09283b542006ca"
       };
+      // for account registration gas amount (transfer)
+      const account4 = {
+        address: "0x652a5e81Dc2B62be4b7225584A1079C29334dE27",
+        private_key: "98a0cc69436b5fc635184bbe16ffa97284e099e8e84c0b7ecee61b1f92db29e5",
+        public_key: "b6c5920098836b4ee3dd9458c706470f539e81d7370534228ffe155fff4b9af8ccdb7f6ad1eeba135c30fe4a6175ecf0d8be4bd6813a8358bc19901df47f558a"
+      };
+      // for account registration gas amount (transfer)
+      const account09 = { // genesis account 09
+        address: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+        private_key: "ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640",
+        public_key: "e0a9c4697a41d7ecbd7660f43c59b0df8a3e9fa31ec87687b5b4592e1ab1f66e3b2503a966ca702051f4c8e1c37c9d88cd46242750e7fc9f65dfb14980101806"
+      };
 
       before(async () => {
         const currentRule = parseOrLog(syncRequest('GET', server1 + '/get_rule?ref=/apps/test')
           .body.toString('utf-8')).result[".rule"]["write"];
         const newOwners = parseOrLog(syncRequest('GET', server1 + '/get_owner?ref=/apps/test')
           .body.toString('utf-8')).result[".owner"];
-        const newRule = `${currentRule} || auth.addr === '${account.address}' || auth.addr === '${account2.address}' || auth.addr === '${account3.address}'`;
+        const newRule = `${currentRule} || auth.addr === '${account.address}' || auth.addr === '${account2.address}' || auth.addr === '${account4.address}'`;
         newOwners["owners"][account.address] = {
           "branch_owner": true,
           "write_owner": true,
@@ -3066,13 +3078,13 @@ describe('Blockchain Node', () => {
         }
       })
 
-      it('accepts a transaction with nonce unordered (-1)', () => {
+      it('accepts a transaction with unordered nonce (-1)', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3128,8 +3140,8 @@ describe('Blockchain Node', () => {
           const txBody = {
             operation: {
               type: 'SET_VALUE',
-              value: 'some other value 2',
-              ref: `/apps/test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 2'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -3176,6 +3188,7 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a transaction with account registration gas amount', () => {
+        // NOTE: account2 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
           address: account2.address,
@@ -3187,8 +3200,8 @@ describe('Blockchain Node', () => {
           const txBody = {
             operation: {
               type: 'SET_VALUE',
-              value: 'some other value 3',
-              ref: `/apps/test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 3'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -3235,6 +3248,7 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a transaction without account registration gas amount', () => {
+        // NOTE: account2 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
           address: account2.address,
@@ -3246,8 +3260,8 @@ describe('Blockchain Node', () => {
           const txBody = {
             operation: {
               type: 'SET_VALUE',
-              value: 'some other value 4',
-              ref: `/apps/test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 4'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -3293,10 +3307,147 @@ describe('Blockchain Node', () => {
         });
       })
 
+      it('accepts a transfer transaction without account registration gas amount', () => {
+        // NOTE: account2 does not have balance but already has nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account2.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x85a620A5A46d01cc1fCF49E73ab00710d4da943E/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 1037,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 3
+                  },
+                  "state": {
+                    "service": 1034
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a transfer transaction with account registration gas amount', () => {
+        // NOTE: account3 does not have balance nor nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 2000,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 3037,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 2003
+                  },
+                  "state": {
+                    "service": 1034
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
       it('accepts a multi-set transaction with account registration gas amount', () => {
+        // NOTE: account4 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
-          address: account3.address,
+          address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -3323,7 +3474,7 @@ describe('Blockchain Node', () => {
             nonce,  // numbered nonce
           };
           const signature =
-              ainUtil.ecSignTransaction(txBody, Buffer.from(account3.private_key, 'hex'));
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction', {
             tx_body: txBody,
             signature,
@@ -3371,9 +3522,10 @@ describe('Blockchain Node', () => {
       })
 
       it('accepts a multi-set transaction without account registration gas amount', () => {
+        // NOTE: account4 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
-          address: account3.address,
+          address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -3400,7 +3552,7 @@ describe('Blockchain Node', () => {
             nonce,  // numbered nonce
           };
           const signature =
-              ainUtil.ecSignTransaction(txBody, Buffer.from(account3.private_key, 'hex'));
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction', {
             tx_body: txBody,
             signature,
@@ -3453,8 +3605,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: longText,
-            ref: `/apps/test/test_long_text`
+            ref: `/apps/test/test_long_text`,
+            value: longText
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3482,8 +3634,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3511,8 +3663,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3540,8 +3692,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value 3',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value 3'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3781,8 +3933,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3813,8 +3965,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -3849,8 +4001,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -3889,8 +4041,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -4007,8 +4159,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           timestamp: Date.now(),
           nonce: -1
@@ -4045,8 +4197,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -4086,8 +4238,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value 3',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value 3'
           },
           gas_price: 0,
           timestamp: Date.now(),
