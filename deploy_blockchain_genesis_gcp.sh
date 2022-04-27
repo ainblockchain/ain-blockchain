@@ -130,11 +130,11 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     printf "\n\n"
 
     if [[ "$SEASON" = "mainnet" ]]; then
-        KEYSTORE_DIR="mainnet_prod_keys/"
+        KEYSTORE_DIR="mainnet_prod_keys"
     elif [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
-        KEYSTORE_DIR="testnet_prod_keys/"
+        KEYSTORE_DIR="testnet_prod_keys"
     else
-        KEYSTORE_DIR="testnet_dev_staging_keys/"
+        KEYSTORE_DIR="testnet_dev_staging_keys"
     fi
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
@@ -146,7 +146,13 @@ function inject_account() {
     if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
-        echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+
+        KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
+        {
+            echo $KEYSTORE_FILE_PATH
+            sleep 1
+            echo $PASSWORD
+        } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
@@ -170,7 +176,7 @@ function inject_account() {
 
 # deploy files
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json $KEYSTORE_DIR setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
