@@ -92,16 +92,16 @@ function addBlock(node, txs, votes, validators) {
       node.account.address, validators, 0, 0));
 }
 
-async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 100;
+async function waitUntilTxFinalized(servers, txHash, maxIteration = 100) {
   const SLEEP_TIME_MS = 1000;
+
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
     if (!unchecked.size) {
       return true;
     }
-    if (iterCount >= MAX_ITERATION) {
+    if (iterCount >= maxIteration) {
       console.log(`Iteration count exceeded its limit before the given tx ${txHash} is finalized!`);
       return false;
     }
@@ -142,15 +142,14 @@ async function waitForNewShardingReports(parentServer, shardingPath) {
   }
 }
 
-async function waitUntilNetworkIsReady(serverList) {
-  const MAX_ITERATION = 40;
+async function waitUntilNetworkIsReady(serverList, maxIteration = 40) {
   let iterCount = 0;
   const unchecked = new Set(serverList);
   while (true) {
     if (!unchecked.size) {
       return true;
     }
-    if (iterCount >= MAX_ITERATION) {
+    if (iterCount >= maxIteration) {
       console.log(`Iteration count exceeded its limit before the network is ready (${JSON.stringify([...unchecked])})`);
       return false;
     }
@@ -194,7 +193,7 @@ function parseOrLog(resp) {
   return parsed;
 }
 
-async function setUpApp(appName, serverList, appConfig) {
+async function setUpApp(appName, serverList, appConfig, maxIteration = 100) {
   const signingAddr = parseOrLog(syncRequest(
     'GET', serverList[0] + '/get_address').body.toString('utf-8')).result;
   const appStakingRes = parseOrLog(syncRequest('POST', serverList[0] + '/set_value', {
@@ -203,7 +202,7 @@ async function setUpApp(appName, serverList, appConfig) {
       value: 1
     }
   }).body.toString('utf-8')).result;
-  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash, maxIteration))) {
     console.log(`setUpApp(): Failed to check finalization of app staking tx.`);
   }
 
