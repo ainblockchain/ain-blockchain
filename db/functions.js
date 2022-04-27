@@ -719,8 +719,17 @@ class Functions {
     if (fromBalance === null || fromBalance < value) {
       return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
-    // for either an individual or a service account.
-    const extraGasAmount = this.isExistingAccount(to) ? 0 : context.accountRegistrationGasAmount;
+    let extraGasAmount = 0;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', context.blockNumber)) {
+      if (!this.isExistingAccount(to)) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
+    } else {
+      const toBalance = this.db.getValue(toBalancePath);
+      if (toBalance === null) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
+    }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);

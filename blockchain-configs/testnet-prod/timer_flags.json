@@ -34,5 +34,9 @@
   "disable_tx_receipt_recording": {
     "enabled_block": 345600,
     "has_bandage": false
+  },
+  "extend_account_registration_gas_amount": {
+    "enabled_block": null,
+    "has_bandage": false
   }
 }

@@ -1328,7 +1328,10 @@ class DB {
     }
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
-    const wasNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+    let wasNonExistingAccount = false;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
+      wasNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+    }
     if (op.type === WriteDbOperations.SET) {
       Object.assign(
           result,
@@ -1337,14 +1340,16 @@ class DB {
       Object.assign(
           result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime));
     }
-    // Apply account registration gas amount for nonce and timestamp.
-    const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
-    if (wasNonExistingAccount && isNonExistingAccount && nonce !== -1) {
-      if (op.type === WriteDbOperations.SET) {
-        // NOTE: Empty op_list is not allowed (see isInStandardFormat()).
-        result.result_list[0].bandwidth_gas_amount += accountRegistrationGasAmount;
-      } else {
-        result.bandwidth_gas_amount += accountRegistrationGasAmount;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
+      // Apply account registration gas amount for nonce and timestamp.
+      const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+      if (wasNonExistingAccount && isNonExistingAccount && nonce !== -1) {
+        if (op.type === WriteDbOperations.SET) {
+          // NOTE: Empty op_list is not allowed (see isInStandardFormat()).
+          result.result_list[0].bandwidth_gas_amount += accountRegistrationGasAmount;
+        } else {
+          result.bandwidth_gas_amount += accountRegistrationGasAmount;
+        }
       }
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
