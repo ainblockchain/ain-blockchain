@@ -2760,6 +2760,8 @@ describe("Functions", () => {
       const refPathRestGas = "/apps/test/test_function/some/path/rest_gas";
       const refPathTransfer =
           "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/value";
+      const refPathTransferServiceAccount =
+          `/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/billing|test_billing|A/0/value`;
 
       before(() => {
         const restFunctionGas = {
@@ -2787,7 +2789,7 @@ describe("Functions", () => {
             });
       })
 
-      it("Native function (_transfer) with account registration", () => {
+      it("Native function (_transfer) with account registration gas amount", () => {
         const value = 10;
         const txBody = {
           "operation": {
@@ -2840,7 +2842,7 @@ describe("Functions", () => {
         });
       });
 
-      it("Native function (_transfer) without account registration", () => {
+      it("Native function (_transfer) without account registration gas amount", () => {
         const value = 10;
         const txBody = {
           "operation": {
@@ -2873,6 +2875,112 @@ describe("Functions", () => {
               },
               "1": {
                 "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              }
+            },
+            "code": 0,
+            "bandwidth_gas_amount": 0
+          }
+        });
+        assert.deepEqual(triggerRes.subtree_func_results, undefined);
+        return triggerRes.func_promises.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
+          });
+        });
+      });
+
+      it("Native function (_transfer) with service account registration gas amount", () => {
+        const value = 10;
+        const txBody = {
+          "operation": {
+            "ref": refPathTransferServiceAccount,
+            "type": "SET_VALUE",
+            "value": value, 
+          },
+          "nonce": -1,
+          "timestamp": 1566736760322,
+          "gas_price": 1,
+          "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+        }
+        const tx = Transaction.fromTxBody(txBody, null);
+        const triggerRes = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathTransferServiceAccount), value, null,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
+        assert.deepEqual(triggerRes.func_results, {
+          "_transfer": {
+            "op_results": {
+              "0": {
+                "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              },
+              "1": {
+                "path": "/service_accounts/billing/test_billing/A/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              }
+            },
+            "code": 0,
+            "bandwidth_gas_amount": 2000
+          }
+        });
+        assert.deepEqual(triggerRes.subtree_func_results, undefined);
+        return triggerRes.func_promises.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
+          });
+        });
+      });
+
+      it("Native function (_transfer) without service account registration gas amount", () => {
+        const value = 10;
+        const txBody = {
+          "operation": {
+            "ref": refPathTransferServiceAccount,
+            "type": "SET_VALUE",
+            "value": value,
+          },
+          "nonce": -1,
+          "timestamp": 1566736760322,
+          "gas_price": 1,
+          "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+        }
+        const tx = Transaction.fromTxBody(txBody, null);
+        const triggerRes = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathTransferServiceAccount), value, null,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
+        assert.deepEqual(triggerRes.func_results, {
+          "_transfer": {
+            "op_results": {
+              "0": {
+                "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              },
+              "1": {
+                "path": "/service_accounts/billing/test_billing/A/balance",
                 "result": {
                   "code": 0,
                   "bandwidth_gas_amount": 1

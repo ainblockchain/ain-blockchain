@@ -7,16 +7,20 @@ const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
 class PathUtil {
+  static getAccountPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address]);
+  }
+
   static getAccountBalancePath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.BALANCE]);
+    return `${PathUtil.getAccountPath(address)}/${PredefinedDbPaths.BALANCE}`;
   }
 
   static getAccountNoncePath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]);
+    return `${PathUtil.getAccountPath(address)}/${PredefinedDbPaths.ACCOUNTS_NONCE}`;
   }
 
   static getAccountTimestampPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]);
+    return `${PathUtil.getAccountPath(address)}/${PredefinedDbPaths.ACCOUNTS_TIMESTAMP}`;
   }
 
   static getServiceAccountPath(serviceType, serviceName, accountKey) {
