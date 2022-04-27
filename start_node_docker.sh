@@ -27,8 +27,6 @@ fi
 if [[ -z "$ACCOUNT_INJECTION_OPTION" ]]; then
     printf "You must provide a ACCOUNT_INJECTION_OPTION\n"
     exit
-fi
-
 elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
     if [[ -z "$PRIVATE_KEY" ]]; then
         printf 'You should manually inject your account into this node.\n'
@@ -37,15 +35,14 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
         unset PRIVATE_KEY
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
-    # TODO(kriii): Support keystore file upload.
-    if [[ -z "$KEYSTORE_FILE_PATH" ]]; then
-        printf "Must provide a KEYSTORE_FILE_PATH\n"
-        exit
-    fi
-    if [[ -z "$PASSWORD" ]]; then
+    if [[ -z "$KEYSTORE_FILE_PATH" ]] || [[ -z "$PASSWORD" ]]; then
         printf 'You should manually inject your account into this node.\n'
     else
-        echo $PASSWORD | node inject_account_gcp.js $NODE_ENDPOINT --keystore
+        {
+            echo $KEYSTORE_FILE_PATH
+            sleep 1
+            echo $PASSWORD
+        } | node inject_account_gcp.js $NODE_ENDPOINT --keystore
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
     if [[ -z "$MNEMONIC" ]]; then
@@ -58,6 +55,9 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
         } | node inject_account_gcp.js $NODE_ENDPOINT --mnemonic
         unset MNEMONIC
     fi
+else
+    printf "Invalid ACCOUNT_INJECTION_OPTION:"$ACCOUNT_INJECTION_OPTION"\n"
+    exit
 fi
 
 printf 'Done\n'
