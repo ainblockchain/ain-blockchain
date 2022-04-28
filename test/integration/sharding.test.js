@@ -491,7 +491,7 @@ describe('Sharding', () => {
           [server2Addr]: true,
           [server3Addr]: true,
         }
-      });
+      }, 200);
     })
 
     describe('Get API', () => {
