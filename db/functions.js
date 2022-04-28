@@ -698,6 +698,14 @@ class Functions {
     }
   }
 
+  isNonExistingAccount(addrOrServAcnt) {
+    const accountPath = CommonUtil.isServAcntName(addrOrServAcnt) ?
+        PathUtil.getServiceAccountPathFromAccountName(addrOrServAcnt) :
+        PathUtil.getAccountPath(addrOrServAcnt);
+    const curAccountValue = this.db.getValue(accountPath);
+    return curAccountValue === null;
+  }
+
   _transfer(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -707,14 +715,20 @@ class Functions {
     const to = context.params.to;
     const fromBalancePath = CommonUtil.getBalancePath(from);
     const toBalancePath = CommonUtil.getBalancePath(to);
-    let extraGasAmount = 0;
     const fromBalance = this.db.getValue(fromBalancePath);
     if (fromBalance === null || fromBalance < value) {
       return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
-    const toBalance = this.db.getValue(toBalancePath);
-    if (toBalance === null) {  // for either an individual or a service account.
-      extraGasAmount = context.accountRegistrationGasAmount;
+    let extraGasAmount = 0;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', context.blockNumber)) {
+      if (this.isNonExistingAccount(to)) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
+    } else {
+      const toBalance = this.db.getValue(toBalancePath);
+      if (toBalance === null) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
