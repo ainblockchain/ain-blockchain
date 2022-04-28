@@ -3187,7 +3187,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transaction with account registration gas amount', () => {
+      it('accepts a transaction with account registration gas amount from nonce', () => {
         // NOTE: account2 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
@@ -3247,7 +3247,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transaction without account registration gas amount', () => {
+      it('accepts a transaction without account registration gas amount from nonce', () => {
         // NOTE: account2 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
@@ -3307,7 +3307,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transfer transaction without account registration gas amount', () => {
+      it('accepts a transaction without account registration gas amount from balance', () => {
         // NOTE: account2 does not have balance but already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -3375,7 +3375,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transfer transaction with account registration gas amount', () => {
+      it('accepts a transaction with account registration gas amount from balance', () => {
         // NOTE: account3 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -3443,7 +3443,75 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a multi-set transaction with account registration gas amount', () => {
+      it('accepts a transaction without account registration gas amount from balance', () => {
+        // NOTE: account3 already has balance.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 367,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 3
+                  },
+                  "state": {
+                    "service": 364
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a multi-set transaction with account registration gas amount from nonce', () => {
         // NOTE: account4 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
@@ -3521,7 +3589,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a multi-set transaction without account registration gas amount', () => {
+      it('accepts a multi-set transaction without account registration gas amount from nonce', () => {
         // NOTE: account4 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getNonce', {
