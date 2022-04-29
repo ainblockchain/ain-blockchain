@@ -789,6 +789,10 @@ class Functions {
     if (errorCode) {
       return this.returnFuncResult(context, errorCode);
     }
+    let extraGasAmount = 0;
+    if (isEnabledTimerFlag('add_app_creation_gas_amount', context.blockNumber)) {
+      extraGasAmount = context.appCreationGasAmount;
+    }
     let rule;
     const owner = {};
     const adminAddrList = Object.keys(sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]);
@@ -816,7 +820,7 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
     }
-    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS, extraGasAmount);
   }
 
   _collectFee(value, context) {
