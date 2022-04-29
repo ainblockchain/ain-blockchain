@@ -152,7 +152,7 @@ function deploy_test() {
 }
 
 if [[ $INSTANCE_INDEX = "all" ]]; then
-    if [[ $FOREGROUND_OPTION = "--fg" ]]; then
+    if [[ $FOREGROUND_OPTION = "--fg" ]] || [[ $CAT_LOG_OPTION = "--cat-log" ]]; then
         # serialized function calls
         deploy_test 0 test_unit
         deploy_test 1 test_integration_function
