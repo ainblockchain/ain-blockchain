@@ -920,6 +920,8 @@ class DB {
     if (auth && (auth.addr || auth.fid)) {
       const accountRegistrationGasAmount = DB.getBlockchainParam(
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
+      const appCreationGasAmount = DB.getBlockchainParam(
+          'resource/app_creation_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
       const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
@@ -933,6 +935,7 @@ class DB {
           'genesis/network_id', blockNumber, this.stateRoot);
       const blockchainParams = {
         accountRegistrationGasAmount,
+        appCreationGasAmount,
         restFunctionCallGasAmount,
         rewardType,
         rewardAnnualRate,
