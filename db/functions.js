@@ -702,7 +702,7 @@ class Functions {
     const accountPath = CommonUtil.isServAcntName(addrOrServAcnt) ?
         PathUtil.getServiceAccountPathFromAccountName(addrOrServAcnt) :
         PathUtil.getAccountPath(addrOrServAcnt);
-    const curAccountValue = this.db.getValue(accountPath);
+    const curAccountValue = this.db.getValue(accountPath, { isShallow: true });
     return curAccountValue === null;
   }
 
@@ -775,6 +775,12 @@ class Functions {
     return { sanitizedVal, errorCode: null };
   }
 
+  isNonExistingApp(appName) {
+    const appPath = PathUtil.getAccountPath(appName);
+    const curAppValue = this.db.getValue(appPath, { isShallow: true });
+    return curAppValue === null;
+  }
+
   _createApp(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -791,7 +797,9 @@ class Functions {
     }
     let extraGasAmount = 0;
     if (isEnabledTimerFlag('add_app_creation_gas_amount', context.blockNumber)) {
-      extraGasAmount = context.appCreationGasAmount;
+      if (this.isNonExistingApp(appName)) {
+        extraGasAmount = context.appCreationGasAmount;
+      }
     }
     let rule;
     const owner = {};
