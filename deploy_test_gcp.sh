@@ -1,17 +1,17 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]]; then
-    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--keep-code|--no-keep-code] [--bg] [--cat-log] [--stop-only] <Testing Option>\n"
+if [[ $# -lt 2 ]]; then
+    printf "Usage: bash deploy_test_gcp.sh <GCP Username> <Instatnce Index> [--setup] [--keep-code|--no-keep-code] [--fg] [--cat-log] [--stop-only] <Testing Option>\n"
     printf "Example: bash deploy_test_gcp.sh my_username 0 --setup test_unit\n"
     printf "Example: bash deploy_test_gcp.sh my_username 0 --keep-code test_unit\n"
     printf "Example: bash deploy_test_gcp.sh my_username 0 --keep-code test_unit \"-g 'matchFunction NOT'\"\n"
-    printf "Example: bash deploy_test_gcp.sh my_username 0 --bg test_unit\n"
+    printf "Example: bash deploy_test_gcp.sh my_username 0 --fg test_unit\n"
     printf "Example: bash deploy_test_gcp.sh my_username 0 --cat-log\n"
     printf "Example: bash deploy_test_gcp.sh my_username 0 --stop-only\n"
     printf "Example: bash deploy_test_gcp.sh my_username all --setup\n"
     printf "Example: bash deploy_test_gcp.sh my_username all --keep-code\n"
-    printf "Example: bash deploy_test_gcp.sh my_username all --bg\n"
     printf "Example: bash deploy_test_gcp.sh my_username all --cat-log\n"
+    printf "Example: bash deploy_test_gcp.sh my_username all --stop-only\n"
     printf "\n"
     exit
 fi
@@ -38,8 +38,8 @@ function parse_options() {
         KEEP_CODE_OPTION="$option"
     elif [[ $option = '--no-keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
-    elif [[ $option = '--bg' ]]; then
-        BACKGROUND_OPTION="$option"
+    elif [[ $option = '--fg' ]]; then
+        FOREGROUND_OPTION="$option"
     elif [[ $option = '--cat-log' ]]; then
         CAT_LOG_OPTION="$option"
     elif [[ $option = '--stop-only' ]]; then
@@ -54,7 +54,7 @@ SETUP_OPTION=""
 CAT_LOG_OPTION=""
 STOP_ONLY_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
-BACKGROUND_OPTION=""
+FOREGROUND_OPTION=""
 TESTING_OPTION=""
 SEASON="dev"
 
@@ -67,7 +67,7 @@ printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "CAT_LOG_OPTION=$CAT_LOG_OPTION\n"
 printf "STOP_ONLY_OPTION=$STOP_ONLY_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
-printf "BACKGROUND_OPTION=$BACKGROUND_OPTION\n"
+printf "FOREGROUND_OPTION=$FOREGROUND_OPTION\n"
 printf "TESTING_OPTION=$TESTING_OPTION\n"
 printf "SEASON=$SEASON\n"
 
@@ -141,10 +141,10 @@ function deploy_test() {
         stop_servers "$instance_index"
 
         printf "\n >> Running tests on instance [$instance_index] ($test_target_addr) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n"
-        if [[ $BACKGROUND_OPTION = "--bg" ]]; then
-            TEST_CMD="cd ./ain-blockchain; nohup yarn run ${testing_option} > test_log.txt &"
-        else
+        if [[ $FOREGROUND_OPTION = "--fg" ]]; then
             TEST_CMD="cd ./ain-blockchain; yarn run ${testing_option}"
+        else
+            TEST_CMD="cd ./ain-blockchain; nohup yarn run ${testing_option} > test_log.txt &"
         fi
         printf "\nTEST_CMD=$TEST_CMD\n\n"
         gcloud compute ssh ${test_target_addr} --command "$TEST_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
@@ -152,19 +152,7 @@ function deploy_test() {
 }
 
 if [[ $INSTANCE_INDEX = "all" ]]; then
-    if [[ $BACKGROUND_OPTION = "--bg" ]] || [[ $STOP_ONLY_OPTION = "--stop-only" ]]; then
-        # parallelized function calls
-        deploy_test 0 test_unit &
-        deploy_test 1 test_integration_function &
-        deploy_test 2 test_integration_node &
-        deploy_test 3 test_integration_sharding &
-        deploy_test 4 test_integration_blockchain &
-        deploy_test 5 test_integration_consensus &
-        deploy_test 6 test_integration_dapp &
-        deploy_test 7 test_integration_he_protocol &
-        deploy_test 8 test_integration_he_sharding &
-        deploy_test 9 test_integration_event_handler
-    else
+    if [[ $FOREGROUND_OPTION = "--fg" ]]; then
         # serialized function calls
         deploy_test 0 test_unit
         deploy_test 1 test_integration_function
@@ -175,6 +163,18 @@ if [[ $INSTANCE_INDEX = "all" ]]; then
         deploy_test 6 test_integration_dapp
         deploy_test 7 test_integration_he_protocol
         deploy_test 8 test_integration_he_sharding
+        deploy_test 9 test_integration_event_handler
+    else
+        # parallelized function calls
+        deploy_test 0 test_unit &
+        deploy_test 1 test_integration_function &
+        deploy_test 2 test_integration_node &
+        deploy_test 3 test_integration_sharding &
+        deploy_test 4 test_integration_blockchain &
+        deploy_test 5 test_integration_consensus &
+        deploy_test 6 test_integration_dapp &
+        deploy_test 7 test_integration_he_protocol &
+        deploy_test 8 test_integration_he_sharding &
         deploy_test 9 test_integration_event_handler
     fi
 else
