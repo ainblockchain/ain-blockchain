@@ -35,5 +35,9 @@
   "extend_account_registration_gas_amount": {
     "enabled_block": 2,
     "has_bandage": false
+  },
+  "add_app_creation_gas_amount": {
+    "enabled_block": 2,
+    "has_bandage": true
   }
 }
