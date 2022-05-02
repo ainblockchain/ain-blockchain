@@ -776,7 +776,7 @@ class Functions {
   }
 
   isNonExistingApp(appName) {
-    const appPath = PathUtil.getAccountPath(appName);
+    const appPath = PathUtil.getManageAppConfigPath(appName);
     const curAppValue = this.db.getValue(appPath, { isShallow: true });
     return curAppValue === null;
   }
