@@ -3667,6 +3667,136 @@ describe('Blockchain Node', () => {
         });
       })
 
+      it('accepts a transaction with app creation gas amount', () => {
+        // NOTE: App doesn't exist yet.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/manage_app/test_app_creation_gas_amount_app0/create/1`,
+            value: {
+              admin: { [account.address]: true },
+            }
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                bandwidth_gas_amount: 1,
+                code: 0,
+                func_results: {
+                  _createApp: {
+                    bandwidth_gas_amount: 2000,
+                    code: 0,
+                    op_results: {
+                      0: {
+                        path: "/apps/test_app_creation_gas_amount_app0",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      },
+                      1: {
+                        path: "/apps/test_app_creation_gas_amount_app0",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      },
+                      2: {
+                        path: "/manage_app/test_app_creation_gas_amount_app0/config/admin",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      }
+                    }
+                  }
+                },
+                gas_amount_charged: 3570,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test_app_creation_gas_amount_app0: 2
+                    },
+                    service: 2002
+                  },
+                  state: {
+                    service: 1568
+                  }
+                },
+                gas_cost_total: 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('rejects a transaction without app creation gas amount', () => {
+        // NOTE: App ready exists.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/manage_app/test_app_creation_gas_amount_app0/create/2`,
+            value: {
+              admin: { [account.address]: true },
+            }
+          },
+          gas_price: 0,
+          timestamp,
+          nonce: -1,
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                bandwidth_gas_amount: 1,
+                code: 12103,
+                gas_amount_charged: 1,
+                gas_amount_total: {
+                  bandwidth: {
+                    service: 1
+                  },
+                  state: {
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0,
+                message: `Write rule evaluated false: [data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/create/$record_id' for value path '/manage_app/test_app_creation_gas_amount_app0/create/2' with path vars '{\"$record_id\":\"2\",\"$app_name\":\"test_app_creation_gas_amount_app0\"}', data 'null', newData '{\"admin\":{\"0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D\":true}}', auth '{\"addr\":\"0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D\"}', timestamp '${timestamp}'`
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);

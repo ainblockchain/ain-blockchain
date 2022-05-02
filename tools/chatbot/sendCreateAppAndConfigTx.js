@@ -12,6 +12,7 @@ function buildCreateAppTxBody(address, timestamp) {
         admin: { [address]: true },
       }
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   }
@@ -62,6 +63,7 @@ function buildChatbotConfigTxBody(timestamp) {
         }
       ]
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   };
