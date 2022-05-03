@@ -556,7 +556,7 @@ class BlockchainNode {
 
   validateAppName(appName) {
     const stateLabelLengthLimit = this.getBlockchainParam('resource/state_label_length_limit');
-    return this.db.validateAppName(appName, stateLabelLengthLimit);
+    return this.db.validateAppName(appName, this.bc.lastBlockNumber(), stateLabelLengthLimit);
   }
 
   getSharding() {

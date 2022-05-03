@@ -33,6 +33,7 @@ const {
   hasOwnerConfig,
   getOwnerConfig,
   isWritablePathWithSharding,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
@@ -834,12 +835,19 @@ class DB {
     return curAppValue === null;
   }
 
-  validateAppName(appName, stateLabelLengthLimit) {
+  validateAppName(appName, blockNumber, stateLabelLengthLimit) {
     if (!isValidStateLabel(appName, stateLabelLengthLimit)) {
       return {
         is_valid: false,
         code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_STATE_LABEL,
         message: `Invalid app name for state label: ${appName}`
+      };
+    }
+    if (!isValidServiceName(appName, blockNumber)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_SERVICE_NAME,
+        message: `Invalid app name for service name: ${appName}`
       };
     }
     if (!this.isNonExistingApp(appName)) {
@@ -851,7 +859,7 @@ class DB {
     }
     return {
       is_valid: true,
-      code: 0
+      code: JsonRpcApiResultCode.SUCCESS
     };
   }
 
