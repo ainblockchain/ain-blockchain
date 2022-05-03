@@ -6262,7 +6262,7 @@ describe("State version handling", () => {
 
 describe("Util methods", () => {
   let node;
-  const appNameInUse = 'appNameInUse';
+  const appNameInUse = 'app_name_in_use';
 
   beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
@@ -6291,11 +6291,20 @@ describe("Util methods", () => {
   describe("validateAppName", () => {
     const stateLabelLengthLimit = BlockchainParams.resource.state_label_length_limit;
 
+    it("valid app name", () => {
+      const appName = 'app_name_valid0';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": true,
+        "code": 0,
+      });
+    });
+
     it("invalid app name for state label - invalid pattern", () => {
-      assert.deepEqual(node.db.validateAppName('app/path', stateLabelLengthLimit), {
+      const appName = 'app/path';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
         "code": 30701,
-        "message": "Invalid app name for state label: app/path",
+        "message": `Invalid app name for state label: ${appName}`,
       });
     });
 
@@ -6304,25 +6313,50 @@ describe("Util methods", () => {
       for (i = 0; i < stateLabelLengthLimit + 1; i++) {
         appName += 'a'
       }
-      assert.deepEqual(node.db.validateAppName(appName, stateLabelLengthLimit), {
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
         "code": 30701,
-        "message": "Invalid app name for state label: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "message": `Invalid app name for state label: ${appName}`,
+      });
+    });
+
+    it("invalid app name for service name - reserved service name", () => {
+      const appName = 'balance_total_sum';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName}`,
+      });
+    });
+
+    it("invalid app name for service name - service name pattern", () => {
+      const appName = 'appName';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName}`,
+      });
+
+      const appName2 = 'app-name';
+      assert.deepEqual(node.db.validateAppName(appName2, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName2}`,
+      });
+
+      const appName3 = '0app';
+      assert.deepEqual(node.db.validateAppName(appName3, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName3}`,
       });
     });
 
     it("app name in use", () => {
-      assert.deepEqual(node.db.validateAppName(appNameInUse, stateLabelLengthLimit), {
+      assert.deepEqual(node.db.validateAppName(appNameInUse, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30702,
-        "message": "App name already in use: appNameInUse",
-      });
-    });
-
-    it("app name not in use", () => {
-      assert.deepEqual(node.db.validateAppName('appNameNotInUse', stateLabelLengthLimit), {
-        "is_valid": true,
-        "code": 0,
+        "code": 30703,
+        "message": `App name already in use: ${appNameInUse}`,
       });
     });
   });
