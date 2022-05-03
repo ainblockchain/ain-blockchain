@@ -13,6 +13,5 @@ module.exports = function getAppApis(node) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
-
   };
 };
