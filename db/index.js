@@ -33,6 +33,7 @@ const {
   hasOwnerConfig,
   getOwnerConfig,
   isWritablePathWithSharding,
+  isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
   makeWriteRuleCodeSnippet,
@@ -817,6 +818,20 @@ class DB {
     }
 
     return true;
+  }
+
+  validateAppName(appName, stateLabelLengthLimit) {
+    if (!isValidStateLabel(appName, stateLabelLengthLimit)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_STATE_LABEL,
+        message: `Invalid app name for state label: ${appName}`
+      };
+    }
+    return {
+      is_valid: true,
+      code: 0
+    };
   }
 
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {

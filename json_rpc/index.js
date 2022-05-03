@@ -2,6 +2,7 @@
 
 const { NodeConfigs } = require('../common/constants');
 const getAccountApis = require('./account');
+const getAppApis = require('./app');
 const getApiAccessApis = require('./api-access');
 const getBlockApis = require('./block');
 const getDatabaseApis = require('./database');
@@ -30,6 +31,7 @@ module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVers
   };
   if (NodeConfigs.ENABLE_JSON_RPC_API) {
     Object.assign(apis, {
+      ...getAppApis(node),
       ...getBlockApis(node),
       ...getDatabaseApis(node),
       ...getNetworkApis(node, p2pServer),
