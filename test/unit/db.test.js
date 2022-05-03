@@ -6259,3 +6259,71 @@ describe("State version handling", () => {
     });
   });
 });
+
+describe("Util methods", () => {
+  let node;
+  const appNameInUse = 'appNameInUse';
+
+  beforeEach(async () => {
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
+
+    node = new BlockchainNode();
+    await setNodeForTesting(node);
+
+    const createAppTx = Transaction.fromTxBody({
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/manage_app/${appNameInUse}/create/0`,
+        value: { admin: { [node.account.address]: true } }
+      },
+      gas_price: 1,
+      nonce: -1,
+      timestamp: Date.now(),
+    }, node.account.private_key);
+    const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
+    assert.deepEqual(createAppRes.code, 0);
+  });
+
+  afterEach(() => {
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
+  });
+
+  describe("validateAppName", () => {
+    const stateLabelLengthLimit = BlockchainParams.resource.state_label_length_limit;
+
+    it("invalid app name for state label - invalid pattern", () => {
+      assert.deepEqual(node.db.validateAppName('app/path', stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30701,
+        "message": "Invalid app name for state label: app/path",
+      });
+    });
+
+    it("invalid app name for state label - length limit", () => {
+      let appName = '';
+      for (i = 0; i < stateLabelLengthLimit + 1; i++) {
+        appName += 'a'
+      }
+      assert.deepEqual(node.db.validateAppName(appName, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30701,
+        "message": "Invalid app name for state label: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      });
+    });
+
+    it("app name in use", () => {
+      assert.deepEqual(node.db.validateAppName(appNameInUse, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": "App name already in use: appNameInUse",
+      });
+    });
+
+    it("app name not in use", () => {
+      assert.deepEqual(node.db.validateAppName('appNameNotInUse', stateLabelLengthLimit), {
+        "is_valid": true,
+        "code": 0,
+      });
+    });
+  });
+});
