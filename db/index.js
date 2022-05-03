@@ -820,12 +820,33 @@ class DB {
     return true;
   }
 
+  isNonExistingAccount(addrOrServAcnt) {
+    const accountPath = CommonUtil.isServAcntName(addrOrServAcnt) ?
+        PathUtil.getServiceAccountPathFromAccountName(addrOrServAcnt) :
+        PathUtil.getAccountPath(addrOrServAcnt);
+    const curAccountValue = this.getValue(accountPath, { isShallow: true });
+    return curAccountValue === null;
+  }
+
+  isNonExistingApp(appName) {
+    const appPath = PathUtil.getManageAppConfigPath(appName);
+    const curAppValue = this.getValue(appPath, { isShallow: true });
+    return curAppValue === null;
+  }
+
   validateAppName(appName, stateLabelLengthLimit) {
     if (!isValidStateLabel(appName, stateLabelLengthLimit)) {
       return {
         is_valid: false,
         code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_STATE_LABEL,
         message: `Invalid app name for state label: ${appName}`
+      };
+    }
+    if (!this.isNonExistingApp(appName)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.APP_NAME_ALREADY_IN_USE,
+        message: `App name already in use: ${appName}`
       };
     }
     return {
