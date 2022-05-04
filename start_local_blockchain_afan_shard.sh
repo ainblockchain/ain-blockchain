@@ -1,6 +1,6 @@
 #!/bin/bash
 
-printf "\n[[[[[ start_servers_afan_local.sh ]]]]]\n\n"
+printf "\n[[[[[ start_local_blockchain_afan_shard.sh ]]]]]\n\n"
 
 # PARENT CHAIN **
 # parent tracker
@@ -52,8 +52,8 @@ printf "\nDone\n\n"
 sleep 15
 
 # AFAN CHILD CHAIN **
-# afan child tracker
-printf "\nStarting afan child tracker..\n"
+# afan child chain tracker
+printf "\nStarting afan child chain tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
@@ -61,8 +61,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
-# afan child node 0
-printf "\nStarting afan child node 0..\n"
+# afan child chain node 0
+printf "\nStarting afan child chain node 0..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9001 \
   P2P_PORT=6001 \
@@ -87,8 +87,8 @@ do
     sleep 20
 done
 
-# afan child node 1
-printf "\nStarting afan child node 1..\n"
+# afan child chain node 1
+printf "\nStarting afan child chain node 1..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9002 \
   P2P_PORT=6002 \
@@ -101,8 +101,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
-# afan child node 2
-printf "\nStarting afan child node 2..\n"
+# afan child chain node 2
+printf "\nStarting afan child chain node 2..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9003 \
   P2P_PORT=6003 \

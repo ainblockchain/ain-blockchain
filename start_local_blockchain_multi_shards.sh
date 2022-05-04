@@ -1,12 +1,13 @@
 #!/bin/bash
 
-printf "\n[[[[[ start_servers_local.sh ]]]]]\n\n"
+printf "\n[[[[[ start_local_blockchain_multi_shards.sh ]]]]]\n\n"
 
 # PARENT CHAIN **
 # parent tracker
 printf "\nStarting parent tracker..\n"
 PORT=8080 \
   P2P_PORT=5000 \
+  CONSOLE_LOG=true \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -54,16 +55,16 @@ printf "\nDone\n\n"
 sleep 10
 
 # CHILD CHAIN 1 **
-# child 1 tracker
-printf "\nStarting child 1 tracker..\n"
+# child chain 1 tracker
+printf "\nStarting child chain 1 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 10
-# child 1 node 0
-printf "\nStarting child 1 node 0..\n"
+# child chain 1 node 0
+printf "\nStarting child chain 1 node 0..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9001 \
   P2P_PORT=6001 \
@@ -89,8 +90,8 @@ do
     sleep 20
 done
 
-# child 1 node 1
-printf "\nStarting child 1 node 1..\n"
+# child chain 1 node 1
+printf "\nStarting child chain 1 node 1..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9002 \
   P2P_PORT=6002 \
@@ -104,8 +105,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
-# child 1 node 2
-printf "\nStarting child 1 node 2..\n"
+# child chain 1 node 2
+printf "\nStarting child chain 1 node 2..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9003 \
   P2P_PORT=6003 \
@@ -121,16 +122,16 @@ printf "\nDone\n\n"
 sleep 10
 
 # CHILD CHAIN 2 **
-# child 2 tracker
-printf "\nStarting child 2 tracker..\n"
+# child chain 2 tracker
+printf "\nStarting child chain 2 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9010 \
   P2P_PORT=6010 \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 10
-# child 2 node 0
-printf "\nStarting child 2 node 0..\n"
+# child chain 2 node 0
+printf "\nStarting child chain 2 node 0..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9011 \
   P2P_PORT=6011 \
@@ -156,8 +157,8 @@ do
     sleep 20
 done
 
-# child 2 node 1
-printf "\nStarting child 2 node 1..\n"
+# child chain 2 node 1
+printf "\nStarting child chain 2 node 1..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9012 \
   P2P_PORT=6012 \
@@ -171,8 +172,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 10
-# child 2 node 2
-printf "\nStarting child 2 node 2..\n"
+# child chain 2 node 2
+printf "\nStarting child chain 2 node 2..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9013 \
   P2P_PORT=6013 \
