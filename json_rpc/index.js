@@ -1,6 +1,7 @@
 'use strict';
 
 const { NodeConfigs } = require('../common/constants');
+const getInjectionApis = require('./injection');
 const getAccountApis = require('./account');
 const getAppApis = require('./app');
 const getApiAccessApis = require('./api-access');
@@ -26,11 +27,12 @@ const getVersionApis = require('./version');
 module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion) {
   // Minimally required APIs
   const apis = {
-    ...getAccountApis(node, p2pServer),
     ...getApiAccessApis(node),
+    ...getInjectionApis(node, p2pServer),
   };
   if (NodeConfigs.ENABLE_JSON_RPC_API) {
     Object.assign(apis, {
+      ...getAccountApis(node),
       ...getAppApis(node),
       ...getBlockApis(node),
       ...getDatabaseApis(node),
