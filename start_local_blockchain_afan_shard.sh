@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# A script to start a local blockchain with a shard chain (parent chain, afan child chain).
+#
 
 printf "\n[[[[[ start_local_blockchain_afan_shard.sh ]]]]]\n\n"
 
