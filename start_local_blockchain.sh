@@ -2,6 +2,9 @@
 #
 # A script to start a local blockchain.
 #
+# Note that ENABLE_EVENT_HANDLER=true is set for node 2 for testing
+# the event manager modules of ainblockchain/ain-js.
+#
 
 printf "\n[[[[[ start_local_blockchain.sh ]]]]]\n\n"
 
