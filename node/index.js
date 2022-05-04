@@ -554,6 +554,11 @@ class BlockchainNode {
     return timestamp;
   }
 
+  validateAppName(appName) {
+    const stateLabelLengthLimit = this.getBlockchainParam('resource/state_label_length_limit');
+    return this.db.validateAppName(appName, this.bc.lastBlockNumber(), stateLabelLengthLimit);
+  }
+
   getSharding() {
     const shardingInfo = {};
     if (this.db && this.db.stateRoot) {

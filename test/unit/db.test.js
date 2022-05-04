@@ -6259,3 +6259,105 @@ describe("State version handling", () => {
     });
   });
 });
+
+describe("Util methods", () => {
+  let node;
+  const appNameInUse = 'app_name_in_use';
+
+  beforeEach(async () => {
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
+
+    node = new BlockchainNode();
+    await setNodeForTesting(node);
+
+    const createAppTx = Transaction.fromTxBody({
+      operation: {
+        type: 'SET_VALUE',
+        ref: `/manage_app/${appNameInUse}/create/0`,
+        value: { admin: { [node.account.address]: true } }
+      },
+      gas_price: 1,
+      nonce: -1,
+      timestamp: Date.now(),
+    }, node.account.private_key);
+    const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
+    assert.deepEqual(createAppRes.code, 0);
+  });
+
+  afterEach(() => {
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
+  });
+
+  describe("validateAppName", () => {
+    const stateLabelLengthLimit = BlockchainParams.resource.state_label_length_limit;
+
+    it("valid app name", () => {
+      const appName = 'app_name_valid0';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": true,
+        "code": 0,
+      });
+    });
+
+    it("invalid app name for state label - invalid pattern", () => {
+      const appName = 'app/path';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30701,
+        "message": `Invalid app name for state label: ${appName}`,
+      });
+    });
+
+    it("invalid app name for state label - length limit", () => {
+      let appName = '';
+      for (i = 0; i < stateLabelLengthLimit + 1; i++) {
+        appName += 'a'
+      }
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30701,
+        "message": `Invalid app name for state label: ${appName}`,
+      });
+    });
+
+    it("invalid app name for service name - reserved service name", () => {
+      const appName = 'balance_total_sum';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName}`,
+      });
+    });
+
+    it("invalid app name for service name - service name pattern", () => {
+      const appName = 'appName';
+      assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName}`,
+      });
+
+      const appName2 = 'app-name';
+      assert.deepEqual(node.db.validateAppName(appName2, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName2}`,
+      });
+
+      const appName3 = '0app';
+      assert.deepEqual(node.db.validateAppName(appName3, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30702,
+        "message": `Invalid app name for service name: ${appName3}`,
+      });
+    });
+
+    it("app name in use", () => {
+      assert.deepEqual(node.db.validateAppName(appNameInUse, 2, stateLabelLengthLimit), {
+        "is_valid": false,
+        "code": 30703,
+        "message": `App name already in use: ${appNameInUse}`,
+      });
+    });
+  });
+});

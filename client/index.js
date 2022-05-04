@@ -608,6 +608,17 @@ app.get('/get_timestamp', (req, res, next) => {
     .end();
 });
 
+app.get('/validate_app_name', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.validateAppName(req.query.app_name);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
 app.get('/get_sharding', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.getSharding();

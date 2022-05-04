@@ -178,6 +178,10 @@ const JsonRpcApiResultCode = {
   IP_ALREADY_IN_WHITELIST: 30502,
   // ain_removeFromDevClientApiIpWhitelist
   IP_NOT_IN_WHITELIST: 30601,
+  // ain_validateAppName
+  INVALID_APP_NAME_FOR_STATE_LABEL: 30701,
+  INVALID_APP_NAME_FOR_SERVICE_NAME: 30702,
+  APP_NAME_ALREADY_IN_USE: 30703,
 };
 
 /**
