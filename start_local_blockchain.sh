@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# A script to start a local blockchain.
+#
 
 printf "\n[[[[[ start_local_blockchain.sh ]]]]]\n\n"
 

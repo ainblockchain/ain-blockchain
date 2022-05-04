@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# A script to start a local blockchain with multiple shard chains
+# (parent chain, child chain 1, child chain 2).
+#
 
 printf "\n[[[[[ start_local_blockchain_multi_shards.sh ]]]]]\n\n"
 
