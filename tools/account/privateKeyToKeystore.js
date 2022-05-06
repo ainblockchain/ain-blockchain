@@ -20,7 +20,8 @@ async function privateKeyToKeystore() {
   ]);
   const privateKey = Buffer.from(input.privateKey, 'hex');
   const keystore = ainUtil.privateToV3Keystore(privateKey, input.password);
-  console.log('\nKeystore:', keystore, '\n');
+  console.log('\nKeystore object:', keystore);
+  console.log(`\nKeystore string: ${JSON.stringify(keystore)}`);
 }
 
 async function processArguments() {
