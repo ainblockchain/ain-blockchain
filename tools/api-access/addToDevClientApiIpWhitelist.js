@@ -60,9 +60,9 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node addToDevClientApiIpWhitelist.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <IP_ADDRESS>\n');
   console.log('\nExamples:');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file 127.0.0.1');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file 127.0.0.1');
   process.exit(0);
 }
 
