@@ -48,9 +48,9 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node getDevClientApiIpWhitelist.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>]\n');
   console.log('\nExamples:');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic');
-  console.log('node tools/admin/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic');
+  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file');
   process.exit(0);
 }
 
