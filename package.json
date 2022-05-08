@@ -13,7 +13,7 @@
     "node": ">=14"
   },
   "scripts": {
-    "clean": "sh stop_servers_local.sh & echo 'cleaned'",
+    "stop": "sh stop_local_blockchain.sh & echo 'cleaned'",
     "client": "UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 DEBUG=true node ./client/index.js",
     "lint": "eslint --ext js -c .eslintrc.json .",
     "loadtest": "sh loadtest/load_tester.sh",
@@ -49,7 +49,7 @@
     "test_unit_traffic_sm": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/traffic-stats-manager.test.js",
     "test_unit_tx": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/transaction.test.js",
     "test_unit_tx_pool": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/tx-pool.test.js",
-    "tracker": "npm run clean & node ./tracker-server/index.js"
+    "tracker": "node ./tracker-server/index.js"
   },
   "dependencies": {
     "@ainblockchain/ain-util": "^1.1.9",
