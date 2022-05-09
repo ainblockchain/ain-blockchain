@@ -345,14 +345,14 @@ class Consensus {
 
   executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
+    const chainId = this.node.getBlockchainParam('genesis/chain_id');
     const candidates = this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
       const res = tempDb.executeTransaction(
-          Transaction.toExecutable(tx, this.node.getBlockchainParam('genesis/chain_id')), false,
-          true, blockNumber, blockTime);
+          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
