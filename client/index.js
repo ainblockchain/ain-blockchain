@@ -3,7 +3,6 @@
 const logger = new (require('../logger'))('CLIENT');
 
 const express = require('express');
-const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
 const ipWhitelist = require('ip-whitelist');
@@ -35,9 +34,7 @@ const app = express();
 const middleware = new Middleware();
 app.use(middleware.expressJsonRequestBodySizeLimiter());
 app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
-const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
-    NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST);
-app.use(cors({ origin: corsOrigin }));
+app.use(middleware.corsLimiter());
 app.use(ipWhitelist((ip) => {
   return CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
       matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
