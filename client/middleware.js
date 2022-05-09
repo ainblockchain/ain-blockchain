@@ -1,11 +1,14 @@
 const express = require('express');
+const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 
 const { NodeConfigs } = require('../common/constants');
+const { getRegexpList } = require('../common/common-util');
 
 class Middleware {
   constructor () {
     this.expressRequestBodySizeLimit = this.setExpressRequestBodySizeLimit();
+    this.corsOriginList = this.setCorsOriginList();
     this.readRateLimit = this.setReadRateLimit();
     this.writeRateLimit = this.setWriteRateLimit();
   }
@@ -21,6 +24,12 @@ class Middleware {
     return this;
   }
 
+  setCorsOriginList() {
+    this.corsOriginList = NodeConfigs.CORS_WHITELIST === '*' ?
+    NodeConfigs.CORS_WHITELIST : getRegexpList(NodeConfigs.CORS_WHITELIST);
+    return this;
+  }
+
   setReadRateLimit() {
     this.readRateLimit = NodeConfigs.MAX_READ_RATE_LIMIT;
     return this;
@@ -33,6 +42,10 @@ class Middleware {
 
   getExpressRequestBodySizeLimit() {
     return this.expressRequestBodySizeLimit;
+  }
+
+  getCorsOriginList() {
+    return this.corsOriginList;
   }
 
   getReadRateLimit() {
@@ -52,6 +65,10 @@ class Middleware {
       extended: true,
       limit: this.getExpressRequestBodySizeLimit()
     });
+  }
+
+  corsLimiter() {
+    return cors({ origin: this.getCorsOriginList() })
   }
 
   readLimiter() {
