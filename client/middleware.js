@@ -8,6 +8,12 @@ class Middleware {
     this.writeRateLimit = this.setWriteRateLimit();
   }
 
+  _emptyHandler() {
+    return (req, res, next) => {
+      return next();
+    }
+  }
+
   setReadRateLimit() {
     this.readRateLimit = NodeConfigs.MAX_READ_RATE_LIMIT;
     return this;
@@ -26,16 +32,12 @@ class Middleware {
     return this.writeRateLimit;
   }
 
-  emptyHandler(req, res, next) {
-    return next();
-  }
-
   readLimiter() {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
         rateLimit({
           windowMs: 1000,   // 1 second
           max: this.getReadRateLimit()   // limit each IP to maximum of read rate limit
-        }) : this.emptyHandler();
+        }) : this._emptyHandler();
   }
 
   writeLimiter() {
@@ -43,7 +45,7 @@ class Middleware {
         rateLimit({
           windowMs: 1000,   // 1 second
           max: this.getWriteRateLimit()   // limit each IP to maximum of write rate limit
-        }) : this.emptyHandler();
+        }) : this._emptyHandler();
   }
 }
 
