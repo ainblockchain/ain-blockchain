@@ -677,7 +677,7 @@ app.get('/get_config', middleware.readLimiter(), (req, res) => {
  */
 
 if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
-  app.post('/set_value', (req, res, next) => {
+  app.post('/set_value', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_VALUE));
@@ -693,7 +693,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/inc_value', (req, res, next) => {
+  app.post('/inc_value', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.INC_VALUE));
@@ -709,7 +709,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/dec_value', (req, res, next) => {
+  app.post('/dec_value', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.DEC_VALUE));
@@ -725,7 +725,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_function', (req, res, next) => {
+  app.post('/set_function', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_FUNCTION));
@@ -741,7 +741,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_rule', (req, res, next) => {
+  app.post('/set_rule', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_RULE));
@@ -757,7 +757,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_owner', (req, res, next) => {
+  app.post('/set_owner', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_OWNER));
@@ -775,7 +775,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 
   // A custom address can be used as a devel method for bypassing the trasaction verification.
   // TODO(platfowner): Replace custom address with real signature.
-  app.post('/set', (req, res, next) => {
+  app.post('/set', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
     const latency = Date.now() - beginTime;
@@ -790,7 +790,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/batch', (req, res, next) => {
+  app.post('/batch', middleware.writeLimiter(), (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createBatchTxBody(req.body));
     const latency = Date.now() - beginTime;
@@ -801,7 +801,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/sign_transaction', (req, res) => {
+  app.post('/sign_transaction', middleware.writeLimiter(), (req, res) => {
     const beginTime = Date.now();
     const latency = Date.now() - beginTime;
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
@@ -811,7 +811,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   })
 
-  app.post('/broadcast_consensus_msg', (req, res) => {
+  app.post('/broadcast_consensus_msg', middleware.writeLimiter(), (req, res) => {
     const beginTime = Date.now();
     p2pClient.broadcastConsensusMessage(req.body);
     const latency = Date.now() - beginTime;
@@ -825,7 +825,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 
 if (eventHandler) {
   // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
-  app.get('/eh_load_balancer_health_check', (req, res, next) => {
+  app.get('/eh_load_balancer_health_check', middleware.readLimiter(), (req, res, next) => {
     const result = eventHandler.getEventHandlerHealth();
     res.status(200)
       .set('Content-Type', 'text/plain')
