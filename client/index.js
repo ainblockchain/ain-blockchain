@@ -41,9 +41,6 @@ const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
 app.use(cors({ origin: corsOrigin }));
 // NOTE(minsulee2): complex express middleware is now built in middleware.js
 const middleware = new Middleware();
-if (NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
-  app.use(middleware.limiter);
-}
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
