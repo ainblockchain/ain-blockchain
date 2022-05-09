@@ -57,6 +57,7 @@ class BlockchainNode {
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    // Node's front db
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
@@ -907,7 +908,8 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
-  executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
+  executeAndGetValidTransactions(
+      longestNotarizedChain, blockNumber, blockTime, tempDb, isExecutionOnly = false) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
     const chainId = this.getBlockchainParam('genesis/chain_id');
     const candidates = this.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
@@ -925,10 +927,14 @@ class BlockchainNode {
         resList.push(res);
       }
     }
+    if (isExecutionOnly) {
+      return;
+    }
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.tp.removeInvalidTxsFromPool(invalidTransactions);
-    const gasPriceUnit = this.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateVersion);
+    const gasPriceUnit =
+        this.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
     const receipts = CommonUtil.txResultsToReceipts(resList);
@@ -1048,6 +1054,10 @@ class BlockchainNode {
       }
     }
     if (lastFinalizedBlock) {
+      // Apply the transactions from the tx pool to the node's front db.
+      this.executeAndGetValidTransactions(
+          null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
+      // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
     }
   }
