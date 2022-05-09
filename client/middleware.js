@@ -1,16 +1,22 @@
 const express = require('express');
 const cors = require('cors');
+const ipWhitelist = require('ip-whitelist');
 const rateLimit = require('express-rate-limit');
 
 const { NodeConfigs } = require('../common/constants');
-const { getRegexpList } = require('../common/common-util');
+const {
+  getRegexpList,
+  isWildcard
+} = require('../common/common-util');
+const { convertIpv6ToIpv4 } = require('../common/network-util');
 
 class Middleware {
   constructor () {
-    this.expressRequestBodySizeLimit = this.setExpressRequestBodySizeLimit();
-    this.corsOriginList = this.setCorsOriginList();
-    this.readRateLimit = this.setReadRateLimit();
-    this.writeRateLimit = this.setWriteRateLimit();
+    this.setExpressRequestBodySizeLimit();
+    this.setCorsOriginList();
+    this.setDevClientApiIpWhitelist();
+    this.setReadRateLimit();
+    this.setWriteRateLimit();
   }
 
   _emptyHandler() {
@@ -30,6 +36,11 @@ class Middleware {
     return this;
   }
 
+  setDevClientApiIpWhitelist() {
+    this.devClientApiIpWhitelist = NodeConfigs.DEV_CLIENT_API_IP_WHITELIST;
+    return this;
+  }
+
   setReadRateLimit() {
     this.readRateLimit = NodeConfigs.MAX_READ_RATE_LIMIT;
     return this;
@@ -46,6 +57,10 @@ class Middleware {
 
   getCorsOriginList() {
     return this.corsOriginList;
+  }
+
+  getDevClientApiIpWhitelist() {
+    return this.devClientApiIpWhitelist;
   }
 
   getReadRateLimit() {
@@ -71,6 +86,15 @@ class Middleware {
     return cors({ origin: this.getCorsOriginList() })
   }
 
+  ipWhitelistLimiter() {
+    return ipWhitelist((ip) => {
+      const whitelist = this.getDevClientApiIpWhitelist();
+      return isWildcard(whitelist) ||
+          matchUrl(ip, whitelist) ||
+          matchUrl(convertIpv6ToIpv4(ip), whitelist);
+    })
+  }
+
   readLimiter() {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
         rateLimit({
@@ -85,6 +109,14 @@ class Middleware {
           windowMs: 1000,   // 1 second
           max: this.getWriteRateLimit()   // limit each IP to maximum of write rate limit
         }) : this._emptyHandler();
+  }
+
+  // NOTE(minsulee2): debugging purpose
+  printAll() {
+    console.log(this.getCorsOriginList());
+    console.log(this.getDevClientApiIpWhitelist());
+    console.log(this.getExpressRequestBodySizeLimit());
+    console.log(this.getReadRateLimit(), this.getWriteRateLimit());
   }
 }
 
