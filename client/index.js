@@ -31,16 +31,18 @@ const Middleware = require('./middleware');
 const MAX_BLOCKS = 20;
 
 const app = express();
-app.use(express.json({ limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT }));
-app.use(express.urlencoded({
-  extended: true,
-  limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT
-}));
+// NOTE(minsulee2): complex express middleware is now built in middleware.js
+const middleware = new Middleware();
+app.use(middleware.expressJsonRequestBodySizeLimiter());
+app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
     NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST);
 app.use(cors({ origin: corsOrigin }));
-// NOTE(minsulee2): complex express middleware is now built in middleware.js
-const middleware = new Middleware();
+app.use(ipWhitelist((ip) => {
+  return CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+      matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+      matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+}));
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
@@ -118,12 +120,6 @@ app.get('/last_block_number', middleware.readLimiter(), (req, res, next) => {
     .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
-
-app.use(ipWhitelist((ip) => {
-  return CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-      matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-      matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
-}));
 
 /**
  * Dev Client GET APIs (available to whitelisted IPs)
