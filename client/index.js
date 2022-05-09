@@ -6,7 +6,6 @@ const express = require('express');
 const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
-const rateLimit = require('express-rate-limit');
 const ipWhitelist = require('ip-whitelist');
 const matchUrl = require('match-url-wildcard');
 const BlockchainNode = require('../node');
@@ -27,6 +26,7 @@ const {
   DevFlags
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
+const Middleware = require('./middleware');
 
 const MAX_BLOCKS = 20;
 
@@ -39,12 +39,10 @@ app.use(express.urlencoded({
 const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
     NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST);
 app.use(cors({ origin: corsOrigin }));
+// NOTE(minsulee2): complex express middleware is now built in middleware.js
+const middleware = new Middleware();
 if (NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
-  const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 60 // limit each IP to 60 requests per windowMs
-  });
-  app.use(limiter);
+  app.use(middleware.limiter);
 }
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
