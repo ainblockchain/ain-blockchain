@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
     printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
