@@ -1,9 +1,11 @@
+const express = require('express');
 const rateLimit = require('express-rate-limit');
 
 const { NodeConfigs } = require('../common/constants');
 
 class Middleware {
   constructor () {
+    this.expressRequestBodySizeLimit = this.setExpressRequestBodySizeLimit();
     this.readRateLimit = this.setReadRateLimit();
     this.writeRateLimit = this.setWriteRateLimit();
   }
@@ -12,6 +14,11 @@ class Middleware {
     return (req, res, next) => {
       return next();
     }
+  }
+
+  setExpressRequestBodySizeLimit() {
+    this.expressRequestBodySizeLimit = NodeConfigs.REQUEST_BODY_SIZE_LIMIT;
+    return this;
   }
 
   setReadRateLimit() {
@@ -24,12 +31,27 @@ class Middleware {
     return this;
   }
 
+  getExpressRequestBodySizeLimit() {
+    return this.expressRequestBodySizeLimit;
+  }
+
   getReadRateLimit() {
     return this.readRateLimit;
   }
 
   getWriteRateLimit() {
     return this.writeRateLimit;
+  }
+
+  expressJsonRequestBodySizeLimiter() {
+    return express.json({ limit: this.getExpressRequestBodySizeLimit() });
+  }
+
+  expressUrlencdedRequestBodySizeLimiter() {
+    return express.urlencoded({
+      extended: true,
+      limit: this.getExpressRequestBodySizeLimit()
+    });
   }
 
   readLimiter() {
