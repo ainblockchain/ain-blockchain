@@ -5,16 +5,12 @@ const logger = new (require('../logger'))('CLIENT');
 const express = require('express');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
-const matchUrl = require('match-url-wildcard');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
-const {
-  convertIpv6ToIpv4,
-  sendGetRequest
-} = require('../common/network-util');
+const { sendGetRequest } = require('../common/network-util');
 const {
   BlockchainConsts,
   NodeConfigs,
