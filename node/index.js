@@ -907,6 +907,34 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
+    const LOG_HEADER = 'executeAndGetValidTransactions';
+    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const candidates = this.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
+    const transactions = [];
+    const invalidTransactions = [];
+    const resList = [];
+    for (const tx of candidates) {
+      const res = tempDb.executeTransaction(
+          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime);
+      if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        invalidTransactions.push(tx);
+      } else {
+        transactions.push(tx);
+        resList.push(res);
+      }
+    }
+    // Once successfully executed txs (when submitted to tx pool) can become invalid
+    // after some blocks are created. Remove those transactions from tx pool.
+    this.tp.removeInvalidTxsFromPool(invalidTransactions);
+    const gasPriceUnit = this.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateVersion);
+    const { gasAmountTotal, gasCostTotal } =
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
+    const receipts = CommonUtil.txResultsToReceipts(resList);
+    return { transactions, receipts, gasAmountTotal, gasCostTotal };
+  }
+
   addTrafficEventsForVoteTxList(txList, blockTimestamp) {
     let proposeTimestamp = null;
     for (let i = 0; i < txList.length; i++) {
