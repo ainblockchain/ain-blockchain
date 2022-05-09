@@ -15,6 +15,7 @@
   "scripts": {
     "client": "UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 DEBUG=true node ./client/index.js",
     "deploy_test": "bash deploy_test_gcp.sh $USER all",
+    "cat_log_test": "bash deploy_test_gcp.sh $USER all --cat-log",
     "lint": "eslint --ext js -c .eslintrc.json .",
     "loadtest": "bash loadtest/load_tester.sh",
     "start": "bash start_local_blockchain.sh",

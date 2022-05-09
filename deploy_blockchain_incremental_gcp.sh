@@ -218,8 +218,10 @@ function deploy_node() {
 
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
+        UPDATE_FRONT_DB_OPTION="--update-front-db"
     else
         JSON_RPC_OPTION=""
+        UPDATE_FRONT_DB_OPTION=""
     fi
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
@@ -237,11 +239,12 @@ function deploy_node() {
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+    printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
