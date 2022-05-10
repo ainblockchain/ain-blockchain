@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     return 1
@@ -31,6 +31,8 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
+    elif [[ $option = '--update-front-db' ]]; then
+        UPDATE_FRONT_DB_OPTION="$option"
     elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     elif [[ $option = '--event-handler' ]]; then
@@ -65,6 +67,7 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 JSON_RPC_OPTION=""
+UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
 EVENT_HANDLER_OPTION=""
 
@@ -84,6 +87,7 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
@@ -121,6 +125,11 @@ if [[ $JSON_RPC_OPTION ]]; then
     export ENABLE_JSON_RPC_API=true
 else
     export ENABLE_JSON_RPC_API=false
+fi
+if [[ $UPDATE_FRONT_DB_OPTION ]]; then
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=true
+else
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
     export ENABLE_REST_FUNCTION_CALL=true
