@@ -76,7 +76,7 @@ class EventHandler {
   }
 
   // TODO(cshcomcom): Add tests.
-  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue) {
+  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue, eventSource) {
     const LOG_HEADER = 'emitValueChanged';
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);

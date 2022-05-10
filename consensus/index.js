@@ -15,6 +15,7 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
+  ValueChangedEventSources,
 } = require('../common/constants');
 const { ConsensusErrorCode } = require('../common/result-code');
 const {
@@ -414,10 +415,10 @@ class Consensus {
     }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const { offenses, evidence } = this.node.bp.getOffensesAndEvidence(
-        validators, recordedInvalidBlockHashSet, blockNumber, blockTime, tempDb);
+        validators, recordedInvalidBlockHashSet, blockNumber, blockTime, tempDb, null);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } =
         this.node.executeAndGetValidTransactions(
-            longestNotarizedChain, blockNumber, blockTime, tempDb);
+            longestNotarizedChain, blockNumber, blockTime, tempDb, false, null);
     tempDb.applyBandagesForBlockNumber(blockNumber);
     const stateProofHash = NodeConfigs.LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
@@ -596,9 +597,9 @@ class Consensus {
     }
   }
 
-  static validateAndExecuteLastVotes(lastVotes, lastHash, number, blockTime, db, blockPool) {
+  static validateAndExecuteLastVotes(lastVotes, lastHash, number, blockTime, db, blockPool, eventSource) {
     if (number === 0) return;
-    if (!db.executeTransactionList(lastVotes, true, false, number, blockTime)) {
+    if (!db.executeTransactionList(lastVotes, true, false, number, blockTime, eventSource)) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
         message: `Failed to execute last votes`,
@@ -629,7 +630,7 @@ class Consensus {
   }
 
   // Cross-check the offenses in proposalTx & the evidence in proposalBlock
-  static validateAndExecuteOffensesAndEvidence(evidence, validators, prevBlockMajority, number, blockTime, proposalTx, db) {
+  static validateAndExecuteOffensesAndEvidence(evidence, validators, prevBlockMajority, number, blockTime, proposalTx, db, eventSource) {
     const offenses = proposalTx ? ConsensusUtil.getOffensesFromProposalTx(proposalTx) : null;
     if (proposalTx) {
       if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
@@ -664,7 +665,8 @@ class Consensus {
             level: 'error'
           });
         }
-        const txsRes = db.executeTransactionList(evidenceForOffense.votes, true, false, number, blockTime);
+        const txsRes = db.executeTransactionList(evidenceForOffense.votes, true,
+            false, number, blockTime, eventSource);
         if (!txsRes) {
           throw new ConsensusError({
             code: ConsensusErrorCode.EXECUTING_EVIDENCE_VOTES_FAILURE,
@@ -691,7 +693,7 @@ class Consensus {
 
   static validateAndExecuteTransactions(
       transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db, node) {
-    const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime);
+    const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime, eventSource);
     if (!txsRes) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_TX_FAILURE,
@@ -771,7 +773,8 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false,
+        number, blockTime, null);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       throw new ConsensusError({
@@ -823,11 +826,11 @@ class Consensus {
       Consensus.validateBlockNumberAndHashes(block, prevBlock, node.bc.genesisBlockHash);
       Consensus.validateValidators(validators, number, baseVersion, node);
       Consensus.validateProposer(number, prevBlockLastVotesHash, epoch, validators, proposer);
-      Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp);
+      Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp, ValueChangedEventSources.BLOCK);
       Consensus.validateAndExecuteOffensesAndEvidence(
-          evidence, validators, prevBlockMajority, number, timestamp, proposalTx, db);
+          evidence, validators, prevBlockMajority, number, timestamp, proposalTx, db, ValueChangedEventSources.BLOCK);
       Consensus.validateAndExecuteTransactions(
-          transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node);
+          transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node, ValueChangedEventSources.BLOCK);
       db.applyBandagesForBlockNumber(number);
       Consensus.validateStateProofHash(state_proof_hash, block, db, node, takeSnapshot);
       Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
@@ -928,7 +931,7 @@ class Consensus {
           `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, prevBlockNumber + 1, prevBlockTime);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, prevBlockNumber + 1, prevBlockTime, null);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);

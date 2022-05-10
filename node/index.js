@@ -22,6 +22,7 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  ValueChangedEventSources,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -790,7 +791,7 @@ class BlockchainNode {
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }
     const result = this.db.executeTransaction(
-        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp(), ValueChangedEventSources.USER);
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
@@ -916,7 +917,7 @@ class BlockchainNode {
    * after removing the invalid transactions from the tx pool.
    */
   executeAndGetValidTransactions(
-      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false) {
+      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
     const chainId = this.getBlockchainParam('genesis/chain_id');
     const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
@@ -925,7 +926,7 @@ class BlockchainNode {
     const resList = [];
     for (const tx of candidates) {
       const res = baseDb.executeTransaction(
-          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime);
+          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
@@ -1064,7 +1065,7 @@ class BlockchainNode {
       if (NodeConfigs.UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL) {
         // Apply the txs from the tx pool to the new final front db.
         this.executeAndGetValidTransactions(
-            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
+            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true, ValueChangedEventSources.USER);
       }
       // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
