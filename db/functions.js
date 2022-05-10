@@ -212,6 +212,7 @@ class Functions {
                     opResultList: [],
                     otherGasAmount: 0,
                     ...blockchainParams,
+                    eventSource,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -481,7 +482,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
+    const result = this.db.setValue(valuePath, value, auth, transaction, newOptions, context.eventSource);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -501,7 +502,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions);
+    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions, context.eventSource);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -1350,7 +1351,7 @@ class Functions {
   _cancelCheckin(value, context) {
     if (value !== null) {
       // Does nothing for non-null value.
-      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
+      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
