@@ -476,12 +476,13 @@ class Functions {
     const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
+    const eventSource = context.eventSource;
     const auth = context.auth;
     const newOptions = {
       timestamp,
       blockNumber,
       blockTime,
-      eventSource: context.eventSource,
+      eventSource,
     };
     const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
