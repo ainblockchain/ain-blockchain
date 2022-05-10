@@ -191,6 +191,7 @@ class Functions {
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             let result = null;
+            const eventSource = _.get(options, 'eventSource', null);
             try {
               result = nativeFunction.func(
                   value,
