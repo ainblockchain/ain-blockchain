@@ -692,7 +692,7 @@ class Consensus {
   }
 
   static validateAndExecuteTransactions(
-      transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db, node) {
+      transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db, node, eventSource) {
     const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime, eventSource);
     if (!txsRes) {
       throw new ConsensusError({
