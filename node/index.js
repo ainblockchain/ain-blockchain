@@ -908,16 +908,23 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  /**
+   * Execute the valid transactions from the tx pool on the given baseDb.
+   * In this case, the transactions contained in the longestNotarizedChain are excluded from
+   * the execution.
+   * If isExecutionOnly = false, it returns the valid transactions with some other information
+   * after removing the invalid transactions from the tx pool.
+   */
   executeAndGetValidTransactions(
-      longestNotarizedChain, blockNumber, blockTime, tempDb, isExecutionOnly = false) {
+      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
     const chainId = this.getBlockchainParam('genesis/chain_id');
-    const candidates = this.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
+    const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
-      const res = tempDb.executeTransaction(
+      const res = baseDb.executeTransaction(
           Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
@@ -934,7 +941,7 @@ class BlockchainNode {
     // after some blocks are created. Remove those transactions from tx pool.
     this.tp.removeInvalidTxsFromPool(invalidTransactions);
     const gasPriceUnit =
-        this.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateVersion);
+        this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
     const receipts = CommonUtil.txResultsToReceipts(resList);
