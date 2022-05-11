@@ -930,7 +930,7 @@ class Consensus {
           `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, prevBlockNumber + 1, prevBlockTime, null);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, prevBlockNumber + 1, prevBlockTime);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
