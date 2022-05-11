@@ -418,7 +418,7 @@ class Consensus {
         validators, recordedInvalidBlockHashSet, blockNumber, blockTime, tempDb, null);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } =
         this.node.executeAndGetValidTransactions(
-            longestNotarizedChain, blockNumber, blockTime, tempDb, false, null);
+            longestNotarizedChain, blockNumber, blockTime, tempDb);
     tempDb.applyBandagesForBlockNumber(blockNumber);
     const stateProofHash = NodeConfigs.LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
