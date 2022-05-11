@@ -773,8 +773,7 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false,
-        number, blockTime);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       throw new ConsensusError({
