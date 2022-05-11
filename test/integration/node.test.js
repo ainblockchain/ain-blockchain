@@ -9,20 +9,18 @@ const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
-const PathUtil = require('../../common/path-util');
 const { JsonRpcApiResultCode } = require('../../common/result-code');
 const {
   verifyStateProof,
 } = require('../../db/state-util');
-const DB = require('../../db');
 const {
   parseOrLog,
   setUpApp,
   waitUntilNetworkIsReady,
   waitUntilTxFinalized,
-  getBlockByNumber,
-  eraseEvalResMatched,
+  eraseEvalResMatched
 } = require('../test-util');
+const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
@@ -1332,12 +1330,13 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe('ain_getAddress api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GETADDRESS} api`, () => {
       it('returns the correct node address', () => {
         const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_getAddress', { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
-        .then(res => {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GETADDRESS, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then(res => {
           expect(res.result.result).to.equal(expAddr);
         });
       });
@@ -3130,7 +3129,7 @@ describe('Blockchain Node', () => {
 
       it('accepts a transaction with numbered nonce', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getNonce', {
+        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
           address: account.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3190,7 +3189,7 @@ describe('Blockchain Node', () => {
       it('accepts a transaction with account registration gas amount from nonce', () => {
         // NOTE: account2 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getNonce', {
+        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
           address: account2.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3250,7 +3249,7 @@ describe('Blockchain Node', () => {
       it('accepts a transaction without account registration gas amount from nonce', () => {
         // NOTE: account2 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getNonce', {
+        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
           address: account2.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3514,7 +3513,7 @@ describe('Blockchain Node', () => {
       it('accepts a multi-set transaction with account registration gas amount from nonce', () => {
         // NOTE: account4 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getNonce', {
+        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
           address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3592,7 +3591,7 @@ describe('Blockchain Node', () => {
       it('accepts a multi-set transaction without account registration gas amount from nonce', () => {
         // NOTE: account4 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getNonce', {
+        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
           address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
