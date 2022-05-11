@@ -16,11 +16,11 @@ const {
   waitUntilTxFinalized,
   waitForNewBlocks,
   waitUntilNetworkIsReady,
-  waitUntilNodeSyncs,
   parseOrLog,
   setUpApp
 } = require('../test-util');
 const { Block } = require('../../blockchain/block');
+const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -58,14 +58,10 @@ const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
 const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
-const JSON_RPC_GET_NONCE = 'ain_getNonce';
-const JSON_RPC_NET_SYNCING = 'net_syncing';
 
 const SET_VALUE_ENDPOINT = '/set_value';
 const GET_VALUE_ENDPOINT = '/get_value'
-const BLOCKS_ENDPOINT = '/blocks'
 const GET_ADDR_ENDPOINT = '/get_address';
-const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number'
 
 // Data options
 RANDOM_OPERATION = [
@@ -184,7 +180,7 @@ async function sendTransactions(sentOperations) {
       'POST', serverList[serverIndex] + '/json-rpc', {
         json: {
           jsonrpc: '2.0',
-          method: 'ain_getNonce',
+          method: JSON_RPC_METHOD.AIN_GETNONCE,
           id: 0,
           params: {
             address,

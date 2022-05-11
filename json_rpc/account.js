@@ -4,10 +4,11 @@ const {
 } = require('../common/constants');
 const PathUtil = require('../common/path-util');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHOD } = require('./constants');
 
 module.exports = function getAccountApis(node) {
   return {
-    ain_getAddress: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GETADDRESS]: function(args, done) {
       const beginTime = Date.now();
       const result = node.account ? node.account.address : null;
       const latency = Date.now() - beginTime;
@@ -15,7 +16,7 @@ module.exports = function getAccountApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getBalance: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GETBALANCE]: function(args, done) {
       const beginTime = Date.now();
       const address = args.address;
       const balance = node.db.getValue(PathUtil.getAccountBalancePath(address)) || 0;
@@ -24,7 +25,7 @@ module.exports = function getAccountApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: balance }));
     },
 
-    ain_getNonce: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GETNONCE]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getNonceForAddr(args.address, args.from === 'pending');
       const latency = Date.now() - beginTime;
@@ -32,7 +33,7 @@ module.exports = function getAccountApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getTimestamp: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GETTIMESTAMP]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getTimestampForAddr(args.address, args.from === 'pending');
       const latency = Date.now() - beginTime;
@@ -40,7 +41,7 @@ module.exports = function getAccountApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getValidatorInfo: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GETVALIDATORINFO]: function(args, done) {
       const beginTime = Date.now();
       const addr = args.address;
       const isWhitelisted = node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr)) || false;

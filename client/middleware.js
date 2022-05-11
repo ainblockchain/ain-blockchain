@@ -112,6 +112,13 @@ class Middleware {
         }) : this._emptyHandler();
   }
 
+  test() {
+    return (req, res, next) => {
+      console.log(req)
+      return next();
+    }
+  }
+
   // NOTE(minsulee2): debugging purpose
   printAll() {
     console.log(this.getCorsOriginList());
