@@ -620,8 +620,7 @@ class BlockPool {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
           const res = baseDb.executeTransaction(
-              Transaction.toExecutable(vote, chainId), true, true,
-              blockNumber, blockTime, eventSource);
+              Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime, eventSource);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
