@@ -46,18 +46,12 @@ const ENV_VARIABLES = [
 ];
 
 // Server configurations
-const trackerServer = 'http://localhost:5000';
 const server1 = 'http://localhost:8081';
 const server2 = 'http://localhost:8082';
 const server3 = 'http://localhost:8083';
 const serverList = [server1, server2, server3 ];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
-const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
-const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
-const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
-const JSON_RPC_GET_BLOCK_BY_NUMBER = 'ain_getBlockByNumber';
 
 const SET_VALUE_ENDPOINT = '/set_value';
 const GET_VALUE_ENDPOINT = '/get_value'
@@ -234,7 +228,7 @@ describe('Blockchain Cluster', () => {
     await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
+      jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_LAST_BLOCK,
           {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
@@ -278,31 +272,33 @@ describe('Blockchain Cluster', () => {
         await sendTransactions(sentOperations);
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
-          .request(JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION},
+          .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
+              { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
               function(err, response) {
-            if (err) throw err;
-            baseChain = response.result.result;
-            resolve();
-          });
+                if (err) throw err;
+                baseChain = response.result.result;
+                resolve();
+              });
         }).then(() => {
           return new Promise((resolve) => {
-            jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-                {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION},
-                function(err, response) {
-                  if (err) throw err;
-                  const newChain = response.result.result;
-                  const diff = Math.abs(baseChain.length - newChain.length);
-                  assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
-                  while (baseChain.length !== newChain.length) {
-                    if (baseChain.length > newChain.length) {
-                      baseChain.pop();
-                    } else  {
-                      newChain.pop();
+            jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT)
+              .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
+                  { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
+                  function (err, response) {
+                    if (err) throw err;
+                    const newChain = response.result.result;
+                    const diff = Math.abs(baseChain.length - newChain.length);
+                    assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
+                    while (baseChain.length !== newChain.length) {
+                      if (baseChain.length > newChain.length) {
+                        baseChain.pop();
+                      } else {
+                        newChain.pop();
+                      }
                     }
-                  }
-                  assert.deepEqual(newChain.length, baseChain.length);
-                  assert.deepEqual(newChain, baseChain);
-                  resolve();
+                    assert.deepEqual(newChain.length, baseChain.length);
+                    assert.deepEqual(newChain, baseChain);
+                    resolve();
                 });
           });
         });
@@ -368,7 +364,7 @@ describe('Blockchain Cluster', () => {
             'POST', serverList[i] + '/json-rpc', {
               json: {
                 jsonrpc: '2.0',
-                method: JSON_RPC_GET_BLOCKS,
+                method: JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
                 id: 0,
                 params: {
                   protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -415,9 +411,13 @@ describe('Blockchain Cluster', () => {
       for (let i = 0; i < serverList.length; i++) {
         await sendTransactions(sentOperations);
         const blocks = parseOrLog(syncRequest('POST', serverList[i] + '/json-rpc',
-            {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                    params: {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}}})
-            .body.toString('utf-8')).result.result;
+            {
+              json: {
+                jsonrpc: '2.0', method: JSON_RPC_METHOD.AIN_GET_BLOCK_LIST, id: 0,
+                params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }
+              }
+            })
+          .body.toString('utf-8')).result.result;
         const len = blocks.length;
         for (let j = 0; j < len; j++) {
           const block = blocks[j];
@@ -505,10 +505,10 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Block API', () => {
-    it('ain_getBlockHeadersList', async () => {
+    it(JSON_RPC_METHOD.AIN_GET_BLOCK_HEADERS_LIST, async () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
-        jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
+        jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_HEADERS_LIST,
                               {from: 2, to: 4, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION},
                               function(err, response) {
           if (err) throw err;
@@ -521,17 +521,17 @@ describe('Blockchain Cluster', () => {
       })
     });
 
-    it('ain_getBlockByHash and ain_getBlockByNumber', async () => {
+    it(`${JSON_RPC_METHOD.AIN_GET_BLOCK_BY_HASH} and ${JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER}`, async () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
-        jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+        jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
             {number: 2, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}, function(err, response) {
           if (err) throw err;
           resolve(response.result.result);
         });
       }).then((resultByNumber) => {
         return new Promise((resolve) => {
-          jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH,
+          jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_BY_HASH,
               {hash: resultByNumber.hash, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION},
                                 function(err, response) {
             if (err) throw err;
@@ -617,25 +617,26 @@ describe('Blockchain Cluster', () => {
   describe('Gas fee', () => {
     it('collected gas cost matches the gas_cost_total in the block', () => {
       return new Promise((resolve) => {
-        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request
-            (JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}, function(err, response) {
-              if (err) throw err;
-              const chain = response.result.result;
-              for (const block of chain) {
-                if (block.number > 0) {
-                  // Amount specified in block
-                  const gasCostTotal = block.gas_cost_total;
-                  // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
-                  // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
-                  const collectedGas = parseOrLog(syncRequest(
-                      'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
-                      .body.toString('utf-8')).result;
-                  assert.deepEqual(gasCostTotal, collectedGas);
+        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT)
+          .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
+              { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
+              function (err, response) {
+                if (err) throw err;
+                const chain = response.result.result;
+                for (const block of chain) {
+                  if (block.number > 0) {
+                    // Amount specified in block
+                    const gasCostTotal = block.gas_cost_total;
+                    // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
+                    // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
+                    const collectedGas = parseOrLog(syncRequest(
+                        'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
+                        .body.toString('utf-8')).result;
+                    assert.deepEqual(gasCostTotal, collectedGas);
+                  }
                 }
-              }
-              resolve();
-            }
-        );
+                resolve();
+              });
       });
     });
   });

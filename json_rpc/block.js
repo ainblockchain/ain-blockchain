@@ -3,10 +3,11 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHOD } = require('./constants');
 
 module.exports = function getBlockApis(node) {
   return {
-    ain_getBlockList: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_LIST]: function(args, done) {
       const beginTime = Date.now();
       const blocks = node.bc.getBlockList(args.from, args.to);
       const latency = Date.now() - beginTime;
@@ -14,7 +15,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: blocks }));
     },
 
-    ain_getLastBlock: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_LAST_BLOCK]: function(args, done) {
       const beginTime = Date.now();
       const result = node.bc.lastBlock();
       const latency = Date.now() - beginTime;
@@ -22,7 +23,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getLastBlockNumber: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_LAST_BLOCK_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const result = node.bc.lastBlockNumber();
       const latency = Date.now() - beginTime;
@@ -30,7 +31,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getBlockHeadersList: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_HEADERS_LIST]: function(args, done) {
       const beginTime = Date.now();
       const blocks = node.bc.getBlockList(args.from, args.to);
       const blockHeaders = [];
@@ -42,7 +43,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: blockHeaders }));
     },
 
-    ain_getBlockByHash: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByHash(args.hash);
       if (block && !args.getFullTransactions) {
@@ -53,7 +54,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: block }));
     },
 
-    ain_getBlockByNumber: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByNumber(args.number);
       if (!block || args.getFullTransactions) {
@@ -68,7 +69,7 @@ module.exports = function getBlockApis(node) {
       }
     },
 
-    ain_getProposerByHash: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_PROPOSER_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByHash(args.hash);
       const result = block ? block.proposer : null;
@@ -77,7 +78,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getProposerByNumber: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_PROPOSER_BY_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByNumber(args.number);
       const result = block ? block.proposer : null;
@@ -86,7 +87,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getValidatorsByNumber: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_VALIDATORS_BY_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByNumber(args.number);
       const result = block ? block.validators : null;
@@ -95,7 +96,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getValidatorsByHash: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_VALIDATORS_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByHash(args.hash);
       const result = block ? block.validators : null;
@@ -104,7 +105,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getBlockTransactionCountByHash: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_TRANSACTION_COUNT_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByHash(args.hash);
       const result = block ? block.transactions.length : null;
@@ -113,7 +114,7 @@ module.exports = function getBlockApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getBlockTransactionCountByNumber: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByNumber(args.number);
       const result = block ? block.transactions.length : null;
