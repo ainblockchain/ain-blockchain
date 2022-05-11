@@ -29,6 +29,9 @@ const JSON_RPC_METHOD = {
   AIN_GET_PROOF_HASH: 'ain_getProofHash',
   AIN_GET_STATE_INFO: 'ain_getStateInfo',
   AIN_GET_STATE_USAGE: 'ain_getStateUsage',
+  NET_GET_EVENT_HANDLER_NETWORK_INFO: 'net_getEventHandlerNetworkInfo',
+  AIN_GET_EVENT_HANDLER_FILTER_INFO: 'ain_getEventHandlerFilterInfo',
+  AIN_GET_EVENT_HANDLER_CHANNEL_INFO: 'ain_getEventHandlerChannelInfo',
   // SET
   AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST: 'ain_addToDevClientApiIpWhitelist',
   AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST: 'ain_removeFromDevClientApiIpWhitelist',
