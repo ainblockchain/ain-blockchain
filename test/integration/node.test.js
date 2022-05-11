@@ -1330,11 +1330,11 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe(`${JSON_RPC_METHOD.AIN_GETADDRESS} api`, () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_ADDRESS} api`, () => {
       it('returns the correct node address', () => {
         const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GETADDRESS, {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_ADDRESS, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then(res => {
           expect(res.result.result).to.equal(expAddr);
@@ -3129,7 +3129,7 @@ describe('Blockchain Node', () => {
 
       it('accepts a transaction with numbered nonce', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
+        return client.request(JSON_RPC_METHOD.AIN_GET_NONCE, {
           address: account.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3189,7 +3189,7 @@ describe('Blockchain Node', () => {
       it('accepts a transaction with account registration gas amount from nonce', () => {
         // NOTE: account2 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
+        return client.request(JSON_RPC_METHOD.AIN_GET_NONCE, {
           address: account2.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3249,7 +3249,7 @@ describe('Blockchain Node', () => {
       it('accepts a transaction without account registration gas amount from nonce', () => {
         // NOTE: account2 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
+        return client.request(JSON_RPC_METHOD.AIN_GET_NONCE, {
           address: account2.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3513,7 +3513,7 @@ describe('Blockchain Node', () => {
       it('accepts a multi-set transaction with account registration gas amount from nonce', () => {
         // NOTE: account4 does not have balance nor nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
+        return client.request(JSON_RPC_METHOD.AIN_GET_NONCE, {
           address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3591,7 +3591,7 @@ describe('Blockchain Node', () => {
       it('accepts a multi-set transaction without account registration gas amount from nonce', () => {
         // NOTE: account4 already has nonce/timestamp.
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request(JSON_RPC_METHOD.AIN_GETNONCE, {
+        return client.request(JSON_RPC_METHOD.AIN_GET_NONCE, {
           address: account4.address,
           from: 'pending',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION

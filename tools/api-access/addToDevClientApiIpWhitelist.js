@@ -4,18 +4,19 @@ const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const { BlockchainConsts } = require('../../common/constants');
 const { getAccountPrivateKey } = require('./util');
+const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
 
 async function sendAddToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip) {
   const message = {
     timestamp: Date.now(),
-    method: 'ain_addToDevClientApiIpWhitelist',
+    method: JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST,
     ip,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: 'ain_addToDevClientApiIpWhitelist',
+      method: JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST,
       params: {
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         message,
