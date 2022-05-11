@@ -8,25 +8,29 @@ const {
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHOD } = require('./constants');
 
 module.exports = function getApiAccessApis(node) {
   return {
-    ain_getDevClientApiIpWhitelist: function(args, done) {
+    [JSON_RPC_METHOD.AIN_GET_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
-      if (_.get(args.message, 'method') === 'ain_getDevClientApiIpWhitelist' && verified) {
-        done(null, JsonRpcUtil.addProtocolVersion({ result: NodeConfigs.DEV_CLIENT_API_IP_WHITELIST }));
+      if (_.get(args.message, 'method') === JSON_RPC_METHOD.AIN_GET_DEV_CLIENT_API_IP_WHITELIST &&
+          verified) {
+        done(null,
+            JsonRpcUtil.addProtocolVersion({ result: NodeConfigs.DEV_CLIENT_API_IP_WHITELIST }));
       } else {
         done({ code: 403, message: 'Forbidden' });
       }
     },
 
-    ain_addToDevClientApiIpWhitelist: function(args, done) {
+    [JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== 'ain_addToDevClientApiIpWhitelist' || !verified) {
+      if (_.get(args.message, 'method') !== JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST ||
+          !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done({ code: 403, message: 'Forbidden' });
@@ -81,10 +85,11 @@ module.exports = function getApiAccessApis(node) {
       }
     },
 
-    ain_removeFromDevClientApiIpWhitelist: function(args, done) {
+    [JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== 'ain_removeFromDevClientApiIpWhitelist' || !verified) {
+      if (_.get(args.message, 'method') !== JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST ||
+          !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done({ code: 403, message: 'Forbidden' });

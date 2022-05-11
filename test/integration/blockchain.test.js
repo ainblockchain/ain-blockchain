@@ -180,7 +180,7 @@ async function sendTransactions(sentOperations) {
       'POST', serverList[serverIndex] + '/json-rpc', {
         json: {
           jsonrpc: '2.0',
-          method: JSON_RPC_METHOD.AIN_GETNONCE,
+          method: JSON_RPC_METHOD.AIN_GET_NONCE,
           id: 0,
           params: {
             address,
