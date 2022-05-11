@@ -18,6 +18,7 @@ const {
   setUpApp,
   waitUntilNetworkIsReady,
 } = require('../test-util');
+const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
 const SET_VALUE_ENDPOINT = '/set_value';
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -69,7 +70,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 function getEventHandlerNetworkInfo() {
   return _.get(parseOrLog(syncRequest('POST', serverList[EVENT_HANDLER_NODE_INDEX] + '/json-rpc', {
     json: {
-      jsonrpc: '2.0', method: 'net_getEventHandlerNetworkInfo', id: 0,
+      jsonrpc: '2.0', method: JSON_RPC_METHOD.NET_GET_EVENT_HANDLER_NETWORK_INFO, id: 0,
       params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
     },
   }).body.toString('utf-8')), 'result.result');
@@ -78,7 +79,7 @@ function getEventHandlerNetworkInfo() {
 function getEventHandlerChannelInfo() {
   return _.get(parseOrLog(syncRequest('POST', serverList[EVENT_HANDLER_NODE_INDEX] + '/json-rpc', {
     json: {
-      jsonrpc: '2.0', method: 'ain_getEventHandlerChannelInfo', id: 0,
+      jsonrpc: '2.0', method: JSON_RPC_METHOD.AIN_GET_EVENT_HANDLER_CHANNEL_INFO, id: 0,
       params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
     },
   }).body.toString('utf-8')), 'result.result');
@@ -87,7 +88,7 @@ function getEventHandlerChannelInfo() {
 function getEventHandlerFilterInfo() {
   return _.get(parseOrLog(syncRequest('POST', serverList[EVENT_HANDLER_NODE_INDEX] + '/json-rpc', {
     json: {
-      jsonrpc: '2.0', method: 'ain_getEventHandlerFilterInfo', id: 0,
+      jsonrpc: '2.0', method: JSON_RPC_METHOD.AIN_GET_EVENT_HANDLER_FILTER_INFO, id: 0,
       params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
     },
   }).body.toString('utf-8')), 'result.result');
