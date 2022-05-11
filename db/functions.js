@@ -505,7 +505,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions, context.eventSource);
+    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
