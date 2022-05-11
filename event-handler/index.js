@@ -92,8 +92,8 @@ class EventHandler {
         continue;
       }
 
-      const eventSourceConfig = _.get(eventFilter, 'config.event_source', null);
-      if (eventSourceConfig && eventSourceConfig !== eventSource) {
+      const expectedEventSource = _.get(eventFilter, 'config.event_source', null);
+      if (expectedEventSource && expectedEventSource !== eventSource) {
         continue;
       }
 
