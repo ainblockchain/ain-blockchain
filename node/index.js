@@ -917,7 +917,7 @@ class BlockchainNode {
    * after removing the invalid transactions from the tx pool.
    */
   executeAndGetValidTransactions(
-      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource) {
+      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource = null) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
     const chainId = this.getBlockchainParam('genesis/chain_id');
     const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
