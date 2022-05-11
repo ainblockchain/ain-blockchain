@@ -41,6 +41,7 @@ const {
 } = require('../common/network-util');
 const P2pUtil = require('./p2p-util');
 const PathUtil = require('../common/path-util');
+const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
@@ -960,7 +961,7 @@ class P2pServer {
   static async getLastReportedBlockNumber(parentChainEndpoint, shardingPath) {
     const resp = await sendGetRequest(
         parentChainEndpoint,
-        'ain_get',
+        JSON_RPC_METHOD.AIN_GET,
         {
           type: ReadDbOperations.GET_VALUE,
           ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/${ShardingProperties.LATEST_BLOCK_NUMBER}`
@@ -970,7 +971,7 @@ class P2pServer {
   }
 
   static async getShardingAppConfig(parentChainEndpoint, appName) {
-    const resp = await sendGetRequest(parentChainEndpoint, 'ain_get', {
+    const resp = await sendGetRequest(parentChainEndpoint, JSON_RPC_METHOD.AIN_GET, {
       type: ReadDbOperations.GET_VALUE,
       ref: PathUtil.getManageAppConfigPath(appName)
     });

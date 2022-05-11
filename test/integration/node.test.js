@@ -825,11 +825,11 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_get api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET} api`, () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path"
@@ -841,7 +841,7 @@ describe('Blockchain Node', () => {
 
       it('returns error when invalid op_list is given', () => {
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET',
           op_list: null
@@ -868,7 +868,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
@@ -894,7 +894,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_get', {
+        return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
@@ -908,11 +908,11 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_matchFunction api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_MATCH_FUNCTION} api`, () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_FUNCTION, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "matched_path": {
@@ -936,11 +936,11 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_matchRule api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_MATCH_RULE} api`, () => {
       it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_RULE, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "write": {
@@ -975,7 +975,7 @@ describe('Blockchain Node', () => {
       it('returns correct value (state)', () => {
         const ref = "/apps/test/test_rule/state";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_RULE, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "write": {
@@ -1023,7 +1023,7 @@ describe('Blockchain Node', () => {
       it('returns correct value (state & write)', () => {
         const ref = "/apps/test/test_rule/state/and/write";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_RULE, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "write": {
@@ -1062,11 +1062,11 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_matchOwner api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_MATCH_OWNER} api`, () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_OWNER, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "matched_path": {
@@ -1091,13 +1091,13 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalRule api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_EVAL_RULE} api`, () => {
       it('returns true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "abcd";
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_EVAL_RULE, request)
         .then(res => {
           assert.deepEqual(eraseEvalResMatched(res.result.result), {
             "code": 0,
@@ -1111,7 +1111,7 @@ describe('Blockchain Node', () => {
         const value = "value";
         const address = "efgh";
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_EVAL_RULE, request)
         .then(res => {
           res.result.result.message = 'erased';
           assert.deepEqual(eraseEvalResMatched(res.result.result), {
@@ -1123,13 +1123,13 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalOwner api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_EVAL_OWNER} api`, () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
         const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_EVAL_OWNER, request)
         .then(res => {
           assert.deepEqual(res.result.result, {
             "code": 0,
@@ -1167,11 +1167,11 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateProof api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_STATE_PROOF} api`, () => {
       it('returns correct value', () => {
         const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_GET_STATE_PROOF, request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
           const verifResult = verifyStateProof(res.result.result);
@@ -1187,22 +1187,22 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getProofHash api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_PROOF_HASH} api`, () => {
       it('returns correct value', () => {
         const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_GET_PROOF_HASH, request)
         .then(res => {
           expect(res.result.result).to.not.equal(null);
         })
       })
     })
 
-    describe('ain_getStateInfo api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_STATE_INFO} api`, () => {
       it('returns correct value', () => {
         const ref = '/values/apps/test/test_state_info/some/path';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_GET_STATE_INFO, request)
         .then(res => {
           const stateInfo = res.result.result;
           // Erase some properties for stable comparison.
@@ -1221,10 +1221,10 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateUsage api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_STATE_USAGE} api`, () => {
       it('with existing app name', () => {
         const request = { app_name: 'test', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_GET_STATE_USAGE, request)
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
@@ -1249,7 +1249,7 @@ describe('Blockchain Node', () => {
 
       it('with non-existing app name', () => {
         const request = { app_name: 'app_non_existing', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
+        return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_GET_STATE_USAGE, request)
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
