@@ -566,7 +566,7 @@ class BlockPool {
     let tallied = 0;
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
-          Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime, null))) {
+          Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime))) {
         logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
