@@ -59,7 +59,7 @@ const jsonRpcApis = require('../json_rpc')(
 app.post(
   '/json-rpc',
   VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
-  middleware.test(),
+  middleware.jsonRpcLimiter(),
   jayson.server(jsonRpcApis).middleware()
 );
 
