@@ -22,10 +22,9 @@ const {
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const P2pUtil = require('./p2p-util');
-const {
-  sendGetRequest
-} = require('../common/network-util');
+const { sendGetRequest } = require('../common/network-util');
 const { Block } = require('../blockchain/block');
+const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -1178,7 +1177,8 @@ class P2pClient {
       this.peerCandidates.delete(peerCandidateJsonRpcUrl);
       return;
     }
-    const resp = await sendGetRequest(peerCandidateJsonRpcUrl, 'p2p_getPeerCandidateInfo', { });
+    const resp = await sendGetRequest(
+        peerCandidateJsonRpcUrl, JSON_RPC_METHOD.P2P_GET_PEER_CANDIDATE_INFO, { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {
       logger.error(`Invalid peer candidate info from peer candidate url ` +
