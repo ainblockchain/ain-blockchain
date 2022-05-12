@@ -32,6 +32,7 @@ app.use(middleware.expressJsonRequestBodySizeLimiter());
 app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 app.use(middleware.corsLimiter());
 app.use(middleware.ipWhitelistLimiter());
+// app.use(middleware.test());
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
@@ -63,7 +64,7 @@ app.post(
   jayson.server(jsonRpcApis).middleware()
 );
 
-app.get('/', middleware.readLimiter(), (req, res, next) => {
+app.get('/', (req, res, next) => {
   const welcome = `[Welcome to AIN Blockchain Node]\n\n- CURRENT_PROTOCOL_VERSION: ${BlockchainConsts.CURRENT_PROTOCOL_VERSION}\n- DATA_PROTOCOL_VERSION: ${BlockchainConsts.DATA_PROTOCOL_VERSION}\n- CONSENSUS_PROTOCOL_VERSION: ${BlockchainConsts.CONSENSUS_PROTOCOL_VERSION}\n\nDevelopers Guide: ${NodeConfigs.BLOCKCHAIN_GUIDE_URL}`;
   res.status(200)
     .set('Content-Type', 'text/plain')
@@ -71,7 +72,7 @@ app.get('/', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/health_check', middleware.readLimiter(), (req, res, next) => {
+app.get('/health_check', (req, res, next) => {
   const result = p2pServer.getNodeHealth();
   res.status(200)
     .set('Content-Type', 'text/plain')
@@ -80,7 +81,7 @@ app.get('/health_check', middleware.readLimiter(), (req, res, next) => {
 });
 
 // Exports metrics for Prometheus.
-app.get('/metrics', middleware.readLimiter(), async (req, res, next) => {
+app.get('/metrics', async (req, res, next) => {
   const beginTime = Date.now();
   const status = p2pClient.getStatus();
   const result = CommonUtil.objToMetrics(status);
@@ -100,7 +101,7 @@ app.get('/metrics', middleware.readLimiter(), async (req, res, next) => {
 });
 
 // Used in wait_until_node_sync_gcp.sh
-app.get('/last_block_number', middleware.readLimiter(), (req, res, next) => {
+app.get('/last_block_number', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.bc.lastBlockNumber();
   const latency = Date.now() - beginTime;
@@ -115,7 +116,7 @@ app.get('/last_block_number', middleware.readLimiter(), (req, res, next) => {
  * Dev Client GET APIs (available to whitelisted IPs)
  */
 
-app.get('/get_value', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_value', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -129,7 +130,7 @@ app.get('/get_value', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_function', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_function', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -143,7 +144,7 @@ app.get('/get_function', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_rule', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_rule', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -157,7 +158,7 @@ app.get('/get_rule', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_owner', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_owner', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -174,7 +175,7 @@ app.get('/get_owner', middleware.readLimiter(), (req, res, next) => {
 /**
  * Returns the state proof at the given full database path.
  */
-app.get('/get_state_proof', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_state_proof', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getStateProof(req.query.ref);
   const latency = Date.now() - beginTime;
@@ -191,7 +192,7 @@ app.get('/get_state_proof', middleware.readLimiter(), (req, res, next) => {
 /**
  * Returns the state proof hash at the given full database path.
  */
-app.get('/get_proof_hash', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_proof_hash', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getProofHash(req.query.ref);
   const latency = Date.now() - beginTime;
@@ -208,7 +209,7 @@ app.get('/get_proof_hash', middleware.readLimiter(), (req, res, next) => {
 /**
  * Returns the state information at the given full database path.
  */
-app.get('/get_state_info', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_state_info', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.getStateInfo(req.query.ref);
   const latency = Date.now() - beginTime;
@@ -225,7 +226,7 @@ app.get('/get_state_info', middleware.readLimiter(), (req, res, next) => {
 /**
  * Returns the state usage of the given app.
  */
-app.get('/get_state_usage', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_state_usage', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.getStateUsageWithStakingInfo(req.query.app_name);
   const latency = Date.now() - beginTime;
@@ -239,7 +240,7 @@ app.get('/get_state_usage', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/match_function', middleware.readLimiter(), (req, res, next) => {
+app.get('/match_function', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -253,7 +254,7 @@ app.get('/match_function', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/match_rule', middleware.readLimiter(), (req, res, next) => {
+app.get('/match_rule', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -267,7 +268,7 @@ app.get('/match_rule', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/match_owner', middleware.readLimiter(), (req, res, next) => {
+app.get('/match_owner', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -281,7 +282,7 @@ app.get('/match_owner', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.post('/eval_rule', middleware.readLimiter(), (req, res, next) => {
+app.post('/eval_rule', (req, res, next) => {
   const beginTime = Date.now();
   const body = req.body;
   const auth = {};
@@ -305,7 +306,7 @@ app.post('/eval_rule', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.post('/eval_owner', middleware.readLimiter(), (req, res, next) => {
+app.post('/eval_owner', (req, res, next) => {
   const beginTime = Date.now();
   const body = req.body;
   const auth = {};
@@ -328,7 +329,7 @@ app.post('/eval_owner', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.post('/get', middleware.readLimiter(), (req, res, next) => {
+app.post('/get', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.db.get(req.body.op_list);
   const latency = Date.now() - beginTime;
@@ -342,7 +343,7 @@ app.post('/get', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/status', middleware.readLimiter(), (req, res, next) => {
+app.get('/status', (req, res, next) => {
   const beginTime = Date.now();
   const result = p2pClient.getStatus();
   const latency = Date.now() - beginTime;
@@ -353,7 +354,7 @@ app.get('/status', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/node_status', middleware.readLimiter(), (req, res, next) => {
+app.get('/node_status', (req, res, next) => {
   const beginTime = Date.now();
   const result = p2pServer.getNodeStatus();
   const latency = Date.now() - beginTime;
@@ -364,7 +365,7 @@ app.get('/node_status', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/connection_status', middleware.readLimiter(), (req, res) => {
+app.get('/connection_status', (req, res) => {
   const beginTime = Date.now();
   const result = p2pClient.getConnectionStatus();
   const latency = Date.now() - beginTime;
@@ -375,7 +376,7 @@ app.get('/connection_status', middleware.readLimiter(), (req, res) => {
     .end();
 })
 
-app.get('/client_status', middleware.readLimiter(), (req, res) => {
+app.get('/client_status', (req, res) => {
   const beginTime = Date.now();
   const result = p2pClient.getClientStatus();
   const latency = Date.now() - beginTime;
@@ -386,7 +387,7 @@ app.get('/client_status', middleware.readLimiter(), (req, res) => {
     .end();
 })
 
-app.get('/blocks', middleware.readLimiter(), (req, res, next) => {
+app.get('/blocks', (req, res, next) => {
   const beginTime = Date.now();
   const blockEnd = node.bc.lastBlockNumber() + 1;
   const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
@@ -399,7 +400,7 @@ app.get('/blocks', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/last_block', middleware.readLimiter(), (req, res, next) => {
+app.get('/last_block', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.bc.lastBlock();
   const latency = Date.now() - beginTime;
@@ -410,7 +411,7 @@ app.get('/last_block', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/tx_pool', middleware.readLimiter(), (req, res, next) => {
+app.get('/tx_pool', (req, res, next) => {
   const beginTime = Date.now();
   const result = Object.fromEntries(node.tp.transactions);
   const latency = Date.now() - beginTime;
@@ -421,7 +422,7 @@ app.get('/tx_pool', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/tx_tracker', middleware.readLimiter(), (req, res, next) => {
+app.get('/tx_tracker', (req, res, next) => {
   const beginTime = Date.now();
   const result = Object.fromEntries(node.tp.transactionTracker);
   const latency = Date.now() - beginTime;
@@ -432,7 +433,7 @@ app.get('/tx_tracker', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/committed_nonce_tracker', middleware.readLimiter(), (req, res, next) => {
+app.get('/committed_nonce_tracker', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.tp.committedNonceTracker;
   const latency = Date.now() - beginTime;
@@ -443,7 +444,7 @@ app.get('/committed_nonce_tracker', middleware.readLimiter(), (req, res, next) =
     .end();
 });
 
-app.get('/pending_nonce_tracker', middleware.readLimiter(), (req, res, next) => {
+app.get('/pending_nonce_tracker', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.tp.pendingNonceTracker;
   const latency = Date.now() - beginTime;
@@ -454,7 +455,7 @@ app.get('/pending_nonce_tracker', middleware.readLimiter(), (req, res, next) => 
     .end();
 });
 
-app.get('/protocol_versions', middleware.readLimiter(), (req, res) => {
+app.get('/protocol_versions', (req, res) => {
   const beginTime = Date.now();
   const result = p2pClient.server.getProtocolInfo();
   const latency = Date.now() - beginTime;
@@ -465,7 +466,7 @@ app.get('/protocol_versions', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/state_versions', middleware.readLimiter(), (req, res) => {
+app.get('/state_versions', (req, res) => {
   const beginTime = Date.now();
   const result = p2pServer.getStateVersionStatus();
   const latency = Date.now() - beginTime;
@@ -477,7 +478,7 @@ app.get('/state_versions', middleware.readLimiter(), (req, res) => {
 });
 
 // TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
-app.get('/get_final_state_snapshot', middleware.readLimiter(), (req, res) => {
+app.get('/get_final_state_snapshot', (req, res) => {
   const beginTime = Date.now();
   const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
@@ -489,7 +490,7 @@ app.get('/get_final_state_snapshot', middleware.readLimiter(), (req, res) => {
 });
 
 // TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
-app.get('/get_final_radix_snapshot', middleware.readLimiter(), (req, res) => {
+app.get('/get_final_radix_snapshot', (req, res) => {
   const beginTime = Date.now();
   const result = node.takeFinalRadixSnapshot();
   const latency = Date.now() - beginTime;
@@ -500,7 +501,7 @@ app.get('/get_final_radix_snapshot', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/tx_pool_size_util', middleware.readLimiter(), (req, res) => {
+app.get('/tx_pool_size_util', (req, res) => {
   const beginTime = Date.now();
   const address = req.query.address;
   const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
@@ -512,7 +513,7 @@ app.get('/tx_pool_size_util', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_transaction', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_transaction', (req, res, next) => {
   const beginTime = Date.now();
   const transactionInfo = node.getTransactionByHash(req.query.hash);
   const latency = Date.now() - beginTime;
@@ -523,7 +524,7 @@ app.get('/get_transaction', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_block_by_hash', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_block_by_hash', (req, res, next) => {
   const beginTime = Date.now();
   const block = node.bc.getBlockByHash(req.query.hash);
   const latency = Date.now() - beginTime;
@@ -534,7 +535,7 @@ app.get('/get_block_by_hash', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_block_by_number', middleware.readLimiter(), (req, res) => {
+app.get('/get_block_by_number', (req, res) => {
   const beginTime = Date.now();
   const block = node.bc.getBlockByNumber(req.query.number);
   const latency = Date.now() - beginTime;
@@ -545,7 +546,7 @@ app.get('/get_block_by_number', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_block_info_by_number', middleware.readLimiter(), (req, res) => {
+app.get('/get_block_info_by_number', (req, res) => {
   const beginTime = Date.now();
   const blockInfo = node.bc.getBlockInfoByNumber(req.query.number);
   const latency = Date.now() - beginTime;
@@ -556,7 +557,7 @@ app.get('/get_block_info_by_number', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_address', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_address', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.account ? node.account.address : null;
   const latency = Date.now() - beginTime;
@@ -567,7 +568,7 @@ app.get('/get_address', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_nonce', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_nonce', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
   const latency = Date.now() - beginTime;
@@ -578,7 +579,7 @@ app.get('/get_nonce', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_timestamp', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_timestamp', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
   const latency = Date.now() - beginTime;
@@ -589,7 +590,7 @@ app.get('/get_timestamp', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/validate_app_name', middleware.readLimiter(), (req, res, next) => {
+app.get('/validate_app_name', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.validateAppName(req.query.app_name);
   const latency = Date.now() - beginTime;
@@ -600,7 +601,7 @@ app.get('/validate_app_name', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_sharding', middleware.readLimiter(), (req, res, next) => {
+app.get('/get_sharding', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.getSharding();
   const latency = Date.now() - beginTime;
@@ -614,7 +615,7 @@ app.get('/get_sharding', middleware.readLimiter(), (req, res, next) => {
     .end();
 });
 
-app.get('/get_raw_consensus_status', middleware.readLimiter(), (req, res) => {
+app.get('/get_raw_consensus_status', (req, res) => {
   const beginTime = Date.now();
   const result = p2pServer.consensus.getRawStatus();
   const latency = Date.now() - beginTime;
@@ -625,7 +626,7 @@ app.get('/get_raw_consensus_status', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_consensus_status', middleware.readLimiter(), (req, res) => {
+app.get('/get_consensus_status', (req, res) => {
   const beginTime = Date.now();
   const result = p2pServer.consensus.getStatus();
   const latency = Date.now() - beginTime;
@@ -636,7 +637,7 @@ app.get('/get_consensus_status', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_network_id', middleware.readLimiter(), (req, res) => {
+app.get('/get_network_id', (req, res) => {
   const beginTime = Date.now();
   const result = p2pServer.node.getBlockchainParam('genesis/network_id');
   const latency = Date.now() - beginTime;
@@ -647,7 +648,7 @@ app.get('/get_network_id', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_chain_id', middleware.readLimiter(), (req, res) => {
+app.get('/get_chain_id', (req, res) => {
   const beginTime = Date.now();
   const result = p2pServer.node.getBlockchainParam('genesis/chain_id');
   const latency = Date.now() - beginTime;
@@ -658,7 +659,7 @@ app.get('/get_chain_id', middleware.readLimiter(), (req, res) => {
     .end();
 });
 
-app.get('/get_config', middleware.readLimiter(), (req, res) => {
+app.get('/get_config', (req, res) => {
   const beginTime = Date.now();
   const result = p2pClient.getConfig();
   const latency = Date.now() - beginTime;
@@ -674,7 +675,7 @@ app.get('/get_config', middleware.readLimiter(), (req, res) => {
  */
 
 if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
-  app.post('/set_value', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/set_value', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_VALUE));
@@ -690,7 +691,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/inc_value', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/inc_value', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.INC_VALUE));
@@ -706,7 +707,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/dec_value', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/dec_value', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.DEC_VALUE));
@@ -722,7 +723,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_function', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/set_function', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_FUNCTION));
@@ -738,7 +739,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_rule', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/set_rule', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_RULE));
@@ -754,7 +755,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/set_owner', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/set_owner', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
         req.body, WriteDbOperations.SET_OWNER));
@@ -772,7 +773,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 
   // A custom address can be used as a devel method for bypassing the trasaction verification.
   // TODO(platfowner): Replace custom address with real signature.
-  app.post('/set', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/set', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
     const latency = Date.now() - beginTime;
@@ -787,7 +788,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/batch', middleware.writeLimiter(), (req, res, next) => {
+  app.post('/batch', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createBatchTxBody(req.body));
     const latency = Date.now() - beginTime;
@@ -798,7 +799,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 
-  app.post('/sign_transaction', middleware.writeLimiter(), (req, res) => {
+  app.post('/sign_transaction', (req, res) => {
     const beginTime = Date.now();
     const latency = Date.now() - beginTime;
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
@@ -808,7 +809,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   })
 
-  app.post('/broadcast_consensus_msg', middleware.writeLimiter(), (req, res) => {
+  app.post('/broadcast_consensus_msg', (req, res) => {
     const beginTime = Date.now();
     p2pClient.broadcastConsensusMessage(req.body);
     const latency = Date.now() - beginTime;
@@ -822,7 +823,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
 
 if (eventHandler) {
   // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
-  app.get('/eh_load_balancer_health_check', middleware.readLimiter(), (req, res, next) => {
+  app.get('/eh_load_balancer_health_check', (req, res, next) => {
     const result = eventHandler.getEventHandlerHealth();
     res.status(200)
       .set('Content-Type', 'text/plain')
