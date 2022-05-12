@@ -32,9 +32,13 @@ const JSON_RPC_METHOD = {
   NET_GET_EVENT_HANDLER_NETWORK_INFO: 'net_getEventHandlerNetworkInfo',
   AIN_GET_EVENT_HANDLER_FILTER_INFO: 'ain_getEventHandlerFilterInfo',
   AIN_GET_EVENT_HANDLER_CHANNEL_INFO: 'ain_getEventHandlerChannelInfo',
+  AIN_GET_BOOTSTRAP_PUB_KEY: 'ain_getBootstrapPubKey',
   // SET
   AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST: 'ain_addToDevClientApiIpWhitelist',
   AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST: 'ain_removeFromDevClientApiIpWhitelist',
+  AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY: 'ain_injectAccountFromPrivateKey',
+  AIN_INJECT_ACCOUNT_FROM_KEYSTORE: 'ain_injectAccountFromKeystore',
+  AIN_INJECT_ACCOUNT_FROM_HD_WALLET: 'ain_injectAccountFromHDWallet',
 }
 
 module.exports = {
