@@ -46,6 +46,8 @@ const JSON_RPC_METHOD = {
   AIN_GET_TRANSACTION_BY_HASH: 'ain_getTransactionByHash',
   AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX: 'ain_getTransactionByBlockHashAndIndex',
   AIN_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX: 'ain_getTransactionByBlockNumberAndIndex',
+  AIN_GET_PROTOCOL_VERSION: 'ain_getProtocolVersion',
+  AIN_CHECK_PROTOCOL_VERSION: 'ain_checkProtocolVersion',
   // SET
   AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST: 'ain_addToDevClientApiIpWhitelist',
   AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST: 'ain_removeFromDevClientApiIpWhitelist',

@@ -1273,20 +1273,20 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getProtocolVersion api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_GET_PROTOCOL_VERSION} api`, () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_getProtocolVersion', {})
+        return client.request(JSON_RPC_METHOD.AIN_GET_PROTOCOL_VERSION, {})
         .then(res => {
           expect(res.result.protoVer).to.equal(BlockchainConsts.CURRENT_PROTOCOL_VERSION);
         })
       });
     });
 
-    describe('ain_checkProtocolVersion api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION} api`, () => {
       it('returns success code', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_checkProtocolVersion', { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+        return client.request(JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
         .then(res => {
           expect(res.result.code).to.equal(0);
           expect(res.result.result).to.equal("Success");
@@ -1295,7 +1295,7 @@ describe('Blockchain Node', () => {
 
       it('returns version not specified code', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_checkProtocolVersion', {})
+        return client.request(JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION, {})
         .then(res => {
           expect(res.result.code).to.equal(30101);
           expect(res.result.message).to.equal("Protocol version not specified.");
@@ -1304,7 +1304,7 @@ describe('Blockchain Node', () => {
 
       it('returns invalid version code', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_checkProtocolVersion', { protoVer: 'a.b.c' })
+        return client.request(JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION, { protoVer: 'a.b.c' })
         .then(res => {
           expect(res.result.code).to.equal(30102);
           expect(res.result.message).to.equal("Invalid protocol version.");
@@ -1313,7 +1313,7 @@ describe('Blockchain Node', () => {
 
       it('returns incompatible version code for ill-formatted version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_checkProtocolVersion', { protoVer: 0 })
+        return client.request(JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION, { protoVer: 0 })
         .then(res => {
           expect(res.result.code).to.equal(30103);
           expect(res.result.message).to.equal("Incompatible protocol version.");
@@ -1322,7 +1322,7 @@ describe('Blockchain Node', () => {
 
       it('returns incompatible version code for low version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        return client.request('ain_checkProtocolVersion', { protoVer: '0.0.1' })
+        return client.request(JSON_RPC_METHOD.AIN_CHECK_PROTOCOL_VERSION, { protoVer: '0.0.1' })
         .then(res => {
           expect(res.result.code).to.equal(30103);
           expect(res.result.message).to.equal("Incompatible protocol version.");
