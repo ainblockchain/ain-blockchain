@@ -23,6 +23,7 @@ const {
   getBlockByNumber,
   eraseStateGas,
 } = require('../test-util');
+const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
@@ -932,7 +933,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -4818,7 +4819,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -4861,7 +4862,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -5010,7 +5011,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -5614,7 +5615,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -5660,7 +5661,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -5839,7 +5840,7 @@ describe('Native Function', () => {
         };
         const signature = ainUtil.ecSignTransaction(
             closeCheckinTxBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const closeCheckinRes = await client.request('ain_sendSignedTransaction', {
+        const closeCheckinRes = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: closeCheckinTxBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -5957,7 +5958,7 @@ describe('Native Function', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
-        const res = await client.request('ain_sendSignedTransaction', {
+        const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
