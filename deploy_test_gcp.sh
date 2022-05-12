@@ -86,13 +86,13 @@ function stop_servers() {
     local test_target_addr="${GCP_USER}@${SEASON}-test-${instance_index}"
 
     printf "\n >> Stopping tests on instance [$instance_index] ($test_target_addr) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n"
-    STOP_CMD="cd ./ain-blockchain; . stop_servers_local.sh"
+    STOP_CMD="cd ./ain-blockchain; . stop_local_blockchain.sh"
     printf "\nSTOP_CMD=$STOP_CMD\n\n"
     gcloud compute ssh ${test_target_addr} --command "$STOP_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}
 }
 
 # deploy files
-FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_servers_local.sh"
+FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_local_blockchain.sh"
 
 printf "\n"
 PROJECT_ID="testnet-dev-ground"
