@@ -2023,8 +2023,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe('ain_sendSignedTransaction api', () => {
-        it('ain_sendSignedTransaction with is_global = false', () => {
+      describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} api`, () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = false`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2038,7 +2038,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction',
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION,
               { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
@@ -2072,7 +2072,7 @@ describe('Sharding', () => {
             })
         })
 
-        it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = false (explicit)`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2087,8 +2087,8 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION,
+              { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
@@ -2121,7 +2121,7 @@ describe('Sharding', () => {
             })
         })
 
-        it('ain_sendSignedTransaction with is_global = true', () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = true`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2136,8 +2136,8 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION,
+              { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
@@ -2171,8 +2171,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe('ain_sendSignedTransactionBatch api', () => {
-        it('ain_sendSignedTransactionBatch with is_global = false', () => {
+      describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} api`, () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = false`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2186,7 +2186,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,
@@ -2229,7 +2229,7 @@ describe('Sharding', () => {
           })
         })
 
-        it('ain_sendSignedTransactionBatch with is_global = false (explicit)', () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = false (explicit)`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2244,7 +2244,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,
@@ -2290,7 +2290,7 @@ describe('Sharding', () => {
           })
         })
 
-        it('ain_sendSignedTransactionBatch with is_global = true', () => {
+        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = true`, () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2305,7 +2305,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,

@@ -41,12 +41,19 @@ const JSON_RPC_METHOD = {
   NET_CONSENSUS_STATUS: 'net_consensusStatus',
   NET_RAW_CONSENSUS_STATUS: 'net_rawConsensusStatus',
   P2P_GET_PEER_CANDIDATE_INFO: 'p2p_getPeerCandidateInfo',
+  AIN_GET_PENDING_TRANSACTIONS: 'ain_getPendingTransactions',
+  AIN_GET_TRANSACTION_POOL_SIZE_UTILIZATION: 'ain_getTransactionPoolSizeUtilization',
+  AIN_GET_TRANSACTION_BY_HASH: 'ain_getTransactionByHash',
+  AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX: 'ain_getTransactionByBlockHashAndIndex',
+  AIN_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX: 'ain_getTransactionByBlockNumberAndIndex',
   // SET
   AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST: 'ain_addToDevClientApiIpWhitelist',
   AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST: 'ain_removeFromDevClientApiIpWhitelist',
   AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY: 'ain_injectAccountFromPrivateKey',
   AIN_INJECT_ACCOUNT_FROM_KEYSTORE: 'ain_injectAccountFromKeystore',
   AIN_INJECT_ACCOUNT_FROM_HD_WALLET: 'ain_injectAccountFromHDWallet',
+  AIN_SEND_SIGNED_TRANSACTION: 'ain_sendSignedTransaction',
+  AIN_SEND_SIGNED_TRANSACTION_BATCH: 'ain_sendSignedTransactionBatch',
 }
 
 module.exports = {

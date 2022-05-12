@@ -2977,7 +2977,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransaction api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} api`, () => {
       const account = {
         address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
         private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
@@ -3091,7 +3091,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3148,7 +3148,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3208,7 +3208,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3268,7 +3268,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3321,7 +3321,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3389,7 +3389,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3457,7 +3457,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3542,7 +3542,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3620,7 +3620,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', {
+          return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3683,7 +3683,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3764,7 +3764,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3811,7 +3811,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3840,7 +3840,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           transaction: txBody,  // wrong field name
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3869,7 +3869,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3898,7 +3898,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransaction', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
           tx_body: txBody,
           signature: signature + '0', // invalid signature
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3914,7 +3914,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransactionBatch api', () => {
+    describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} api`, () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
@@ -4113,7 +4113,7 @@ describe('Blockchain Node', () => {
             signature
           });
         }
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: txList,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
@@ -4139,7 +4139,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: {  // should be an array
             tx_body: txBody,
             signature,
@@ -4179,7 +4179,7 @@ describe('Blockchain Node', () => {
             signature,
           });
         }
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: txList,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
@@ -4215,7 +4215,7 @@ describe('Blockchain Node', () => {
             signature,
           });
         }
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: txList,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
@@ -4262,7 +4262,7 @@ describe('Blockchain Node', () => {
               signature,
             });
           }
-          const res1 = await client.request('ain_sendSignedTransactionBatch', {
+          const res1 = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: txList1,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
@@ -4286,7 +4286,7 @@ describe('Blockchain Node', () => {
           tx_body: txBody,
           signature,
         });
-        const res2 = await client.request('ain_sendSignedTransactionBatch', {
+        const res2 = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: txList2,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
@@ -4322,7 +4322,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: [
             {
               tx_body: txBodyBefore,
@@ -4362,7 +4362,7 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
           nonce: -1
         };
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: [
             {
               tx_body: txBodyBefore,
@@ -4403,7 +4403,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: [
             {
               tx_body: txBodyBefore,
@@ -4444,7 +4444,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request('ain_sendSignedTransactionBatch', {
+        return client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
           tx_list: [
             {
               tx_body: txBodyBefore,

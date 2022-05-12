@@ -192,7 +192,7 @@ describe('Consensus', () => {
       };
       const signature =
           ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
-      const res = await client.request('ain_sendSignedTransaction', {
+      const res = await client.request(JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION, {
         tx_body: txBody,
         signature,
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
