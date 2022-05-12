@@ -11,6 +11,7 @@ const getEventHandlerApis = require('./event-handler');
 const getNetworkApis = require('./network');
 const getTransactionApis = require('./transaction');
 const getVersionApis = require('./version');
+const { JSON_RPC_METHOD } = require('./constants');
 
 /**
  * Defines the list of funtions which are accessibly to clients through the
@@ -41,9 +42,8 @@ module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVers
       ...getVersionApis(minProtocolVersion, maxProtocolVersion),
     });
   } else {
-    Object.assign(apis, {
-      p2p_getPeerCandidateInfo: getNetworkApis(node, p2pServer).p2p_getPeerCandidateInfo,
-    });
+    Object.assign(apis, { [JSON_RPC_METHOD.P2P_GET_PEER_CANDIDATE_INFO]:
+        getNetworkApis(node, p2pServer).p2p_getPeerCandidateInfo });
   }
   if (eventHandler !== null) {
     Object.assign(apis, getEventHandlerApis(eventHandler));

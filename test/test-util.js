@@ -6,10 +6,10 @@ const { Block } = require('../blockchain/block');
 const DB = require('../db');
 const {
   BlockchainConsts,
-  StateVersions,
-  BlockchainParams,
+  StateVersions
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 
 const GET_OPTIONS_INCLUDE_ALL = {
   includeTreeInfo: true,
@@ -175,8 +175,12 @@ async function waitUntilNodeSyncs(server) {
   while (isSyncing) {
     try {
       isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
-          {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                  params: {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}}})
+          {
+            json: {
+              jsonrpc: '2.0', method: JSON_RPC_METHOD.NET_SYNCING, id: 0,
+              params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }
+            }
+          })
           .body.toString('utf-8')).result.result;
     } catch (e) {
       // server may not be ready yet

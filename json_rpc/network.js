@@ -4,10 +4,11 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHOD } = require('./constants');
 
 module.exports = function getNetworkApis(node, p2pServer) {
   return {
-    net_listening: function(args, done) {
+    [JSON_RPC_METHOD.NET_LISTENING]: function(args, done) {
       const beginTime = Date.now();
       const peerCount = Object.keys(p2pServer.inbound).length;
       const result = !!peerCount;
@@ -16,7 +17,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    net_peerCount: function(args, done) {
+    [JSON_RPC_METHOD.NET_PEER_COUNT]: function(args, done) {
       const beginTime = Date.now();
       const peerCount = Object.keys(p2pServer.inbound).length;
       const latency = Date.now() - beginTime;
@@ -24,7 +25,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: peerCount }));
     },
 
-    net_syncing: function(args, done) {
+    [JSON_RPC_METHOD.NET_SYNCING]: function(args, done) {
       const beginTime = Date.now();
       const result = (node.state === BlockchainNodeStates.CHAIN_SYNCING);
       const latency = Date.now() - beginTime;
@@ -34,7 +35,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    net_getNetworkId: function(args, done) {
+    [JSON_RPC_METHOD.NET_GET_NETWORK_ID]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getBlockchainParam('genesis/network_id');
       const latency = Date.now() - beginTime;
@@ -42,7 +43,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    net_getChainId: function(args, done) {
+    [JSON_RPC_METHOD.NET_GET_CHAIN_ID]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getBlockchainParam('genesis/chain_id');
       const latency = Date.now() - beginTime;
@@ -50,7 +51,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    net_consensusStatus: function(args, done) {
+    [JSON_RPC_METHOD.NET_CONSENSUS_STATUS]: function(args, done) {
       const beginTime = Date.now();
       const result = p2pServer.consensus.getStatus();
       const latency = Date.now() - beginTime;
@@ -58,7 +59,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    net_rawConsensusStatus: function(args, done) {
+    [JSON_RPC_METHOD.NET_RAW_CONSENSUS_STATUS]: function(args, done) {
       const beginTime = Date.now();
       const result = p2pServer.consensus.getRawStatus();
       const latency = Date.now() - beginTime;
@@ -66,7 +67,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    p2p_getPeerCandidateInfo: function(args, done) {
+    [JSON_RPC_METHOD.P2P_GET_PEER_CANDIDATE_INFO]: function(args, done) {
       const beginTime = Date.now();
       const result = p2pServer.client.getPeerCandidateInfo();
       const latency = Date.now() - beginTime;
