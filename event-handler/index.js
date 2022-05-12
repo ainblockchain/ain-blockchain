@@ -76,8 +76,11 @@ class EventHandler {
   }
 
   // TODO(cshcomcom): Add tests.
-  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue) {
+  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue, eventSource) {
     const LOG_HEADER = 'emitValueChanged';
+    if (!eventSource) { // NOTE: If the event source is null, propagation isn't required.
+      return;
+    }
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
     for (const eventFilterId of matchedEventFilterIdList) {
@@ -86,6 +89,11 @@ class EventHandler {
       const parsedTargetPath = CommonUtil.parsePath(targetPath);
       if (parsedValuePath.length !== parsedTargetPath.length) {
         logger.error(`[${LOG_HEADER}] Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+        continue;
+      }
+
+      const expectedEventSource = _.get(eventFilter, 'config.event_source', null);
+      if (expectedEventSource && expectedEventSource !== eventSource) {
         continue;
       }
 
@@ -102,6 +110,7 @@ class EventHandler {
         params: params,
         auth: auth,
         transaction: transaction,
+        event_source: eventSource,
         values: {
           before: beforeValue,
           after: afterValue,

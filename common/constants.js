@@ -657,6 +657,11 @@ const BlockchainEventMessageTypes = {
   EMIT_ERROR: 'EMIT_ERROR',
 };
 
+const ValueChangedEventSources = {
+  BLOCK: 'BLOCK',
+  USER: 'USER',
+};
+
 // ** Lists & Sets **
 
 /**
@@ -824,6 +829,7 @@ module.exports = {
   TrafficEventTypes,
   BlockchainEventTypes,
   BlockchainEventMessageTypes,
+  ValueChangedEventSources,
   isServiceType,
   isServiceAccountServiceType,
   isReservedServiceName,
