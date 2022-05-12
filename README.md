@@ -329,13 +329,13 @@ POST http://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"
 
 ## Utility scripts
 
-Four Node server with a Tracker server can be started all at once using `start_servers.sh` like:
+Four Node server with a Tracker server can be started all at once using `start_local_blockchain.sh` like:
 ```
-bash start_servers.sh
+bash start_local_blockchain.sh
 ```
-and can be stopped all at once using `stop_servers.sh` like:
+and can be stopped all at once using `stop_local_blockchain.sh` like:
 ```
-bash stop_servers.sh
+bash stop_local_blockchain.sh
 ```
 
 ## Versions
