@@ -109,7 +109,7 @@ class Middleware {
     })
   }
 
-  blockchainApiLimiter() {
+  blockchainApiLimiter = () => {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
       rateLimit({
         windowMs: this.minuteAsSeconds * 1000,   // 1 minute
@@ -117,36 +117,40 @@ class Middleware {
       }) : this._emptyHandler();
   }
 
-  readLimiter() {
-    return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-      rateLimit({
-        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-        max: this.minuteAsSeconds * this.getReadRateLimit()
-      }) : this._emptyHandler();
+  readLimiter = () => {
+    console.log('read');
+    return rateLimit({
+      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+      max: 5
+    });
   }
 
-  writeLimiter() {
-    return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-      rateLimit({
-        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-        max: this.minuteAsSeconds * this.getWriteRateLimit()
-      }) : this._emptyHandler();
+  writeLimiter = () => {
+    console.log('write');
+    return rateLimit({
+      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+      max: 3
+    });
   }
 
-  jsonRpcLimiter(req, res, next) {
+  jsonRpcLimiter = (req, res, next) => {
     const jsonRpcMethod = _.get(req, 'body.method');
-      switch (jsonRpcMethod) {
-        case JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST:
-        case JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST:
-        case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY:
-        case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_KEYSTORE:
-        case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_HD_WALLET:
-        case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION:
-        case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH:
-          return this.writeLimiter();
-        default:
-          return this.readLimiter();
-      }
+    console.log(jsonRpcMethod);
+    console.log(111)
+    switch (jsonRpcMethod) {
+      case JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST:
+      case JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST:
+      case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY:
+      case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_KEYSTORE:
+      case JSON_RPC_METHOD.AIN_INJECT_ACCOUNT_FROM_HD_WALLET:
+      case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION:
+      case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH:
+      case JSON_RPC_METHOD.AIN_GET_LAST_BLOCK_NUMBER:
+        console.log(22)
+        return this.readLimiter()(req, res, next);
+      default:
+        return this.writeLimiter()(req, res, next);
+    }
   }
 
   // NOTE(minsulee2): debugging purpose
