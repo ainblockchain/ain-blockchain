@@ -2,6 +2,7 @@
 
 const logger = new (require('../logger'))('CLIENT');
 
+const _ = require('lodash');
 const express = require('express');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
@@ -27,12 +28,11 @@ const MAX_BLOCKS = 20;
 const app = express();
 // NOTE(minsulee2): complex express middleware is now built at middleware.js
 const middleware = new Middleware();
-middleware.printAll();
 app.use(middleware.expressJsonRequestBodySizeLimiter());
 app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 app.use(middleware.corsLimiter());
 app.use(middleware.ipWhitelistLimiter());
-// app.use(middleware.test());
+app.use(middleware.blockchainApiLimiter());
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
