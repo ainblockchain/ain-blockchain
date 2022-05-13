@@ -22,6 +22,7 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  ValueChangedEventSources,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -57,6 +58,7 @@ class BlockchainNode {
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    // Node's front db
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
@@ -82,11 +84,6 @@ class BlockchainNode {
     const LOG_HEADER = 'initAccount';
     switch (NodeConfigs.ACCOUNT_INJECTION_OPTION) {
       case 'keystore':
-        if (!NodeConfigs.KEYSTORE_FILE_PATH) {
-          throw Error(
-              `[${LOG_HEADER}] Must specify KEYSTORE_FILE_PATH as a process env or in node_params.json`);
-        }
-        break;
       case 'mnemonic':
       case 'private_key':
         // NOTE(liayoo): An account should be injected using APIs.
@@ -137,15 +134,18 @@ class BlockchainNode {
     }
   }
 
-  async injectAccountFromKeystore(encryptedPassword) {
+  async injectAccountFromKeystore(encryptedKeystore, encryptedPassword) {
     const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
     }
     try {
+      const keystore = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedKeystore);
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = ainUtil.privateToAccount(
+          ainUtil.v3KeystoreToPrivate(keystore, password));
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
@@ -556,6 +556,11 @@ class BlockchainNode {
     return timestamp;
   }
 
+  validateAppName(appName) {
+    const stateLabelLengthLimit = this.getBlockchainParam('resource/state_label_length_limit');
+    return this.db.validateAppName(appName, this.bc.lastBlockNumber(), stateLabelLengthLimit);
+  }
+
   getSharding() {
     const shardingInfo = {};
     if (this.db && this.db.stateRoot) {
@@ -728,18 +733,18 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
     const isFreeTx = Transaction.isFreeTransaction(tx);
+    if (!this.tp.hasRoom()) {
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
+          `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
+    }
     if (isFreeTx && !this.tp.hasFreeRoom()) {
       return CommonUtil.logAndReturnTxResult(
           logger,
           TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${this.tp.getFreePoolSize()}).`);
-    }
-    if (!this.tp.hasRoom()) {
-      return CommonUtil.logAndReturnTxResult(
-          logger,
-          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
-          `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return CommonUtil.logAndReturnTxResult(
@@ -761,21 +766,13 @@ class BlockchainNode {
           TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!NodeConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx, chainId)) {
-        return CommonUtil.logAndReturnTxResult(
-            logger,
-            TxResultCode.TX_INVALID_SIGNATURE,
-            `[${LOG_HEADER}] Invalid signature`);
-      }
-    }
-    if (isFreeTx && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
-      const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
+    if (!NodeConfigs.LIGHTWEIGHT &&
+        !NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
+        !Transaction.verifyTransaction(executableTx, chainId)) {
       return CommonUtil.logAndReturnTxResult(
           logger,
-          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM_FOR_ACCOUNT,
-          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
-          `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
+          TxResultCode.TX_INVALID_SIGNATURE,
+          `[${LOG_HEADER}] Invalid signature`);
     }
     if (!this.tp.hasPerAccountRoom(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
@@ -785,8 +782,16 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
+    if (isFreeTx && !this.tp.hasPerAccountFreeRoom(executableTx.address)) {
+      const perAccountFreePoolSize = this.tp.getPerAccountFreePoolSize(executableTx.address);
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_FREE_ROOM_FOR_ACCOUNT,
+          `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
+          `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
+    }
     const result = this.db.executeTransaction(
-        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp(), ValueChangedEventSources.USER);
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
@@ -904,6 +909,46 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  /**
+   * Execute the valid transactions from the tx pool on the given baseDb.
+   * In this case, the transactions contained in the longestNotarizedChain are excluded from
+   * the execution.
+   * If isExecutionOnly = false, it returns the valid transactions with some other information
+   * after removing the invalid transactions from the tx pool.
+   */
+  executeAndGetValidTransactions(
+      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource = null) {
+    const LOG_HEADER = 'executeAndGetValidTransactions';
+    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
+    const transactions = [];
+    const invalidTransactions = [];
+    const resList = [];
+    for (const tx of candidates) {
+      const res = baseDb.executeTransaction(
+          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
+      if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        invalidTransactions.push(tx);
+      } else {
+        transactions.push(tx);
+        resList.push(res);
+      }
+    }
+    if (isExecutionOnly) {
+      return;
+    }
+    // Once successfully executed txs (when submitted to tx pool) can become invalid
+    // after some blocks are created. Remove those transactions from tx pool.
+    this.tp.removeInvalidTxsFromPool(invalidTransactions);
+    const gasPriceUnit =
+        this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
+    const { gasAmountTotal, gasCostTotal } =
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
+    const receipts = CommonUtil.txResultsToReceipts(resList);
+    return { transactions, receipts, gasAmountTotal, gasCostTotal };
+  }
+
   addTrafficEventsForVoteTxList(txList, blockTimestamp) {
     let proposeTimestamp = null;
     for (let i = 0; i < txList.length; i++) {
@@ -1017,6 +1062,12 @@ class BlockchainNode {
       }
     }
     if (lastFinalizedBlock) {
+      if (NodeConfigs.UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL) {
+        // Apply the txs from the tx pool to the new final front db.
+        this.executeAndGetValidTransactions(
+            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
+      }
+      // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
     }
   }

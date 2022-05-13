@@ -403,8 +403,10 @@ while [ $node_index -le $END_NODE_IDX ]; do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
+        UPDATE_FRONT_DB_OPTION="--update-front-db"
     else
         JSON_RPC_OPTION=""
+        UPDATE_FRONT_DB_OPTION=""
     fi
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
@@ -417,10 +419,11 @@ while [ $node_index -le $END_NODE_IDX ]; do
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+    printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD

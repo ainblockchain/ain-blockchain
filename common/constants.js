@@ -35,6 +35,8 @@ const DevFlags = {
   enableTxBandwidthCheckPerBlock: true,
   // Enables ntpsync library.
   enableNtpSync: false,
+  // Enables network topology logging for unhealthy consensus
+  enableNetworkTopologyLoggingForUnhealthyConsensus: true,
 };
 
 // ** Blockchain configs **
@@ -105,7 +107,7 @@ function setNodeConfigs() {
     if (valFromEnvVar !== undefined) {
       if (CommonUtil.isBool(valFromNodeParams)) {
         NodeConfigs[param] = CommonUtil.convertEnvVarInputToBool(valFromEnvVar);
-      } else if (CommonUtil.isIntegerString(valFromEnvVar)) {
+      } else if (CommonUtil.isIntegerString(valFromEnvVar) || CommonUtil.isFloatString(valFromEnvVar)) {
         NodeConfigs[param] = Number(valFromEnvVar);
       } else if (CommonUtil.isArray(valFromNodeParams) || CommonUtil.isWildcard(valFromNodeParams)) {
         NodeConfigs[param] = CommonUtil.getWhitelistFromString(valFromEnvVar);
@@ -657,6 +659,11 @@ const BlockchainEventMessageTypes = {
   EMIT_ERROR: 'EMIT_ERROR',
 };
 
+const ValueChangedEventSources = {
+  BLOCK: 'BLOCK',
+  USER: 'USER',
+};
+
 // ** Lists & Sets **
 
 /**
@@ -824,6 +831,7 @@ module.exports = {
   TrafficEventTypes,
   BlockchainEventTypes,
   BlockchainEventMessageTypes,
+  ValueChangedEventSources,
   isServiceType,
   isServiceAccountServiceType,
   isReservedServiceName,

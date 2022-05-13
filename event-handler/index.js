@@ -8,6 +8,9 @@ const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
+const {
+  NodeConfigs,
+} = require('../common/constants');
 
 class EventHandler {
   constructor() {
@@ -26,6 +29,20 @@ class EventHandler {
     this.eventChannelManager = new EventChannelManager(this);
     this.eventChannelManager.startListening();
     logger.info(`[${LOG_HEADER}] Event handler started!`);
+  }
+
+  getEventHandlerHealth() {
+    if (this.eventChannelManager.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+      return false;
+    }
+    if (this.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
+      return false;
+    }
+    return true;
+  }
+
+  getNumEventFilters() {
+    return Object.keys(this.eventFilters).length;
   }
 
   getFilterInfo() {
@@ -59,8 +76,11 @@ class EventHandler {
   }
 
   // TODO(cshcomcom): Add tests.
-  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue) {
+  emitValueChanged(auth, transaction, parsedValuePath, beforeValue, afterValue, eventSource) {
     const LOG_HEADER = 'emitValueChanged';
+    if (!eventSource) { // NOTE: If the event source is null, propagation isn't required.
+      return;
+    }
     const valuePath = CommonUtil.formatPath(parsedValuePath);
     const matchedEventFilterIdList = this.stateEventTreeManager.matchEventFilterPath(parsedValuePath);
     for (const eventFilterId of matchedEventFilterIdList) {
@@ -69,6 +89,11 @@ class EventHandler {
       const parsedTargetPath = CommonUtil.parsePath(targetPath);
       if (parsedValuePath.length !== parsedTargetPath.length) {
         logger.error(`[${LOG_HEADER}] Lengths of parsedLocalPath and parsedTargetPath do not match!`);
+        continue;
+      }
+
+      const expectedEventSource = _.get(eventFilter, 'config.event_source', null);
+      if (expectedEventSource && expectedEventSource !== eventSource) {
         continue;
       }
 
@@ -85,6 +110,7 @@ class EventHandler {
         params: params,
         auth: auth,
         transaction: transaction,
+        event_source: eventSource,
         values: {
           before: beforeValue,
           after: afterValue,

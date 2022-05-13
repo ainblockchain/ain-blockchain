@@ -32,6 +32,8 @@ const ENV_VARIABLES = [
     UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    FREE_TX_POOL_SIZE_LIMIT_RATIO: 1.0,
+    FREE_TX_POOL_SIZE_LIMIT_RATIO_PER_ACCOUNT: 1.0,
   },
   {
     UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
@@ -1401,10 +1403,10 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with timestamp");
       })
 
-      it('set_value with nonce unordered (-1)', async () => {
+      it('set_value with unordered nonce (-1)', async () => {
         const request = {
           ref: '/apps/test/test_value/some/path',
-          value: "some value with nonce unordered",
+          value: "some value with unordered nonce",
           nonce: -1,
         };
         const body = parseOrLog(syncRequest(
@@ -1420,7 +1422,7 @@ describe('Blockchain Node', () => {
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
             .body.toString('utf-8')).result;
-        assert.deepEqual(resultAfter, "some value with nonce unordered");
+        assert.deepEqual(resultAfter, "some value with unordered nonce");
       })
 
       it('set_value with numbered nonce', async () => {
@@ -2978,9 +2980,34 @@ describe('Blockchain Node', () => {
 
     describe('ain_sendSignedTransaction api', () => {
       const account = {
+        address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
+        private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
+        public_key: "1e8de35ac153fa52cb61a7e887463c205b0121be659803e9f69dddcae8dfb5a3d4c96570c5c3fafa5755b89a90eb58a2041f8da9d909b9c4b6813c3832d1254a"
+      };
+
+      // for account registration gas amount (single set)
+      const account2 = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
         public_key: "eb8c8577e8be18a83829c5c8a2ec2a754ef0a190e5a01139e9a24aae8f56842dfaf708da56d0f395bbfef08633237398dec96343f62ce217130d9738a76adfdf"
+      };
+      // for account registration gas amount (multi set)
+      const account3 = {
+        address: "0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974",
+        private_key: "63200d28b05377f983103b1ac45a379b3d424c415f8a705c7cdd6365f7e828ea",
+        public_key: "0760186e6d1a37107217d68e491b4a4bd89e3b6642acfcf4b320acef24d5d0de1d33bcabd2e868776879c4776937a6785e71ee963efb40c4cf09283b542006ca"
+      };
+      // for account registration gas amount (transfer)
+      const account4 = {
+        address: "0x652a5e81Dc2B62be4b7225584A1079C29334dE27",
+        private_key: "98a0cc69436b5fc635184bbe16ffa97284e099e8e84c0b7ecee61b1f92db29e5",
+        public_key: "b6c5920098836b4ee3dd9458c706470f539e81d7370534228ffe155fff4b9af8ccdb7f6ad1eeba135c30fe4a6175ecf0d8be4bd6813a8358bc19901df47f558a"
+      };
+      // for account registration gas amount (transfer)
+      const account09 = { // genesis account 09
+        address: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+        private_key: "ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640",
+        public_key: "e0a9c4697a41d7ecbd7660f43c59b0df8a3e9fa31ec87687b5b4592e1ab1f66e3b2503a966ca702051f4c8e1c37c9d88cd46242750e7fc9f65dfb14980101806"
       };
 
       before(async () => {
@@ -2988,7 +3015,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result[".rule"]["write"];
         const newOwners = parseOrLog(syncRequest('GET', server1 + '/get_owner?ref=/apps/test')
           .body.toString('utf-8')).result[".owner"];
-        const newRule = `${currentRule} || auth.addr === '${account.address}'`;
+        const newRule = `${currentRule} || auth.addr === '${account.address}' || auth.addr === '${account2.address}' || auth.addr === '${account4.address}'`;
         newOwners["owners"][account.address] = {
           "branch_owner": true,
           "write_owner": true,
@@ -3051,13 +3078,13 @@ describe('Blockchain Node', () => {
         }
       })
 
-      it('accepts a transaction with nonce unordered (-1)', () => {
+      it('accepts a transaction with unordered nonce (-1)', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3113,8 +3140,8 @@ describe('Blockchain Node', () => {
           const txBody = {
             operation: {
               type: 'SET_VALUE',
-              value: 'some other value 2',
-              ref: `/apps/test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 2'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -3122,6 +3149,126 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  code: 0,
+                  bandwidth_gas_amount: 2001,
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2001
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a transaction with account registration gas amount from nonce', () => {
+        // NOTE: account2 does not have balance nor nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account2.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 3'
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  code: 0,
+                  bandwidth_gas_amount: 2001,
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2001
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a transaction without account registration gas amount from nonce', () => {
+        // NOTE: account2 already has nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account2.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET_VALUE',
+              ref: `/apps/test/test_value/some/path`,
+              value: 'some other value 4'
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction', {
             tx_body: txBody,
             signature,
@@ -3160,14 +3307,504 @@ describe('Blockchain Node', () => {
         });
       })
 
+      it('accepts a transaction without account registration gas amount from balance', () => {
+        // NOTE: account2 does not have balance but already has nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account2.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x85a620A5A46d01cc1fCF49E73ab00710d4da943E/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 1037,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 3
+                  },
+                  "state": {
+                    "service": 1034
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a transaction with account registration gas amount from balance', () => {
+        // NOTE: account3 does not have balance nor nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 2000,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 3037,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 2003
+                  },
+                  "state": {
+                    "service": 1034
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a transaction without account registration gas amount from balance', () => {
+        // NOTE: account3 already has balance.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: 10
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 367,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 3
+                  },
+                  "state": {
+                    "service": 364
+                  }
+                },
+                "gas_cost_total": 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a multi-set transaction with account registration gas amount from nonce', () => {
+        // NOTE: account4 does not have balance nor nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account4.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: 'SET_VALUE',
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 5'
+                },
+                {
+                  // Default type: SET_VALUE
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 6'
+                },
+              ],
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2002
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                  result_list: {
+                    0: {
+                      bandwidth_gas_amount: 2001,
+                      code: 0
+                    },
+                    1: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    }
+                  }
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a multi-set transaction without account registration gas amount from nonce', () => {
+        // NOTE: account4 already has nonce/timestamp.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_getNonce', {
+          address: account4.address,
+          from: 'pending',
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((nonceRes) => {
+          const nonce = _.get(nonceRes, 'result.result');
+          const txBody = {
+            operation: {
+              type: 'SET',
+              op_list: [
+                {
+                  type: 'SET_VALUE',
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 7'
+                },
+                {
+                  // Default type: SET_VALUE
+                  ref: `/apps/test/test_value/some/path`,
+                  value: 'some other value 8'
+                },
+              ],
+            },
+            gas_price: 0,
+            timestamp: Date.now(),
+            nonce,  // numbered nonce
+          };
+          const signature =
+              ainUtil.ecSignTransaction(txBody, Buffer.from(account4.private_key, 'hex'));
+          return client.request('ain_sendSignedTransaction', {
+            tx_body: txBody,
+            signature,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+          })
+          .then((res) => {
+            const result = _.get(res, 'result.result', null);
+            expect(result).to.not.equal(null);
+            assert.deepEqual(res.result, {
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+              result: {
+                result: {
+                  gas_amount_charged: 0,
+                  gas_amount_total: {
+                    bandwidth: {
+                      app: {
+                        test: 2
+                      },
+                      service: 0
+                    },
+                    state: {
+                      app: {
+                        test: 28
+                      },
+                      service: 0
+                    }
+                  },
+                  gas_cost_total: 0,
+                  result_list: {
+                    0: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    },
+                    1: {
+                      bandwidth_gas_amount: 1,
+                      code: 0
+                    }
+                  }
+                },
+                tx_hash: CommonUtil.hashSignature(signature),
+              }
+            });
+          });
+        });
+      })
+
+      it('accepts a transaction with app creation gas amount', () => {
+        // NOTE: App doesn't exist yet.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/manage_app/test_app_creation_gas_amount_app0/create/1`,
+            value: {
+              admin: { [account.address]: true },
+            }
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1,
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                bandwidth_gas_amount: 1,
+                code: 0,
+                func_results: {
+                  _createApp: {
+                    bandwidth_gas_amount: 2000,
+                    code: 0,
+                    op_results: {
+                      0: {
+                        path: "/apps/test_app_creation_gas_amount_app0",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      },
+                      1: {
+                        path: "/apps/test_app_creation_gas_amount_app0",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      },
+                      2: {
+                        path: "/manage_app/test_app_creation_gas_amount_app0/config/admin",
+                        result: {
+                          bandwidth_gas_amount: 1,
+                          code: 0
+                        }
+                      }
+                    }
+                  }
+                },
+                gas_amount_charged: 3570,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test_app_creation_gas_amount_app0: 2
+                    },
+                    service: 2002
+                  },
+                  state: {
+                    service: 1568
+                  }
+                },
+                gas_cost_total: 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('rejects a transaction without app creation gas amount', () => {
+        // NOTE: App ready exists.
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const timestamp = Date.now();
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/manage_app/test_app_creation_gas_amount_app0/create/2`,
+            value: {
+              admin: { [account.address]: true },
+            }
+          },
+          gas_price: 0,
+          timestamp,
+          nonce: -1,
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                bandwidth_gas_amount: 1,
+                code: 12103,
+                gas_amount_charged: 1,
+                gas_amount_total: {
+                  bandwidth: {
+                    service: 1
+                  },
+                  state: {
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0,
+                message: `Write rule evaluated false: [data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData) && util.checkValuePathLen(parsedValuePath, 4) === true] at '/manage_app/$app_name/create/$record_id' for value path '/manage_app/test_app_creation_gas_amount_app0/create/2' with path vars '{\"$record_id\":\"2\",\"$app_name\":\"test_app_creation_gas_amount_app0\"}', data 'null', newData '{\"admin\":{\"0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D\":true}}', auth '{\"addr\":\"0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D\"}', timestamp '${timestamp}'`
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: longText,
-            ref: `/apps/test/test_long_text`
+            ref: `/apps/test/test_long_text`,
+            value: longText
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3195,8 +3832,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3224,8 +3861,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3253,8 +3890,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value 3',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value 3'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3267,10 +3904,12 @@ describe('Blockchain Node', () => {
           signature: signature + '0', // invalid signature
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
-          assert.deepEqual(res.result.result.result, {
-            "message": "[executeTransactionAndAddToPool] Invalid signature",
-            "code": 10703,
-            "bandwidth_gas_amount": 0
+          assert.deepEqual(res.result, {
+            result: {
+              code: 30304,
+              message: `Invalid transaction signature.`,
+            },
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -3492,8 +4131,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3524,8 +4163,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -3560,8 +4199,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -3600,8 +4239,8 @@ describe('Blockchain Node', () => {
         const txBodyTemplate = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           nonce: -1
@@ -3718,8 +4357,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           timestamp: Date.now(),
           nonce: -1
@@ -3751,13 +4390,13 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('rejects a batch transaction of invalid transaction format.', () => {
+      it('rejects a batch transaction of invalid format.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3797,8 +4436,8 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            value: 'some other value 3',
-            ref: `/apps/test/test_value/some/path`
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value 3'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3823,65 +4462,13 @@ describe('Blockchain Node', () => {
           ],
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
-          res.result.result.forEach((res) => {
-            res.tx_hash = 'erased';
+          assert.deepEqual(res.result, {
+            result: {
+              code: 30406,
+              message: `Invalid signature of transaction[1].`
+            },
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
-          assert.deepEqual(res.result.result, [
-            {
-              "tx_hash": "erased",
-              "result": {
-                "gas_amount_total": {
-                  "bandwidth": {
-                    "service": 0,
-                    "app": {
-                      "test": 1
-                    }
-                  },
-                  "state": {
-                    "service": 0,
-                    "app": {
-                      "test": 380
-                    }
-                  }
-                },
-                "gas_cost_total": 0,
-                "code": 0,
-                "bandwidth_gas_amount": 1,
-                "gas_amount_charged": 0
-              }
-            },
-            {
-              "tx_hash": "erased",
-              "result": {
-                "message": "[executeTransactionAndAddToPool] Invalid signature",
-                "code": 10703,
-                "bandwidth_gas_amount": 0
-              }
-            },
-            {
-              "tx_hash": "erased",
-              "result": {
-                "gas_amount_total": {
-                  "bandwidth": {
-                    "service": 0,
-                    "app": {
-                      "test": 1
-                    }
-                  },
-                  "state": {
-                    "service": 0,
-                    "app": {
-                      "test": 178
-                    }
-                  }
-                },
-                "gas_cost_total": 0,
-                "code": 0,
-                "bandwidth_gas_amount": 1,
-                "gas_amount_charged": 0
-              }
-            }
-          ]);
         })
       })
     })
@@ -4301,80 +4888,82 @@ describe('Blockchain Node', () => {
     });
   });
 
-  describe('Tx Receipts', () => {
-    it(`records a transaction receipt`, async () => {
-      const txSignerAddress = parseOrLog(syncRequest(
-          'GET', server1 + '/get_address').body.toString('utf-8')).result;
-      const request = {
-        ref: '/apps/test/test_receipts/some/path',
-        value: "some value"
-      };
-      const body = parseOrLog(syncRequest(
-          'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
-      assert.deepEqual(_.get(body, 'result.result.code'), 0);
-      expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
-      expect(body.code).to.equal(0);
-      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        console.error(`Failed to check finalization of tx.`);
-      }
+  // NOTE(liayoo): Commenting out the test cases for the tx receipts. We can safely delete them once
+  //               we deprecate the feature completely.
+  // describe('Tx Receipts', () => {
+  //   it(`records a transaction receipt`, async () => {
+  //     const txSignerAddress = parseOrLog(syncRequest(
+  //         'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  //     const request = {
+  //       ref: '/apps/test/test_receipts/some/path',
+  //       value: "some value"
+  //     };
+  //     const body = parseOrLog(syncRequest(
+  //         'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+  //     assert.deepEqual(_.get(body, 'result.result.code'), 0);
+  //     expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+  //     expect(body.code).to.equal(0);
+  //     if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+  //       console.error(`Failed to check finalization of tx.`);
+  //     }
 
-      const receipt = parseOrLog(syncRequest(
-          'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(body.result.tx_hash)}`)
-          .body.toString('utf-8')).result;
-      assert.deepEqual(receipt.address, txSignerAddress);
-      assert.deepEqual(receipt.exec_result, {
-        "code": 0,
-        "gas_amount_charged": 0,
-        "gas_cost_total": 0
-      });
-    });
+  //     const receipt = parseOrLog(syncRequest(
+  //         'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(body.result.tx_hash)}`)
+  //         .body.toString('utf-8')).result;
+  //     assert.deepEqual(receipt.address, txSignerAddress);
+  //     assert.deepEqual(receipt.exec_result, {
+  //       "code": 0,
+  //       "gas_amount_charged": 0,
+  //       "gas_cost_total": 0
+  //     });
+  //   });
 
-    it('failed transaction', async () => {
-      const server1Address = parseOrLog(syncRequest(
-        'GET', server1 + '/get_address').body.toString('utf-8')).result;
-      const server2Address = parseOrLog(syncRequest(
-        'GET', server2 + '/get_address').body.toString('utf-8')).result;
-      const failingTx = {
-        ref: `/transfer/${server1Address}/${server2Address}/${Date.now()}/value`,
-        value: 10000000000,
-        gas_price: 1
-      }
-      const body = parseOrLog(syncRequest(
-        'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
-      assert.deepEqual(body.result.result.code, 12103);
-      assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
-      assert.deepEqual(body.result.result.gas_amount_total, {
-        "bandwidth": {
-          "service": 1
-        },
-        "state": {
-          "service": 0
-        }
-      });
-      assert.deepEqual(body.result.result.gas_cost_total, 0.000001);
+  //   it('failed transaction', async () => {
+  //     const server1Address = parseOrLog(syncRequest(
+  //       'GET', server1 + '/get_address').body.toString('utf-8')).result;
+  //     const server2Address = parseOrLog(syncRequest(
+  //       'GET', server2 + '/get_address').body.toString('utf-8')).result;
+  //     const failingTx = {
+  //       ref: `/transfer/${server1Address}/${server2Address}/${Date.now()}/value`,
+  //       value: 10000000000,
+  //       gas_price: 1
+  //     }
+  //     const body = parseOrLog(syncRequest(
+  //       'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
+  //     assert.deepEqual(body.result.result.code, 12103);
+  //     assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
+  //     assert.deepEqual(body.result.result.gas_amount_total, {
+  //       "bandwidth": {
+  //         "service": 1
+  //       },
+  //       "state": {
+  //         "service": 0
+  //       }
+  //     });
+  //     assert.deepEqual(body.result.result.gas_cost_total, 0.000001);
       
-      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        console.error(`Failed to check finalization of tx.`);
-      }
+  //     if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+  //       console.error(`Failed to check finalization of tx.`);
+  //     }
 
-      // Failed tx's receipt is in state
-      const txHash = body.result.tx_hash;
-      const receipt = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
-      expect(receipt).to.not.equal(null);
-      assert.deepEqual(receipt.exec_result, DB.trimExecutionResult(body.result.result));
+  //     // Failed tx's receipt is in state
+  //     const txHash = body.result.tx_hash;
+  //     const receipt = parseOrLog(syncRequest(
+  //       'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
+  //     expect(receipt).to.not.equal(null);
+  //     assert.deepEqual(receipt.exec_result, DB.trimExecutionResult(body.result.result));
 
-      // Failed tx's gas fees have been collected
-      const blockNumber = receipt.block_number;
-      const gasFeeCollected = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=/gas_fee/collect/${blockNumber}/${server1Address}/${txHash}/amount`
-      ).body.toString('utf-8')).result;
-      assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
+  //     // Failed tx's gas fees have been collected
+  //     const blockNumber = receipt.block_number;
+  //     const gasFeeCollected = parseOrLog(syncRequest(
+  //       'GET', server2 + `/get_value?ref=/gas_fee/collect/${blockNumber}/${server1Address}/${txHash}/amount`
+  //     ).body.toString('utf-8')).result;
+  //     assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
 
-      // Failed tx is in a block
-      const block = getBlockByNumber(server2, blockNumber);
-      expect(block).to.not.equal(undefined);
-      expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
-    });
-  });
+  //     // Failed tx is in a block
+  //     const block = getBlockByNumber(server2, blockNumber);
+  //     expect(block).to.not.equal(undefined);
+  //     expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
+  //   });
+  // });
 });
