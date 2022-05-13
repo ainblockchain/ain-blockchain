@@ -15,9 +15,11 @@ const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 
 class Middleware {
   constructor () {
+    this.minuteAsSeconds = 60;
     this.setExpressRequestBodySizeLimit();
     this.setCorsOriginList();
     this.setDevClientApiIpWhitelist();
+    this.setBlockchainApiRateLimit();
     this.setReadRateLimit();
     this.setWriteRateLimit();
   }
@@ -44,13 +46,18 @@ class Middleware {
     return this;
   }
 
+  setBlockchainApiRateLimit() {
+    this.blockchainApiRateLimit = NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT;
+    return this;
+  }
+
   setReadRateLimit() {
-    this.readRateLimit = NodeConfigs.MAX_READ_RATE_LIMIT;
+    this.readRateLimit = NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT;
     return this;
   }
 
   setWriteRateLimit() {
-    this.writeRateLimit = NodeConfigs.MAX_WRITE_RATE_LIMIT;
+    this.writeRateLimit = NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT;
     return this;
   }
 
@@ -64,6 +71,10 @@ class Middleware {
 
   getDevClientApiIpWhitelist() {
     return this.devClientApiIpWhitelist;
+  }
+
+  getBlockchainApiRateLimit() {
+    return this.blockchainApiRateLimit;
   }
 
   getReadRateLimit() {
@@ -98,20 +109,28 @@ class Middleware {
     })
   }
 
+  blockchainApiLimiter() {
+    return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
+      rateLimit({
+        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+        max: this.minuteAsSeconds * this.getBlockchainApiRateLimit()
+      }) : this._emptyHandler();
+  }
+
   readLimiter() {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-        rateLimit({
-          windowMs: 1000,   // 1 second
-          max: this.getReadRateLimit()   // limit each IP to maximum of read rate limit
-        }) : this._emptyHandler();
+      rateLimit({
+        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+        max: this.minuteAsSeconds * this.getReadRateLimit()
+      }) : this._emptyHandler();
   }
 
   writeLimiter() {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-        rateLimit({
-          windowMs: 1000,   // 1 second
-          max: this.getWriteRateLimit()   // limit each IP to maximum of write rate limit
-        }) : this._emptyHandler();
+      rateLimit({
+        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+        max: this.minuteAsSeconds * this.getWriteRateLimit()
+      }) : this._emptyHandler();
   }
 
   jsonRpcLimiter(req, res, next) {
@@ -135,7 +154,7 @@ class Middleware {
     console.log(this.getCorsOriginList());
     console.log(this.getDevClientApiIpWhitelist());
     console.log(this.getExpressRequestBodySizeLimit());
-    console.log(this.getReadRateLimit(), this.getWriteRateLimit());
+    console.log(this.getBlockchainApiRateLimit(), this.getReadRateLimit(), this.getWriteRateLimit());
   }
 }
 
