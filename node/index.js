@@ -1065,7 +1065,7 @@ class BlockchainNode {
       if (NodeConfigs.UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL) {
         // Apply the txs from the tx pool to the new final front db.
         this.executeAndGetValidTransactions(
-            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true, ValueChangedEventSources.USER);
+            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
       }
       // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
