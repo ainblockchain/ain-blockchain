@@ -22,12 +22,14 @@ class Middleware {
     this.setBlockchainApiRateLimit();
     this.setReadRateLimit();
     this.setWriteRateLimit();
-  }
-
-  _emptyHandler() {
-    return (req, res, next) => {
-      return next();
-    }
+    this.jsonRpcReadLimiter = rateLimit({
+      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+      max: this.minuteAsSeconds * this.getReadRateLimit()
+    });
+    this.jsonRpcWriteLimiter = rateLimit({
+      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
+      max: this.minuteAsSeconds * this.getWriteRateLimit()
+    });
   }
 
   setExpressRequestBodySizeLimit() {
@@ -109,34 +111,25 @@ class Middleware {
     })
   }
 
+  _emptyHandler = () => {
+    return (req, res, next) => {
+      return next();
+    }
+  }
+
   blockchainApiLimiter = () => {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-      rateLimit({
-        windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-        max: this.minuteAsSeconds * this.getBlockchainApiRateLimit()
-      }) : this._emptyHandler();
-  }
-
-  readLimiter = () => {
-    console.log('read');
-    return rateLimit({
-      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-      max: 5
-    });
-  }
-
-  writeLimiter = () => {
-    console.log('write');
-    return rateLimit({
-      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-      max: 3
-    });
+        rateLimit({
+          windowMs: this.minuteAsSeconds * 1000,   // 1 minute window
+          max: this.minuteAsSeconds * this.getBlockchainApiRateLimit()
+        }) : this._emptyHandler();
   }
 
   jsonRpcLimiter = (req, res, next) => {
+    if (!NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
+      return next();
+    }
     const jsonRpcMethod = _.get(req, 'body.method');
-    console.log(jsonRpcMethod);
-    console.log(111)
     switch (jsonRpcMethod) {
       case JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST:
       case JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST:
@@ -146,10 +139,9 @@ class Middleware {
       case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION:
       case JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH:
       case JSON_RPC_METHOD.AIN_GET_LAST_BLOCK_NUMBER:
-        console.log(22)
-        return this.readLimiter()(req, res, next);
+        return this.jsonRpcWriteLimiter(req, res, next);
       default:
-        return this.writeLimiter()(req, res, next);
+        return this.jsonRpcReadLimiter(req, res, next);
     }
   }
 
