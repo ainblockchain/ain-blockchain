@@ -720,7 +720,7 @@ class DB {
 
   checkRespTreeLimitsForEvalOrMatch(rootLabel, localPath, options) {
     if (options && options.fromApi) {
-    const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+      const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
       const fullPath = DB.getFullPath(localPath, rootLabel);
       const stateNode = DB.getRefForReadingFromStateRoot(targetStateRoot, fullPath);
       if (stateNode !== null) {
@@ -753,19 +753,19 @@ class DB {
     const resultList = [];
     for (const op of opList) {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         const auth = {};
         if (op.address) {
@@ -775,7 +775,7 @@ class DB {
           auth.fid = op.fid;
         }
         const timestamp = op.timestamp || Date.now();
-        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op), { timestamp });
+        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op, true), { timestamp });
         resultList.push(this.evalRule(op.ref, op.value, auth, options));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
@@ -786,7 +786,7 @@ class DB {
           auth.fid = op.fid;
         }
         resultList.push(this.evalOwner(
-            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
+            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op, true)));
       }
     }
     return resultList;
