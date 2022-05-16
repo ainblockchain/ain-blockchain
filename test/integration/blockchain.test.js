@@ -555,9 +555,9 @@ describe('Blockchain Cluster', () => {
     it('pendingNonceTracker', () => {
       return new Promise((resolve, reject) => {
         let promises = [];
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+        promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
             { address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+        promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
             { address, from: 'pending', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
         Promise.all(promises).then(res => {
           promises = [];
@@ -570,9 +570,9 @@ describe('Blockchain Cluster', () => {
                     value: 'testing...'
                   }
                 }).body.toString('utf-8')).result.tx_hash;
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+          promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
               { address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
-          promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+          promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
               { address, from: 'pending', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(async resAfterBroadcast => {
             promises = [];
@@ -595,9 +595,9 @@ describe('Blockchain Cluster', () => {
       return new Promise(async (resolve, reject) => {
         await waitForNewBlocks(server2);
         let promises = [];
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+        promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
             { address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
+        promises.push(jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_NONCE,
             { address, from: 'pending', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }));
         Promise.all(promises).then(resAfterCommit => {
           const committedNonceAfterCommit = resAfterCommit[0].result.result;
@@ -689,7 +689,7 @@ describe('Blockchain Cluster', () => {
 
   describe('Protocol versions', () => {
     it('accepts API calls with correct protoVer', () => {
-      return jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+      return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
           .then(res => {
             expect(res.result.result.number).to.equal(0);
@@ -699,7 +699,7 @@ describe('Blockchain Cluster', () => {
 
     it('rejects API calls with invalid protoVer - case 1', () => {
       return jsonRpcClient.request(
-          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: 'a.b.c' })
           .then(res => {
             expect(res.code).to.equal(40102);
@@ -709,7 +709,7 @@ describe('Blockchain Cluster', () => {
 
     it('rejects API calls with invalid protoVer - case 2', () => {
       return jsonRpcClient.request(
-          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: '0.01.0' })
           .then(res => {
             expect(res.code).to.equal(40102);
@@ -719,7 +719,7 @@ describe('Blockchain Cluster', () => {
 
     it('rejects API calls with incompatible protoVer - case 1', () => {
       return jsonRpcClient.request(
-          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: 'v0.1' })
           .then(res => {
             expect(res.code).to.equal(40103);
@@ -729,7 +729,7 @@ describe('Blockchain Cluster', () => {
 
     it('rejects API calls with incompatible protoVer - case 2', () => {
       return jsonRpcClient.request(
-          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: '0.1.0' })
           .then(res => {
             expect(res.code).to.equal(40103);
@@ -739,7 +739,7 @@ describe('Blockchain Cluster', () => {
 
     it('rejects API calls with no protoVer', () => {
       return jsonRpcClient.request(
-          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0 })
           .then(res => {
             expect(res.code).to.equal(40101);
