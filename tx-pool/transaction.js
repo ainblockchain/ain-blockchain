@@ -242,6 +242,10 @@ class Transaction {
       logger.info(`Transaction body is in a non-standard format:\n${diffLines}\n`);
       return false;
     }
+    if (sanitized.operation.type === WriteDbOperations.SET &&
+        CommonUtil.isEmpty(sanitized.operation.op_list)) {
+      return false;
+    }
     return true;
   }
 
@@ -251,6 +255,9 @@ class Transaction {
 
   static isBatchTransaction(tx) {
     return tx && CommonUtil.isArray(tx.tx_list);
+  }
+  static isFreeTransaction(tx) {
+    return tx.tx_body.gas_price === undefined || tx.tx_body.gas_price === 0;
   }
 }
 

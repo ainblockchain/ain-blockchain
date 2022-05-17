@@ -106,9 +106,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+ACCOUNT_INJECTION_OPTION=keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -121,7 +121,7 @@ The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDAT
 the blockchain-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `blockchain-configs/base` by default and it can be altered using `BLOCKCHAIN_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Cloud Platform (GCP)
@@ -148,22 +148,43 @@ source setup_node_gcp.sh
 bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 ```
 
-<!--
 ### Running with Docker
 
-- Build Docker image
+- Pull Docker image from [Docker Hub](https://hub.docker.com/repository/docker/ainblockchain/ain-blockchain)
 ```
-docker build -t ain-blockchain .
+docker pull ainblockchain/ain-blockchain:dev
+docker pull ainblockchain/ain-blockchain:dev-1.0.6
+docker pull ainblockchain/ain-blockchain:{mainnet|summer|spring|sandbox|staging|exp|dev}-<PACKAGE_VERSION>
 ```
-- Pull Docker image
+- Or build Docker image yourself
 ```
-docker pull ainblockchain/blockchain-database
+docker build -t ain-blockchain --build-arg SEASON={mainnet|summer|spring|sandbox|staging|exp|dev} .
 ```
-- Run with Docker image
+- Run with Docker image example
 ```
-docker run -e ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=private_key -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
+docker run -e ACCOUNT_INJECTION_OPTION=keystore -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
+```
+You can use some environment variables, and these have the following options.
+```
+-e ACCOUNT_INJECTION_OPTION={private_key|keystore|mnemonic}
+-e SYNC_MODE={fast|full|peer}
+-e STAKE=<YOUR_TARGET_STAKE>
+```
+After the node is executed, you should inject your account into the node.
+```
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --private-key
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --keystore
+node inject_account_gcp.js <NODE_ENDPOINT_URL> --mnemonic
+```
+If you want to inject your account automatically, add one of these environment variables before running the node.
+```
+-e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=<YOUR_PRIVATE_KEY>
+-e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/path/to/keystore" -e PASSWORD=<YOUR_PASSWORD>
+-e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic"
 ```
 
+<!--
 #### Enter Docker container and inspect blockchain files
 
 ```
@@ -308,13 +329,13 @@ POST http://<ip_address>:8080/batch with json_body {"tx_list": [{"operation": {"
 
 ## Utility scripts
 
-Four Node server with a Tracker server can be started all at once using `start_servers.sh` like:
+Four Node server with a Tracker server can be started all at once using `start_local_blockchain.sh` like:
 ```
-bash start_servers.sh
+bash start_local_blockchain.sh
 ```
-and can be stopped all at once using `stop_servers.sh` like:
+and can be stopped all at once using `stop_local_blockchain.sh` like:
 ```
-bash stop_servers.sh
+bash stop_local_blockchain.sh
 ```
 
 ## Versions

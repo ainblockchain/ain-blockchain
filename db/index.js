@@ -33,6 +33,8 @@ const {
   hasOwnerConfig,
   getOwnerConfig,
   isWritablePathWithSharding,
+  isValidServiceName,
+  isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
   makeWriteRuleCodeSnippet,
@@ -819,6 +821,48 @@ class DB {
     return true;
   }
 
+  isNonExistingAccount(addrOrServAcnt) {
+    const accountPath = CommonUtil.isServAcntName(addrOrServAcnt) ?
+        PathUtil.getServiceAccountPathFromAccountName(addrOrServAcnt) :
+        PathUtil.getAccountPath(addrOrServAcnt);
+    const curAccountValue = this.getValue(accountPath, { isShallow: true });
+    return curAccountValue === null;
+  }
+
+  isNonExistingApp(appName) {
+    const appPath = PathUtil.getManageAppConfigPath(appName);
+    const curAppValue = this.getValue(appPath, { isShallow: true });
+    return curAppValue === null;
+  }
+
+  validateAppName(appName, blockNumber, stateLabelLengthLimit) {
+    if (!isValidStateLabel(appName, stateLabelLengthLimit)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_STATE_LABEL,
+        message: `Invalid app name for state label: ${appName}`
+      };
+    }
+    if (!isValidServiceName(appName, blockNumber)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_SERVICE_NAME,
+        message: `Invalid app name for service name: ${appName}`
+      };
+    }
+    if (!this.isNonExistingApp(appName)) {
+      return {
+        is_valid: false,
+        code: JsonRpcApiResultCode.APP_NAME_ALREADY_IN_USE,
+        message: `App name already in use: ${appName}`
+      };
+    }
+    return {
+      is_valid: true,
+      code: JsonRpcApiResultCode.SUCCESS
+    };
+  }
+
   updateAccountNonceAndTimestamp(address, nonce, timestamp) {
     return DB.updateAccountNonceAndTimestampToStateRoot(
         this.stateRoot, this.stateVersion, address, nonce, timestamp);
@@ -861,6 +905,7 @@ class DB {
     if (!blockTime) {
       blockTime = this.lastBlockTimestamp();
     }
+    const eventSource = _.get(options, 'eventSource', null);
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
@@ -920,6 +965,8 @@ class DB {
     if (auth && (auth.addr || auth.fid)) {
       const accountRegistrationGasAmount = DB.getBlockchainParam(
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
+      const appCreationGasAmount = DB.getBlockchainParam(
+          'resource/app_creation_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
       const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
@@ -933,6 +980,7 @@ class DB {
           'genesis/network_id', blockNumber, this.stateRoot);
       const blockchainParams = {
         accountRegistrationGasAmount,
+        appCreationGasAmount,
         restFunctionCallGasAmount,
         rewardType,
         rewardAnnualRate,
@@ -970,7 +1018,7 @@ class DB {
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
     if (this.eh) {
-      this.eh.emitValueChanged(auth, localPath, prevValueCopy, valueCopy);
+      this.eh.emitValueChanged(auth, transaction, localPath, prevValueCopy, valueCopy, eventSource);
     }
 
     return CommonUtil.returnTxResult(
@@ -1227,12 +1275,14 @@ class DB {
     return globalPath;
   }
 
-  executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
+  executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource) {
     let result;
     const options = Object.assign(CommonUtil.toSetOptions(op), {
+      nonce,
       timestamp,
       blockNumber,
       blockTime,
+      eventSource,
     });
     switch (op.type) {
       case undefined:
@@ -1265,7 +1315,7 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
+  executeMultiSetOperation(opList, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource) {
     const setOpListSizeLimit = DB.getBlockchainParam(
         'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
     if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
@@ -1279,7 +1329,7 @@ class DB {
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       const result =
-          this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime);
+          this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
       resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
@@ -1295,7 +1345,18 @@ class DB {
     tx.setExtraField('gas', gasAmountTotal);
   }
 
-  executeOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
+  checkIfNonExistingAccount(tx, auth) {
+    if (tx && auth && auth.addr && !auth.fid) {
+      const curAccountValue =
+          this.getValue(CommonUtil.formatPath([PredefinedDbPaths.ACCOUNTS, auth.addr]));
+      return curAccountValue === null;
+    }
+    return false;
+  }
+
+  executeOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource) {
+    const accountRegistrationGasAmount = DB.getBlockchainParam(
+        'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -1316,13 +1377,29 @@ class DB {
     }
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
+    let wasNonExistingAccount = false;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
+      wasNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+    }
     if (op.type === WriteDbOperations.SET) {
       Object.assign(
           result,
-          this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockNumber, blockTime));
+          this.executeMultiSetOperation(op.op_list, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
     } else {
       Object.assign(
-          result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime));
+          result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
+    }
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
+      // Apply account registration gas amount for nonce and timestamp.
+      const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
+      if (wasNonExistingAccount && isNonExistingAccount && nonce !== -1) {
+        if (op.type === WriteDbOperations.SET) {
+          // NOTE: Empty op_list is not allowed (see isInStandardFormat()).
+          result.result_list[0].bandwidth_gas_amount += accountRegistrationGasAmount;
+        } else {
+          result.bandwidth_gas_amount += accountRegistrationGasAmount;
+        }
+      }
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
@@ -1563,7 +1640,7 @@ class DB {
     }
   }
 
-  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult) {
+  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource) {
     const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
@@ -1606,6 +1683,7 @@ class DB {
       timestamp,
       blockNumber,
       blockTime,
+      eventSource,
     };
     const gasFeeCollectRes = this.setValue(
         gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, tx, newOptions);
@@ -1812,7 +1890,7 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
+  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
     const LOG_HEADER = 'executeTransaction';
 
     const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
@@ -1833,9 +1911,10 @@ class DB {
     tx.setExtraField('executed_at', Date.now());
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const auth = { addr: tx.address };
+    const nonce = txBody.nonce;
     const timestamp = txBody.timestamp;
     const executionResult =
-        this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber, blockTime);
+        this.executeOperation(txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
     if (CommonUtil.isFailedTx(executionResult)) {
       if (restoreIfFails) {
         this.restoreDb();
@@ -1846,7 +1925,7 @@ class DB {
     }
     if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
-        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
+        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource);
       }
       if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
@@ -1856,13 +1935,13 @@ class DB {
   }
 
   executeTransactionList(
-      txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
+      txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
       const res =
-        this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
+        this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime, eventSource);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);

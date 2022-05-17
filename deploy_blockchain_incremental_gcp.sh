@@ -121,18 +121,18 @@ if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     read -s PASSWORD
     printf "\n\n"
     if [[ $SEASON = "mainnet" ]]; then
-        KEYSTORE_DIR="mainnet_prod_keys/"
+        KEYSTORE_DIR="mainnet_prod_keys"
     elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
-        KEYSTORE_DIR="testnet_prod_keys/"
+        KEYSTORE_DIR="testnet_prod_keys"
     else
-        KEYSTORE_DIR="testnet_dev_staging_keys/"
+        KEYSTORE_DIR="testnet_dev_staging_keys"
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
 NUM_SHARD_NODES=3
 
@@ -218,13 +218,20 @@ function deploy_node() {
 
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
+        UPDATE_FRONT_DB_OPTION="--update-front-db"
     else
         JSON_RPC_OPTION=""
+        UPDATE_FRONT_DB_OPTION=""
     fi
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
     else
         REST_FUNC_OPTION=""
+    fi
+    if [[ $node_index -ge 8 ]] && [[ $node_index -lt 10 ]]; then
+        EVENT_HANDLER_OPTION="--event-handler"
+    else
+        EVENT_HANDLER_OPTION=""
     fi
 
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
@@ -232,10 +239,12 @@ function deploy_node() {
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+    printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+    printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
@@ -245,7 +254,12 @@ function deploy_node() {
         printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
-        echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
+        {
+            echo $KEYSTORE_FILE_PATH
+            sleep 1
+            echo $PASSWORD
+        } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
