@@ -16,7 +16,6 @@ const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 class Middleware {
   constructor () {
     this.minuteAsSeconds = 60;
-    this.setDevClientApiIpWhitelist();
     this.setBlockchainApiRateLimit();
     this.setReadRateLimit();
     this.setWriteRateLimit();
@@ -28,11 +27,6 @@ class Middleware {
       windowMs: this.minuteAsSeconds * 1000,   // 1 minute
       max: this.minuteAsSeconds * this.getWriteRateLimit()
     });
-  }
-
-  setDevClientApiIpWhitelist() {
-    this.devClientApiIpWhitelist = NodeConfigs.DEV_CLIENT_API_IP_WHITELIST;
-    return this;
   }
 
   setBlockchainApiRateLimit() {
@@ -48,10 +42,6 @@ class Middleware {
   setWriteRateLimit() {
     this.writeRateLimit = NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT;
     return this;
-  }
-
-  getDevClientApiIpWhitelist() {
-    return this.devClientApiIpWhitelist;
   }
 
   getBlockchainApiRateLimit() {
@@ -84,10 +74,9 @@ class Middleware {
 
   ipWhitelistLimiter() {
     return ipWhitelist((ip) => {
-      const whitelist = this.getDevClientApiIpWhitelist();
-      return isWildcard(whitelist) ||
-          matchUrl(ip, whitelist) ||
-          matchUrl(convertIpv6ToIpv4(ip), whitelist);
+      return isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+          matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+          matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
     })
   }
 
