@@ -152,21 +152,21 @@ bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 
 - Pull Docker image from [Docker Hub](https://hub.docker.com/repository/docker/ainblockchain/ain-blockchain)
 ```
-docker pull ainblockchain/ain-blockchain:dev
-docker pull ainblockchain/ain-blockchain:dev-1.0.6
-docker pull ainblockchain/ain-blockchain:{mainnet|summer|spring|sandbox|staging|exp|dev}-<PACKAGE_VERSION>
+docker pull ainblockchain/ain-blockchain:latest
+docker pull ainblockchain/ain-blockchain:<PACKAGE_VERSION>
 ```
 - Or build Docker image yourself
 ```
-docker build -t ain-blockchain --build-arg SEASON={mainnet|summer|spring|sandbox|staging|exp|dev} .
+docker build -t ain-blockchain .
 ```
 - Run with Docker image example
 ```
-docker run -e ACCOUNT_INJECTION_OPTION=private_key -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:dev
-docker run -e ACCOUNT_INJECTION_OPTION=keystore -e SYNC_MODE=peer -e STAKE=10000 --network="host" -d ainblockchain/ain-blockchain:mainnet
+docker run -e ACCOUNT_INJECTION_OPTION=private_key -e SYNC_MODE=peer -e STAKE=10000 -e SEASON=dev --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=keystore -e SYNC_MODE=peer -e STAKE=10000 -e SEASON=mainnet --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 You can use some environment variables, and these have the following options.
 ```
+-e SEASON={mainnet|summer|spring|sandbox|staging|exp|dev}
 -e ACCOUNT_INJECTION_OPTION={private_key|keystore|mnemonic}
 -e SYNC_MODE={fast|full|peer}
 -e STAKE=<YOUR_TARGET_STAKE>
