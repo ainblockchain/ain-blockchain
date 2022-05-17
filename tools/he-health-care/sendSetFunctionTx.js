@@ -28,10 +28,20 @@ function buildSetFunctionTxBody(appName, timestamp) {
   };
 }
 
+function usage() {
+  console.log('\nExample commandlines:\n  node sendSetFunctionTx.js chainId\n');
+}
+
 async function main() {
-  // TODO(cshcomcom): Support 'node sendSetFunctionTx.js <config_filename>' and check args
+  // TODO(cshcomcom): Support 'node sendSetFunctionTx.js chainId <config_filename>' and check args
+  if (process.argv.length !== 3) {
+    usage();
+    process.exit(0);
+  }
+  const chainId = process.argv[2];
   const setFunctionTxBody = buildSetFunctionTxBody(healthCareAppName, Date.now());
-  const setFunctionResult = await signAndSendTx(endpointUrl, setFunctionTxBody, serviceOwnerPrivateKey);
+  const setFunctionResult =
+      await signAndSendTx(endpointUrl, setFunctionTxBody, serviceOwnerPrivateKey, chainId);
   if (!setFunctionResult.success) {
     throw Error(`Can't set function (${JSON.stringify(setFunctionResult, null, 2)})`);
   }

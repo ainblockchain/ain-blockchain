@@ -2212,6 +2212,12 @@ describe("CommonUtil", () => {
           'disabled_block': '200',
         }
       }, 'some_flag', 100)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({
+        'some_flag': {
+          'enabled_block': 0,
+          'disabled_block': 200,
+        }
+      }, 'some_flag', '100')).to.equal(false);
     });
 
     it("when valid input", () => {

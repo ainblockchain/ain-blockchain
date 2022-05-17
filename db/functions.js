@@ -191,6 +191,7 @@ class Functions {
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             let result = null;
+            const eventSource = _.get(options, 'eventSource', null);
             try {
               result = nativeFunction.func(
                   value,
@@ -212,6 +213,7 @@ class Functions {
                     opResultList: [],
                     otherGasAmount: 0,
                     ...blockchainParams,
+                    eventSource,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -475,11 +477,13 @@ class Functions {
     const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
+    const eventSource = context.eventSource;
     const auth = context.auth;
     const newOptions = {
       timestamp,
       blockNumber,
       blockTime,
+      eventSource,
     };
     const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
@@ -707,14 +711,20 @@ class Functions {
     const to = context.params.to;
     const fromBalancePath = CommonUtil.getBalancePath(from);
     const toBalancePath = CommonUtil.getBalancePath(to);
-    let extraGasAmount = 0;
     const fromBalance = this.db.getValue(fromBalancePath);
     if (fromBalance === null || fromBalance < value) {
       return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
-    const toBalance = this.db.getValue(toBalancePath);
-    if (toBalance === null) {  // for either an individual or a service account.
-      extraGasAmount = context.accountRegistrationGasAmount;
+    let extraGasAmount = 0;
+    if (isEnabledTimerFlag('extend_account_registration_gas_amount', context.blockNumber)) {
+      if (this.db.isNonExistingAccount(to)) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
+    } else {
+      const toBalance = this.db.getValue(toBalancePath);
+      if (toBalance === null) {  // for either an individual or a service account.
+        extraGasAmount = context.accountRegistrationGasAmount;
+      }
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
@@ -775,6 +785,12 @@ class Functions {
     if (errorCode) {
       return this.returnFuncResult(context, errorCode);
     }
+    let extraGasAmount = 0;
+    if (isEnabledTimerFlag('add_app_creation_gas_amount', context.blockNumber)) {
+      if (this.db.isNonExistingApp(appName)) {
+        extraGasAmount = context.appCreationGasAmount;
+      }
+    }
     let rule;
     const owner = {};
     const adminAddrList = Object.keys(sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]);
@@ -802,7 +818,7 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
     }
-    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS, extraGasAmount);
   }
 
   _collectFee(value, context) {
@@ -1338,7 +1354,7 @@ class Functions {
   _cancelCheckin(value, context) {
     if (value !== null) {
       // Does nothing for non-null value.
-      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
+      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }

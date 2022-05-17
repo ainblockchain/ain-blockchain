@@ -25,7 +25,15 @@ class EventChannelManager {
     return {
       url: eventHandlerUrl.toString(),
       port: NodeConfigs.EVENT_HANDLER_PORT,
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: this.getNumEventChannels(),
+      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+      numEventFilters: this.eventHandler.getNumEventFilters(),
     }
+  }
+
+  getNumEventChannels() {
+    return Object.keys(this.channels).length;
   }
 
   getChannelInfo() {
@@ -49,6 +57,11 @@ class EventChannelManager {
   handleConnection(webSocket) {
     const LOG_HEADER = 'handleConnection';
     try {
+      if (this.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+        throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_SIZE_LIMIT,
+            `The number of event channels exceeds its limit ` +
+            `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
+      }
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
         throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
@@ -79,6 +92,16 @@ class EventChannelManager {
 
   handleRegisterFilterMessage(channel, messageData) {
     const clientFilterId = messageData.id;
+    if (this.eventHandler.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
+      throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT,
+          `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`,
+          null, clientFilterId);
+    }
+    if (channel.getFilterIdsSize() >= NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
+      throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT_PER_CHANNEL,
+          `The number of event filters exceeds its limit per channel ` +
+          `(${NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL})`, null, clientFilterId);
+    }
     const eventType = messageData.type;
     if (!eventType) {
       throw new EventHandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,

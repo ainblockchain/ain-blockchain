@@ -4,7 +4,7 @@ const {
   isNodeAlive
 } = require('./util');
 
-const _buildGraphData = (blockchainNodes) => {
+const buildGraphData = (blockchainNodes) => {
   const filteredblockchainNodesEntries = Object.entries(blockchainNodes)
       .filter(([, node]) => isNodeAlive(node));
   const blockchainNodeAlive = Object.fromEntries(filteredblockchainNodesEntries);
@@ -35,7 +35,7 @@ const _buildGraphData = (blockchainNodes) => {
 const getGraphData = (networkStatus) => {
   try {
     if (!commonUtil.isEmpty(networkStatus.blockchainNodes)) {
-      const data = _buildGraphData(networkStatus.blockchainNodes);
+      const data = buildGraphData(networkStatus.blockchainNodes);
       return data;
     } else {
       return {
@@ -62,5 +62,6 @@ const getGraphData = (networkStatus) => {
 }
 
 module.exports = {
-  getGraphData
+  getGraphData,
+  buildGraphData
 };

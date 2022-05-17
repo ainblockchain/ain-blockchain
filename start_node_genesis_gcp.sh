@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     return 1
@@ -31,8 +31,12 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
+    elif [[ $option = '--update-front-db' ]]; then
+        UPDATE_FRONT_DB_OPTION="$option"
     elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
+    elif [[ $option = '--event-handler' ]]; then
+        EVENT_HANDLER_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         return 1
@@ -63,7 +67,9 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 JSON_RPC_OPTION=""
+UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
+EVENT_HANDLER_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]; do
@@ -81,7 +87,9 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION != "--private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
@@ -118,10 +126,20 @@ if [[ $JSON_RPC_OPTION ]]; then
 else
     export ENABLE_JSON_RPC_API=false
 fi
+if [[ $UPDATE_FRONT_DB_OPTION ]]; then
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=true
+else
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=false
+fi
 if [[ $REST_FUNC_OPTION ]]; then
     export ENABLE_REST_FUNCTION_CALL=true
 else
     export ENABLE_REST_FUNCTION_CALL=false
+fi
+if [[ $EVENT_HANDLER_OPTION ]]; then
+    export ENABLE_EVENT_HANDLER=true
+else
+    export ENABLE_EVENT_HANDLER=false
 fi
 
 printf '\n'
@@ -160,7 +178,6 @@ else
 fi
 
 
-KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
@@ -168,7 +185,6 @@ if [[ $SEASON = 'mainnet' ]]; then
     if [[ $NODE_INDEX -lt 5 ]]; then
         export PEER_WHITELIST="0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A,0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8,0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f,0x003C9d091584fEC96bC3bD8423c884680BEAaf4E,0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC,0x005C99Db64845e5BF24cd152b22c932989479907,0x006C672861e9DBb09232307c17Be6554BC90687c,0x007C36bf5D0F77836eE138EEAc8df7051b43209b,0x008C287187a5626D0a25DbD67327B36AC55B998E,0x009C66DBce144003f8C4B859fFFce78F80fDD639"
     fi
-    KEYSTORE_DIR=mainnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
@@ -176,7 +192,6 @@ elif [[ $SEASON = 'summer' ]]; then
     if [[ $NODE_INDEX -lt 5 ]]; then
         export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
@@ -184,7 +199,6 @@ elif [[ $SEASON = 'spring' ]]; then
     if [[ $NODE_INDEX -lt 5 ]]; then
         export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     if [[ $NODE_INDEX -lt 10 ]]; then
@@ -268,21 +282,8 @@ fi
 printf "\n"
 printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
-printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 printf "PEER_WHITELIST=$PEER_WHITELIST\n"
-
-if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
-    KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
-    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo cp ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
-        printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
-        eval $KEYSTORE_CMD
-    fi
-    export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
-    printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
-fi
 
 export STAKE=100000
 printf "STAKE=$STAKE\n"

@@ -1530,7 +1530,7 @@ describe('Native Function', () => {
           "func_results": {
             "_createApp": {
               "code": 0,
-              "bandwidth_gas_amount": 0,
+              "bandwidth_gas_amount": 2000,
               "op_results": {
                 "0": {
                   "path": "/apps/test_service_create_app0",
@@ -1564,7 +1564,7 @@ describe('Native Function', () => {
               "app": {
                 "test_service_create_app0": 2
               },
-              "service": 2
+              "service": 2002
             },
             "state": {
               "service": 'erased'
@@ -1577,7 +1577,7 @@ describe('Native Function', () => {
         }
       });
 
-      it("when successful with null value", async () => {
+      it("when failed with null value", async () => {
         const invalidAppName = 'Test_Service_Create_App0';
         const manageAppPath = `/manage_app/${invalidAppName}/create/1`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
@@ -2175,7 +2175,7 @@ describe('Native Function', () => {
           "func_results": {
             "_createApp": {
               "code": 0,
-              "bandwidth_gas_amount": 0,
+              "bandwidth_gas_amount": 2000,
               "op_results": {
                 "0": {
                   "path": "/apps/test_service_create_app1",
@@ -2216,7 +2216,7 @@ describe('Native Function', () => {
               "app": {
                 "test_service_create_app1": 2
               },
-              "service": 3
+              "service": 2003
             },
             "state": {
               "service": 'erased'

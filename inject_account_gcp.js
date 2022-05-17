@@ -1,25 +1,10 @@
 const axios = require('axios');
+const fs = require('fs');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts } = require('./common/constants');
 const { sleep } = require('./common/common-util');
-const readline = require('readline');
-
-let hide = false;
-let secret = true;
-const readlineInterface = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-// NOTE(liayoo): Show the prompt & hide the password
-readlineInterface._writeToOutput = (val) => {
-  if (!hide && secret) {
-    readlineInterface.output.write(val);
-    hide = true;
-  } else if (!hide && !secret) {
-    readlineInterface.output.write(val);
-  }
-};
+const prompt = require('prompt');
 
 async function sendGetBootstrapPubKeyRequest(endpointUrl) {
   return await axios.post(
@@ -44,15 +29,12 @@ async function sendGetBootstrapPubKeyRequest(endpointUrl) {
       });
 }
 
-async function sendInjectAccountFromPrivateKey(endpointUrl, encryptedPrivateKey) {
+async function sendInjectAccount(endpointUrl, method, params) {
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: 'ain_injectAccountFromPrivateKey',
-      params: {
-        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
-        encryptedPrivateKey,
-      },
+      method,
+      params: Object.assign(params, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }),
       jsonrpc: '2.0',
       id: 0
     })
@@ -61,75 +43,92 @@ async function sendInjectAccountFromPrivateKey(endpointUrl, encryptedPrivateKey)
     });
 }
 
-async function sendInjectAccountRequestWithKeystore(endpointUrl, encryptedPassword) {
-  return await axios.post(
-      `${endpointUrl}/json-rpc`,
-      {
-        method: 'ain_injectAccountFromKeystore',
-        params: {
-          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
-          encryptedPassword,
-        },
-        jsonrpc: '2.0',
-        id: 0
+async function injectAccount(endpointUrl, accountInjectionOption) {
+  const properties = [];
+  switch (accountInjectionOption) {
+    case '--private-key':
+      properties.push({
+        name: 'privateKey',
+        description: 'Enter private key:',
+        hidden: true
       })
-      .then(function(resp) {
-        return _.get(resp, 'data.result.result');
-      });
-}
-
-async function sendInjectAccountRequestWithMemonic(endpointUrl, encryptedMnemonic, index) {
-  return await axios.post(
-      `${endpointUrl}/json-rpc`,
-      {
-        method: 'ain_injectAccountFromHDWallet',
-        params: {
-          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
-          encryptedMnemonic,
-          index,
-        },
-        jsonrpc: '2.0',
-        id: 0
+      break;
+    case '--keystore':
+      properties.push({
+        name: 'keystorePath',
+        description: 'Enter keystore path:',
       })
-      .then(function(resp) {
-        return _.get(resp, 'data.result.result');
-      });
-}
+      properties.push({
+        name: 'password',
+        description: 'Enter password:',
+        hidden: true
+      })
+      break;
+    case '--mnemonic':
+      properties.push({
+        name: 'mnemonic',
+        description: 'Enter mnemonic:',
+        hidden: true
+      })
+      properties.push({
+        name: 'index',
+        validator: /^[0-9]*$/,
+        description: 'Enter index (default: 0):',
+        before: (value) => (value === '' ? 0 : Number(value))
+      })
+      break;
+    default:
+      console.log(`\nInvalid account injection option: ${accountInjectionOption}\n`);
+      return;
+  }
 
-async function injectAccount(endpointUrl, accountInjectionOption, input) {
+  prompt.message = '';
+  prompt.delimiter = '';
+  prompt.colors = false;
+  prompt.start();
+  input = await prompt.get(properties);
+
   let bootstrapPubKey = null;
-  let res = null;
-  let index = null;
-
-  if (accountInjectionOption === '--mnemonic') {
-    hide = false;
-    secret = false;
-    index = await new Promise((resolve) => {
-      readlineInterface.question(`Enter index (default: 0): `, (input) => {
-        readlineInterface.output.write('\n\r');
-        readlineInterface.close();
-        resolve(input);
-      });
-    })
-    if (!is_positive_numeric(index)) {
-      console.log(`The index is set to the default value of 0.`);
-      index = 0;
-    }
-  }
   while (bootstrapPubKey === null) {
-    await sleep(1000);
     bootstrapPubKey = await sendGetBootstrapPubKeyRequest(endpointUrl);
+    if (bootstrapPubKey !== null) {
+      break;
+    }
+    await sleep(1000);
   }
+
   console.log('bootstrapPubKey:', JSON.stringify(bootstrapPubKey, null, 2));
-  const encryptedInput = await ainUtil.encryptWithPublicKey(bootstrapPubKey, input);
-  if (accountInjectionOption === '--private-key') {
-    res = await sendInjectAccountFromPrivateKey(endpointUrl, encryptedInput);
-  } else if (accountInjectionOption === '--keystore') {
-    res = await sendInjectAccountRequestWithKeystore(endpointUrl, encryptedInput);
-  } else if (accountInjectionOption === '--mnemonic') {
-    res = await sendInjectAccountRequestWithMemonic(endpointUrl, encryptedInput, index);
+
+  let method = null;
+  const params = {};
+  switch (accountInjectionOption) {
+    case '--private-key':
+      method = 'ain_injectAccountFromPrivateKey';
+      Object.assign(params, {
+        encryptedPrivateKey: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.privateKey)
+      })
+      break;
+    case '--keystore':
+      method = 'ain_injectAccountFromKeystore';
+      const keystore = JSON.stringify(JSON.parse(fs.readFileSync(input.keystorePath)));
+      Object.assign(params, {
+        encryptedKeystore: await ainUtil.encryptWithPublicKey(bootstrapPubKey, keystore)
+      })
+      Object.assign(params, {
+        encryptedPassword: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.password)
+      })
+      break;
+    case '--mnemonic':
+      method = 'ain_injectAccountFromHDWallet';
+      Object.assign(params, {
+        encryptedMnemonic: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.mnemonic),
+        index: input.index
+      })
+      break;
   }
-  console.log('injectAccount result:', res);
+
+  const result = await sendInjectAccount(endpointUrl, method, params);
+  console.log('injectAccount result:', result);
 }
 
 async function processArguments() {
@@ -138,19 +137,7 @@ async function processArguments() {
   }
   const endpointUrl = process.argv[2];
   const accountInjectionOption = process.argv[3];
-  const input = await new Promise((resolve) => {
-    const secret = accountInjectionOption === '--keystore' ? 'password' :
-        accountInjectionOption === '--mnemonic' ? 'mnemonic' : 'private key';
-    readlineInterface.question(`Enter ${secret}: `, (input) => {
-      readlineInterface.output.write('\n\r');
-      resolve(input);
-    });
-  })
-  await injectAccount(endpointUrl, accountInjectionOption, input);
-}
-
-function is_positive_numeric(str) {
-  return /^\d+$/.test(str);
+  await injectAccount(endpointUrl, accountInjectionOption);
 }
 
 function usage() {

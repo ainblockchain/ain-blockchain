@@ -317,6 +317,7 @@ describe("P2p", () => {
       it("gets initial tx status", () => {
         assert.deepEqual(Object.keys(p2pServer.getTxStatus()), Object.keys({
           txPoolSize: 0,
+          freeTxPoolSize: 0,
           txTrackerSize: 0
         }));
       });

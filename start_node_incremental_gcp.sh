@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--rest-func]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
@@ -28,10 +28,14 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--fast-sync' ]]; then
         SYNC_MODE_OPTION="$option"
-    elif [[ $option = '--rest-func' ]]; then
-        REST_FUNC_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
+    elif [[ $option = '--update-front-db' ]]; then
+        UPDATE_FRONT_DB_OPTION="$option"
+    elif [[ $option = '--rest-func' ]]; then
+        REST_FUNC_OPTION="$option"
+    elif [[ $option = '--event-handler' ]]; then
+        EVENT_HANDLER_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -61,7 +65,9 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 JSON_RPC_OPTION=""
+UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
+EVENT_HANDLER_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]; do
@@ -79,7 +85,9 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -88,8 +96,6 @@ fi
 
 # 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_UPDATE_JSON_RPC_URL, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
-
-KEYSTORE_DIR=testnet_dev_staging_keys
 
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
@@ -100,7 +106,6 @@ if [[ $SEASON = 'mainnet' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://104.199.237.250:8080/json-rpc"
     fi
-    KEYSTORE_DIR=mainnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
@@ -110,7 +115,6 @@ elif [[ $SEASON = 'summer' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
@@ -120,7 +124,6 @@ elif [[ $SEASON = 'spring' ]]; then
     else
         export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     if [[ $NODE_INDEX -lt 5 ]]; then
@@ -219,7 +222,6 @@ fi
 
 printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
-printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
@@ -257,10 +259,20 @@ if [[ $JSON_RPC_OPTION ]]; then
 else
     export ENABLE_JSON_RPC_API=false
 fi
+if [[ $UPDATE_FRONT_DB_OPTION ]]; then
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=true
+else
+    export UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL=false
+fi
 if [[ $REST_FUNC_OPTION ]]; then
     export ENABLE_REST_FUNCTION_CALL=true
 else
     export ENABLE_REST_FUNCTION_CALL=false
+fi
+if [[ $EVENT_HANDLER_OPTION ]]; then
+    export ENABLE_EVENT_HANDLER=true
+else
+    export ENABLE_EVENT_HANDLER=false
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
@@ -347,18 +359,6 @@ fi
 
 # 7. Start a new node server
 printf "\n#### [Step 7] Start new node server ####\n\n"
-
-if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
-    KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
-    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        KEYSTORE_CMD="sudo mkdir -p /home/ain_blockchain_data/keys/8080; sudo cp $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/; sudo chmod -R 777 /home/ain_blockchain_data/keys/8080; sudo chown -R root:root /home/ain_blockchain_data/keys/8080"
-        printf "KEYSTORE_CMD=$KEYSTORE_CMD\n"
-        eval $KEYSTORE_CMD
-    fi
-    export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
-    printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
-fi
 
 export STAKE=100000
 printf "STAKE=$STAKE\n"

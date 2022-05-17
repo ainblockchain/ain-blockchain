@@ -20,6 +20,50 @@ class TransactionPool {
     this.transactions = new Map();
     this.transactionTracker = new Map();
     this.txCountTotal = 0;
+    this.freeTxCountTotal = 0;
+    this.freeTxCountPerAccount = new Map();
+  }
+
+  updateTxList(address, txList) {
+    // Update txList of given address in transaction pool
+    if (txList.length === 0) {
+      this.transactions.delete(address);
+      return;
+    }
+    this.transactions.set(address, txList);
+  }
+
+  makeCountUpdateWrapperForFilterFunction(filterFunc) {
+    return (tx) => {
+      if (filterFunc(tx)) {
+        return true;
+      }
+      if (Transaction.isFreeTransaction(tx)) {
+        --this.freeTxCountTotal;
+      }
+      --this.txCountTotal;
+      return false;
+    }
+  }
+
+  updateFreeTxCountPerAccount(address, change){
+    const freeTxCntBefore = this.freeTxCountPerAccount.get(address) || 0;
+    const freeTxCntAfter = freeTxCntBefore + change;
+    if (freeTxCntAfter === 0) {
+      this.freeTxCountPerAccount.delete(address);
+    } else {
+      this.freeTxCountPerAccount.set(address, freeTxCntAfter);
+    }
+  }
+
+  updateTxListAndCounts(address, txList, filterFunc) {
+    // Update txList of given address in transaction pool and update txCountTotal,
+    // freeTxTotalCount, and freeTxCountPerAccount
+    const freeTxCntTotalBefore = this.freeTxCountTotal;
+    const txListAfter = txList.filter(this.makeCountUpdateWrapperForFilterFunction(filterFunc));
+    const freeTxCntTotalAfter = this.freeTxCountTotal;
+    this.updateFreeTxCountPerAccount(address, freeTxCntTotalAfter - freeTxCntTotalBefore);
+    this.updateTxList(address, txListAfter);
   }
 
   addTransaction(tx, isExecutedTx = false) {
@@ -46,6 +90,10 @@ class TransactionPool {
       finalized_at: -1,
     });
     this.txCountTotal++;
+    if (Transaction.isFreeTransaction(tx)) {
+      this.freeTxCountTotal++;
+      this.updateFreeTxCountPerAccount(tx.address, 1);
+    }
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
   }
@@ -65,12 +113,20 @@ class TransactionPool {
     return this.isTimedOut(txTimestamp, lastBlockTimestamp, NodeConfigs.TX_TRACKER_TIMEOUT_MS);
   }
 
-  hasRoomForNewTransaction() {
+  hasRoom() {
     return this.getPoolSize() < NodeConfigs.TX_POOL_SIZE_LIMIT;
   }
 
-  hasPerAccountRoomForNewTransaction(address) {
+  hasFreeRoom() {
+    return this.getFreePoolSize() < Math.floor(NodeConfigs.TX_POOL_SIZE_LIMIT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO);
+  }
+
+  hasPerAccountRoom(address) {
     return this.getPerAccountPoolSize(address) < NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+  }
+  
+  hasPerAccountFreeRoom(address) {
+    return this.getPerAccountFreePoolSize(address) < Math.floor(NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT * NodeConfigs.FREE_TX_POOL_SIZE_LIMIT_RATIO_PER_ACCOUNT);
   }
 
   isNotEligibleTransaction(tx) {
@@ -100,7 +156,7 @@ class TransactionPool {
 
   static filterAndSortTransactions(addrToTxList, excludeBlockList) {
     let excludeTransactions = [];
-    if (excludeBlockList && excludeBlockList.length) {
+    if (excludeBlockList && excludeBlockList.length > 0) {
       excludeBlockList.forEach((block) => {
         excludeTransactions = excludeTransactions.concat(block.last_votes);
         excludeTransactions = excludeTransactions.concat(block.transactions);
@@ -358,27 +414,18 @@ class TransactionPool {
   }
 
   removeTimedOutTxsFromPool(blockTimestamp) {
-    // Get timed-out transactions.
-    const timedOutTxs = new Set();
-    for (const txList of this.transactions.values()) {
-      txList.forEach((tx) => {
-        if (this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp)) {
-          timedOutTxs.add(tx.hash);
-        }
-      });
-    }
-    // Remove transactions from the pool.
+    // Remove timed-out transactions from the pool.
+    const sizeBefore = this.txCountTotal;
     for (const [address, txList] of this.transactions.entries()) {
-      const sizeBefore = txList.length;
-      this.transactions.set(address, txList.filter((tx) => !timedOutTxs.has(tx.hash)));
-      const sizeAfter = this.transactions.get(address).length;
-      this.txCountTotal += sizeAfter - sizeBefore;
+      const filterFunc = (tx) => !this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp);
+      this.updateTxListAndCounts(address, txList, filterFunc);
     }
-    return timedOutTxs.size > 0;
+    const sizeAfter = this.txCountTotal;
+    return sizeBefore > sizeAfter;
   }
 
   removeTimedOutTxsFromTracker(blockTimestamp) {
-    // Remove transactions from transactionTracker.
+    // Remove timed-out transactions from transactionTracker.
     let removed = false;
     for (const [hash, txData] of this.transactionTracker.entries()) {
       if (this.isTimedOutFromTracker(txData.tracked_at, blockTimestamp)) {
@@ -405,10 +452,8 @@ class TransactionPool {
     for (const [address, invalidTxSet] of addrToInvalidTxSet.entries()) {
       if (this.transactions.has(address)) {
         const txList = this.transactions.get(address);
-        const sizeBefore = txList.length;
-        this.transactions.set(address, txList.filter((tx) => !invalidTxSet.has(tx.hash)));
-        const sizeAfter = this.transactions.get(address).length;
-        this.txCountTotal += sizeAfter - sizeBefore;
+        const filterFunc = (tx) => !invalidTxSet.has(tx.hash);
+        this.updateTxListAndCounts(address, txList, filterFunc);
       }
     }
   }
@@ -434,8 +479,7 @@ class TransactionPool {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
-      const sizeBefore = txList.length;
-      this.transactions.set(address, txList.filter((tx) => {
+      const filterFunc = (tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
         }
@@ -443,12 +487,8 @@ class TransactionPool {
           return false;
         }
         return !txHashSet.has(tx.hash);
-      }));
-      const sizeAfter = this.transactions.get(address).length;
-      this.txCountTotal += sizeAfter - sizeBefore;
-      if (sizeAfter === 0) {
-        this.transactions.delete(address);
-      }
+      };
+      this.updateTxListAndCounts(address, txList, filterFunc);
     }
   }
 
@@ -527,8 +567,16 @@ class TransactionPool {
     return this.txCountTotal;
   }
 
+  getFreePoolSize() {
+    return this.freeTxCountTotal;
+  }
+
   getPerAccountPoolSize(address) {
     return this.transactions.has(address) ? this.transactions.get(address).length : 0;
+  }
+
+  getPerAccountFreePoolSize(address) {
+    return this.freeTxCountPerAccount.has(address) ? this.freeTxCountPerAccount.get(address) : 0;
   }
 }
 

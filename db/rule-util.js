@@ -16,6 +16,10 @@ class RuleUtil {
     return this.isString(value) && /^-?\d+$/.test(value);
   }
 
+  isFloatString(value) {
+    return this.isString(value) && /^-?\d+\.\d+$/.test(value);
+  }
+
   isInteger(value) {
     return Number.isInteger(value);
   }

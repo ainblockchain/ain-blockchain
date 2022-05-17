@@ -5,6 +5,10 @@ class EventChannel {
     this.eventFilterIds = new Set();
   }
 
+  getFilterIdsSize() {
+    return this.eventFilterIds.size;
+  }
+
   getAllFilterIds() {
     return this.eventFilterIds.values();
   }
