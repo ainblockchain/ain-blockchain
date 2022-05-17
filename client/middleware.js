@@ -16,7 +16,6 @@ const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 class Middleware {
   constructor () {
     this.minuteAsSeconds = 60;
-    this.setCorsOriginList();
     this.setDevClientApiIpWhitelist();
     this.setBlockchainApiRateLimit();
     this.setReadRateLimit();
@@ -29,12 +28,6 @@ class Middleware {
       windowMs: this.minuteAsSeconds * 1000,   // 1 minute
       max: this.minuteAsSeconds * this.getWriteRateLimit()
     });
-  }
-
-  setCorsOriginList() {
-    this.corsOriginList = NodeConfigs.CORS_WHITELIST === '*' ?
-    NodeConfigs.CORS_WHITELIST : getRegexpList(NodeConfigs.CORS_WHITELIST);
-    return this;
   }
 
   setDevClientApiIpWhitelist() {
@@ -55,10 +48,6 @@ class Middleware {
   setWriteRateLimit() {
     this.writeRateLimit = NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT;
     return this;
-  }
-
-  getCorsOriginList() {
-    return this.corsOriginList;
   }
 
   getDevClientApiIpWhitelist() {
@@ -89,7 +78,8 @@ class Middleware {
   }
 
   corsLimiter() {
-    return cors({ origin: this.getCorsOriginList() })
+    return cors({ origin: NodeConfigs.CORS_WHITELIST === '*' ?
+        NodeConfigs.CORS_WHITELIST : getRegexpList(NodeConfigs.CORS_WHITELIST) });
   }
 
   ipWhitelistLimiter() {
@@ -137,7 +127,6 @@ class Middleware {
 
   // NOTE(minsulee2): debugging purpose
   printAll() {
-    console.log(this.getCorsOriginList());
     console.log(this.getDevClientApiIpWhitelist());
     console.log(this.getBlockchainApiRateLimit(), this.getReadRateLimit(), this.getWriteRateLimit());
   }
