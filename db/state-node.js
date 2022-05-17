@@ -128,6 +128,7 @@ class StateNode {
    */
   toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
+    const isPartial = options && options.isPartial;
     const includeVersion = options && options.includeVersion;
     const includeTreeInfo = options && options.includeTreeInfo;
     const includeProof = options && options.includeProof;
@@ -135,6 +136,7 @@ class StateNode {
       return this.getValue();
     }
     const obj = {};
+    // TODO(platfowner): Get only partial child labels for isPartial = true.
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
@@ -153,7 +155,7 @@ class StateNode {
           obj[`${StateLabelProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
       } else {
-        obj[label] = isShallow ?
+        obj[label] = (isShallow || isPartial) ?
             { [`${StateLabelProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
             childNode.toStateSnapshot(options);
       }
