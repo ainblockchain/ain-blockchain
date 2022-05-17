@@ -80,13 +80,13 @@ class Middleware {
     })
   }
 
-  _emptyHandler = () => {
+  _emptyHandler() {
     return (req, res, next) => {
       return next();
     }
   }
 
-  blockchainApiLimiter = () => {
+  blockchainApiLimiter() {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
         rateLimit({
           windowMs: this.minuteAsSeconds * 1000,   // 1 minute window
@@ -112,12 +112,6 @@ class Middleware {
       default:
         return this.jsonRpcReadLimiter(req, res, next);
     }
-  }
-
-  // NOTE(minsulee2): debugging purpose
-  printAll() {
-    console.log(this.getDevClientApiIpWhitelist());
-    console.log(this.getBlockchainApiRateLimit(), this.getReadRateLimit(), this.getWriteRateLimit());
   }
 }
 
