@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -106,7 +106,7 @@
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "dotenv": "^10.0.0",
-    "ejs": "^3.1.6",
+    "ejs": "^3.1.7",
     "eslint": "^6.8.0",
     "eslint-config-google": "^0.13.0",
     "eslint-config-standard": "^14.1.0",
