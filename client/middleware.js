@@ -16,7 +16,6 @@ const { JSON_RPC_METHOD } = require('../json_rpc/constants');
 class Middleware {
   constructor () {
     this.minuteAsSeconds = 60;
-    this.setExpressRequestBodySizeLimit();
     this.setCorsOriginList();
     this.setDevClientApiIpWhitelist();
     this.setBlockchainApiRateLimit();
@@ -30,11 +29,6 @@ class Middleware {
       windowMs: this.minuteAsSeconds * 1000,   // 1 minute
       max: this.minuteAsSeconds * this.getWriteRateLimit()
     });
-  }
-
-  setExpressRequestBodySizeLimit() {
-    this.expressRequestBodySizeLimit = NodeConfigs.REQUEST_BODY_SIZE_LIMIT;
-    return this;
   }
 
   setCorsOriginList() {
@@ -63,10 +57,6 @@ class Middleware {
     return this;
   }
 
-  getExpressRequestBodySizeLimit() {
-    return this.expressRequestBodySizeLimit;
-  }
-
   getCorsOriginList() {
     return this.corsOriginList;
   }
@@ -88,13 +78,13 @@ class Middleware {
   }
 
   expressJsonRequestBodySizeLimiter() {
-    return express.json({ limit: this.getExpressRequestBodySizeLimit() });
+    return express.json({ limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT });
   }
 
   expressUrlencdedRequestBodySizeLimiter() {
     return express.urlencoded({
       extended: true,
-      limit: this.getExpressRequestBodySizeLimit()
+      limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT
     });
   }
 
@@ -149,7 +139,6 @@ class Middleware {
   printAll() {
     console.log(this.getCorsOriginList());
     console.log(this.getDevClientApiIpWhitelist());
-    console.log(this.getExpressRequestBodySizeLimit());
     console.log(this.getBlockchainApiRateLimit(), this.getReadRateLimit(), this.getWriteRateLimit());
   }
 }
