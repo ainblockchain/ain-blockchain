@@ -2270,6 +2270,7 @@ class DB {
     return funcs;
   }
 
+  // TODO(platfowner): Consider optimizing subtree function retrieval logic.
   getSubtreeFunctions(funcNode) {
     return this.getSubtreeFunctionsRecursive(0, funcNode);
   }
@@ -2417,6 +2418,7 @@ class DB {
     return rules;
   }
 
+  // TODO(platfowner): Consider optimizing subtree rule retrieval logic.
   getSubtreeRules(ruleNode, ruleProp) {
     return this.getSubtreeRulesRecursive(0, ruleNode, ruleProp);
   }
@@ -2682,6 +2684,7 @@ class DB {
     return owners;
   }
 
+  // TODO(platfowner): Consider optimizing subtree owner retrieval logic.
   getSubtreeOwners(ownerNode) {
     return this.getSubtreeOwnersRecursive(0, ownerNode);
   }
