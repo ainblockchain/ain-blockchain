@@ -339,6 +339,26 @@ describe("DB operations", () => {
         })
       });
 
+      it('getValue to retrieve value near top of database with is_partial', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
+          'ai': {
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
+          },
+          'increment': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'decrement': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'nested': {
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f"
+          },
+          'shards': {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+          },
+        })
+      });
+
       it('getValue to retrieve value with include_tree_info', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
           "#num_children": 5,
@@ -964,6 +984,14 @@ describe("DB operations", () => {
           },
         });
       })
+
+      it("getFunction to retrieve existing function config with is_partial", () => {
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true }), {
+          some: {
+            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
+          },
+        });
+      })
     })
 
     describe("matchFunction:", () => {
@@ -1224,8 +1252,8 @@ describe("DB operations", () => {
         });
       })
 
-      it('getRule to retrieve existing rule config with is_shallow', () => {
-        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
+      it('getRule to retrieve existing rule config with is_partial', () => {
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true }), {
           "some": {
             "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
           },
@@ -1766,6 +1794,14 @@ describe("DB operations", () => {
 
       it("getOwner to retrieve existing owner config with is_shallow", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
+          some: {
+            "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80"
+          },
+        })
+      })
+
+      it("getOwner to retrieve existing owner config with is_partial", () => {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true }), {
           some: {
             "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80"
           },

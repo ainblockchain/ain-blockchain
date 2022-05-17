@@ -244,6 +244,9 @@ class CommonUtil {
     if (args.is_shallow !== undefined) {
       options.isShallow = CommonUtil.toBool(args.is_shallow);
     }
+    if (args.is_partial !== undefined) {
+      options.isPartial = CommonUtil.toBool(args.is_partial);
+    }
     if (args.include_version !== undefined) {
       options.includeVersion = CommonUtil.toBool(args.include_version);
     }
