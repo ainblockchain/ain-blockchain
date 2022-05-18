@@ -54,7 +54,8 @@ const serverList = [server1, server2, server3 ];
 const JSON_RPC_ENDPOINT = '/json-rpc';
 
 const SET_VALUE_ENDPOINT = '/set_value';
-const GET_VALUE_ENDPOINT = '/get_value'
+const GET_VALUE_ENDPOINT = '/get_value';
+const BLOCKS_ENDPOINT = '/blocks';   // NOTE(minsulee2): keep it for commented out part
 const GET_ADDR_ENDPOINT = '/get_address';
 
 // Data options
@@ -274,32 +275,32 @@ describe('Blockchain Cluster', () => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
           .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
               { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
-              function(err, response) {
-                if (err) throw err;
-                baseChain = response.result.result;
-                resolve();
-              });
+          function(err, response) {
+            if (err) throw err;
+            baseChain = response.result.result;
+            resolve();
+          });
         }).then(() => {
           return new Promise((resolve) => {
             jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT)
               .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
                   { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
-                  function (err, response) {
-                    if (err) throw err;
-                    const newChain = response.result.result;
-                    const diff = Math.abs(baseChain.length - newChain.length);
-                    assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
-                    while (baseChain.length !== newChain.length) {
-                      if (baseChain.length > newChain.length) {
-                        baseChain.pop();
-                      } else {
-                        newChain.pop();
-                      }
-                    }
-                    assert.deepEqual(newChain.length, baseChain.length);
-                    assert.deepEqual(newChain, baseChain);
-                    resolve();
-                });
+              function (err, response) {
+                if (err) throw err;
+                const newChain = response.result.result;
+                const diff = Math.abs(baseChain.length - newChain.length);
+                assert.isBelow(diff, MAX_CHAIN_LENGTH_DIFF);
+                while (baseChain.length !== newChain.length) {
+                  if (baseChain.length > newChain.length) {
+                    baseChain.pop();
+                  } else {
+                    newChain.pop();
+                  }
+                }
+                assert.deepEqual(newChain.length, baseChain.length);
+                assert.deepEqual(newChain, baseChain);
+                resolve();
+            });
           });
         });
       }
@@ -505,7 +506,7 @@ describe('Blockchain Cluster', () => {
   });
 
   describe('Block API', () => {
-    it(JSON_RPC_METHOD.AIN_GET_BLOCK_HEADERS_LIST, async () => {
+    it('ain_getBlockHeadersList', async () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_HEADERS_LIST,
@@ -521,7 +522,7 @@ describe('Blockchain Cluster', () => {
       })
     });
 
-    it(`${JSON_RPC_METHOD.AIN_GET_BLOCK_BY_HASH} and ${JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER}`, async () => {
+    it('ain_getBlockByHash and ain_getBlockByNumber', async () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET_BLOCK_BY_NUMBER,
@@ -620,23 +621,23 @@ describe('Blockchain Cluster', () => {
         jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT)
           .request(JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
               { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
-              function (err, response) {
-                if (err) throw err;
-                const chain = response.result.result;
-                for (const block of chain) {
-                  if (block.number > 0) {
-                    // Amount specified in block
-                    const gasCostTotal = block.gas_cost_total;
-                    // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
-                    // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
-                    const collectedGas = parseOrLog(syncRequest(
-                        'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
-                        .body.toString('utf-8')).result;
-                    assert.deepEqual(gasCostTotal, collectedGas);
-                  }
-                }
-                resolve();
-              });
+          function (err, response) {
+            if (err) throw err;
+            const chain = response.result.result;
+            for (const block of chain) {
+              if (block.number > 0) {
+                // Amount specified in block
+                const gasCostTotal = block.gas_cost_total;
+                // Amount actually collected & distributed. Write rule prevents writing a gas_cost_total
+                // that is different from the value at /service_accounts/gas_fee/gas_fee/${block.number}/balance.
+                const collectedGas = parseOrLog(syncRequest(
+                    'GET', server1 + GET_VALUE_ENDPOINT + `?ref=/consensus/number/${block.number}/propose/gas_cost_total`)
+                    .body.toString('utf-8')).result;
+                assert.deepEqual(gasCostTotal, collectedGas);
+              }
+            }
+            resolve();
+          });
       });
     });
   });

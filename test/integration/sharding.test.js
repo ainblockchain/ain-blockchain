@@ -1248,8 +1248,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_GET}`, () => {
-        it(`${JSON_RPC_METHOD.AIN_GET} with is_global = false`, () => {
+      describe('ain_get api', () => {
+        it('ain_get with is_global = false', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
@@ -1262,7 +1262,7 @@ describe('Sharding', () => {
           });
         });
 
-        it(`${JSON_RPC_METHOD.AIN_GET} with is_global = false (explicit)`, () => {
+        it('ain_get with is_global = false (explicit)', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
@@ -1276,7 +1276,7 @@ describe('Sharding', () => {
           });
         });
 
-        it(`${JSON_RPC_METHOD.AIN_GET} with is_global = true`, () => {
+        it('ain_get with is_global = true', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request(JSON_RPC_METHOD.AIN_GET, {
@@ -1291,8 +1291,8 @@ describe('Sharding', () => {
         });
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_MATCH_FUNCTION} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_MATCH_FUNCTION} with is_global = false`, () => {
+      describe('ain_matchFunction api', () => {
+        it('ain_matchFunction with is_global = false', () => {
           const ref = "/apps/test/test_function/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_FUNCTION, request)
@@ -1318,7 +1318,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_MATCH_FUNCTION} with is_global = true`, () => {
+        it('ain_matchFunction with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_function/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_FUNCTION, request)
@@ -1345,8 +1345,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_MATCH_RULE} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_MATCH_RULE} with is_global = false`, () => {
+      describe('ain_matchRule api', () => {
+        it('ain_matchRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_RULE, request)
@@ -1381,7 +1381,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_MATCH_RULE} with is_global = true`, () => {
+        it('ain_matchRule with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_rule/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_RULE, request)
@@ -1417,8 +1417,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_MATCH_OWNER} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_MATCH_OWNER} with is_global = false`, () => {
+      describe('ain_matchOwner api', () => {
+        it('ain_matchOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_OWNER, request)
@@ -1445,7 +1445,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_MATCH_OWNER} with is_global = true`, () => {
+        it('ain_matchOwner with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_owner/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHOD.AIN_MATCH_OWNER, request)
@@ -1473,8 +1473,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_EVAL_RULE} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_EVAL_RULE} with is_global = false`, () => {
+      describe('ain_evalRule api', () => {
+        it('ain_evalRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
@@ -1488,7 +1488,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_EVAL_RULE} with is_global = true`, () => {
+        it('ain_evalRule with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
@@ -1504,8 +1504,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_EVAL_OWNER} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_EVAL_OWNER} with is_global = false`, () => {
+      describe('ain_evalOwner api', () => {
+        it('ain_evalOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
@@ -1547,7 +1547,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_EVAL_OWNER} with is_global = true`, () => {
+        it('ain_evalOwner with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
@@ -2023,8 +2023,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = false`, () => {
+      describe('ain_sendSignedTransaction api', () => {
+        it('ain_sendSignedTransaction with is_global = false', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2072,7 +2072,7 @@ describe('Sharding', () => {
             })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = false (explicit)`, () => {
+        it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2121,7 +2121,7 @@ describe('Sharding', () => {
             })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION} with is_global = true`, () => {
+        it('ain_sendSignedTransaction with is_global = true', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2171,8 +2171,8 @@ describe('Sharding', () => {
         })
       })
 
-      describe(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} api`, () => {
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = false`, () => {
+      describe('ain_sendSignedTransactionBatch api', () => {
+        it('ain_sendSignedTransactionBatch with is_global = false', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2229,7 +2229,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = false (explicit)`, () => {
+        it('ain_sendSignedTransactionBatch with is_global = false (explicit)', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -2290,7 +2290,7 @@ describe('Sharding', () => {
           })
         })
 
-        it(`${JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION_BATCH} with is_global = true`, () => {
+        it('ain_sendSignedTransactionBatch with is_global = true', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
