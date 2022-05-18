@@ -32,11 +32,11 @@
     "has_bandage": false
   },
   "extend_account_registration_gas_amount": {
-    "enabled_block": null,
+    "enabled_block": 224300,
     "has_bandage": false
   },
   "add_app_creation_gas_amount": {
-    "enabled_block": null,
+    "enabled_block": 224300,
     "has_bandage": true
   }
 }

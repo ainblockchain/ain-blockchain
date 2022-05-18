@@ -156,7 +156,7 @@ class TransactionPool {
 
   static filterAndSortTransactions(addrToTxList, excludeBlockList) {
     let excludeTransactions = [];
-    if (excludeBlockList && excludeBlockList.length) {
+    if (excludeBlockList && excludeBlockList.length > 0) {
       excludeBlockList.forEach((block) => {
         excludeTransactions = excludeTransactions.concat(block.last_votes);
         excludeTransactions = excludeTransactions.concat(block.transactions);

@@ -191,6 +191,7 @@ class Functions {
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             let result = null;
+            const eventSource = _.get(options, 'eventSource', null);
             try {
               result = nativeFunction.func(
                   value,
@@ -212,6 +213,7 @@ class Functions {
                     opResultList: [],
                     otherGasAmount: 0,
                     ...blockchainParams,
+                    eventSource,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -475,11 +477,13 @@ class Functions {
     const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
+    const eventSource = context.eventSource;
     const auth = context.auth;
     const newOptions = {
       timestamp,
       blockNumber,
       blockTime,
+      eventSource,
     };
     const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
@@ -1350,7 +1354,7 @@ class Functions {
   _cancelCheckin(value, context) {
     if (value !== null) {
       // Does nothing for non-null value.
-      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
+      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
