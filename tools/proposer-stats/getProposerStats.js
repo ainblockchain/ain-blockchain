@@ -6,14 +6,14 @@ const axios = require('axios');
 const _ = require('lodash');
 const CommonUtil = require('../../common/common-util');
 const { BlockchainConsts, NodeConfigs } = require('../../common/constants');
-const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
+const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 async function getBlockList(from, to, endpointUrl) {
   console.log(`getting block list from ${from} to ${to}`);
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: JSON_RPC_METHOD.AIN_GET_BLOCK_LIST,
+      method: JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
       params: {
         from,
         to,

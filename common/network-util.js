@@ -7,7 +7,7 @@ const ip = require('ip');
 const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
-const { JSON_RPC_METHOD } = require('../json_rpc/constants');
+const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -19,7 +19,7 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
   while (true) {
     const confirmed = await sendGetRequest(
       endpoint,
-      JSON_RPC_METHOD.AIN_GET_TRANSACTION_BY_HASH,
+      JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_HASH,
       { hash: txHash }
     )
       .then((resp) => {
@@ -51,7 +51,7 @@ async function sendSignedTx(endpoint, params) {
   return await axios.post(
     endpoint,
     {
-      method: JSON_RPC_METHOD.AIN_SEND_SIGNED_TRANSACTION,
+      method: JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
       params,
       jsonrpc: '2.0',
       id: 0

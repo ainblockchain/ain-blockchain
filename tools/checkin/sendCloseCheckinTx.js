@@ -2,11 +2,11 @@ const path = require('path');
 const _ = require('lodash');
 const { signAndSendTx, confirmTransaction } = require('../util');
 const { sendGetRequest } = require('../../common/network-util');
-const { JSON_RPC_METHOD } = require('../../json_rpc/constants');
+const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 let config = {};
 
 async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
-  const request = (await sendGetRequest(`${config.endpointUrl}/json-rpc`, JSON_RPC_METHOD.AIN_GET, {
+  const request = (await sendGetRequest(`${config.endpointUrl}/json-rpc`, JSON_RPC_METHODS.AIN_GET, {
     type: 'GET_VALUE',
     ref: `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
   })).data.result.result;
