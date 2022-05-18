@@ -336,17 +336,27 @@ class RadixNode {
     return false;
   }
 
-  // TODO(platfowner): Get only partial child labels for isPartial = true.
-  getChildStateNodeList(isPartial = false) {
+  getChildStateNodeList(maxListSize = null) {
     const stateNodeList = [];
+    if (CommonUtil.isNumber(maxListSize) && maxListSize <= 0) {
+      return stateNodeList;
+    }
     if (this.hasChildStateNode()) {
       stateNodeList.push({
         serial: this.getSerial(),
         stateNode: this.getChildStateNode()
       });
     }
+    if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
+      return stateNodeList;
+    }
     for (const child of this.getChildNodes()) {
-      stateNodeList.push(...child.getChildStateNodeList());
+      const maxListSizeForChild = CommonUtil.isNumber(maxListSize) ?
+          maxListSize - stateNodeList.length : null;
+      stateNodeList.push(...child.getChildStateNodeList(maxListSizeForChild));
+      if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
+        return stateNodeList;
+      }
     }
     return stateNodeList;
   }

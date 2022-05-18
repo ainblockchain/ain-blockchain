@@ -4,6 +4,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const RadixNode = require('../../db/radix-node');
 const StateNode = require('../../db/state-node');
+const { NodeConfigs } = require('../../common/constants');
 
 describe("radix-tree", () => {
 
@@ -2864,6 +2865,28 @@ describe("radix-tree", () => {
         assert.deepEqual(
             cloned.getChildStateNodes(),
             [ stateNode22, newStateNode21, stateNode1, stateNode2, newStateNode23 ]);
+      });
+
+      it("getChildStateLabels / getChildStateNodes with isPartial = true", () => {
+        const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = 3;
+        // Insertion order is kept
+        assert.deepEqual(tree.getChildStateLabels(true), [
+          // skip label22
+          label21,
+          label1,
+          label2
+        ]);
+        assert.deepEqual(
+            tree.getChildStateNodes(true), [
+              // skip stateNode22
+              stateNode21,
+              stateNode1,
+              stateNode2
+            ]);
+
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
       });
     });
 

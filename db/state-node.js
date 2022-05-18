@@ -129,6 +129,8 @@ class StateNode {
   toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
     const isPartial = options && options.isPartial;
+    const lastEndLabel = (options && options.lastEndLabel !== undefined) ?
+        options.lastEndLabel : null;
     const includeVersion = options && options.includeVersion;
     const includeTreeInfo = options && options.includeTreeInfo;
     const includeProof = options && options.includeProof;
@@ -136,7 +138,7 @@ class StateNode {
       return this.getValue();
     }
     const obj = {};
-    for (const label of this.getChildLabels(isPartial)) {
+    for (const label of this.getChildLabels(isPartial, lastEndLabel)) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
@@ -353,12 +355,12 @@ class StateNode {
     }
   }
 
-  getChildLabels(isPartial = false) {
-    return [...this.radixTree.getChildStateLabels(isPartial)];
+  getChildLabels(isPartial = false, lastEndLabel = null) {
+    return [...this.radixTree.getChildStateLabels(isPartial, lastEndLabel)];
   }
 
-  getChildNodes(isPartial = false) {
-    return [...this.radixTree.getChildStateNodes(isPartial)];
+  getChildNodes(isPartial = false, lastEndLabel = null) {
+    return [...this.radixTree.getChildStateNodes(isPartial, lastEndLabel)];
   }
 
   hasChildren() {
