@@ -22,6 +22,7 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  ValueChangedEventSources,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -57,6 +58,7 @@ class BlockchainNode {
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    // Node's front db
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, eventHandler);
@@ -789,7 +791,7 @@ class BlockchainNode {
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }
     const result = this.db.executeTransaction(
-        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp(), ValueChangedEventSources.USER);
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
@@ -907,6 +909,46 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  /**
+   * Execute the valid transactions from the tx pool on the given baseDb.
+   * In this case, the transactions contained in the longestNotarizedChain are excluded from
+   * the execution.
+   * If isExecutionOnly = false, it returns the valid transactions with some other information
+   * after removing the invalid transactions from the tx pool.
+   */
+  executeAndGetValidTransactions(
+      longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource = null) {
+    const LOG_HEADER = 'executeAndGetValidTransactions';
+    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
+    const transactions = [];
+    const invalidTransactions = [];
+    const resList = [];
+    for (const tx of candidates) {
+      const res = baseDb.executeTransaction(
+          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
+      if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        invalidTransactions.push(tx);
+      } else {
+        transactions.push(tx);
+        resList.push(res);
+      }
+    }
+    if (isExecutionOnly) {
+      return;
+    }
+    // Once successfully executed txs (when submitted to tx pool) can become invalid
+    // after some blocks are created. Remove those transactions from tx pool.
+    this.tp.removeInvalidTxsFromPool(invalidTransactions);
+    const gasPriceUnit =
+        this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
+    const { gasAmountTotal, gasCostTotal } =
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
+    const receipts = CommonUtil.txResultsToReceipts(resList);
+    return { transactions, receipts, gasAmountTotal, gasCostTotal };
+  }
+
   addTrafficEventsForVoteTxList(txList, blockTimestamp) {
     let proposeTimestamp = null;
     for (let i = 0; i < txList.length; i++) {
@@ -1020,6 +1062,12 @@ class BlockchainNode {
       }
     }
     if (lastFinalizedBlock) {
+      if (NodeConfigs.UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL) {
+        // Apply the txs from the tx pool to the new final front db.
+        this.executeAndGetValidTransactions(
+            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
+      }
+      // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
     }
   }
