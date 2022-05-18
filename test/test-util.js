@@ -9,7 +9,7 @@ const {
   StateVersions
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { JSON_RPC_METHOD } = require('../json_rpc/constants');
+const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
 const GET_OPTIONS_INCLUDE_ALL = {
   includeTreeInfo: true,
@@ -177,7 +177,7 @@ async function waitUntilNodeSyncs(server) {
       isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
           {
             json: {
-              jsonrpc: '2.0', method: JSON_RPC_METHOD.NET_SYNCING, id: 0,
+              jsonrpc: '2.0', method: JSON_RPC_METHODS.NET_SYNCING, id: 0,
               params: { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }
             }
           })

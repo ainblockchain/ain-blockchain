@@ -8,16 +8,16 @@ const {
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
-const { JSON_RPC_METHOD } = require('./constants');
+const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getApiAccessApis(node) {
   return {
-    [JSON_RPC_METHOD.AIN_GET_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
-      if (_.get(args.message, 'method') === JSON_RPC_METHOD.AIN_GET_DEV_CLIENT_API_IP_WHITELIST &&
+      if (_.get(args.message, 'method') === JSON_RPC_METHODS.AIN_GET_DEV_CLIENT_API_IP_WHITELIST &&
           verified) {
         done(null,
             JsonRpcUtil.addProtocolVersion({ result: NodeConfigs.DEV_CLIENT_API_IP_WHITELIST }));
@@ -26,10 +26,10 @@ module.exports = function getApiAccessApis(node) {
       }
     },
 
-    [JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== JSON_RPC_METHOD.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST ||
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST ||
           !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
@@ -85,10 +85,10 @@ module.exports = function getApiAccessApis(node) {
       }
     },
 
-    [JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== JSON_RPC_METHOD.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST ||
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST ||
           !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
