@@ -378,19 +378,29 @@ class RadixTree {
     this.numChildStateNodes--
   }
 
-  getChildStateLabels(isPartial = false, lastEndLabel = null) {
+  getChildStateLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
+    const nodesWithEndLabel = this.getChildStateNodesWithEndLabel(isPartial, lastEndLabel);
     const labelList = [];
-    for (const stateNode of this.getChildStateNodes(isPartial, lastEndLabel)) {
+    for (const stateNode of nodesWithEndLabel.list) {
       labelList.push(stateNode.getLabel());
     }
-    return labelList;
+    return {
+      list: labelList,
+      endLabel: nodesWithEndLabel.endLabel,
+    };
   }
 
-  // TODO(platfowner): Apply lastEndLabel and return endLabel.
-  getChildStateNodes(isPartial = false, lastEndLabel = null) {
+  // TODO(platfowner): Apply lastEndLabel.
+  getChildStateNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
     const maxListSize = isPartial ? NodeConfigs.GET_RESP_MAX_SIBLINGS : null;
-    return this.root.getChildStateNodeList(maxListSize).sort((a, b) => a.serial - b.serial)
+    const nodeListWithEndLabel = this.root.getChildStateNodeListWithEndLabel(maxListSize);
+    const sortedNodeList = nodeListWithEndLabel.list
+        .sort((a, b) => a.serial - b.serial)
         .map(entry => entry.stateNode);
+    return {
+      list: sortedNodeList,
+      endLabel: nodeListWithEndLabel.endLabel,
+    };
   }
 
   hasChildStateNodes() {
@@ -483,7 +493,7 @@ class RadixTree {
     tree.setRoot(root);
     tree.setNextSerial(obj[StateLabelProperties.NEXT_SERIAL]);
     // NOTE(platfowner): Need to recompute and set numChildStateNodes.
-    const numChildStateNodes = tree.getChildStateLabels().length;
+    const numChildStateNodes = tree.getChildStateLabelsWithEndLabel().list.length;
     tree.setNumChildStateNodes(numChildStateNodes);
     return tree;
   }

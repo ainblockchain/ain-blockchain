@@ -336,29 +336,48 @@ class RadixNode {
     return false;
   }
 
-  getChildStateNodeList(maxListSize = null) {
+  getChildStateNodeListWithEndLabel(maxListSize = null) {
     const stateNodeList = [];
+    let endLabel = null;
     if (CommonUtil.isNumber(maxListSize) && maxListSize <= 0) {
-      return stateNodeList;
+      return {
+        list: stateNodeList,
+        endLabel,
+      };
     }
     if (this.hasChildStateNode()) {
       stateNodeList.push({
         serial: this.getSerial(),
         stateNode: this.getChildStateNode()
       });
+      endLabel = this.getLabel();
     }
     if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
-      return stateNodeList;
+      return {
+        list: stateNodeList,
+        endLabel,
+      };
     }
     for (const child of this.getChildNodes()) {
       const maxListSizeForChild = CommonUtil.isNumber(maxListSize) ?
           maxListSize - stateNodeList.length : null;
-      stateNodeList.push(...child.getChildStateNodeList(maxListSizeForChild));
+      const stateNodeListFromChild = child.getChildStateNodeListWithEndLabel(maxListSizeForChild);
+      if (stateNodeListFromChild.list.length > 0) {
+        stateNodeList.push(...stateNodeListFromChild.list);
+        endLabel = stateNodeListFromChild.endLabel !== null ?
+            this.getLabel() + stateNodeListFromChild.endLabel : null;
+      }
       if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
-        return stateNodeList;
+        return {
+          list: stateNodeList,
+          endLabel,
+        };
       }
     }
-    return stateNodeList;
+    return {
+      list: stateNodeList,
+      endLabel,
+    };
   }
 
   getProofHash() {

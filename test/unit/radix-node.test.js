@@ -1276,11 +1276,12 @@ describe("radix-node", () => {
       });
     });
 
-    it("getChildStateNodeList", () => {
-      const stateNodes = node.getChildStateNodeList();
-      expect(stateNodes.length).to.equal(5)
+    it("getChildStateNodeListWithEndLabel", () => {
+      const nodeListWithEndLabel = node.getChildStateNodeListWithEndLabel();
+      expect(nodeListWithEndLabel.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel.list.length).to.equal(5)
       assert.deepEqual(
-          stateNodes, [
+          nodeListWithEndLabel.list, [
             {
               serial: 0,
               stateNode: stateNode,
@@ -1306,22 +1307,23 @@ describe("radix-node", () => {
 
     it("getChildStateNodeList with non-null maxListSize", () => {
       // maxListSize = -1
-      const stateNodes1 = node.getChildStateNodeList(-1);
-      expect(stateNodes1.length).to.equal(0)
-      assert.deepEqual(
-          stateNodes1, []);
+      const nodeListWithEndLabel1 = node.getChildStateNodeListWithEndLabel(-1);
+      expect(nodeListWithEndLabel1.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel1.list.length).to.equal(0)
+      assert.deepEqual(nodeListWithEndLabel1.list, []);
 
       // maxListSize = 0
-      const stateNodes2 = node.getChildStateNodeList(0);
-      expect(stateNodes2.length).to.equal(0)
-      assert.deepEqual(
-          stateNodes2, []);
+      const nodeListWithEndLabel2 = node.getChildStateNodeListWithEndLabel(0);
+      expect(nodeListWithEndLabel2.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel2.list.length).to.equal(0)
+      assert.deepEqual(nodeListWithEndLabel2.list, []);
 
       // maxListSize = 1
-      const stateNodes3 = node.getChildStateNodeList(1);
-      expect(stateNodes3.length).to.equal(1)
+      const nodeListWithEndLabel3 = node.getChildStateNodeListWithEndLabel(1);
+      expect(nodeListWithEndLabel3.endLabel).to.equal('0000')
+      expect(nodeListWithEndLabel3.list.length).to.equal(1)
       assert.deepEqual(
-          stateNodes3, [
+          nodeListWithEndLabel3.list, [
             {
               serial: 0,
               stateNode: stateNode,
@@ -1329,11 +1331,50 @@ describe("radix-node", () => {
             // skip the other nodes
           ]);
 
-      // maxListSize = 4
-      const stateNodes4 = node.getChildStateNodeList(4);
-      expect(stateNodes4.length).to.equal(4)
+      // maxListSize = 2
+      const nodeListWithEndLabel4 = node.getChildStateNodeListWithEndLabel(2);
+      expect(nodeListWithEndLabel4.endLabel).to.equal('00001001')
+      expect(nodeListWithEndLabel4.list.length).to.equal(2)
       assert.deepEqual(
-          stateNodes4, [
+          nodeListWithEndLabel4.list, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            // skip the node of serial 1
+          ]);
+
+      // maxListSize = 3
+      const nodeListWithEndLabel5 = node.getChildStateNodeListWithEndLabel(3);
+      expect(nodeListWithEndLabel5.endLabel).to.equal('00002002')
+      expect(nodeListWithEndLabel5.list.length).to.equal(3)
+      assert.deepEqual(
+          nodeListWithEndLabel5.list, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            // skip the node of serial 1
+          ]);
+
+      // maxListSize = 4
+      const nodeListWithEndLabel6 = node.getChildStateNodeListWithEndLabel(4);
+      expect(nodeListWithEndLabel6.endLabel).to.equal('000020021021')
+      expect(nodeListWithEndLabel6.list.length).to.equal(4)
+      assert.deepEqual(
+          nodeListWithEndLabel6.list, [
             {
               serial: 0,
               stateNode: stateNode,
@@ -1354,10 +1395,11 @@ describe("radix-node", () => {
           ]);
 
       // maxListSize = 5
-      const stateNodes5 = node.getChildStateNodeList(5);
-      expect(stateNodes5.length).to.equal(5)
+      const nodeListWithEndLabel7 = node.getChildStateNodeListWithEndLabel(5);
+      expect(nodeListWithEndLabel7.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel7.list.length).to.equal(5)
       assert.deepEqual(
-          stateNodes5, [
+          nodeListWithEndLabel7.list, [
             {
               serial: 0,
               stateNode: stateNode,
@@ -1381,10 +1423,11 @@ describe("radix-node", () => {
           ]);
 
       // maxListSize = 6
-      const stateNodes6 = node.getChildStateNodeList(6);
-      expect(stateNodes6.length).to.equal(5)
+      const nodeListWithEndLabel8 = node.getChildStateNodeListWithEndLabel(6);
+      expect(nodeListWithEndLabel8.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel8.list.length).to.equal(5)
       assert.deepEqual(
-          stateNodes6, [
+          nodeListWithEndLabel8.list, [
             {
               serial: 0,
               stateNode: stateNode,
