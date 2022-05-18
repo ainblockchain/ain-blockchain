@@ -377,16 +377,16 @@ class RadixTree {
     this.numChildStateNodes--
   }
 
-  getChildStateLabels() {
+  getChildStateLabels(isPartial = false) {
     const labelList = [];
-    for (const stateNode of this.getChildStateNodes()) {
+    for (const stateNode of this.getChildStateNodes(isPartial)) {
       labelList.push(stateNode.getLabel());
     }
     return labelList;
   }
 
-  getChildStateNodes() {
-    return this.root.getChildStateNodeList().sort((a, b) => a.serial - b.serial)
+  getChildStateNodes(isPartial = false) {
+    return this.root.getChildStateNodeList(isPartial).sort((a, b) => a.serial - b.serial)
         .map(entry => entry.stateNode);
   }
 

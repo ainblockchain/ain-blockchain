@@ -336,7 +336,8 @@ class RadixNode {
     return false;
   }
 
-  getChildStateNodeList() {
+  // TODO(platfowner): Get only partial child labels for isPartial = true.
+  getChildStateNodeList(isPartial = false) {
     const stateNodeList = [];
     if (this.hasChildStateNode()) {
       stateNodeList.push({

@@ -136,8 +136,7 @@ class StateNode {
       return this.getValue();
     }
     const obj = {};
-    // TODO(platfowner): Get only partial child labels for isPartial = true.
-    for (const label of this.getChildLabels()) {
+    for (const label of this.getChildLabels(isPartial)) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
@@ -354,12 +353,12 @@ class StateNode {
     }
   }
 
-  getChildLabels() {
-    return [...this.radixTree.getChildStateLabels()];
+  getChildLabels(isPartial = false) {
+    return [...this.radixTree.getChildStateLabels(isPartial)];
   }
 
-  getChildNodes() {
-    return [...this.radixTree.getChildStateNodes()];
+  getChildNodes(isPartial = false) {
+    return [...this.radixTree.getChildStateNodes(isPartial)];
   }
 
   hasChildren() {
