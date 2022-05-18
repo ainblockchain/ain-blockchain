@@ -355,12 +355,14 @@ class StateNode {
     }
   }
 
+  // TODO(platfowner): Return endLabel for isPartial = true.
   getChildLabels(isPartial = false, lastEndLabel = null) {
-    return [...this.radixTree.getChildStateLabels(isPartial, lastEndLabel)];
+    return [...this.radixTree.getChildStateLabelsWithEndLabel(isPartial, lastEndLabel).list];
   }
 
+  // TODO(platfowner): Return endLabel for isPartial = true.
   getChildNodes(isPartial = false, lastEndLabel = null) {
-    return [...this.radixTree.getChildStateNodes(isPartial, lastEndLabel)];
+    return [...this.radixTree.getChildStateNodesWithEndLabel(isPartial, lastEndLabel).list];
   }
 
   hasChildren() {
