@@ -2,6 +2,7 @@ const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {
+  NodeConfigs,
   StateLabelProperties,
 } = require('../common/constants');
 const RadixNode = require('./radix-node');
@@ -377,16 +378,18 @@ class RadixTree {
     this.numChildStateNodes--
   }
 
-  getChildStateLabels(isPartial = false) {
+  getChildStateLabels(isPartial = false, lastEndLabel = null) {
     const labelList = [];
-    for (const stateNode of this.getChildStateNodes(isPartial)) {
+    for (const stateNode of this.getChildStateNodes(isPartial, lastEndLabel)) {
       labelList.push(stateNode.getLabel());
     }
     return labelList;
   }
 
-  getChildStateNodes(isPartial = false) {
-    return this.root.getChildStateNodeList(isPartial).sort((a, b) => a.serial - b.serial)
+  // TODO(platfowner): Apply lastEndLabel and return endLabel.
+  getChildStateNodes(isPartial = false, lastEndLabel = null) {
+    const maxListSize = isPartial ? NodeConfigs.GET_RESP_MAX_SIBLINGS : null;
+    return this.root.getChildStateNodeList(maxListSize).sort((a, b) => a.serial - b.serial)
         .map(entry => entry.stateNode);
   }
 

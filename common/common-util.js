@@ -246,6 +246,8 @@ class CommonUtil {
     }
     if (args.is_partial !== undefined) {
       options.isPartial = CommonUtil.toBool(args.is_partial);
+      options.lastEndLabel = args.last_end_label !== undefined ?
+          CommonUtil.toString(args.last_end_label) : null;
     }
     if (args.include_version !== undefined) {
       options.includeVersion = CommonUtil.toBool(args.include_version);

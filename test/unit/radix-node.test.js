@@ -1304,6 +1304,110 @@ describe("radix-node", () => {
           ]);
     });
 
+    it("getChildStateNodeList with non-null maxListSize", () => {
+      // maxListSize = -1
+      const stateNodes1 = node.getChildStateNodeList(-1);
+      expect(stateNodes1.length).to.equal(0)
+      assert.deepEqual(
+          stateNodes1, []);
+
+      // maxListSize = 0
+      const stateNodes2 = node.getChildStateNodeList(0);
+      expect(stateNodes2.length).to.equal(0)
+      assert.deepEqual(
+          stateNodes2, []);
+
+      // maxListSize = 1
+      const stateNodes3 = node.getChildStateNodeList(1);
+      expect(stateNodes3.length).to.equal(1)
+      assert.deepEqual(
+          stateNodes3, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            // skip the other nodes
+          ]);
+
+      // maxListSize = 4
+      const stateNodes4 = node.getChildStateNodeList(4);
+      expect(stateNodes4.length).to.equal(4)
+      assert.deepEqual(
+          stateNodes4, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            // skip the node of serial 1
+          ]);
+
+      // maxListSize = 5
+      const stateNodes5 = node.getChildStateNodeList(5);
+      expect(stateNodes5.length).to.equal(5)
+      assert.deepEqual(
+          stateNodes5, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
+
+      // maxListSize = 6
+      const stateNodes6 = node.getChildStateNodeList(6);
+      expect(stateNodes6.length).to.equal(5)
+      assert.deepEqual(
+          stateNodes6, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
+    });
+
     it("deleteRadixTreeVersion", () => {
       const versionAnother = 'ver_another';
       const versionYetAnother = 'ver_yet_another';
