@@ -11,7 +11,7 @@ const {
   isWildcard
 } = require('../common/common-util');
 const { convertIpv6ToIpv4 } = require('../common/network-util');
-const { JSON_RPC_METHODS } = require('../json_rpc/constants');
+const { JSON_RPC_SET_METHODS_TYPE_SET } = require('../json_rpc/constants');
 
 class Middleware {
   constructor () {
@@ -99,18 +99,10 @@ class Middleware {
       return next();
     }
     const jsonRpcMethod = _.get(req, 'body.method');
-    switch (jsonRpcMethod) {
-      case JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST:
-      case JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST:
-      case JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY:
-      case JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_KEYSTORE:
-      case JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_HD_WALLET:
-      case JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION:
-      case JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH:
-      case JSON_RPC_METHODS.AIN_GET_LAST_BLOCK_NUMBER:
-        return this.jsonRpcWriteLimiter(req, res, next);
-      default:
-        return this.jsonRpcReadLimiter(req, res, next);
+    if (JSON_RPC_SET_METHODS_TYPE_SET.has(jsonRpcMethod)) {
+      return this.jsonRpcWriteLimiter(req, res, next);
+    } else {
+      return this.jsonRpcReadLimiter(req, res, next);
     }
   }
 }
