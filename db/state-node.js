@@ -138,7 +138,11 @@ class StateNode {
       return this.getValue();
     }
     const obj = {};
-    for (const label of this.getChildLabels(isPartial, lastEndLabel)) {
+    const childLabelsWithEndLabel = this.getChildLabelsWithEndLabel(isPartial, lastEndLabel);
+    if (isPartial) {
+      obj[`${StateLabelProperties.END_LABEL}`] = childLabelsWithEndLabel.endLabel;
+    }
+    for (const label of childLabelsWithEndLabel.list) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
@@ -355,14 +359,20 @@ class StateNode {
     }
   }
 
-  // TODO(platfowner): Return endLabel for isPartial = true.
   getChildLabels(isPartial = false, lastEndLabel = null) {
-    return [...this.radixTree.getChildStateLabelsWithEndLabel(isPartial, lastEndLabel).list];
+    return this.getChildLabelsWithEndLabel(isPartial, lastEndLabel).list;
   }
 
-  // TODO(platfowner): Return endLabel for isPartial = true.
+  getChildLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
+    return this.radixTree.getChildStateLabelsWithEndLabel(isPartial, lastEndLabel);
+  }
+
   getChildNodes(isPartial = false, lastEndLabel = null) {
-    return [...this.radixTree.getChildStateNodesWithEndLabel(isPartial, lastEndLabel).list];
+    return this.getChildNodesWithEndLabel(isPartial, lastEndLabel).list;
+  }
+
+  getChildNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
+    return this.radixTree.getChildStateNodesWithEndLabel(isPartial, lastEndLabel);
   }
 
   hasChildren() {

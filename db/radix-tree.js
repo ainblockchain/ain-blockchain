@@ -380,10 +380,7 @@ class RadixTree {
 
   getChildStateLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
     const nodesWithEndLabel = this.getChildStateNodesWithEndLabel(isPartial, lastEndLabel);
-    const labelList = [];
-    for (const stateNode of nodesWithEndLabel.list) {
-      labelList.push(stateNode.getLabel());
-    }
+    const labelList = nodesWithEndLabel.list.map(entry => entry.getLabel());
     return {
       list: labelList,
       endLabel: nodesWithEndLabel.endLabel,
