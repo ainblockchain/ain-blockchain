@@ -32,14 +32,14 @@ app.use(middleware.expressJsonRequestBodySizeLimiter());
 app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 app.use(middleware.corsLimiter());
 app.use(middleware.ipWhitelistLimiter());
-app.use(middleware.blockchainApiLimiter());
+app.use(middleware.blockchainApiRateLimiter);
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
-// process.on('uncaughtException', function(err) {
-//   logger.error(err);
-// });
+process.on('uncaughtException', function(err) {
+  logger.error(err);
+});
 
 process.on('SIGINT', (_) => {
   logger.info('Stopping the blockchain client....');

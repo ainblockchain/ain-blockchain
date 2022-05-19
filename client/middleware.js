@@ -15,12 +15,16 @@ const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
   constructor () {
+    this.allBlockchainApiRateLimiter = rateLimit({
+      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute window
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT
+    });
     this.jsonRpcReadRateLimiter = rateLimit({
-      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
+      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,
       max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT
     });
     this.jsonRpcWriteRateLimiter = rateLimit({
-      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
+      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,
       max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT
     });
   }
@@ -49,18 +53,11 @@ class Middleware {
     })
   }
 
-  _emptyHandler() {
-    return (req, res, next) => {
+  blockchainApiRateLimiter = (req, res, next) => {
+    if (!NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
       return next();
     }
-  }
-
-  blockchainApiLimiter() {
-    return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
-        rateLimit({
-          windowMs: this.minuteAsSeconds * 1000,   // 1 minute window
-          max: this.minuteAsSeconds * NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT
-        }) : this._emptyHandler();
+    return this.allBlockchainApiRateLimiter(req, res, next);
   }
 
   jsonRpcRateLimiter = (req, res, next) => {
@@ -68,6 +65,7 @@ class Middleware {
       return next();
     }
     const jsonRpcMethod = _.get(req, 'body.method');
+    // NOTE(minsulee2): Write request is controlled tightest that is 1 tps per ip.
     if (JSON_RPC_SET_METHOD_SET.has(jsonRpcMethod)) {
       return this.jsonRpcWriteRateLimiter(req, res, next);
     } else {
