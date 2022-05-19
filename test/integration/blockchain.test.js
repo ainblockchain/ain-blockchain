@@ -282,10 +282,9 @@ describe('Blockchain Cluster', () => {
           });
         }).then(() => {
           return new Promise((resolve) => {
-            jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT)
-              .request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
+            jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
                   { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
-              function (err, response) {
+                  function (err, response) {
                 if (err) throw err;
                 const newChain = response.result.result;
                 const diff = Math.abs(baseChain.length - newChain.length);
@@ -300,7 +299,7 @@ describe('Blockchain Cluster', () => {
                 assert.deepEqual(newChain.length, baseChain.length);
                 assert.deepEqual(newChain, baseChain);
                 resolve();
-            });
+              });
           });
         });
       }
@@ -618,10 +617,9 @@ describe('Blockchain Cluster', () => {
   describe('Gas fee', () => {
     it('collected gas cost matches the gas_cost_total in the block', () => {
       return new Promise((resolve) => {
-        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT)
-          .request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
+        jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
               { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
-          function (err, response) {
+              function (err, response) {
             if (err) throw err;
             const chain = response.result.result;
             for (const block of chain) {
