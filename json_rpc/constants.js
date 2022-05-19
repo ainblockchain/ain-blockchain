@@ -27,9 +27,9 @@ const JSON_RPC_METHODS = {
   AIN_GET_STATE_INFO: 'ain_getStateInfo',
   AIN_GET_STATE_PROOF: 'ain_getStateProof',
   AIN_GET_STATE_USAGE: 'ain_getStateUsage',
-  AIN_GET_TRANSACTION_BY_HASH: 'ain_getTransactionByHash',
   AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX: 'ain_getTransactionByBlockHashAndIndex',
   AIN_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX: 'ain_getTransactionByBlockNumberAndIndex',
+  AIN_GET_TRANSACTION_BY_HASH: 'ain_getTransactionByHash',
   AIN_GET_TRANSACTION_POOL_SIZE_UTILIZATION: 'ain_getTransactionPoolSizeUtilization',
   AIN_GET_TIMESTAMP: 'ain_getTimestamp',
   AIN_GET_VALIDATOR_INFO: 'ain_getValidatorInfo',
@@ -56,7 +56,7 @@ const JSON_RPC_METHODS = {
   P2P_GET_PEER_CANDIDATE_INFO: 'p2p_getPeerCandidateInfo',
 }
 
-const JSON_RPC_SET_METHODS_TYPE_SET = new Set([
+const JSON_RPC_SET_METHOD_SET = new Set([
   JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST,
   JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_HD_WALLET,
   JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_KEYSTORE,
@@ -68,5 +68,5 @@ const JSON_RPC_SET_METHODS_TYPE_SET = new Set([
 
 module.exports = {
   JSON_RPC_METHODS,
-  JSON_RPC_SET_METHODS_TYPE_SET
+  JSON_RPC_SET_METHOD_SET
 };

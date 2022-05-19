@@ -11,21 +11,20 @@ const {
   isWildcard
 } = require('../common/common-util');
 const { convertIpv6ToIpv4 } = require('../common/network-util');
-const { JSON_RPC_SET_METHODS_TYPE_SET } = require('../json_rpc/constants');
+const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
   constructor () {
-    this.minuteAsSeconds = 60;
     this.setBlockchainApiRateLimit();
     this.setReadRateLimit();
     this.setWriteRateLimit();
     this.jsonRpcReadLimiter = rateLimit({
-      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-      max: this.minuteAsSeconds * this.getReadRateLimit()
+      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * this.getReadRateLimit()
     });
     this.jsonRpcWriteLimiter = rateLimit({
-      windowMs: this.minuteAsSeconds * 1000,   // 1 minute
-      max: this.minuteAsSeconds * this.getWriteRateLimit()
+      windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * this.getWriteRateLimit()
     });
   }
 
@@ -99,7 +98,7 @@ class Middleware {
       return next();
     }
     const jsonRpcMethod = _.get(req, 'body.method');
-    if (JSON_RPC_SET_METHODS_TYPE_SET.has(jsonRpcMethod)) {
+    if (JSON_RPC_SET_METHOD_SET.has(jsonRpcMethod)) {
       return this.jsonRpcWriteLimiter(req, res, next);
     } else {
       return this.jsonRpcReadLimiter(req, res, next);
