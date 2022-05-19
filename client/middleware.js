@@ -15,44 +15,14 @@ const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
   constructor () {
-    this.setBlockchainApiRateLimit();
-    this.setReadRateLimit();
-    this.setWriteRateLimit();
     this.jsonRpcReadLimiter = rateLimit({
       windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
-      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * this.getReadRateLimit()
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT
     });
     this.jsonRpcWriteLimiter = rateLimit({
       windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute
-      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * this.getWriteRateLimit()
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT
     });
-  }
-
-  setBlockchainApiRateLimit() {
-    this.blockchainApiRateLimit = NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT;
-    return this;
-  }
-
-  setReadRateLimit() {
-    this.readRateLimit = NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT;
-    return this;
-  }
-
-  setWriteRateLimit() {
-    this.writeRateLimit = NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT;
-    return this;
-  }
-
-  getBlockchainApiRateLimit() {
-    return this.blockchainApiRateLimit;
-  }
-
-  getReadRateLimit() {
-    return this.readRateLimit;
-  }
-
-  getWriteRateLimit() {
-    return this.writeRateLimit;
   }
 
   expressJsonRequestBodySizeLimiter() {
@@ -89,7 +59,7 @@ class Middleware {
     return NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT ?
         rateLimit({
           windowMs: this.minuteAsSeconds * 1000,   // 1 minute window
-          max: this.minuteAsSeconds * this.getBlockchainApiRateLimit()
+          max: this.minuteAsSeconds * NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT
         }) : this._emptyHandler();
   }
 
