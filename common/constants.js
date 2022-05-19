@@ -412,6 +412,7 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateLabelProperties = {
+  END_LABEL: '#end_label',
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
   HASH_DELIMITER: '#',  // Hash delimiter
   META_LABEL_PREFIX: '#',  // Prefix of all meta labels

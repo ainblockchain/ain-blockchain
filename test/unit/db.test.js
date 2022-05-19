@@ -319,7 +319,7 @@ describe("DB operations", () => {
         node.db.stateManager.finalizeVersion(backupFinalVersion);
       })
 
-      it('getValue to retrieve value near top of database with is_shallow', () => {
+      it('getValue to retrieve value near top of database with isShallow = true', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
           'ai': {
             "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
@@ -339,7 +339,7 @@ describe("DB operations", () => {
         })
       });
 
-      it('getValue to retrieve value near top of database with is_partial', () => {
+      it('getValue to retrieve value near top of database with isPartial = true', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
           'ai': {
             "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
@@ -356,6 +356,7 @@ describe("DB operations", () => {
           'shards': {
             "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
           },
+          "#end_label": "736861726473"
         })
       });
 
@@ -623,7 +624,7 @@ describe("DB operations", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere")).to.equal(null)
       })
 
-      it("getValue to fail with value not present with is_shallow", () => {
+      it("getValue to fail with value not present with isShallow = true", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere", true, false)).to.equal(null)
       })
     })
@@ -977,19 +978,20 @@ describe("DB operations", () => {
         });
       })
 
-      it("getFunction to retrieve existing function config with is_shallow", () => {
+      it("getFunction to retrieve existing function config with isShallow = true", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
-          some: {
+          "some": {
             "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
           },
         });
       })
 
-      it("getFunction to retrieve existing function config with is_partial", () => {
+      it("getFunction to retrieve existing function config with isPartial = true", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true }), {
-          some: {
-            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
+          "some": {
+            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5",
           },
+          "#end_label": "736f6d65"
         });
       })
     })
@@ -1252,14 +1254,15 @@ describe("DB operations", () => {
         });
       })
 
-      it('getRule to retrieve existing rule config with is_partial', () => {
+      it('getRule to retrieve existing rule config with isPartial = true', () => {
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true }), {
           "some": {
             "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
           },
           "syntax": {
             "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732"
-          }
+          },
+          "#end_label": "73796e746178"
         });
       });
     })
@@ -1792,19 +1795,20 @@ describe("DB operations", () => {
         });
       })
 
-      it("getOwner to retrieve existing owner config with is_shallow", () => {
+      it("getOwner to retrieve existing owner config with isShallow = true", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
-          some: {
+          "some": {
             "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80"
           },
         })
       })
 
-      it("getOwner to retrieve existing owner config with is_partial", () => {
+      it("getOwner to retrieve existing owner config with isPartial = true", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true }), {
-          some: {
-            "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80"
+          "some": {
+            "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80",
           },
+          "#end_label": "736f6d65"
         })
       })
     })
