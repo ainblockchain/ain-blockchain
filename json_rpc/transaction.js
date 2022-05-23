@@ -8,10 +8,11 @@ const {
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
+const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getTransactionApis(node, p2pServer) {
   return {
-    ain_getPendingTransactions: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_PENDING_TRANSACTIONS]: function(args, done) {
       const beginTime = Date.now();
       const result = node.tp.transactions;
       const latency = Date.now() - beginTime;
@@ -19,7 +20,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getTransactionPoolSizeUtilization: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_TRANSACTION_POOL_SIZE_UTILIZATION]: function(args, done) {
       const beginTime = Date.now();
       const address = args.address;
       const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
@@ -28,7 +29,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: txPoolSizeUtil }));
     },
 
-    ain_getTransactionByHash: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const transactionInfo = node.getTransactionByHash(args.hash);
       const latency = Date.now() - beginTime;
@@ -36,7 +37,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result: transactionInfo }));
     },
 
-    ain_getTransactionByBlockHashAndIndex: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX]: function(args, done) {
       const beginTime = Date.now();
       let result = null;
       if (args.block_hash && Number.isInteger(args.index)) {
@@ -55,7 +56,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getTransactionByBlockNumberAndIndex: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX]: function(args, done) {
       const beginTime = Date.now();
       let result = null;
       if (Number.isInteger(args.block_number) && Number.isInteger(args.index)) {
@@ -74,7 +75,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_sendSignedTransaction: function(args, done) {
+    [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION]: function(args, done) {
       const beginTime = Date.now();
       const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
       if (sizeof(args) > txBytesLimit) {
@@ -126,7 +127,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       }
     },
 
-    ain_sendSignedTransactionBatch: function(args, done) {
+    [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH]: function(args, done) {
       const beginTime = Date.now();
       const batchTxListSizeLimit = node.getBlockchainParam('resource/batch_tx_list_size_limit');
       if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {

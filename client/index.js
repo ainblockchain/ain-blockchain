@@ -2,22 +2,16 @@
 
 const logger = new (require('../logger'))('CLIENT');
 
+const _ = require('lodash');
 const express = require('express');
-const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
-const rateLimit = require('express-rate-limit');
-const ipWhitelist = require('ip-whitelist');
-const matchUrl = require('match-url-wildcard');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
-const {
-  convertIpv6ToIpv4,
-  sendGetRequest
-} = require('../common/network-util');
+const { sendGetRequest } = require('../common/network-util');
 const {
   BlockchainConsts,
   NodeConfigs,
@@ -27,25 +21,18 @@ const {
   DevFlags
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
+const Middleware = require('./middleware');
 
 const MAX_BLOCKS = 20;
 
 const app = express();
-app.use(express.json({ limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT }));
-app.use(express.urlencoded({
-  extended: true,
-  limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT
-}));
-const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
-    NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST);
-app.use(cors({ origin: corsOrigin }));
-if (NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
-  const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 60 // limit each IP to 60 requests per windowMs
-  });
-  app.use(limiter);
-}
+// NOTE(minsulee2): complex express middleware is now built at middleware.js
+const middleware = new Middleware();
+app.use(middleware.expressJsonRequestBodySizeLimiter());
+app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
+app.use(middleware.corsLimiter());
+app.use(middleware.ipWhitelistLimiter());
+app.use(middleware.blockchainApiRateLimiter);
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler);
@@ -73,6 +60,7 @@ const jsonRpcApis = require('../json_rpc')(
 app.post(
   '/json-rpc',
   VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
+  middleware.jsonRpcRateLimiter,
   jayson.server(jsonRpcApis).middleware()
 );
 
@@ -123,12 +111,6 @@ app.get('/last_block_number', (req, res, next) => {
     .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
-
-app.use(ipWhitelist((ip) => {
-  return CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-      matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-      matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
-}));
 
 /**
  * Dev Client GET APIs (available to whitelisted IPs)

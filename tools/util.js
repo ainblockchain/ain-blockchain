@@ -2,6 +2,7 @@ const _ = require('lodash');
 const axios = require('axios');
 const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
@@ -14,7 +15,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
   return axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: 'ain_sendSignedTransaction',
+      method: JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
       params: signedTx,
       jsonrpc: '2.0',
       id: 0
@@ -35,7 +36,7 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: 'ain_getTransactionByHash',
+      method: JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_HASH,
       params: {
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         hash: txHash,

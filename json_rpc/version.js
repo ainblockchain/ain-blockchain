@@ -6,10 +6,11 @@ const {
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion) {
   return {
-    ain_getProtocolVersion: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_PROTOCOL_VERSION]: function(args, done) {
       const beginTime = Date.now();
       const result = BlockchainConsts.CURRENT_PROTOCOL_VERSION;
       const latency = Date.now() - beginTime;
@@ -17,7 +18,7 @@ module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion)
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_checkProtocolVersion: function(args, done) {
+    [JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION]: function(args, done) {
       const beginTime = Date.now();
       const version = args.protoVer;
       const coercedVer = semver.coerce(version);

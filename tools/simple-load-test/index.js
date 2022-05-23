@@ -8,7 +8,8 @@ const axios = require('axios');
 const commandLineArgs = require('command-line-args');
 const getUsage = require('command-line-usage');
 const CommonUtil = require('../../common/common-util');
-const {signTx} = require('../util');
+const { signTx } = require('../util');
+const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
 const ainPrivateKey = '4207f5dcacb1b601d3a1f8cb10afaca158f6ebe383c0b30d02b39f8d2060cce3';
@@ -57,7 +58,7 @@ const sections = [
 
 function sendTx(endpointUrl, signedTx) {
   return axios.post(`${endpointUrl}/json-rpc`, {
-    method: 'ain_sendSignedTransaction',
+    method: JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
     params: signedTx,
     jsonrpc: '2.0',
     id: 0,

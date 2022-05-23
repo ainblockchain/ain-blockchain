@@ -6,10 +6,11 @@ const {
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getDatabaseApis(node) {
   return {
-    ain_get: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
       const beginTime = Date.now();
       let result;
       let latency;
@@ -56,7 +57,7 @@ module.exports = function getDatabaseApis(node) {
       }
     },
 
-    ain_matchFunction: function(args, done) {
+    [JSON_RPC_METHODS.AIN_MATCH_FUNCTION]: function(args, done) {
       const beginTime = Date.now();
       const result =
           node.db.matchFunction(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
@@ -65,7 +66,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_matchRule: function(args, done) {
+    [JSON_RPC_METHODS.AIN_MATCH_RULE]: function(args, done) {
       const beginTime = Date.now();
       const result = node.db.matchRule(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
@@ -73,7 +74,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_matchOwner: function(args, done) {
+    [JSON_RPC_METHODS.AIN_MATCH_OWNER]: function(args, done) {
       const beginTime = Date.now();
       const result = node.db.matchOwner(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
@@ -81,7 +82,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_evalRule: function(args, done) {
+    [JSON_RPC_METHODS.AIN_EVAL_RULE]: function(args, done) {
       const beginTime = Date.now();
       const auth = {};
       if (args.address) {
@@ -98,7 +99,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_evalOwner: function(args, done) {
+    [JSON_RPC_METHODS.AIN_EVAL_OWNER]: function(args, done) {
       const beginTime = Date.now();
       const auth = {};
       if (args.address) {
@@ -114,7 +115,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getStateProof: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_STATE_PROOF]: function(args, done) {
       const beginTime = Date.now();
       const result = node.db.getStateProof(args.ref);
       const latency = Date.now() - beginTime;
@@ -122,7 +123,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getProofHash: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_PROOF_HASH]: function(args, done) {
       const beginTime = Date.now();
       const result = node.db.getProofHash(args.ref);
       const latency = Date.now() - beginTime;
@@ -130,7 +131,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getStateInfo: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_STATE_INFO]: function(args, done) {
       const beginTime = Date.now();
       const result = node.db.getStateInfo(args.ref);
       const latency = Date.now() - beginTime;
@@ -138,7 +139,7 @@ module.exports = function getDatabaseApis(node) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_getStateUsage: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_STATE_USAGE]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getStateUsageWithStakingInfo(args.app_name);
       const latency = Date.now() - beginTime;
