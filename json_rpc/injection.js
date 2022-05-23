@@ -3,10 +3,11 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const JsonRpcUtil = require('./json-rpc-util');
+const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getInjectionApis(node, p2pServer) {
   return {
-    ain_getBootstrapPubKey: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_BOOTSTRAP_PUB_KEY]: function(args, done) {
       const beginTime = Date.now();
       const result = node.bootstrapAccount ? node.bootstrapAccount.public_key : null;
       const latency = Date.now() - beginTime;
@@ -14,7 +15,7 @@ module.exports = function getInjectionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_injectAccountFromPrivateKey: async function(args, done) {
+    [JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY]: async function(args, done) {
       const beginTime = Date.now();
       let result = false;
       if (await node.injectAccountFromPrivateKey(args.encryptedPrivateKey)) {
@@ -26,7 +27,7 @@ module.exports = function getInjectionApis(node, p2pServer) {
       return JsonRpcUtil.addProtocolVersion({ result });
     },
 
-    ain_injectAccountFromKeystore: async function(args, done) {
+    [JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_KEYSTORE]: async function(args, done) {
       const beginTime = Date.now();
       let result = false;
       if (await node.injectAccountFromKeystore(args.encryptedKeystore, args.encryptedPassword)) {
@@ -38,7 +39,7 @@ module.exports = function getInjectionApis(node, p2pServer) {
       return JsonRpcUtil.addProtocolVersion({ result });
     },
 
-    ain_injectAccountFromHDWallet: async function(args, done) {
+    [JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_HD_WALLET]: async function(args, done) {
       const beginTime = Date.now();
       let result = false;
       if (await node.injectAccountFromHDWallet(args.encryptedMnemonic, args.index)) {

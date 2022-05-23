@@ -1,6 +1,7 @@
 const semver = require('semver');
 const { BlockchainConsts } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
+const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
 class VersionUtil {
   static isValidProtocolVersion(version) {
@@ -42,8 +43,8 @@ class VersionUtil {
       version = req.body.params.protoVer;
     }
     const coercedVer = semver.coerce(version);
-    if (req.body.method === 'ain_getProtocolVersion' ||
-      req.body.method === 'ain_checkProtocolVersion') {
+    if (req.body.method === JSON_RPC_METHODS.AIN_GET_PROTOCOL_VERSION ||
+      req.body.method === JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION) {
       next();
     } else if (version === undefined) {
       res.status(200)

@@ -5,12 +5,13 @@ const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts } = require('./common/constants');
 const { sleep } = require('./common/common-util');
 const prompt = require('prompt');
+const { JSON_RPC_METHODS } = require('./json_rpc/constants');
 
 async function sendGetBootstrapPubKeyRequest(endpointUrl) {
   return await axios.post(
       `${endpointUrl}/json-rpc`,
       {
-        method: 'ain_getBootstrapPubKey',
+        method: JSON_RPC_METHODS.AIN_GET_BOOTSTRAP_PUB_KEY,
         params: {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         },
@@ -103,13 +104,13 @@ async function injectAccount(endpointUrl, accountInjectionOption) {
   const params = {};
   switch (accountInjectionOption) {
     case '--private-key':
-      method = 'ain_injectAccountFromPrivateKey';
+      method = JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_PRIVATE_KEY;
       Object.assign(params, {
         encryptedPrivateKey: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.privateKey)
       })
       break;
     case '--keystore':
-      method = 'ain_injectAccountFromKeystore';
+      method = JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_KEYSTORE;
       const keystore = JSON.stringify(JSON.parse(fs.readFileSync(input.keystorePath)));
       Object.assign(params, {
         encryptedKeystore: await ainUtil.encryptWithPublicKey(bootstrapPubKey, keystore)
@@ -119,7 +120,7 @@ async function injectAccount(endpointUrl, accountInjectionOption) {
       })
       break;
     case '--mnemonic':
-      method = 'ain_injectAccountFromHDWallet';
+      method = JSON_RPC_METHODS.AIN_INJECT_ACCOUNT_FROM_HD_WALLET;
       Object.assign(params, {
         encryptedMnemonic: await ainUtil.encryptWithPublicKey(bootstrapPubKey, input.mnemonic),
         index: input.index
