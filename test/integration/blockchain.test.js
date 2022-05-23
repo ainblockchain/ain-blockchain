@@ -283,7 +283,7 @@ describe('Blockchain Cluster', () => {
         }).then(() => {
           return new Promise((resolve) => {
             jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
-                  { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
+                { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
                   function (err, response) {
                 if (err) throw err;
                 const newChain = response.result.result;
@@ -618,7 +618,7 @@ describe('Blockchain Cluster', () => {
     it('collected gas cost matches the gas_cost_total in the block', () => {
       return new Promise((resolve) => {
         jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_METHODS.AIN_GET_BLOCK_LIST,
-              { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
+            { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION },
               function (err, response) {
             if (err) throw err;
             const chain = response.result.result;
