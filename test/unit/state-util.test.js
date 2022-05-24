@@ -690,6 +690,9 @@ describe("state-util", () => {
       expect(isValidWriteRule({}, "newData = 'some code'")).to.equal(false);
       // assignment & invoke
       expect(isValidWriteRule({}, "newData = 'some code'; newData();")).to.equal(false);
+      // function
+      expect(isValidWriteRule({}, "[function(){while(true){}}][0]()")).to.equal(false);
+      expect(isValidWriteRule({}, "[()=>{while(true){}}][0]()")).to.equal(false);
     })
 
     it('when valid input', () => {
