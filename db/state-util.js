@@ -41,9 +41,13 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'String',  // type casting
   'Boolean',  // type casting
 ];
-const WRITE_RULE_PUNC_TOKEN_BLACKLIST = [
+const WRITE_RULE_KEYWORD_TOKEN_BLACKLIST_SET = new Set([
+  'function',
+]);
+const WRITE_RULE_PUNC_TOKEN_BLACKLIST_SET = new Set([
   '=',  // assignment
-];
+  '=>',  // arrow function
+]);
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -286,6 +290,13 @@ function getTopLevelIdTokens(tokenList) {
 }
 
 /**
+ * Extract keyword tokens from the given token list.
+ */
+function getKeywordTokens(tokenList) {
+  return tokenList.filter((token) => token.type === 'Keyword').map((token) => token.value);
+}
+
+/**
  * Extract punctuator tokens from the given token list.
  */
 function getPuncTokens(tokenList) {
@@ -315,12 +326,18 @@ function isValidWriteRule(variableLabels, ruleString) {
         return false;
       }
     }
-    const puncTokenBlacklistSet = new Set([
-      ...WRITE_RULE_PUNC_TOKEN_BLACKLIST
-    ]);
+    const keywordTokens = getKeywordTokens(tokenList);
+    for (const token of keywordTokens) {
+      if (WRITE_RULE_KEYWORD_TOKEN_BLACKLIST_SET.has(token)) {
+        logger.info(
+            `[${LOG_HEADER}] Rule includes a not-allowed keyword token (${token}) ` +
+            `in rule string: ${ruleString}`);
+        return false;
+      }
+    }
     const puncTokens = getPuncTokens(tokenList);
     for (const token of puncTokens) {
-      if (puncTokenBlacklistSet.has(token)) {
+      if (WRITE_RULE_PUNC_TOKEN_BLACKLIST_SET.has(token)) {
         logger.info(
             `[${LOG_HEADER}] Rule includes a not-allowed punctuator token (${token}) ` +
             `in rule string: ${ruleString}`);
