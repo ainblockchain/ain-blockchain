@@ -4,8 +4,12 @@ const cors = require('cors');
 const ipWhitelist = require('ip-whitelist');
 const rateLimit = require('express-rate-limit');
 const matchUrl = require('match-url-wildcard');
+const logger = new (require('../logger'))('MIDDLEWARE');
 
-const { NodeConfigs } = require('../common/constants');
+const {
+  NodeConfigs,
+  BlockchainConsts
+ } = require('../common/constants');
 const {
   getRegexpList,
   isWildcard
@@ -71,6 +75,22 @@ class Middleware {
     } else {
       return this.jsonRpcReadRateLimiter(req, res, next);
     }
+  }
+
+  errorLogger = (err, req, res, next) => {
+    logger.error(err);
+    next(err);
+  }
+
+  errorHandler = (err, req, res, next) => {
+    const statusCode = err.status || 500;
+    return res.status(statusCode)
+      .set('Content-Type', 'application/json')
+      .send({
+        message: err.message,
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+      })
+      .end();
   }
 }
 

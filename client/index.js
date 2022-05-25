@@ -72,6 +72,14 @@ app.get('/', (req, res, next) => {
     .end();
 });
 
+app.get('/test', (req, res, next) => {
+  try {
+    aa
+  } catch (error) {
+    next(error);
+  }
+})
+
 app.get('/health_check', (req, res, next) => {
   const result = p2pServer.getNodeHealth();
   res.status(200)
@@ -820,6 +828,9 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
       .end();
   });
 }
+
+app.use(middleware.errorLogger);
+app.use(middleware.errorHandler);
 
 if (eventHandler) {
   // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
