@@ -1274,7 +1274,7 @@ describe("state-node", () => {
       expect(parent1.getIsLeaf()).to.equal(true);
     });
 
-    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel w/ isPartial = true", () => {
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true", () => {
       // Change GET_RESP_MAX_SIBLINGS value for testing.
       const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
       NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
@@ -1297,9 +1297,11 @@ describe("state-node", () => {
 
       parent1.setChild(label3, child3);
       const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true);
+      // skip label3
       assert.deepEqual(labelsWithEndLabel3.list, ['label1', 'label2']);
       expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c32');
       const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true);
+      // skip child3
       assert.deepEqual(nodesWithEndLabel3.list, [child1, child2]);
       expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c32');
 
@@ -1319,6 +1321,96 @@ describe("state-node", () => {
       const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel5.list, []);
       expect(nodesWithEndLabel5.endLabel).to.equal(null);
+
+      // Restore GET_RESP_MAX_SIBLINGS value.
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+    });
+
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true and lastEndLabel", () => {
+      // Change GET_RESP_MAX_SIBLINGS value for testing.
+      const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+      // lastEndLabel = ''6c6162656c31' (child1)
+
+      const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel1.list, []);
+      expect(labelsWithEndLabel1.endLabel).to.equal(null);
+      const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel1.list, []);
+      expect(nodesWithEndLabel1.endLabel).to.equal(null);
+
+      parent1.setChild(label1, child1);
+      parent1.setChild(label2, child2);
+      const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel2.list, ['label2']);
+      expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel2.list, [child2]);
+      expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c32');
+
+      parent1.setChild(label3, child3);
+      const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      // skip label1
+      assert.deepEqual(labelsWithEndLabel3.list, ['label2', 'label3']);
+      expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      // skip child1
+      assert.deepEqual(nodesWithEndLabel3.list, [child2, child3]);
+      expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c33');
+
+      parent1.deleteChild(label2);
+      const labelsWithEndLabel4 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      // skip label1
+      assert.deepEqual(labelsWithEndLabel4.list, ['label3']);
+      expect(labelsWithEndLabel4.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel4 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      // skip child1
+      assert.deepEqual(nodesWithEndLabel4.list, [child3]);
+      expect(nodesWithEndLabel4.endLabel).to.equal('6c6162656c33');
+
+      parent1.deleteChild(label3);
+      parent1.deleteChild(label1);
+      const labelsWithEndLabel5 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel5.list, []);
+      expect(labelsWithEndLabel5.endLabel).to.equal(null);
+      const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel5.list, []);
+      expect(nodesWithEndLabel5.endLabel).to.equal(null);
+
+      // Restore GET_RESP_MAX_SIBLINGS value.
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+    });
+
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true and lastEndLabel - chaining", () => {
+      // Change GET_RESP_MAX_SIBLINGS value for testing.
+      const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+      parent1.setChild(label1, child1);
+      parent1.setChild(label2, child2);
+      parent1.setChild(label3, child3);
+
+      const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel1.list, ['label1', 'label2']);
+      expect(labelsWithEndLabel1.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel1.list, [child1, child2]);
+      expect(nodesWithEndLabel1.endLabel).to.equal('6c6162656c32');
+
+      const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c32');
+      assert.deepEqual(labelsWithEndLabel2.list, ['label3']);
+      expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c32');
+      assert.deepEqual(nodesWithEndLabel2.list, [child3]);
+      expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c33');
+
+      const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c33');
+      assert.deepEqual(labelsWithEndLabel3.list, []);
+      expect(labelsWithEndLabel3.endLabel).to.equal(null);
+      const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c33');
+      assert.deepEqual(nodesWithEndLabel3.list, []);
+      expect(nodesWithEndLabel3.endLabel).to.equal(null);
 
       // Restore GET_RESP_MAX_SIBLINGS value.
       NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;

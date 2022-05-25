@@ -2905,6 +2905,30 @@ describe("radix-tree", () => {
         // Restore GET_RESP_MAX_SIBLINGS value.
         NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
       });
+
+      it("getChildStateLabelsWithEndLabel / getChildStateNodesWithEndLabel with isPartial = true and lastEndLabel", () => {
+        // Change GET_RESP_MAX_SIBLINGS value for testing.
+        const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+        // lastEndLabel = '000bbb' (stateNode2)
+
+        const labelsWithEndLabel = tree.getChildStateLabelsWithEndLabel(true, '000bbb');
+        assert.deepEqual(labelsWithEndLabel.list, [
+          label22,
+          label21,
+        ]);
+        expect(labelsWithEndLabel.endLabel).to.equal('000bbb222');
+        const nodesWithEndLabel = tree.getChildStateNodesWithEndLabel(true, '000bbb');
+        assert.deepEqual(nodesWithEndLabel.list, [
+          stateNode22,
+          stateNode21,
+        ]);
+        expect(nodesWithEndLabel.endLabel).to.equal('000bbb222');
+
+        // Restore GET_RESP_MAX_SIBLINGS value.
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+      });
     });
 
     describe("radix info", () => {

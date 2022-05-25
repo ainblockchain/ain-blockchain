@@ -336,7 +336,13 @@ class RadixNode {
     return false;
   }
 
-  // TODO(platfowner): Apply lastEndLabel.
+  static compareRadixLabelWithPrefix(label, prefix) {
+    if (_.startsWith(prefix, label)) {
+      return 0;
+    }
+    return label.localeCompare(prefix);
+  }
+
   getChildStateNodeListWithEndLabel(maxListSize = null, lastEndLabel = null) {
     const stateNodeList = [];
     let endLabel = null;
@@ -346,7 +352,7 @@ class RadixNode {
         endLabel,
       };
     }
-    if (this.hasChildStateNode()) {
+    if (this.hasChildStateNode() && !CommonUtil.isString(lastEndLabel)) {
       stateNodeList.push({
         serial: this.getSerial(),
         stateNode: this.getChildStateNode()
@@ -359,11 +365,20 @@ class RadixNode {
         endLabel,
       };
     }
+    const lastEndLabelForChild = CommonUtil.isString(lastEndLabel) ?
+        lastEndLabel.slice(this.getLabel().length) : null;
     for (const child of this.getChildNodes()) {
+      // NOTE: Whether the child's label is less than, greater than, or equals to the given last label prefix or not.
+      const labelComparison = CommonUtil.isString(lastEndLabelForChild) ?
+          RadixNode.compareRadixLabelWithPrefix(child.getLabel(), lastEndLabelForChild) : 1;
+      if (labelComparison < 0) {
+        continue;
+      }
       const maxListSizeForChild = CommonUtil.isNumber(maxListSize) ?
           maxListSize - stateNodeList.length : null;
-      const stateNodeListFromChild =
-          child.getChildStateNodeListWithEndLabel(maxListSizeForChild, lastEndLabel);
+      const stateNodeListFromChild = child.getChildStateNodeListWithEndLabel(
+          maxListSizeForChild,
+          labelComparison > 0 ? null : lastEndLabelForChild);
       if (stateNodeListFromChild.list.length > 0) {
         stateNodeList.push(...stateNodeListFromChild.list);
         endLabel = stateNodeListFromChild.endLabel !== null ?
