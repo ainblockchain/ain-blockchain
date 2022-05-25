@@ -359,16 +359,16 @@ class StateNode {
     }
   }
 
-  getChildLabels(isPartial = false, lastEndLabel = null) {
-    return this.getChildLabelsWithEndLabel(isPartial, lastEndLabel).list;
+  getChildLabels() {
+    return this.getChildLabelsWithEndLabel().list;
   }
 
   getChildLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
     return this.radixTree.getChildStateLabelsWithEndLabel(isPartial, lastEndLabel);
   }
 
-  getChildNodes(isPartial = false, lastEndLabel = null) {
-    return this.getChildNodesWithEndLabel(isPartial, lastEndLabel).list;
+  getChildNodes() {
+    return this.getChildNodesWithEndLabel().list;
   }
 
   getChildNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
