@@ -1276,6 +1276,20 @@ describe("radix-node", () => {
       });
     });
 
+    it("compareRadixLabelWithPrefix", () => {
+      expect(RadixNode.compareRadixLabelWithPrefix('', '')).to.equal(0);
+      expect(RadixNode.compareRadixLabelWithPrefix('', 'aabbcc')).to.equal(0);
+      expect(RadixNode.compareRadixLabelWithPrefix('a', 'aabbcc')).to.equal(0);
+      expect(RadixNode.compareRadixLabelWithPrefix('aa', 'aabbcc')).to.equal(0);
+      expect(RadixNode.compareRadixLabelWithPrefix('aab', 'aabbcc')).to.equal(0);
+      expect(RadixNode.compareRadixLabelWithPrefix('aab9', 'aabbcc')).to.equal(-1);
+      expect(RadixNode.compareRadixLabelWithPrefix('aab9c', 'aabbcc')).to.equal(-1);
+      expect(RadixNode.compareRadixLabelWithPrefix('aabc', 'aabbcc')).to.equal(1);
+      expect(RadixNode.compareRadixLabelWithPrefix('aabcc', 'aabbcc')).to.equal(1);
+      expect(RadixNode.compareRadixLabelWithPrefix('ab', 'aabbcc')).to.equal(1);
+      expect(RadixNode.compareRadixLabelWithPrefix('aabbcc', 'aabbcc')).to.equal(0);
+    });
+
     it("getChildStateNodeListWithEndLabel", () => {
       const nodeListWithEndLabel = node.getChildStateNodeListWithEndLabel();
       expect(nodeListWithEndLabel.endLabel).to.equal('000020022022')
@@ -1305,7 +1319,7 @@ describe("radix-node", () => {
           ]);
     });
 
-    it("getChildStateNodeList with non-null maxListSize", () => {
+    it("getChildStateNodeListWithLabel with non-null maxListSize", () => {
       // maxListSize = -1
       const nodeListWithEndLabel1 = node.getChildStateNodeListWithEndLabel(-1);
       expect(nodeListWithEndLabel1.endLabel).to.equal(null)
@@ -1345,7 +1359,7 @@ describe("radix-node", () => {
               serial: 3,
               stateNode: childStateNode1,
             },
-            // skip the node of serial 1
+            // skip the other nodes
           ]);
 
       // maxListSize = 3
@@ -1366,7 +1380,7 @@ describe("radix-node", () => {
               serial: 4,
               stateNode: childStateNode2,
             },
-            // skip the node of serial 1
+            // skip the other nodes
           ]);
 
       // maxListSize = 4
@@ -1391,7 +1405,7 @@ describe("radix-node", () => {
               serial: 2,
               stateNode: childStateNode21,
             },
-            // skip the node of serial 1
+            // skip the other nodes
           ]);
 
       // maxListSize = 5
@@ -1449,6 +1463,204 @@ describe("radix-node", () => {
               stateNode: childStateNode22,
             },
           ]);
+    });
+
+    it("getChildStateNodeListWithLabel with non-null maxListSize and lastEndLabel", () => {
+      // maxListSize = -1
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel1 = node.getChildStateNodeListWithEndLabel(-1, '00001001');
+      expect(nodeListWithEndLabel1.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel1.list.length).to.equal(0)
+      assert.deepEqual(nodeListWithEndLabel1.list, []);
+
+      // maxListSize = 0
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel2 = node.getChildStateNodeListWithEndLabel(0, '00001001');
+      expect(nodeListWithEndLabel2.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel2.list.length).to.equal(0)
+      assert.deepEqual(nodeListWithEndLabel2.list, []);
+
+      // maxListSize = 1
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel3 = node.getChildStateNodeListWithEndLabel(1, '00001001');
+      expect(nodeListWithEndLabel3.endLabel).to.equal('00002002')
+      expect(nodeListWithEndLabel3.list.length).to.equal(1)
+      assert.deepEqual(
+          nodeListWithEndLabel3.list, [
+            // skip previous nodes
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            // skip the other nodes
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel4 = node.getChildStateNodeListWithEndLabel(2, '00001001');
+      expect(nodeListWithEndLabel4.endLabel).to.equal('000020021021')
+      expect(nodeListWithEndLabel4.list.length).to.equal(2)
+      assert.deepEqual(
+          nodeListWithEndLabel4.list, [
+            // skip previous nodes
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            // skip the other nodes
+          ]);
+
+      // maxListSize = 5
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel5 = node.getChildStateNodeListWithEndLabel(5, '00001001');
+      expect(nodeListWithEndLabel5.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel5.list.length).to.equal(3)
+      assert.deepEqual(
+          nodeListWithEndLabel5.list, [
+            // skip previous nodes
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
+
+      // maxListSize = 6
+      // lastEndLabel = '00001001' (childStateNode1)
+      const nodeListWithEndLabel6 = node.getChildStateNodeListWithEndLabel(6, '00001001');
+      expect(nodeListWithEndLabel6.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel6.list.length).to.equal(3)
+      assert.deepEqual(
+          nodeListWithEndLabel6.list, [
+            // skip previous nodes
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
+    });
+
+    it("getChildStateNodeListWithLabel with various lastEndLabel", () => {
+      // maxListSize = 2
+      // lastEndLabel = '00002002' (childStateNode2) + '0'
+      const nodeListWithEndLabel1 = node.getChildStateNodeListWithEndLabel(2, '00002002' + '0');
+      expect(nodeListWithEndLabel1.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel1.list.length).to.equal(2)
+      assert.deepEqual(
+          nodeListWithEndLabel1.list, [
+            // skip previous nodes
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+            // skip the other nodes
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '00002002' (childStateNode2) + '00'
+      const nodeListWithEndLabel2 = node.getChildStateNodeListWithEndLabel(2, '00002002' + '00');
+      expect(nodeListWithEndLabel2.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel2.list.length).to.equal(2)
+      assert.deepEqual(
+          nodeListWithEndLabel2.list, [
+            // skip previous nodes
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+            // skip the other nodes
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '000022' (non-existing node)
+      const nodeListWithEndLabel3 = node.getChildStateNodeListWithEndLabel(2, '000022');
+      expect(nodeListWithEndLabel3.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel3.list.length).to.equal(0)
+      assert.deepEqual(
+          nodeListWithEndLabel3.list, []);
+    });
+
+    it("getChildStateNodeListWithLabel chaining with endLabel and lastEndLabel", () => {
+      // maxListSize = 2
+      // lastEndLabel = null
+      const nodeListWithEndLabel1 = node.getChildStateNodeListWithEndLabel(2, null);
+      expect(nodeListWithEndLabel1.endLabel).to.equal('00001001')
+      expect(nodeListWithEndLabel1.list.length).to.equal(2)
+      assert.deepEqual(
+          nodeListWithEndLabel1.list, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '00001001'
+      const nodeListWithEndLabel2 = node.getChildStateNodeListWithEndLabel(2, '00001001');
+      expect(nodeListWithEndLabel2.endLabel).to.equal('000020021021')
+      expect(nodeListWithEndLabel2.list.length).to.equal(2)
+      assert.deepEqual(
+          nodeListWithEndLabel2.list, [
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '000020021021'
+      const nodeListWithEndLabel3 = node.getChildStateNodeListWithEndLabel(2, '000020021021');
+      expect(nodeListWithEndLabel3.endLabel).to.equal('000020022022')
+      expect(nodeListWithEndLabel3.list.length).to.equal(1)
+      assert.deepEqual(
+          nodeListWithEndLabel3.list, [
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
+
+      // maxListSize = 2
+      // lastEndLabel = '000020022022'
+      const nodeListWithEndLabel4 = node.getChildStateNodeListWithEndLabel(2, '000020022022');
+      expect(nodeListWithEndLabel4.endLabel).to.equal(null)
+      expect(nodeListWithEndLabel4.list.length).to.equal(0)
+      assert.deepEqual(nodeListWithEndLabel4.list, []);
     });
 
     it("deleteRadixTreeVersion", () => {
