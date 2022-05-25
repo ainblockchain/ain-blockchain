@@ -336,7 +336,8 @@ class RadixNode {
     return false;
   }
 
-  getChildStateNodeListWithEndLabel(maxListSize = null) {
+  // TODO(platfowner): Apply lastEndLabel.
+  getChildStateNodeListWithEndLabel(maxListSize = null, lastEndLabel = null) {
     const stateNodeList = [];
     let endLabel = null;
     if (CommonUtil.isNumber(maxListSize) && maxListSize <= 0) {
@@ -361,7 +362,8 @@ class RadixNode {
     for (const child of this.getChildNodes()) {
       const maxListSizeForChild = CommonUtil.isNumber(maxListSize) ?
           maxListSize - stateNodeList.length : null;
-      const stateNodeListFromChild = child.getChildStateNodeListWithEndLabel(maxListSizeForChild);
+      const stateNodeListFromChild =
+          child.getChildStateNodeListWithEndLabel(maxListSizeForChild, lastEndLabel);
       if (stateNodeListFromChild.list.length > 0) {
         stateNodeList.push(...stateNodeListFromChild.list);
         endLabel = stateNodeListFromChild.endLabel !== null ?

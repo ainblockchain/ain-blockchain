@@ -387,10 +387,10 @@ class RadixTree {
     };
   }
 
-  // TODO(platfowner): Apply lastEndLabel.
   getChildStateNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
     const maxListSize = isPartial ? NodeConfigs.GET_RESP_MAX_SIBLINGS : null;
-    const nodeListWithEndLabel = this.root.getChildStateNodeListWithEndLabel(maxListSize);
+    const nodeListWithEndLabel =
+        this.root.getChildStateNodeListWithEndLabel(maxListSize, lastEndLabel);
     const sortedNodeList = nodeListWithEndLabel.list
         .sort((a, b) => a.serial - b.serial)
         .map(entry => entry.stateNode);
