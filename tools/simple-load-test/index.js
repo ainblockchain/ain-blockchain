@@ -135,10 +135,10 @@ async function main() {
     process.exit(0);
   }
   const targetUrl = args.target_url || 'http://localhost:8081';
-  const duration = args.duration || 10; // 60: 1min
+  const duration = args.duration || 60;   // 1 minute by default
   const numberOfTransactionsInSecond = args.num_txs || 2;
   console.log(`Initialize loadTestApp (${testPath})`);
-  // await initLoadTestApp(targetUrl);
+  await initLoadTestApp(targetUrl);
   const total = await runLoadtest(targetUrl, numberOfTransactionsInSecond, duration);
 
   console.log('===========================REPORT===========================');
