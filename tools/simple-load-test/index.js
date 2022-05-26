@@ -8,7 +8,8 @@ const getUsage = require('command-line-usage');
 const { signAndSendTx } = require('../util');
 
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
-const testPath = '/apps/loadtest';
+const appName = 'loadtest';
+const testPath = `/apps/${appName}`;
 const ainPrivateKey = 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96';
 const ainAddress = '0x00ADEc28B6a845a085e03591bE7550dd68673C1C';
 
@@ -58,7 +59,7 @@ async function initLoadTestApp(targetUrl) {
   const setRuleTxBody = {
     operation: {
       type: 'SET_RULE',
-      ref: `/apps/loadtest`,
+      ref: `/apps/${appName}`,
       value: {
         '.rule': {
           'write': true,
@@ -73,7 +74,7 @@ async function initLoadTestApp(targetUrl) {
   const createAppTxBody = {
     operation: {
       type: 'SET_VALUE',
-      ref: `/manage_app/loadtest/create/${Date.now()}`,
+      ref: `/manage_app/${appName}/create/${Date.now()}`,
       value: {
         admin: {
           [ainAddress]: true,
