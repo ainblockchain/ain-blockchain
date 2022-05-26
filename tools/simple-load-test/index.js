@@ -8,12 +8,12 @@ const axios = require('axios');
 const commandLineArgs = require('command-line-args');
 const getUsage = require('command-line-usage');
 const CommonUtil = require('../../common/common-util');
-const { signTx } = require('../util');
+const { signAndSendTx } = require('../util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
-const ainPrivateKey = '4207f5dcacb1b601d3a1f8cb10afaca158f6ebe383c0b30d02b39f8d2060cce3';
-const ainAddress = '0xF2be7f1356347a8960630c112AcB6Da61eE94632';
+const ainPrivateKey = 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96';
+const ainAddress = '0x00ADEc28B6a845a085e03591bE7550dd68673C1C';
 const TIMEOUT_MS = 10 * 1000;
 const optionDefinitions = [
   {
@@ -73,60 +73,39 @@ function sendTx(endpointUrl, signedTx) {
 }
 
 async function initPermission(targetUrl) {
-  const setOwnerTx = {
+  const setRuleTxBody = {
     operation: {
-      type: 'SET_OWNER',
-      ref: testPath,
+      type: 'SET_RULE',
+      ref: `/apps/loadtest`,
       value: {
-        '.owner': {
-          owners: {
-            '*': {
-              write_owner: true,
-              write_rule: true,
-              write_function: true,
-              branch_owner: true,
-            },
-          },
+        '.rule': {
+          'write': true,
+        },
+      },
+    },
+    timestamp: Date.now(),
+    gas_price: 500,
+    nonce: -1,
+  };
+
+  const createAppTxBody = {
+    operation: {
+      type: 'SET_VALUE',
+      ref: `/manage_app/loadtest/create/${Date.now()}`,
+      value: {
+        admin: {
+          [ainAddress]: true,
         },
       },
     },
     timestamp: Date.now(),
     nonce: -1,
+    gas_price: 500,
   };
-  const setRuleTx = {
-    operation: {
-      type: 'SET_RULE',
-      ref: testPath,
-      value: {
-        '.rule': {
-          'write': true,
-        }
-      },
-    },
-    timestamp: Date.now(),
-    nonce: -1,
-  };
-  const setValueTx = {
-    operation: {
-      type: 'SET_VALUE',
-      ref: testPath,
-      value: 0,
-    },
-    timestamp: Date.now(),
-    nonce: -1,
-  };
-  const {signedTx: signedSetOwnerTx} = CommonUtil.signTransaction(setOwnerTx, ainPrivateKey);
-  const {signedTx: signedSetRuleTx} = CommonUtil.signTransaction(setRuleTx, ainPrivateKey);
-  const {signedTx: signedSetValueTx} = CommonUtil.signTransaction(setValueTx, ainPrivateKey);
-  const promiseList = [];
-  promiseList.push(sendTx(targetUrl, signedSetOwnerTx));
-  promiseList.push(sendTx(targetUrl, signedSetRuleTx));
-  promiseList.push(sendTx(targetUrl, signedSetValueTx));
-  const resultList = await Promise.all(promiseList);
-  if (resultList.includes(false)) {
-    throw Error(`Error while init permission`);
-  }
-  await delay(10 * 1000);
+
+  const result = await signAndSendTx(targetUrl, createAppTxBody, ainPrivateKey, 0);
+  const result2 = await signAndSendTx(targetUrl, setRuleTxBody, ainPrivateKey, 0);
+  console.log(result2);
 }
 
 function makeBaseTransaction() {
@@ -137,6 +116,7 @@ function makeBaseTransaction() {
       value: 1,
     },
     nonce: -1,
+    gas_price: 500
   };
 }
 
@@ -157,8 +137,9 @@ async function sendTxs(targetUrl, duration, numberOfTransactions) {
         new Promise((resolve, reject) => {
           setTimeout((txTimestamp) => {
             baseTx.timestamp = txTimestamp;
-            const {signedTx} = CommonUtil.signTransaction(baseTx, ainPrivateKey);
+            const { signedTx } = CommonUtil.signTransaction(baseTx, ainPrivateKey);
             sendTx(targetUrl, signedTx).then((result) => {
+              console.log(result);
               if (result === true) {
                 sendCnt++;
               }
@@ -185,12 +166,12 @@ async function main() {
   }
   const targetUrl = args.target_url || 'http://localhost:8081';
   const duration = args.duration || 60; // 60: 1min
-  const numberOfTransactions = args.number_txs || 300;
-  console.log(`Initialize permission (${testPath})`);
-  await initPermission(targetUrl);
-  console.log(`Start to send transactions (${numberOfTransactions})`);
-  const sendCnt = await sendTxs(targetUrl, duration, numberOfTransactions);
-  console.log(`Finish load test! (${sendCnt}/${numberOfTransactions})`);
+  const numberOfTransactions = args.number_txs || 30;
+  console.log(`Initialize loadTestApp (${testPath})`);
+  // await initLoadTestApp(targetUrl);
+  // console.log(`Start to send transactions (${numberOfTransactions})`);
+  // const sendCnt = await sendTxs(targetUrl, duration, numberOfTransactions);
+  // console.log(`Finish load test! (${sendCnt}/${numberOfTransactions})`);
 }
 
 main();
