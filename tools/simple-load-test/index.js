@@ -106,15 +106,25 @@ function buildIncTxBody() {
 }
 
 async function sendTxInSecond(targetUrl, numberOfTransactions) {
-  if (numberOfTransactions < 0) {
-    return;
-  }
-
   const delayMs = 1000 / numberOfTransactions;
   for (let i = 0; i < numberOfTransactions; i++) {
     const result = signAndSendTx(targetUrl, buildIncTxBody(), ainPrivateKey, 0);
     await delay(delayMs);
   }
+  return numberOfTransactions;
+}
+
+async function runLoadtest(targetUrl, numberOfTransactionsInSecond, duration) {
+  if (numberOfTransactionsInSecond < 0 || duration < 0) {
+    return;
+  }
+
+  let count = 0;
+  for (let i = 0; i < duration; i++) {
+    const tmpCount = await sendTxInSecond(targetUrl, numberOfTransactionsInSecond);
+    count += tmpCount;
+  }
+  return count;
 }
 
 async function main() {
@@ -125,12 +135,16 @@ async function main() {
     process.exit(0);
   }
   const targetUrl = args.target_url || 'http://localhost:8081';
-  const duration = args.duration || 60; // 60: 1min
+  const duration = args.duration || 10; // 60: 1min
   const numberOfTransactionsInSecond = args.num_txs || 2;
   console.log(`Initialize loadTestApp (${testPath})`);
   // await initLoadTestApp(targetUrl);
-  console.log(`TPS: ${numberOfTransactionsInSecond}`);
-  await sendTxInSecond(targetUrl, numberOfTransactionsInSecond);
+  const total = await runLoadtest(targetUrl, numberOfTransactionsInSecond, duration);
+
+  console.log('===========================REPORT===========================');
+  console.log(`Target TPS: ${numberOfTransactionsInSecond}`);
+  console.log(`TXS(sent/target): ${total}/${duration * numberOfTransactionsInSecond} in ${duration} seconds`);
+  console.log(`TPS: ${total / duration}`);
 }
 
 main();
