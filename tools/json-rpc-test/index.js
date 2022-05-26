@@ -1,10 +1,11 @@
 const _ = require('lodash');
 const axios = require('axios');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
+const { endpoint } = require('./config_local');
 
 const queryOnNode = (method, params) => {
   return axios.post(
-    'http://localhost:8081/json-rpc',
+    endpoint,
     {
       method,
       params: Object.assign(params, { protoVer: '1.0.6' }),
@@ -19,7 +20,15 @@ const queryOnNode = (method, params) => {
   });
 }
 
+const usage = () => {
+  console.log('\nExample commandlines:\n  node index.js\n');
+}
+
 const main = async () => {
+  if (process.argv.length !== 2) {
+    usage();
+    process.exit(0);
+  }
   const result = await queryOnNode(JSON_RPC_METHODS.AIN_GET_LAST_BLOCK, { });
   // const result = await queryOnNode(JSON_RPC_METHODS.AIN_GET_LAST_BLOCK_NUMBER, { });
   console.log(result);
