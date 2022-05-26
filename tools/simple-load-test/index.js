@@ -3,18 +3,15 @@
  * This tool increases '/apps/loadtest/visit_count'
  * Usage: 'node index.js --help'
  */
-const _ = require('lodash');
-const axios = require('axios');
 const commandLineArgs = require('command-line-args');
 const getUsage = require('command-line-usage');
-const CommonUtil = require('../../common/common-util');
 const { signAndSendTx } = require('../util');
-const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
+
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
 const ainPrivateKey = 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96';
 const ainAddress = '0x00ADEc28B6a845a085e03591bE7550dd68673C1C';
-const TIMEOUT_MS = 10 * 1000;
+
 const optionDefinitions = [
   {
     name: 'help',
@@ -38,13 +35,14 @@ const optionDefinitions = [
     group: 'options',
   },
   {
-    name: 'number_txs',
+    name: 'num_txs',
     alias: 'n',
     type: Number,
-    description: 'Number of transactions (Default: 300)',
+    description: 'transactions per second (Default: 2)',
     group: 'options',
   },
 ];
+
 const sections = [
   {
     header: 'AIN Simple load test',
@@ -56,23 +54,7 @@ const sections = [
   }
 ];
 
-function sendTx(endpointUrl, signedTx) {
-  return axios.post(`${endpointUrl}/json-rpc`, {
-    method: JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
-    params: signedTx,
-    jsonrpc: '2.0',
-    id: 0,
-  }, {
-    timeout: TIMEOUT_MS,
-  }).then((result) => {
-    return _.get(result, 'data.result.result.result', false);
-  }).catch((err) => {
-    console.error(err);
-    return false;
-  });
-}
-
-async function initPermission(targetUrl) {
+async function initLoadTestApp(targetUrl) {
   const setRuleTxBody = {
     operation: {
       type: 'SET_RULE',
@@ -103,58 +85,35 @@ async function initPermission(targetUrl) {
     gas_price: 500,
   };
 
-  const result = await signAndSendTx(targetUrl, createAppTxBody, ainPrivateKey, 0);
-  const result2 = await signAndSendTx(targetUrl, setRuleTxBody, ainPrivateKey, 0);
-  console.log(result2);
+  const createAppTxResult = await signAndSendTx(targetUrl, createAppTxBody, ainPrivateKey, 0);
+  const setRuleTxResult = await signAndSendTx(targetUrl, setRuleTxBody, ainPrivateKey, 0);
+  console.log(createAppTxResult);
+  console.log(setRuleTxResult);
 }
 
-function makeBaseTransaction() {
+function buildIncTxBody() {
   return {
     operation: {
       type: 'INC_VALUE',
       ref: `${testPath}/visit_count`,
       value: 1,
     },
+    timestamp: Date.now(),
     nonce: -1,
     gas_price: 500
   };
 }
 
-async function sendTxs(targetUrl, duration, numberOfTransactions) {
-  const delayTime = duration / numberOfTransactions * 1000;
-  const sendTxPromiseList = [];
-  const timestamp = Date.now();
-  const baseTx = makeBaseTransaction();
-  let sendCnt = 0;
-
-  for (let i = 0; i < numberOfTransactions; i++) {
-    await delay(delayTime);
-    if (i % 1000 === 0) {
-      console.log(`[${i}/${numberOfTransactions}]`);
-    }
-
-    sendTxPromiseList.push(
-        new Promise((resolve, reject) => {
-          setTimeout((txTimestamp) => {
-            baseTx.timestamp = txTimestamp;
-            const { signedTx } = CommonUtil.signTransaction(baseTx, ainPrivateKey);
-            sendTx(targetUrl, signedTx).then((result) => {
-              console.log(result);
-              if (result === true) {
-                sendCnt++;
-              }
-              resolve(result);
-            }).catch((err) => {
-              console.error(err);
-              resolve(false);
-            });
-          }, 0, timestamp + i);
-        }),
-    );
+async function sendTxInSecond(targetUrl, numberOfTransactions) {
+  if (numberOfTransactions < 0) {
+    return;
   }
 
-  await Promise.all(sendTxPromiseList);
-  return sendCnt;
+  const delayMs = 1000 / numberOfTransactions;
+  for (let i = 0; i < numberOfTransactions; i++) {
+    const result = signAndSendTx(targetUrl, buildIncTxBody(), ainPrivateKey, 0);
+    await delay(delayMs);
+  }
 }
 
 async function main() {
@@ -166,12 +125,11 @@ async function main() {
   }
   const targetUrl = args.target_url || 'http://localhost:8081';
   const duration = args.duration || 60; // 60: 1min
-  const numberOfTransactions = args.number_txs || 30;
+  const numberOfTransactionsInSecond = args.num_txs || 2;
   console.log(`Initialize loadTestApp (${testPath})`);
   // await initLoadTestApp(targetUrl);
-  // console.log(`Start to send transactions (${numberOfTransactions})`);
-  // const sendCnt = await sendTxs(targetUrl, duration, numberOfTransactions);
-  // console.log(`Finish load test! (${sendCnt}/${numberOfTransactions})`);
+  console.log(`TPS: ${numberOfTransactionsInSecond}`);
+  await sendTxInSecond(targetUrl, numberOfTransactionsInSecond);
 }
 
 main();
