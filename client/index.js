@@ -829,9 +829,6 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   });
 }
 
-app.use(middleware.errorLogger);
-app.use(middleware.errorHandler);
-
 if (eventHandler) {
   // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
   app.get('/eh_load_balancer_health_check', (req, res, next) => {
@@ -842,6 +839,10 @@ if (eventHandler) {
       .end();
   });
 }
+
+// NOTE(minsulee2): error handlers should be at the end of all routes.
+app.use(middleware.errorLogger);
+app.use(middleware.errorHandler);
 
 const server = app.listen(NodeConfigs.PORT, () => {
   logger.info(`App listening on port ${NodeConfigs.PORT}`);
