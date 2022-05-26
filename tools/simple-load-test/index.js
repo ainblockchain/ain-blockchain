@@ -6,12 +6,14 @@
 const commandLineArgs = require('command-line-args');
 const getUsage = require('command-line-usage');
 const { signAndSendTx } = require('../util');
+const {
+  appName,
+  testPath,
+  ainPrivateKey,
+  ainAddress
+} = require('./config');
 
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
-const appName = 'loadtest';
-const testPath = `/apps/${appName}`;
-const ainPrivateKey = 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96';
-const ainAddress = '0x00ADEc28B6a845a085e03591bE7550dd68673C1C';
 
 const optionDefinitions = [
   {
