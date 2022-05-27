@@ -568,7 +568,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get api', () => {
+    describe('get api', () => {
       it('get', () => {
         const request = {
           op_list: [
@@ -825,7 +825,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe(`${JSON_RPC_METHODS.AIN_GET} api`, () => {
+    describe('json-rpc: ain_get api', () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -908,7 +908,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe(`${JSON_RPC_METHODS.AIN_MATCH_FUNCTION} api`, () => {
+    describe('json-rpc: ain_matchFunction api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -936,7 +936,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_MATCH_RULE} api`, () => {
+    describe('json-rpc: ain_matchRule api', () => {
       it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -1062,7 +1062,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_MATCH_OWNER} api`, () => {
+    describe('json-rpc api: ain_matchOwner', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -1091,7 +1091,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_EVAL_RULE} api`, () => {
+    describe('json-rpc api: ain_evalRule', () => {
       it('returns true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
@@ -1123,7 +1123,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_EVAL_OWNER} api`, () => {
+    describe('json-rpc api: ain_evalOwner', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
@@ -1167,7 +1167,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_STATE_PROOF} api`, () => {
+    describe('json-rpc api: ain_getStateProof', () => {
       it('returns correct value', () => {
         const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -1187,7 +1187,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_PROOF_HASH} api`, () => {
+    describe('json-rpc api: ain_getProofHash', () => {
       it('returns correct value', () => {
         const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -1198,7 +1198,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_STATE_INFO} api`, () => {
+    describe('json-rpc api: ain_getStateInfo', () => {
       it('returns correct value', () => {
         const ref = '/values/apps/test/test_state_info/some/path';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -1221,7 +1221,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_STATE_USAGE} api`, () => {
+    describe('json-rpc api: ain_getStateUsage', () => {
       it('with existing app name', () => {
         const request = { app_name: 'test', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_GET_STATE_USAGE, request)
@@ -1273,7 +1273,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_PROTOCOL_VERSION} api`, () => {
+    describe('json-rpc api: ain_getProtocolVersion', () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_GET_PROTOCOL_VERSION, {})
@@ -1283,7 +1283,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe(`${JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION} api`, () => {
+    describe('json-rpc api: ain_checkProtocolVersion', () => {
       it('returns success code', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
@@ -1330,7 +1330,7 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_GET_ADDRESS} api`, () => {
+    describe('json-rpc api: ain_getAddress', () => {
       it('returns the correct node address', () => {
         const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -2977,7 +2977,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransaction api', () => {
+    describe('json-rpc api: ain_sendSignedTransaction', () => {
       const account = {
         address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
         private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
@@ -3914,7 +3914,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransactionBatch api', () => {
+    describe('json-rpc api: ain_sendSignedTransactionBatch', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
