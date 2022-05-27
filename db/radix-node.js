@@ -359,7 +359,7 @@ class RadixNode {
       });
       endLabel = this.getLabel();
     }
-    if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
+    if (CommonUtil.isNumber(maxListSize) && stateNodeList.length >= maxListSize) {
       return {
         list: stateNodeList,
         endLabel,
@@ -384,7 +384,7 @@ class RadixNode {
         endLabel = stateNodeListFromChild.endLabel !== null ?
             this.getLabel() + stateNodeListFromChild.endLabel : null;
       }
-      if (CommonUtil.isNumber(maxListSize) && stateNodeList.length === maxListSize) {
+      if (CommonUtil.isNumber(maxListSize) && stateNodeList.length >= maxListSize) {
         return {
           list: stateNodeList,
           endLabel,
