@@ -118,11 +118,12 @@ module.exports = function getTransactionApis(node, p2pServer) {
                 message: `Invalid transaction signature.`
               }
             }));
+          } else {
+            const result = p2pServer.executeAndBroadcastTransaction(createdTx);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+            done(null, JsonRpcUtil.addProtocolVersion({ result }));
           }
-          const result = p2pServer.executeAndBroadcastTransaction(createdTx);
-          const latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
         }
       }
     },
