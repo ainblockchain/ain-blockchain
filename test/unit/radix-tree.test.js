@@ -4,6 +4,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const RadixNode = require('../../db/radix-node');
 const StateNode = require('../../db/state-node');
+const { NodeConfigs } = require('../../common/constants');
 
 describe("radix-tree", () => {
 
@@ -2837,18 +2838,26 @@ describe("radix-tree", () => {
         cloned = tree.clone(version2);
       });
 
-      it("getChildStateLabels / getChildStateNodes", () => {
+      it("getChildStateLabelsWithEndLabel / getChildStateNodesWithEndLabel", () => {
         // Insertion order is kept
-        assert.deepEqual(tree.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        const labelsWithEndLabel = tree.getChildStateLabelsWithEndLabel();
+        assert.deepEqual(labelsWithEndLabel.list, [ label22, label21, label1, label2 ]);
+        expect(labelsWithEndLabel.endLabel).to.equal('000bbb222');
+        const nodesWithEndLabel = tree.getChildStateNodesWithEndLabel();
         assert.deepEqual(
-            tree.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+            nodesWithEndLabel.list, [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+        expect(nodesWithEndLabel.endLabel).to.equal('000bbb222');
       });
 
-      it("getChildStateLabels / getChildStateNodes with cloned tree", () => {
+      it("getChildStateLabelsWithEndLabel / getChildStateNodesWithEndLabel with cloned tree", () => {
         // Insertion order is kept.
-        assert.deepEqual(cloned.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        const labelsWithEndLabelBefore = cloned.getChildStateLabelsWithEndLabel();
+        assert.deepEqual(labelsWithEndLabelBefore.list, [ label22, label21, label1, label2 ]);
+        expect(labelsWithEndLabelBefore.endLabel).to.equal('000bbb222');
+        const nodesWithEndLabelBefore = cloned.getChildStateNodesWithEndLabel();
         assert.deepEqual(
-            cloned.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+            nodesWithEndLabelBefore.list, [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+        expect(nodesWithEndLabelBefore.endLabel).to.equal('000bbb222');
 
         const newStateNode21 = new StateNode(version2);
         newStateNode21.setLabel(label21);
@@ -2859,11 +2868,66 @@ describe("radix-tree", () => {
         cloned.set(label23, newStateNode23);
 
         // The order does NOT change.
+        const labelsWithEndLabelAfter = cloned.getChildStateLabelsWithEndLabel();
         assert.deepEqual(
-            cloned.getChildStateLabels(), [ label22, label21, label1, label2, label23 ]);
+            labelsWithEndLabelAfter.list, [ label22, label21, label1, label2, label23 ]);
+        expect(labelsWithEndLabelAfter.endLabel).to.equal('000bbb333');
+        const nodesWithEndLabelAfter = cloned.getChildStateNodesWithEndLabel();
         assert.deepEqual(
-            cloned.getChildStateNodes(),
+            nodesWithEndLabelAfter.list,
             [ stateNode22, newStateNode21, stateNode1, stateNode2, newStateNode23 ]);
+        expect(nodesWithEndLabelAfter.endLabel).to.equal('000bbb333');
+      });
+
+      it("getChildStateLabelsWithEndLabel / getChildStateNodesWithEndLabel with isPartial = true", () => {
+        // Change GET_RESP_MAX_SIBLINGS value for testing.
+        const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = 3;
+
+        // Insertion order is kept
+        const labelsWithEndLabel = tree.getChildStateLabelsWithEndLabel(true);
+        assert.deepEqual(labelsWithEndLabel.list, [
+          // skip label22
+          label21,
+          label1,
+          label2
+        ]);
+        expect(labelsWithEndLabel.endLabel).to.equal('000bbb111');
+        const nodesWithEndLabel = tree.getChildStateNodesWithEndLabel(true);
+        assert.deepEqual(nodesWithEndLabel.list, [
+          // skip stateNode22
+          stateNode21,
+          stateNode1,
+          stateNode2
+        ]);
+        expect(nodesWithEndLabel.endLabel).to.equal('000bbb111');
+
+        // Restore GET_RESP_MAX_SIBLINGS value.
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+      });
+
+      it("getChildStateLabelsWithEndLabel / getChildStateNodesWithEndLabel with isPartial = true and lastEndLabel", () => {
+        // Change GET_RESP_MAX_SIBLINGS value for testing.
+        const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+        // lastEndLabel = '000bbb' (stateNode2)
+
+        const labelsWithEndLabel = tree.getChildStateLabelsWithEndLabel(true, '000bbb');
+        assert.deepEqual(labelsWithEndLabel.list, [
+          label22,
+          label21,
+        ]);
+        expect(labelsWithEndLabel.endLabel).to.equal('000bbb222');
+        const nodesWithEndLabel = tree.getChildStateNodesWithEndLabel(true, '000bbb');
+        assert.deepEqual(nodesWithEndLabel.list, [
+          stateNode22,
+          stateNode21,
+        ]);
+        expect(nodesWithEndLabel.endLabel).to.equal('000bbb222');
+
+        // Restore GET_RESP_MAX_SIBLINGS value.
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
       });
     });
 
@@ -3396,7 +3460,7 @@ describe("radix-tree", () => {
         "#version": "ver",
       });
       assert.deepEqual(treeRebuilt.toRadixSnapshot(), snapshot);
-      assert.deepEqual(treeRebuilt.getChildStateLabels(), [
+      assert.deepEqual(treeRebuilt.getChildStateLabelsWithEndLabel().list, [
         "0x000aaa",
         "0x000bbb",
         "0x000bbb111",

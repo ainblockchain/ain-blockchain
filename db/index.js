@@ -510,7 +510,7 @@ class DB {
       return null;
     }
     if (options && options.fromApi) {
-      const limitChecked = DB.checkRespTreeLimits(stateNode);
+      const limitChecked = DB.checkRespTreeLimits(stateNode, options);
       if (limitChecked !== true) {
         return limitChecked;
       }
@@ -618,7 +618,9 @@ class DB {
     }
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.FUNCTIONS_ROOT, localPath, options);
-    if (limitChecked !== true) return limitChecked;
+    if (limitChecked !== true) {
+      return limitChecked;
+    }
     return this.convertFunctionMatch(
         this.matchFunctionForParsedPath(localPath), isGlobal);
   }
@@ -633,7 +635,9 @@ class DB {
     }
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.RULES_ROOT, localPath, options);
-    if (limitChecked !== true) return limitChecked;
+    if (limitChecked !== true) {
+      return limitChecked;
+    }
     const matched = this.matchRuleForParsedPath(localPath);
     return {
       write: this.convertRuleMatch(matched.write, isGlobal),
@@ -651,7 +655,9 @@ class DB {
     }
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.OWNERS_ROOT, localPath, options);
-    if (limitChecked !== true) return limitChecked;
+    if (limitChecked !== true) {
+      return limitChecked;
+    }
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
@@ -665,7 +671,9 @@ class DB {
     }
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.RULES_ROOT, localPath, options);
-    if (limitChecked !== true) return limitChecked;
+    if (limitChecked !== true) {
+      return limitChecked;
+    }
     return this.getPermissionForValue(localPath, value, auth, options);
   }
 
@@ -680,7 +688,9 @@ class DB {
     }
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.OWNERS_ROOT, localPath, options);
-    if (limitChecked !== true) return limitChecked;
+    if (limitChecked !== true) {
+      return limitChecked;
+    }
     if (permission === OwnerProperties.WRITE_RULE) {
       return this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
@@ -700,31 +710,37 @@ class DB {
   }
 
   // TODO(liayoo): Apply stricter limits to rule/function/owner state budgets
-  static checkRespTreeLimits(stateNode) {
-    if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
-      return {
-        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
-        message: `The data exceeds the max sibling limit of the requested node: ` +
-            `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
-      };
+  static checkRespTreeLimits(stateNode, options) {
+    // NOTE: Skip sibling number limit check for isPartial = true cases.
+    if (!(options && options.isPartial)) {
+      if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+        return {
+          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
+          message: `The data exceeds the max sibling limit of the requested node: ` +
+              `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+        };
+      }
     }
-    if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
-      return {
-        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
-        message: `The data exceeds the max byte limit of the requested node: ` +
-            `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
-      };
+    // NOTE: Skip bytes limit check for isShallow = true or isPartial = true cases.
+    if (!(options && (options.isShallow || options.isPartial))) {
+      if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
+        return {
+          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
+          message: `The data exceeds the max byte limit of the requested node: ` +
+              `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
+        };
+      }
     }
     return true;
   }
 
   checkRespTreeLimitsForEvalOrMatch(rootLabel, localPath, options) {
     if (options && options.fromApi) {
-    const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+      const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
       const fullPath = DB.getFullPath(localPath, rootLabel);
       const stateNode = DB.getRefForReadingFromStateRoot(targetStateRoot, fullPath);
       if (stateNode !== null) {
-        const limitChecked = DB.checkRespTreeLimits(stateNode);
+        const limitChecked = DB.checkRespTreeLimits(stateNode, options);
         if (limitChecked !== true) {
           return limitChecked;
         }
@@ -753,19 +769,19 @@ class DB {
     const resultList = [];
     for (const op of opList) {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
+        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op, true)));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         const auth = {};
         if (op.address) {
@@ -775,7 +791,7 @@ class DB {
           auth.fid = op.fid;
         }
         const timestamp = op.timestamp || Date.now();
-        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op), { timestamp });
+        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op, true), { timestamp });
         resultList.push(this.evalRule(op.ref, op.value, auth, options));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
@@ -786,7 +802,7 @@ class DB {
           auth.fid = op.fid;
         }
         resultList.push(this.evalOwner(
-            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
+            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op, true)));
       }
     }
     return resultList;
@@ -2274,6 +2290,7 @@ class DB {
     return this.getSubtreeFunctionsRecursive(0, funcNode);
   }
 
+  // TODO(platfowner): Consider optimizing subtree function retrieval for many children.
   matchFunctionForParsedPath(parsedValuePath) {
     const matched = this.matchFunctionPath(parsedValuePath);
     const subtreeFunctions = this.getSubtreeFunctions(matched.matchedFunctionNode);
@@ -2421,6 +2438,7 @@ class DB {
     return this.getSubtreeRulesRecursive(0, ruleNode, ruleProp);
   }
 
+  // TODO(platfowner): Consider optimizing subtree rule retrieval for many children.
   matchRuleForParsedPath(parsedValuePath) {
     const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
     const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
@@ -2686,6 +2704,7 @@ class DB {
     return this.getSubtreeOwnersRecursive(0, ownerNode);
   }
 
+  // TODO(platfowner): Consider optimizing subtree owner retrieval for many children.
   matchOwnerForParsedPath(parsedRefPath) {
     const matched = this.matchOwnerPath(parsedRefPath);
     const subtreeOwners = matched.matchedOwnerNode ?
