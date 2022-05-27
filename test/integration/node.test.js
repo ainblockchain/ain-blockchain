@@ -2977,7 +2977,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION} api`, () => {
+    describe('ain_sendSignedTransaction api', () => {
       const account = {
         address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
         private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
@@ -3914,7 +3914,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe(`${JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH} api`, () => {
+    describe('ain_sendSignedTransactionBatch api', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
