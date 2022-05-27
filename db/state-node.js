@@ -126,6 +126,7 @@ class StateNode {
   /**
    * Converts this sub-tree to a js object.
    */
+  // TODO(platfowner): Return node serials with the end label for partial results merging.
   toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
     const isPartial = options && options.isPartial;
