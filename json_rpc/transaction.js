@@ -118,6 +118,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
                 message: `Invalid transaction signature.`
               }
             }));
+            return;
           }
           const result = p2pServer.executeAndBroadcastTransaction(createdTx);
           const latency = Date.now() - beginTime;
