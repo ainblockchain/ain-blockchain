@@ -2,6 +2,7 @@ const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {
+  NodeConfigs,
   StateLabelProperties,
 } = require('../common/constants');
 const RadixNode = require('./radix-node');
@@ -377,17 +378,26 @@ class RadixTree {
     this.numChildStateNodes--
   }
 
-  getChildStateLabels() {
-    const labelList = [];
-    for (const stateNode of this.getChildStateNodes()) {
-      labelList.push(stateNode.getLabel());
-    }
-    return labelList;
+  getChildStateLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
+    const nodesWithEndLabel = this.getChildStateNodesWithEndLabel(isPartial, lastEndLabel);
+    const labelList = nodesWithEndLabel.list.map(entry => entry.getLabel());
+    return {
+      list: labelList,
+      endLabel: nodesWithEndLabel.endLabel,
+    };
   }
 
-  getChildStateNodes() {
-    return this.root.getChildStateNodeList().sort((a, b) => a.serial - b.serial)
+  getChildStateNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
+    const maxListSize = isPartial ? NodeConfigs.GET_RESP_MAX_SIBLINGS : null;
+    const nodeListWithEndLabel =
+        this.root.getChildStateNodeListWithEndLabel(maxListSize, lastEndLabel);
+    const sortedNodeList = nodeListWithEndLabel.list
+        .sort((a, b) => a.serial - b.serial)
         .map(entry => entry.stateNode);
+    return {
+      list: sortedNodeList,
+      endLabel: nodeListWithEndLabel.endLabel,
+    };
   }
 
   hasChildStateNodes() {
@@ -480,7 +490,7 @@ class RadixTree {
     tree.setRoot(root);
     tree.setNextSerial(obj[StateLabelProperties.NEXT_SERIAL]);
     // NOTE(platfowner): Need to recompute and set numChildStateNodes.
-    const numChildStateNodes = tree.getChildStateLabels().length;
+    const numChildStateNodes = tree.getChildStateLabelsWithEndLabel().list.length;
     tree.setNumChildStateNodes(numChildStateNodes);
     return tree;
   }

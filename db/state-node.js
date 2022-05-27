@@ -126,8 +126,12 @@ class StateNode {
   /**
    * Converts this sub-tree to a js object.
    */
+  // TODO(platfowner): Return node serials with the end label for partial results merging.
   toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
+    const isPartial = options && options.isPartial;
+    const lastEndLabel = (options && options.lastEndLabel !== undefined) ?
+        options.lastEndLabel : null;
     const includeVersion = options && options.includeVersion;
     const includeTreeInfo = options && options.includeTreeInfo;
     const includeProof = options && options.includeProof;
@@ -135,7 +139,11 @@ class StateNode {
       return this.getValue();
     }
     const obj = {};
-    for (const label of this.getChildLabels()) {
+    const childLabelsWithEndLabel = this.getChildLabelsWithEndLabel(isPartial, lastEndLabel);
+    if (isPartial) {
+      obj[`${StateLabelProperties.END_LABEL}`] = childLabelsWithEndLabel.endLabel;
+    }
+    for (const label of childLabelsWithEndLabel.list) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
@@ -153,7 +161,7 @@ class StateNode {
           obj[`${StateLabelProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
       } else {
-        obj[label] = isShallow ?
+        obj[label] = (isShallow || isPartial) ?
             { [`${StateLabelProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
             childNode.toStateSnapshot(options);
       }
@@ -353,11 +361,19 @@ class StateNode {
   }
 
   getChildLabels() {
-    return [...this.radixTree.getChildStateLabels()];
+    return this.getChildLabelsWithEndLabel().list;
+  }
+
+  getChildLabelsWithEndLabel(isPartial = false, lastEndLabel = null) {
+    return this.radixTree.getChildStateLabelsWithEndLabel(isPartial, lastEndLabel);
   }
 
   getChildNodes() {
-    return [...this.radixTree.getChildStateNodes()];
+    return this.getChildNodesWithEndLabel().list;
+  }
+
+  getChildNodesWithEndLabel(isPartial = false, lastEndLabel = null) {
+    return this.radixTree.getChildStateNodesWithEndLabel(isPartial, lastEndLabel);
   }
 
   hasChildren() {
