@@ -9,14 +9,15 @@ const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip) {
   const message = {
     timestamp: Date.now(),
-    method: JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST,
-    ip,
+    method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
+    param: 'DEV_CLIENT_API_IP_WHITELIST',
+    value: ip,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST,
+      method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
       params: {
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         message,
@@ -61,9 +62,9 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node removeFromDevClientApiIpWhitelist.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <IP_ADDRESS>\n');
   console.log('\nExamples:');
-  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
-  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
-  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file 127.0.0.1');
+  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
+  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
+  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file 127.0.0.1');
   process.exit(0);
 }
 
