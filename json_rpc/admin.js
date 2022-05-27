@@ -1,4 +1,3 @@
-const net = require('net');
 const _ = require('lodash');
 const {
   NodeConfigs,
@@ -10,124 +9,215 @@ const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
 const { JSON_RPC_METHODS } = require('./constants');
 
-module.exports = function getApiAccessApis(node) {
+function checkCompatibility(valueA, valueB) {
+  if (CommonUtil.isBool(valueA)) {
+    return CommonUtil.isBool(valueB);
+  } else if (CommonUtil.isIntegerString(valueA) || CommonUtil.isFloatString(valueA)) {
+    return CommonUtil.isIntegerString(valueB) || CommonUtil.isFloatString(valueB);
+  } else if (CommonUtil.isArray(valueA) || CommonUtil.isWildcard(valueA)) {
+    return CommonUtil.isArray(valueB) || CommonUtil.isWildcard(valueB);
+  } else {
+    // TODO(kriii): Decide how to work on the object (e.g. TRAFFIC_STATS_PERIOD_SECS_LIST).
+    return false;
+  }
+}
+
+module.exports = function getAdminApis(node) {
   return {
-    [JSON_RPC_METHODS.AIN_GET_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_GET_NODE_PARAM]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_GET_NODE_PARAM || !verified) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done({ code: 403, message: 'Forbidden' });
+        return;
+      }
+
+      const param = args.message.param;
       const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
-      if (_.get(args.message, 'method') === JSON_RPC_METHODS.AIN_GET_DEV_CLIENT_API_IP_WHITELIST &&
-          verified) {
-        done(null,
-            JsonRpcUtil.addProtocolVersion({ result: NodeConfigs.DEV_CLIENT_API_IP_WHITELIST }));
-      } else {
-        done({ code: 403, message: 'Forbidden' });
-      }
-    },
-
-    [JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
-      const beginTime = Date.now();
-      const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_ADD_TO_DEV_CLIENT_API_IP_WHITELIST ||
-          !verified) {
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done({ code: 403, message: 'Forbidden' });
-        return;
-      }
-      if (CommonUtil.isWildcard(args.message.ip)) {
-        NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = '*';
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+      if (NodeConfigs[param] === undefined) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.SUCCESS,
-            message: `Added IP (${args.message.ip}) to whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
-          }
-        }));
-        return;
-      }
-      if (!net.isIPv4(args.message.ip)) {
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done(null, JsonRpcUtil.addProtocolVersion({
-          result: {
-            code: JsonRpcApiResultCode.INVALID_IP,
-            message: `Invalid IP: ${args.message.ip}`
-          }
-        }));
-        return;
-      }
-      if (!CommonUtil.isArray(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)) {
-        // NOTE(liayoo): if the whitelist was "*" previously, adding an IP will no longer "allow-all".
-        NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = [];
-      }
-      if (NodeConfigs.DEV_CLIENT_API_IP_WHITELIST.includes(args.message.ip)) {
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done(null, JsonRpcUtil.addProtocolVersion({
-          result: {
-            code: JsonRpcApiResultCode.IP_ALREADY_IN_WHITELIST,
-            message: `IP (${args.message.ip}) already in whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not exist.`
           }
         }));
       } else {
-        NodeConfigs.DEV_CLIENT_API_IP_WHITELIST.push(args.message.ip);
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done(null, JsonRpcUtil.addProtocolVersion({
-          result: {
-            code: JsonRpcApiResultCode.SUCCESS,
-            message: `Added IP (${args.message.ip}) to whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
-          }
-        }));
+        done(null, JsonRpcUtil.addProtocolVersion({ result: NodeConfigs[param] }));
       }
     },
 
-    [JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_SET_NODE_PARAM]: function(args, done) {
       const beginTime = Date.now();
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
-      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_REMOVE_FROM_DEV_CLIENT_API_IP_WHITELIST ||
-          !verified) {
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_SET_NODE_PARAM || !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done({ code: 403, message: 'Forbidden' });
         return;
       }
-      if (CommonUtil.isWildcard(args.message.ip)
-          && CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)) {
-        NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = [];
+
+      const param = args.message.param;
+      if (NodeConfigs[param] === undefined) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.SUCCESS,
-            message: `Removed IP (${args.message.ip}) from whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not exists.`
           }
         }));
         return;
       }
-      if (!CommonUtil.isArray(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-          !NodeConfigs.DEV_CLIENT_API_IP_WHITELIST.includes(args.message.ip)) {
+
+      if (!checkCompatibility(NodeConfigs[param], args.message.value)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.IP_NOT_IN_WHITELIST,
-            message: `IP (${args.message.ip}) not in whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
+            code: JsonRpcApiResultCode.VALUE_INCOMPATIBLE,
+            message: `(${args.message.value}) is incompatible with param [${param}]: ${JSON.stringify(NodeConfigs[param])}`
           }
         }));
         return;
       }
-      NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = NodeConfigs.DEV_CLIENT_API_IP_WHITELIST
-        .filter((ip) => ip !== args.message.ip);
+
+      NodeConfigs[param] = args.message.value;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({
         result: {
           code: JsonRpcApiResultCode.SUCCESS,
-          message: `Removed IP (${args.message.ip}) from whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
+          message: `Param [${param}] is now set as: ${JSON.stringify(NodeConfigs[param])}`
+        }
+      }));
+    },
+
+    [JSON_RPC_METHODS.AIN_ADD_TO_WHITELIST_NODE_PARAM]: function(args, done) {
+      const beginTime = Date.now();
+      const verified = node.verifyNodeAccountSignature(args.message, args.signature);
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_ADD_TO_WHITELIST_NODE_PARAM || !verified) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done({ code: 403, message: 'Forbidden' });
+        return;
+      }
+
+      const param = args.message.param;
+      if (NodeConfigs[param] === undefined) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not exists.`
+          }
+        }));
+        return;
+      }
+      if (!CommonUtil.isArray(NodeConfigs[param]) &&
+        !CommonUtil.isWildcard(NodeConfigs[param])) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not whitelist`
+          }
+        }));
+        return;
+      }
+
+      if (!CommonUtil.isArray(NodeConfigs[param])) {
+        // NOTE(liayoo): if the whitelist was "*" previously, adding an IP will no longer "allow-all".
+        NodeConfigs[param] = [];
+      }
+      if (NodeConfigs[param].includes(args.message.value)) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ALREADY_IN_WHITELIST,
+            message: `(${args.message.value}) already in whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
+          }
+        }));
+        return;
+      }
+
+      if (CommonUtil.isWildcard(args.message.value)) {
+        NodeConfigs[param] = '*';
+      } else {
+        NodeConfigs[param].push(args.message.value);
+      }
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({
+        result: {
+          code: JsonRpcApiResultCode.SUCCESS,
+          message: `Added (${args.message.value}) to whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
+        }
+      }));
+    },
+
+    [JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM]: function(args, done) {
+      const beginTime = Date.now();
+      const verified = node.verifyNodeAccountSignature(args.message, args.signature);
+      if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM || !verified) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done({ code: 403, message: 'Forbidden' });
+        return;
+      }
+
+      const param = args.message.param;
+      if (NodeConfigs[param] === undefined) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not exists.`
+          }
+        }));
+        return;
+      }
+      if (!CommonUtil.isArray(NodeConfigs[param]) &&
+        !CommonUtil.isWildcard(NodeConfigs[param])) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.PARAM_INVALID,
+            message: `Param [${param}] is not whitelist`
+          }
+        }));
+        return;
+      }
+
+      if (CommonUtil.isWildcard(args.message.value)) {
+        NodeConfigs[param] = [];
+      } else if (!CommonUtil.isArray(NodeConfigs[param]) ||
+        !NodeConfigs[param].includes(args.message.value)) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.NOT_IN_WHITELIST,
+            message: `(${args.message.value}) not in whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
+          }
+        }));
+        return;
+      } else {
+        NodeConfigs[param] = NodeConfigs[param].filter((value) => value !== args.message.value);
+      }
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({
+        result: {
+          code: JsonRpcApiResultCode.SUCCESS,
+          message: `Removed (${args.message.value}) from whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
         }
       }));
     },
