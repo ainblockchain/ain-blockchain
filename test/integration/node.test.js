@@ -825,7 +825,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('json-rpc: ain_get api', () => {
+    describe('json-rpc api: ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -852,7 +852,7 @@ describe('Blockchain Node', () => {
         });
       });
 
-      it('returns error when requested data exceeds the get response limits (bytes)', async () => {
+      it('returns error when requested data exceeds the get response limits - bytes', async () => {
         const bigTree = {};
         for (let i = 0; i < 10; i++) {
           bigTree[i] = {};
@@ -881,7 +881,35 @@ describe('Blockchain Node', () => {
         });
       });
 
-      it('returns error when requested data exceeds the get response limits (siblings)', async () => {
+      // the same as the previous test case but is_shallow option
+      it('returns a correct value with is_shallow option', async () => {
+        const bigTree = {};
+        for (let i = 0; i < 10; i++) {
+          bigTree[i] = {};
+          for (let j = 0; j < 1000; j++) {
+            bigTree[i][j] = 'a';
+          }
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: bigTree, // 77820 bytes (using object-sizeof)
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          is_shallow: true  // w/ is_shallow option
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(undefined);
+        });
+      });
+
+      it('returns error when requested data exceeds the get response limits - siblings', async () => {
         const wideTree = {};
         for (let i = 0; i < 1000; i++) {
           wideTree[i] = 'a';
@@ -906,9 +934,34 @@ describe('Blockchain Node', () => {
                   .includes('The data exceeds the max sibling limit of the requested node'), true);
         });
       });
+
+      // the same as the previous test case but is_partial option
+      it('returns a correct value with is_partial option', async () => {
+        const wideTree = {};
+        for (let i = 0; i < 1000; i++) {
+          wideTree[i] = 'a';
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: wideTree, // 1000 siblings
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          is_partial: true  // w/ is_partial option
+        })
+        .then(res => {
+          expect(res.result.result['#end_label']).to.equal('393938');
+        });
+      });
     });
 
-    describe('json-rpc: ain_matchFunction api', () => {
+    describe('json-rpc api: ain_matchFunction', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
@@ -936,7 +989,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('json-rpc: ain_matchRule api', () => {
+    describe('json-rpc api: ain_matchRule', () => {
       it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
