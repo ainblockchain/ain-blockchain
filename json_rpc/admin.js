@@ -9,16 +9,15 @@ const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
 const { JSON_RPC_METHODS } = require('./constants');
 
-function checkCompatibility(valueA, valueB) {
-  if (CommonUtil.isBool(valueA)) {
-    return CommonUtil.isBool(valueB);
-  } else if (CommonUtil.isIntegerString(valueA) || CommonUtil.isFloatString(valueA)) {
-    return CommonUtil.isIntegerString(valueB) || CommonUtil.isFloatString(valueB);
-  } else if (CommonUtil.isArray(valueA) || CommonUtil.isWildcard(valueA)) {
-    return CommonUtil.isArray(valueB) || CommonUtil.isWildcard(valueB);
+function convertValue(valueFromNodeParam, value) {
+  if (CommonUtil.isBool(valueFromNodeParam)) {
+    return CommonUtil.convertEnvVarInputToBool(value);
+  } else if (CommonUtil.isIntegerString(valueFromNodeParam) || CommonUtil.isFloatString(valueFromNodeParam)) {
+    return Number(value);
+  } else if (CommonUtil.isArray(valueFromNodeParam) || CommonUtil.isWildcard(valueFromNodeParam)) {
+    return CommonUtil.getWhitelistFromString(value);
   } else {
-    // TODO(kriii): Decide how to work on the object (e.g. TRAFFIC_STATS_PERIOD_SECS_LIST).
-    return false;
+    return value;
   }
 }
 
@@ -82,19 +81,19 @@ module.exports = function getAdminApis(node) {
         return;
       }
 
-      if (!checkCompatibility(NodeConfigs[param], args.message.value)) {
+      if (!CommonUtil.isString(args.message.value)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.ADMIN_VALUE_INCOMPATIBLE,
-            message: `(${args.message.value}) is incompatible with param [${param}]: ${JSON.stringify(NodeConfigs[param])}`
+            code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
+            message: `(${args.message.value}) is not a string type.)}`
           }
         }));
         return;
       }
 
-      NodeConfigs[param] = args.message.value;
+      NodeConfigs[param] = convertValue(NodeConfigs[param], args.message.value);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({
@@ -140,6 +139,18 @@ module.exports = function getAdminApis(node) {
           result: {
             code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
             message: `Param [${param}] is not a whitelist`
+          }
+        }));
+        return;
+      }
+
+      if (!CommonUtil.isString(args.message.value)) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
+            message: `(${args.message.value}) is not a string type.)}`
           }
         }));
         return;
@@ -206,6 +217,18 @@ module.exports = function getAdminApis(node) {
           result: {
             code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
             message: `Param [${param}] is not a whitelist`
+          }
+        }));
+        return;
+      }
+
+      if (!CommonUtil.isString(args.message.value)) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
+            message: `(${args.message.value}) is not a string type.)}`
           }
         }));
         return;
