@@ -29,19 +29,24 @@ module.exports = function getAdminApis(node) {
       const verified = node.verifyNodeAccountSignature(args.message, args.signature);
       if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_GET_NODE_PARAM || !verified) {
         const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done({ code: 403, message: 'Forbidden' });
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
+            message: `Forbidden request.`
+          }
+        }));
         return;
       }
 
       const param = args.message.param;
       const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+      trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
       if (NodeConfigs[param] === undefined) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not exist.`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] does not exist.`
           }
         }));
       } else {
@@ -55,7 +60,12 @@ module.exports = function getAdminApis(node) {
       if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_SET_NODE_PARAM || !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done({ code: 403, message: 'Forbidden' });
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
+            message: `Forbidden request.`
+          }
+        }));
         return;
       }
 
@@ -65,8 +75,8 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not exists.`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] does not exists.`
           }
         }));
         return;
@@ -77,7 +87,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.VALUE_INCOMPATIBLE,
+            code: JsonRpcApiResultCode.ADMIN_VALUE_INCOMPATIBLE,
             message: `(${args.message.value}) is incompatible with param [${param}]: ${JSON.stringify(NodeConfigs[param])}`
           }
         }));
@@ -101,7 +111,12 @@ module.exports = function getAdminApis(node) {
       if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_ADD_TO_WHITELIST_NODE_PARAM || !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done({ code: 403, message: 'Forbidden' });
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
+            message: `Forbidden request.`
+          }
+        }));
         return;
       }
 
@@ -111,8 +126,8 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not exists.`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] does not exists.`
           }
         }));
         return;
@@ -123,8 +138,8 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not whitelist`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] is not a whitelist`
           }
         }));
         return;
@@ -139,7 +154,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.ALREADY_IN_WHITELIST,
+            code: JsonRpcApiResultCode.ADMIN_ALREADY_IN_WHITELIST,
             message: `(${args.message.value}) already in whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
           }
         }));
@@ -177,8 +192,8 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not exists.`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] does not exists.`
           }
         }));
         return;
@@ -189,8 +204,8 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.PARAM_INVALID,
-            message: `Param [${param}] is not whitelist`
+            code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
+            message: `Param [${param}] is not a whitelist`
           }
         }));
         return;
@@ -204,7 +219,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
-            code: JsonRpcApiResultCode.NOT_IN_WHITELIST,
+            code: JsonRpcApiResultCode.ADMIN_NOT_IN_WHITELIST,
             message: `(${args.message.value}) not in whitelist [${param}]: ${JSON.stringify(NodeConfigs[param])}`
           }
         }));
