@@ -53,7 +53,6 @@ function usage() {
   console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 private_key');
   console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic');
   console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file');
-  console.log('node tools/api-access/getDevClientApiIpWhitelist.js http://localhost:8081 0 keystore "*"');
   process.exit(0);
 }
 
