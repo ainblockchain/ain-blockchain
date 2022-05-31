@@ -94,6 +94,7 @@ module.exports = function getAdminApis(node) {
       }
 
       NodeConfigs[param] = convertValue(NodeConfigs[param], args.message.value);
+      // TODO(kriii): Add a refresher for some params.
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({
