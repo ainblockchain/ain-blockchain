@@ -75,7 +75,7 @@ module.exports = function getAdminApis(node) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
             code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
-            message: `Param [${param}] does not exists.`
+            message: `Param [${param}] does not exist.`
           }
         }));
         return;
@@ -126,7 +126,7 @@ module.exports = function getAdminApis(node) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
             code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
-            message: `Param [${param}] does not exists.`
+            message: `Param [${param}] does not exist.`
           }
         }));
         return;
@@ -204,7 +204,7 @@ module.exports = function getAdminApis(node) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: {
             code: JsonRpcApiResultCode.ADMIN_PARAM_INVALID,
-            message: `Param [${param}] does not exists.`
+            message: `Param [${param}] does not exist.`
           }
         }));
         return;
