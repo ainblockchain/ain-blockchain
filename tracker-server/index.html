@@ -5,6 +5,12 @@
 <meta charset='utf-8'>
 <script src='https://d3js.org/d3.v3.min.js'></script>
 <body id="body" style ="height:100vh;">
+  <div>
+    <button>Load</button>
+  </div>
+  <div>
+    <button id="refresh-button" onClick="window.location.reload();">Refresh</button>
+  </div>
   <script>
     const body = document.getElementById("body");
     const width = body.clientWidth;
