@@ -1281,45 +1281,55 @@ describe("state-node", () => {
 
       const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true);
       assert.deepEqual(labelsWithEndLabel1.list, []);
+      assert.deepEqual(labelsWithEndLabel1.serialList, []);
       expect(labelsWithEndLabel1.endLabel).to.equal(null);
       const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel1.list, []);
+      assert.deepEqual(nodesWithEndLabel1.serialList, []);
       expect(nodesWithEndLabel1.endLabel).to.equal(null);
 
       parent1.setChild(label1, child1);
       parent1.setChild(label2, child2);
       const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true);
       assert.deepEqual(labelsWithEndLabel2.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [2, 5]);
       expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c32');
       const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel2.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [2, 5]);
       expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c32');
 
       parent1.setChild(label3, child3);
       const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true);
       // skip label3
       assert.deepEqual(labelsWithEndLabel3.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel3.serialList, [2, 5]);
       expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c32');
       const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true);
       // skip child3
       assert.deepEqual(nodesWithEndLabel3.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel3.serialList, [2, 5]);
       expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c32');
 
       parent1.deleteChild(label2);
       const labelsWithEndLabel4 = parent1.getChildLabelsWithEndLabel(true);
       assert.deepEqual(labelsWithEndLabel4.list, ['label1', 'label3']);
+      assert.deepEqual(labelsWithEndLabel4.serialList, [2, 7]);
       expect(labelsWithEndLabel4.endLabel).to.equal('6c6162656c33');
       const nodesWithEndLabel4 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel4.list, [child1, child3]);
+      assert.deepEqual(nodesWithEndLabel4.serialList, [2, 7]);
       expect(nodesWithEndLabel4.endLabel).to.equal('6c6162656c33');
 
       parent1.deleteChild(label3);
       parent1.deleteChild(label1);
       const labelsWithEndLabel5 = parent1.getChildLabelsWithEndLabel(true);
       assert.deepEqual(labelsWithEndLabel5.list, []);
+      assert.deepEqual(labelsWithEndLabel5.serialList, []);
       expect(labelsWithEndLabel5.endLabel).to.equal(null);
       const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel5.list, []);
+      assert.deepEqual(nodesWithEndLabel5.serialList, []);
       expect(nodesWithEndLabel5.endLabel).to.equal(null);
 
       // Restore GET_RESP_MAX_SIBLINGS value.
@@ -1335,47 +1345,57 @@ describe("state-node", () => {
 
       const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(labelsWithEndLabel1.list, []);
+      assert.deepEqual(labelsWithEndLabel1.serialList, []);
       expect(labelsWithEndLabel1.endLabel).to.equal(null);
       const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(nodesWithEndLabel1.list, []);
+      assert.deepEqual(nodesWithEndLabel1.serialList, []);
       expect(nodesWithEndLabel1.endLabel).to.equal(null);
 
       parent1.setChild(label1, child1);
       parent1.setChild(label2, child2);
       const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(labelsWithEndLabel2.list, ['label2']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [5]);
       expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c32');
       const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(nodesWithEndLabel2.list, [child2]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [5]);
       expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c32');
 
       parent1.setChild(label3, child3);
       const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
       // skip label1
       assert.deepEqual(labelsWithEndLabel3.list, ['label2', 'label3']);
+      assert.deepEqual(labelsWithEndLabel3.serialList, [5, 7]);
       expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c33');
       const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
       // skip child1
       assert.deepEqual(nodesWithEndLabel3.list, [child2, child3]);
+      assert.deepEqual(nodesWithEndLabel3.serialList, [5, 7]);
       expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c33');
 
       parent1.deleteChild(label2);
       const labelsWithEndLabel4 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
       // skip label1
       assert.deepEqual(labelsWithEndLabel4.list, ['label3']);
+      assert.deepEqual(labelsWithEndLabel4.serialList, [7]);
       expect(labelsWithEndLabel4.endLabel).to.equal('6c6162656c33');
       const nodesWithEndLabel4 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
       // skip child1
       assert.deepEqual(nodesWithEndLabel4.list, [child3]);
+      assert.deepEqual(nodesWithEndLabel4.serialList, [7]);
       expect(nodesWithEndLabel4.endLabel).to.equal('6c6162656c33');
 
       parent1.deleteChild(label3);
       parent1.deleteChild(label1);
       const labelsWithEndLabel5 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(labelsWithEndLabel5.list, []);
+      assert.deepEqual(labelsWithEndLabel5.serialList, []);
       expect(labelsWithEndLabel5.endLabel).to.equal(null);
       const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
       assert.deepEqual(nodesWithEndLabel5.list, []);
+      assert.deepEqual(nodesWithEndLabel5.serialList, []);
       expect(nodesWithEndLabel5.endLabel).to.equal(null);
 
       // Restore GET_RESP_MAX_SIBLINGS value.
@@ -1393,23 +1413,29 @@ describe("state-node", () => {
 
       const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true);
       assert.deepEqual(labelsWithEndLabel1.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel1.serialList, [2, 5]);
       expect(labelsWithEndLabel1.endLabel).to.equal('6c6162656c32');
       const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true);
       assert.deepEqual(nodesWithEndLabel1.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel1.serialList, [2, 5]);
       expect(nodesWithEndLabel1.endLabel).to.equal('6c6162656c32');
 
       const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c32');
       assert.deepEqual(labelsWithEndLabel2.list, ['label3']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [7]);
       expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c33');
       const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c32');
       assert.deepEqual(nodesWithEndLabel2.list, [child3]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [7]);
       expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c33');
 
       const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c33');
       assert.deepEqual(labelsWithEndLabel3.list, []);
+      assert.deepEqual(labelsWithEndLabel3.serialList, []);
       expect(labelsWithEndLabel3.endLabel).to.equal(null);
       const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c33');
       assert.deepEqual(nodesWithEndLabel3.list, []);
+      assert.deepEqual(nodesWithEndLabel3.serialList, []);
       expect(nodesWithEndLabel3.endLabel).to.equal(null);
 
       // Restore GET_RESP_MAX_SIBLINGS value.

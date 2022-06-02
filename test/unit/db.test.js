@@ -342,26 +342,32 @@ describe("DB operations", () => {
       it('getValue to retrieve value near top of database with isPartial = true and lastEndLabel', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
           'ai': {
-            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            "#serial": 2,
           },
           'increment': {
-            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 5,
           },
           'decrement': {
-            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 7,
           },
           'nested': {
-            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f"
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
+            "#serial": 9,
           },
           'shards': {
-            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
           },
           "#end_label": "736861726473"
         })
         // lastEndLabel = "736861726472" ("736861726473" - 1)
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "736861726472" }), {
           'shards': {
-            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
           },
           "#end_label": "736861726473"
         })
@@ -377,25 +383,30 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
           "ai": {
-            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            "#serial": 2,
           },
           "decrement": {
-            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 7,
           },
           "#end_label": "64656372656d656e74"
         })
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "64656372656d656e74" }), {
           "increment": {
-            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 5,
           },
           "nested": {
-            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f"
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
+            "#serial": 9,
           },
           "#end_label": "6e6573746564"
         })
         assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "6e6573746564" }), {
           "shards": {
-            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
           },
           "#end_label": "736861726473"
         })
@@ -1037,6 +1048,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true }), {
           "some": {
             "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5",
+            "#serial": 2,
           },
           "#end_label": "736f6d65"
         });
@@ -1044,6 +1056,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true, lastEndLabel: "736f6d64" }), {
           "some": {
             "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5",
+            "#serial": 2,
           },
           "#end_label": "736f6d65"
         });
@@ -1314,17 +1327,20 @@ describe("DB operations", () => {
       it('getRule to retrieve existing rule config with isPartial = true and lastEndLabel', () => {
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true }), {
           "some": {
-            "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
+            "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038",
+            "#serial": 2,
           },
           "syntax": {
-            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732"
+            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732",
+            "#serial": 5,
           },
           "#end_label": "73796e746178"
         });
         // lastEndLabel = "73796e746177" ("73796e746178" - 1)
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true, lastEndLabel: "73796e746177" }), {
           "syntax": {
-            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732"
+            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732",
+            "#serial": 5,
           },
           "#end_label": "73796e746178"
         });
@@ -1874,6 +1890,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true }), {
           "some": {
             "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80",
+            "#serial": 2,
           },
           "#end_label": "736f6d65"
         })
@@ -1881,6 +1898,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true, lastEndLabel: "736f6d64" }), {
           "some": {
             "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80",
+            "#serial": 2,
           },
           "#end_label": "736f6d65"
         })

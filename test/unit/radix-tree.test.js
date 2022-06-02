@@ -2915,14 +2915,14 @@ describe("radix-tree", () => {
 
         const labelsWithEndLabel = tree.getChildStateLabelsWithEndLabel(true, '000bbb');
         assert.deepEqual(labelsWithEndLabel.list, [
-          label22,
           label21,
+          label22,
         ]);
         expect(labelsWithEndLabel.endLabel).to.equal('000bbb222');
         const nodesWithEndLabel = tree.getChildStateNodesWithEndLabel(true, '000bbb');
         assert.deepEqual(nodesWithEndLabel.list, [
-          stateNode22,
           stateNode21,
+          stateNode22,
         ]);
         expect(nodesWithEndLabel.endLabel).to.equal('000bbb222');
 
