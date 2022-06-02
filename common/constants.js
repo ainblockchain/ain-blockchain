@@ -132,11 +132,11 @@ setNodeConfigs();
 
 // ** Enums **
 /**
- * Message types for communication between nodes.
+ * Types of P2P network messages.
  *
  * @enum {string}
  */
-const MessageTypes = {
+const P2pMessageTypes = {
   ADDRESS_REQUEST: 'ADDRESS_REQUEST',
   ADDRESS_RESPONSE: 'ADDRESS_RESPONSE',
   CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
@@ -804,7 +804,7 @@ module.exports = {
   TimerFlagEnabledBandageMap,
   BlockchainParams,
   NodeConfigs,
-  MessageTypes,
+  P2pMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   PredefinedDbPaths,
