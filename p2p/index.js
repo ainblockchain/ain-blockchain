@@ -10,7 +10,7 @@ const {
   DevFlags,
   BlockchainConsts,
   NodeConfigs,
-  MessageTypes,
+  P2pMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
@@ -512,7 +512,7 @@ class P2pClient {
 
   broadcastConsensusMessage(consensusMessage, tags = []) {
     tags.push(this.server.node.account.address);
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage, tags });
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.CONSENSUS, { message: consensusMessage, tags });
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -554,7 +554,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Failed to get a peer for SNAPSHOT_CHUNK_REQUEST`);
       return;
     }
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.SNAPSHOT_CHUNK_REQUEST, {});
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.SNAPSHOT_CHUNK_REQUEST, {});
     if (!payload) {
       logger.error(`[${LOG_HEADER}] The request for snapshot chunks couldn't be sent because ` +
           `of msg encapsulation failure.`);
@@ -586,7 +586,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
       logger.error(`[${LOG_HEADER}] The request for chain segment couldn't be sent because ` +
           `of msg encapsulation failure.`);
@@ -622,7 +622,7 @@ class P2pClient {
       return;
     }
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.OLD_CHAIN_SEGMENT_REQUEST, { oldestBlockNumber });
+        P2pMessageTypes.OLD_CHAIN_SEGMENT_REQUEST, { oldestBlockNumber });
     if (!payload) {
       logger.error(`[${LOG_HEADER}] The request for old chain segment couldn't be sent because ` +
           `of msg encapsulation failure.`);
@@ -633,7 +633,7 @@ class P2pClient {
 
   broadcastTransaction(transaction, tags = []) {
     tags.push(this.server.node.account.address);
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.TRANSACTION, { transaction, tags });
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.TRANSACTION, { transaction, tags });
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -667,7 +667,7 @@ class P2pClient {
       logger.error('The signaure is not correctly generated. Discard the message!');
       return false;
     }
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
       logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
@@ -719,11 +719,11 @@ class P2pClient {
       switch (parsedMessage.type) {
         // NOTE(minsulee2): Now, a distribution of peer nodes are fused in the tracker and node.
         // To integrate the role, TrackerMessageTypes PEER_INFO_REQUEST and PEER_INFO_REPONSE will
-        // be moved from tracker into peer node and be combined into MessageTypes ADDRESS_RESPONSE
-        // and ADDRESS_REQUEST.
-        case MessageTypes.ADDRESS_RESPONSE:
+        // be moved from tracker into peer node and be combined into
+        // P2pMessageTypes ADDRESS_RESPONSE and ADDRESS_REQUEST.
+        case P2pMessageTypes.ADDRESS_RESPONSE:
           const dataVersionCheckForAddress =
-              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_RESPONSE);
+              this.server.checkDataProtoVer(dataProtoVer, P2pMessageTypes.ADDRESS_RESPONSE);
           if (dataVersionCheckForAddress < 0) {
             // TODO(minsulee2): need to convert message when updating ADDRESS_RESPONSE necessary.
             // this.convertAddressMessage();
@@ -771,7 +771,7 @@ class P2pClient {
             this.updateNodeInfoToTracker();
           }
           break;
-        case MessageTypes.SNAPSHOT_CHUNK_RESPONSE:
+        case P2pMessageTypes.SNAPSHOT_CHUNK_RESPONSE:
           if (this.server.node.state !== BlockchainNodeStates.STATE_SYNCING &&
               this.server.node.state !== BlockchainNodeStates.SERVING) {
             logger.error(`[${LOG_HEADER}] Not ready to process snapshot chunk response.\n` +
@@ -781,7 +781,7 @@ class P2pClient {
             return;
           }
           const dataVersionCheckForSnapshotChunk =
-              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.SNAPSHOT_CHUNK_RESPONSE);
+              this.server.checkDataProtoVer(dataProtoVer, P2pMessageTypes.SNAPSHOT_CHUNK_RESPONSE);
           if (dataVersionCheckForSnapshotChunk > 0) {
             logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
                 `version(${dataProtoVer}). Discard the SNAPSHOT_CHUNK_RESPONSE message.`);
@@ -801,7 +801,7 @@ class P2pClient {
               `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
           await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, blockNumber, socket);
           break;
-        case MessageTypes.CHAIN_SEGMENT_RESPONSE:
+        case P2pMessageTypes.CHAIN_SEGMENT_RESPONSE:
           if (this.server.node.state !== BlockchainNodeStates.CHAIN_SYNCING &&
               this.server.node.state !== BlockchainNodeStates.SERVING) {
             logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
@@ -811,7 +811,7 @@ class P2pClient {
             return;
           }
           const dataVersionCheckForChainSegment =
-              this.server.checkDataProtoVer(dataProtoVer, MessageTypes.CHAIN_SEGMENT_RESPONSE);
+              this.server.checkDataProtoVer(dataProtoVer, P2pMessageTypes.CHAIN_SEGMENT_RESPONSE);
           if (dataVersionCheckForChainSegment > 0) {
             logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
                 `version(${dataProtoVer}). Discard the CHAIN_SEGMENT_RESPONSE message.`);
@@ -829,7 +829,7 @@ class P2pClient {
               `${JSON.stringify(chainSegment, null, 2)}`);
           await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
-        case MessageTypes.OLD_CHAIN_SEGMENT_RESPONSE:
+        case P2pMessageTypes.OLD_CHAIN_SEGMENT_RESPONSE:
           const oldChainSegment = _.get(parsedMessage, 'data.oldChainSegment');
           const segmentSize = CommonUtil.isArray(oldChainSegment) ? oldChainSegment.length : 0;
           const fromBlockNumber = segmentSize > 0 ? oldChainSegment[0].number : -1;
@@ -1365,7 +1365,7 @@ class P2pClient {
   }
 
   updateStatusToPeer(socket, address) {
-    const payload = P2pUtil.encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.PEER_INFO_UPDATE, this.getStatus());
     if (!payload) {
       logger.error('The message cannot be sent because of msg encapsulation failure.');
       return;
