@@ -839,6 +839,86 @@ describe('Blockchain Node', () => {
         });
       });
 
+      it('returns the correct value with is_shallow = true', () => {
+        const expected = 100;
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          is_shallow: true  // w/ is_shallow = true
+        })
+        .then(res => {
+          expect(res.result.result).to.equal(expected);
+        });
+      });
+
+      it('returns the correct value with is_partial = true', () => {
+        const expected = 100;
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          is_partial: true  // w/ is_partial = true
+        })
+        .then(res => {
+          expect(res.result.result).to.equal(expected);
+        });
+      });
+
+      it('returns the correct object value', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value"
+        })
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "some": {
+              "path": 100
+            }
+          });
+        });
+      });
+
+      it('returns the correct object value with is_shallow = true', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value",
+          is_shallow: true  // w/ is_shallow = true
+        })
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "some": {
+              "#state_ph": "0x1f8ea4b70d822143cd8545d3c248ac33f14c60053c86d2b44ee6bb9381c21d62"
+            }
+          });
+        });
+      });
+
+      it('returns the correct object value with is_partial = true', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value",
+          is_partial: true  // w/ is_partial = true
+        })
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "#end_label": "736f6d65",
+            "some": {
+              "#serial": 2,
+              "#state_ph": "0x1f8ea4b70d822143cd8545d3c248ac33f14c60053c86d2b44ee6bb9381c21d62",
+            }
+          });
+        });
+      });
+
       it('returns error when invalid op_list is given', () => {
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
@@ -881,8 +961,8 @@ describe('Blockchain Node', () => {
         });
       });
 
-      // the same as the previous test case but is_shallow option
-      it('returns a correct value with is_shallow option', async () => {
+      // the same as the previous test case but is_shallow = true
+      it('returns a correct value with is_shallow = true', async () => {
         const bigTree = {};
         for (let i = 0; i < 10; i++) {
           bigTree[i] = {};
@@ -902,7 +982,7 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
-          is_shallow: true  // w/ is_shallow option
+          is_shallow: true  // w/ is_shallow = true
         })
         .then(res => {
           expect(res.result.result.code).to.equal(undefined);
@@ -935,8 +1015,8 @@ describe('Blockchain Node', () => {
         });
       });
 
-      // the same as the previous test case but is_partial option
-      it('returns a correct value with is_partial option', async () => {
+      // the same as the previous test case but is_partial = true
+      it('returns a correct value with is_partial = true', async () => {
         const wideTree = {};
         for (let i = 0; i < 1000; i++) {
           wideTree[i] = 'a';
@@ -953,7 +1033,7 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
-          is_partial: true  // w/ is_partial option
+          is_partial: true  // w/ is_partial = true
         })
         .then(res => {
           expect(res.result.result['#end_label']).to.equal('393938');
