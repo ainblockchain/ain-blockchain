@@ -82,7 +82,13 @@
       });
     }
 
-    // draw({ /* replace this */ });
+    function sanitizeInitData() {
+      return initData.replace(/&#34;/g, '"');
+    }
+
+    const initData = "<%= data %>";
+    const sanitized = sanitizeInitData(initData);
+    draw(JSON.parse(sanitized));
 
     document.getElementById('json-file').addEventListener('change', () => {
       const jsonFile = document.getElementById("json-file").files[0];
