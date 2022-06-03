@@ -1,16 +1,16 @@
 {
   "nodes": [
     {
-      "address": "t"
+      "address": "0x000"
     },
     {
-      "address": "e"
+      "address": "0x001"
     },
     {
-      "address": "s"
+      "address": "0x002"
     },
     {
-      "address": "t"
+      "address": "0x003"
     },
     {
       "address": "foo"
