@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "address": "0x000"
+    },
+    {
+      "address": "0x001"
+    },
+    {
+      "address": "0x002"
+    },
+    {
+      "address": "0x003"
+    },
+    {
+      "address": "foo"
+    },
+    {
+      "address": "bar"
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 1,
+      "weight": 1
+    },
+    {
+      "source": 1,
+      "target": 2,
+      "weight": 1
+    },
+    {
+      "source": 2,
+      "target": 3,
+      "weight": 1
+    },
+    {
+      "source": 4,
+      "target": 2,
+      "weight": 1
+    },
+    {
+      "source": 5,
+      "target": 1,
+      "weight": 1
+    }
+  ]
+}
