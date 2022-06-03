@@ -6,78 +6,92 @@
 <script src='https://d3js.org/d3.v3.min.js'></script>
 <body id="body" style ="height:100vh;">
   <div>
-    <button>Load</button>
+    <input type="file" id="json-file" accept=".json">
   </div>
   <div>
     <button id="refresh-button" onClick="window.location.reload();">Refresh</button>
   </div>
-  <script>
-    const body = document.getElementById("body");
-    const width = body.clientWidth;
-    const height = body.clientHeight;
-    const data = { /* replace this */ };
 
-    const svg = d3.select('body').append('svg')
-      .attr('width', width)
-      .attr('height', height);
+  <script type="text/javascript">
+    function draw(data) {
+      const body = document.getElementById("body");
+      const width = body.clientWidth;
+      const height = body.clientHeight;
 
-    const force = d3.layout.force()
-      .gravity(.05)
-      .distance(100)
-      .charge(-500)
-      .size([width, height])
-      .nodes(data.nodes)
-      .links(data.links)
-      .start();
+      const svg = d3.select('body').append('svg')
+        .attr('width', width)
+        .attr('height', height);
 
-    // build triangle
-    svg.append('svg:defs').selectAll('marker')
-      .data(['end'])
-      .enter().append('svg:marker')
-      .attr('id', String)
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 15)
-      .attr('refY', -1.5)
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .attr('orient', 'auto')
-      .append('svg:path')
-      .attr('d', 'M0,-5L10,0L0,5');
+      const force = d3.layout.force()
+        .gravity(.05)
+        .distance(100)
+        .charge(-500)
+        .size([width, height])
+        .nodes(data.nodes)
+        .links(data.links)
+        .start();
 
-    const link = svg
-      .selectAll('line')
-      .data(data.links)
-      .enter()
-      .append('line')
-      .attr('stroke', '#aaa')
-      .style('stroke-width', d => Math.sqrt(d.weight));
+      // build triangle
+      svg.append('svg:defs').selectAll('marker')
+        .data(['end'])
+        .enter().append('svg:marker')
+        .attr('id', String)
+        .attr('viewBox', '0 -5 10 10')
+        .attr('refX', 15)
+        .attr('refY', -1.5)
+        .attr('markerWidth', 6)
+        .attr('markerHeight', 6)
+        .attr('orient', 'auto')
+        .append('svg:path')
+        .attr('d', 'M0,-5L10,0L0,5');
 
-    const node = svg
-      .selectAll('node')
-      .data(data.nodes)
-      .enter()
-      .append('g')
-      .call(force.drag);
+      const link = svg
+        .selectAll('line')
+        .data(data.links)
+        .enter()
+        .append('line')
+        .attr('stroke', '#aaa')
+        .style('stroke-width', d => Math.sqrt(d.weight));
 
-    node.append('circle')
-      .attr('stroke', '#fff')
-      .attr('stroke-width', '1px')
-      .attr('fill', '#555')
-      .attr('r', '5');
+      const node = svg
+        .selectAll('node')
+        .data(data.nodes)
+        .enter()
+        .append('g')
+        .call(force.drag);
 
-    node.append('text')
-      .attr('dx', 12)
-      .attr('dy', '.35em')
-      .attr('stroke', '#333')
-      .text(d => d.address );
+      node.append('circle')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', '1px')
+        .attr('fill', '#555')
+        .attr('r', '5');
 
-    force.on('tick', () => {
-      link.attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y)
-        .attr('marker-end', 'url(#end)');
-      node.attr('transform', d => { return 'translate(' + d.x + ',' + d.y + ')'; });
+      node.append('text')
+        .attr('dx', 12)
+        .attr('dy', '.35em')
+        .attr('stroke', '#333')
+        .text(d => d.address);
+
+      force.on('tick', () => {
+        link.attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y)
+          .attr('marker-end', 'url(#end)');
+        node.attr('transform', d => { return 'translate(' + d.x + ',' + d.y + ')'; });
+      });
+    }
+
+    // draw({ /* replace this */ });
+
+    document.getElementById('json-file').addEventListener('change', () => {
+      const jsonFile = document.getElementById("json-file").files[0];
+      const fileReader = new FileReader();
+      fileReader.onload = function (e) {
+        const json = JSON.parse(e.target.result);
+        draw(json)
+      };
+      fileReader.readAsText(jsonFile);
     });
   </script>
 </body>
