@@ -1,0 +1,49 @@
+{
+  "nodes": [
+    {
+      "address": "t"
+    },
+    {
+      "address": "e"
+    },
+    {
+      "address": "s"
+    },
+    {
+      "address": "t"
+    },
+    {
+      "address": "foo"
+    },
+    {
+      "address": "bar"
+    }
+  ],
+  "links": [
+    {
+      "source": 0,
+      "target": 1,
+      "weight": 1
+    },
+    {
+      "source": 1,
+      "target": 2,
+      "weight": 1
+    },
+    {
+      "source": 2,
+      "target": 3,
+      "weight": 1
+    },
+    {
+      "source": 4,
+      "target": 2,
+      "weight": 1
+    },
+    {
+      "source": 5,
+      "target": 1,
+      "weight": 1
+    }
+  ]
+}
