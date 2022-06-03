@@ -383,6 +383,7 @@ class RadixTree {
     const labelList = nodesWithEndLabel.list.map(entry => entry.getLabel());
     return {
       list: labelList,
+      serialList: nodesWithEndLabel.serialList,
       endLabel: nodesWithEndLabel.endLabel,
     };
   }
@@ -391,11 +392,18 @@ class RadixTree {
     const maxListSize = isPartial ? NodeConfigs.GET_RESP_MAX_SIBLINGS : null;
     const nodeListWithEndLabel =
         this.root.getChildStateNodeListWithEndLabel(maxListSize, lastEndLabel);
-    const sortedNodeList = nodeListWithEndLabel.list
-        .sort((a, b) => a.serial - b.serial)
-        .map(entry => entry.stateNode);
+    const sorted = CommonUtil.isString(lastEndLabel) ?
+        nodeListWithEndLabel.list : // Skip sorting
+        nodeListWithEndLabel.list.sort((a, b) => a.serial - b.serial);
+    const stateNodeList = [];
+    const serialList = [];
+    for (const entry of sorted) {
+      stateNodeList.push(entry.stateNode);
+      serialList.push(entry.serial);
+    }
     return {
-      list: sortedNodeList,
+      list: stateNodeList,
+      serialList,
       endLabel: nodeListWithEndLabel.endLabel,
     };
   }

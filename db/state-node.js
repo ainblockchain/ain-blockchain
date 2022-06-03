@@ -126,7 +126,6 @@ class StateNode {
   /**
    * Converts this sub-tree to a js object.
    */
-  // TODO(platfowner): Return node serials with the end label for partial results merging.
   toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
     const isPartial = options && options.isPartial;
@@ -143,7 +142,8 @@ class StateNode {
     if (isPartial) {
       obj[`${StateLabelProperties.END_LABEL}`] = childLabelsWithEndLabel.endLabel;
     }
-    for (const label of childLabelsWithEndLabel.list) {
+    for (let i = 0; i < childLabelsWithEndLabel.list.length; i++) {
+      const label = childLabelsWithEndLabel.list[i];
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
@@ -164,6 +164,10 @@ class StateNode {
         obj[label] = (isShallow || isPartial) ?
             { [`${StateLabelProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
             childNode.toStateSnapshot(options);
+        if (isPartial) {
+          const serial = childLabelsWithEndLabel.serialList[i];
+          obj[label][`${StateLabelProperties.SERIAL}`] = serial;
+        }
       }
     }
     if (includeVersion) {
