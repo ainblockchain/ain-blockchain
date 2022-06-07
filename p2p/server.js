@@ -9,6 +9,7 @@ const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
 const sizeof = require('object-sizeof');
+const ip = require('ip');
 const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
@@ -36,8 +37,7 @@ const {
   sendGetRequest,
   signAndSendTx,
   sendTxAndWaitForFinalization,
-  getIpAddress,
-  convertIpv6ToIpv4
+  getIpAddress
 } = require('../common/network-util');
 const P2pUtil = require('./p2p-util');
 const PathUtil = require('../common/path-util');
@@ -391,11 +391,12 @@ class P2pServer {
   /**
    * Returns true if the socket ip address is the same as the given p2p url ip address,
    * false otherwise.
-   * @param {string} ipv4Address is ipv4 socket._socket.remoteAddress
-   * @param {string} url is peerInfo.networkStatus.urls.p2p.url
+   * @param {string} ipAddress can be both ipv4 or ipv6 socket._socket.remoteAddress.
+   * @param {string} url is peerInfo.networkStatus.urls.p2p.url.
    */
-  checkIpAddressFromPeerInfo(ipv4Address, url) {
-    return url.includes(ipv4Address);
+  checkIpAddressFromPeerInfo(ipAddress, url) {
+    const fromUrl = new URL(url);
+    return ip.isEqual(ipAddress, fromUrl.hostname);
   }
 
   setServerSidePeerEventHandlers(socket, url) {
@@ -522,8 +523,7 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const ipv4Address = convertIpv6ToIpv4(socket._socket.remoteAddress);
-                if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
+                if (this.checkIpAddressFromPeerInfo(socket._socket.remoteAddress, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
