@@ -10,7 +10,6 @@ const {
   getRegexpList,
   isWildcard
 } = require('../common/common-util');
-const { convertIpv6ToIpv4 } = require('../common/network-util');
 const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
@@ -48,8 +47,7 @@ class Middleware {
   ipWhitelistLimiter() {
     return ipWhitelist((ip) => {
       return isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-          matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-          matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+          matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
     })
   }
 
