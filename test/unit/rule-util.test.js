@@ -344,6 +344,38 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isValidIpV6", () => {
+    it("when invalid input", () => {
+      expect(util.isValidIpV6(true)).to.equal(false);
+      expect(util.isValidIpV6(false)).to.equal(false);
+      expect(util.isValidIpV6(0)).to.equal(false);
+      expect(util.isValidIpV6(10)).to.equal(false);
+      expect(util.isValidIpV6(null)).to.equal(false);
+      expect(util.isValidIpV6(undefined)).to.equal(false);
+      expect(util.isValidIpV6(Infinity)).to.equal(false);
+      expect(util.isValidIpV6(NaN)).to.equal(false);
+      expect(util.isValidIpV6('')).to.equal(false);
+      expect(util.isValidIpV6('abc')).to.equal(false);
+      expect(util.isValidIpV6('0')).to.equal(false);
+      expect(util.isValidIpV6([10])).to.equal(false);
+      expect(util.isValidIpV6({a: 'A'})).to.equal(false);
+      expect(util.isValidIpV6('0x')).to.equal(false);
+      expect(util.isValidIpV6('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidIpV6('ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV6('https://*.ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36:8080/json-rpc')).to.equal(false);
+      expect(util.isValidIpV6('172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('https://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36:8080')).to.equal(false);
+      expect(util.isValidIpV6('https://172.16.0.36:9000')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidIpV6('::ffff:172.20.10.2')).to.equal(true);
+    })
+  })
+
   describe("isValidUrlWhitelistItem", () => {
     it("when invalid input", () => {
       expect(util.isValidUrlWhitelistItem(true)).to.equal(false);
