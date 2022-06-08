@@ -152,6 +152,10 @@ class CommonUtil {
     return ruleUtil.isValidPrivateUrl(url);
   }
 
+  static isValidIpV6(ipAddress) {
+    return ruleUtil.isValidIpV6(ipAddress);
+  }
+
   static isWildcard(value) {
     return value === '*';
   }
