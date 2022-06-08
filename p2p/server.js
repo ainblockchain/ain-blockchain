@@ -391,7 +391,7 @@ class P2pServer {
   /**
    * Returns true if the socket ip address is the same as the given p2p url ip address,
    * false otherwise.
-   * @param {string} ipAddress can be both ipv4 or ipv6 socket._socket.remoteAddress.
+   * @param {string} ipAddress can be either ipv4 or ipv6 socket._socket.remoteAddress.
    * @param {string} url is peerInfo.networkStatus.urls.p2p.url.
    */
   checkIpAddressFromPeerInfo(ipAddress, url) {
