@@ -342,6 +342,11 @@ describe("P2P Util", () => {
       const undefinedValue = undefined;
       const arrayValue = [];
       const objectValue = {};
+      const url1 = 'ainetwork.ai';
+      const url2 = 'https://*.ainetwork.ai';
+      const url3 = 'http://172.16.0.36:8080';
+      const url4 = 'http://172.16.0.36';
+      const url5 = 'http://172.16.0.36:8080/json-rpc';
 
       expect(util.isValidIpAddress(stringValue)).to.be.false;
       expect(util.isValidIpAddress(numberValue)).to.be.false;
@@ -350,6 +355,11 @@ describe("P2P Util", () => {
       expect(util.isValidIpAddress(undefinedValue)).to.be.false;
       expect(util.isValidIpAddress(arrayValue)).to.be.false;
       expect(util.isValidIpAddress(objectValue)).to.be.false;
+      expect(util.isValidIpAddress(url1)).to.be.false;
+      expect(util.isValidIpAddress(url2)).to.be.false;
+      expect(util.isValidIpAddress(url3)).to.be.false;
+      expect(util.isValidIpAddress(url4)).to.be.false;
+      expect(util.isValidIpAddress(url5)).to.be.false;
     });
 
     it("returns true if valid ip address is set", () => {
