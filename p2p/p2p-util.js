@@ -168,8 +168,7 @@ class P2pUtil {
   }
 
   static isValidIpAddress(ipAddress) {
-    return CommonUtil.isValidUrl(ipAddress) || CommonUtil.isValidPrivateUrl(ipAddress) ||
-        CommonUtil.isValidIpV6(ipAddress);
+    return CommonUtil.isValidIpV4(ipAddress) || CommonUtil.isValidIpV6(ipAddress);
   }
 
   /**
