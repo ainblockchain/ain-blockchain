@@ -302,4 +302,26 @@ describe("P2P Util", () => {
       expect(util.verifySignedMessage(mockMessage, address)).to.equal(true);
     });
   });
+
+  describe("checkIpAddressFromPeerInfo", () => {
+    it("returns false if invalid ip formats come", () => {
+      const url = 'ws://172.20.10.2:5002/';
+      const stringValue = 'stringValue';
+      const numberValue = 123456789;
+      const booleanValue = true;
+      const nullValue = null;
+      const undefinedValue = undefined;
+
+      expect(util.checkIpAddressFromPeerInfo(stringValue, url)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(numberValue, url)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(booleanValue, url)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(nullValue, url)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(undefinedValue, url)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(url, stringValue)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(url, numberValue)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(url, booleanValue)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(url, nullValue)).to.be.false;
+      expect(util.checkIpAddressFromPeerInfo(url, undefinedValue)).to.be.false;
+    });
+  });
 });

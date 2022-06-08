@@ -511,8 +511,9 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const remoteAddress = _.get(socket, '_socket.remoteAddress');
-                if (P2pUtil.checkIpAddressFromPeerInfo(remoteAddress, p2pUrl)) {
+                const ipAddressFromSocket = _.get(socket, '_socket.remoteAddress');
+                const ipAddressFromPeerInfo = P2pUtil.toHostname(p2pUrl);
+                if (P2pUtil.checkIpAddressFromPeerInfo(ipAddressFromSocket, ipAddressFromPeerInfo)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
