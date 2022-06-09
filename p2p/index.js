@@ -63,6 +63,7 @@ class P2pClient {
     // 4. Start peer discovery process
     await this.discoverPeerWithGuardingFlag();
     this.setIntervalForPeerCandidatesConnection();
+    this.setIntervalForOldPeerCandidatesRemoval();
 
     // 5. Set up blockchain node
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
@@ -446,6 +447,13 @@ class P2pClient {
         await this.tryReorgPeerConnections();
       }
     }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
+  }
+
+  setIntervalForOldPeerCandidatesRemoval() {
+    console.log('added')
+    this.intervalOldPeerCandidatesRemoval = setInterval(async () => {
+      console.log('test');
+    }, NodeConfigs.OLD_PEER_CANDIDATES_REMOVAL_INTERVAL_MS);
   }
 
   clearIntervalForPeerCandidateConnection() {
