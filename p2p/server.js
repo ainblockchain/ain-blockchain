@@ -36,8 +36,7 @@ const {
   sendGetRequest,
   signAndSendTx,
   sendTxAndWaitForFinalization,
-  getIpAddress,
-  convertIpv6ToIpv4
+  getIpAddress
 } = require('../common/network-util');
 const P2pUtil = require('./p2p-util');
 const PathUtil = require('../common/path-util');
@@ -388,16 +387,6 @@ class P2pServer {
     return 0;
   }
 
-  /**
-   * Returns true if the socket ip address is the same as the given p2p url ip address,
-   * false otherwise.
-   * @param {string} ipv4Address is ipv4 socket._socket.remoteAddress
-   * @param {string} url is peerInfo.networkStatus.urls.p2p.url
-   */
-  checkIpAddressFromPeerInfo(ipv4Address, url) {
-    return url.includes(ipv4Address);
-  }
-
   setServerSidePeerEventHandlers(socket, url) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', async (message) => {
@@ -522,8 +511,9 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const ipv4Address = convertIpv6ToIpv4(socket._socket.remoteAddress);
-                if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
+                const ipAddressFromSocket = _.get(socket, '_socket.remoteAddress');
+                const ipAddressFromPeerInfo = P2pUtil.toHostname(p2pUrl);
+                if (P2pUtil.checkIpAddressFromPeerInfo(ipAddressFromSocket, ipAddressFromPeerInfo)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);

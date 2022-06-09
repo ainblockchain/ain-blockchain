@@ -8,6 +8,7 @@
 const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
+const ip = require('ip');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   BlockchainConsts,
@@ -154,6 +155,34 @@ class P2pUtil {
           comparingUrl1.port === comapringUrl2.port;
     } else {
       return url1 === url2;
+    }
+  }
+
+  static toHostname(url) {
+    try {
+      const fromUrl = new URL(url);
+      return fromUrl.hostname;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static isValidIpAddress(ipAddress) {
+    return CommonUtil.isValidIpV4(ipAddress) || CommonUtil.isValidIpV6(ipAddress);
+  }
+
+  /**
+   * Returns true if the socket ip address is the same as the given p2p url ip address,
+   * false otherwise.
+   * @param {string} ipAddressFromSocket can be either ipv4 or ipv6 socket._socket.remoteAddress.
+   * @param {string} ipAddressFromPeerInfo is peerInfo.networkStatus.urls.p2p.url.
+   */
+  static checkIpAddressFromPeerInfo(ipAddressFromSocket, ipAddressFromPeerInfo) {
+    if (!P2pUtil.isValidIpAddress(ipAddressFromSocket) ||
+        !P2pUtil.isValidIpAddress(ipAddressFromPeerInfo)) {
+        return false;
+    } else {
+      return ip.isEqual(ipAddressFromSocket, ipAddressFromPeerInfo);
     }
   }
 }

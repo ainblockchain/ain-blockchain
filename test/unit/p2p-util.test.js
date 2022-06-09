@@ -302,4 +302,95 @@ describe("P2P Util", () => {
       expect(util.verifySignedMessage(mockMessage, address)).to.equal(true);
     });
   });
+
+  describe("toHostname", () => {
+    it("returns null if invalid url format is given", () => {
+      const stringValue = 'stringValue';
+      const numberValue = 123456789;
+      const booleanValue = true;
+      const nullValue = null;
+      const undefinedValue = undefined;
+      const arrayValue = [];
+      const objectValue = {};
+      const onlyIpAddress = '172.20.10.2';
+
+      expect(util.toHostname(stringValue)).to.be.null;
+      expect(util.toHostname(numberValue)).to.be.null;
+      expect(util.toHostname(booleanValue)).to.be.null;
+      expect(util.toHostname(nullValue)).to.be.null;
+      expect(util.toHostname(undefinedValue)).to.be.null;
+      expect(util.toHostname(arrayValue)).to.be.null;
+      expect(util.toHostname(objectValue)).to.be.null;
+      expect(util.toHostname(onlyIpAddress)).to.be.null;
+    });
+
+    it("returns hostname if valid url is specified", () => {
+      const validHttpValue = 'http://172.20.10.2:8080';
+      const validWsValue = 'ws://172.20.10.2:8080';
+
+      expect(util.toHostname(validHttpValue)).to.equal('172.20.10.2');
+      expect(util.toHostname(validWsValue)).to.equal('172.20.10.2');
+    });
+  });
+
+  describe("isValidIpAddress", () => {
+    it("returns false if invalid ipAddress is given", () => {
+      const stringValue = 'stringValue';
+      const numberValue = 123456789;
+      const booleanValue = true;
+      const nullValue = null;
+      const undefinedValue = undefined;
+      const arrayValue = [];
+      const objectValue = {};
+      const url1 = 'ainetwork.ai';
+      const url2 = 'https://*.ainetwork.ai';
+      const url3 = 'http://172.16.0.36:8080';
+      const url4 = 'http://172.16.0.36';
+      const url5 = 'http://172.16.0.36:8080/json-rpc';
+
+      expect(util.isValidIpAddress(stringValue)).to.be.false;
+      expect(util.isValidIpAddress(numberValue)).to.be.false;
+      expect(util.isValidIpAddress(booleanValue)).to.be.false;
+      expect(util.isValidIpAddress(nullValue)).to.be.false;
+      expect(util.isValidIpAddress(undefinedValue)).to.be.false;
+      expect(util.isValidIpAddress(arrayValue)).to.be.false;
+      expect(util.isValidIpAddress(objectValue)).to.be.false;
+      expect(util.isValidIpAddress(url1)).to.be.false;
+      expect(util.isValidIpAddress(url2)).to.be.false;
+      expect(util.isValidIpAddress(url3)).to.be.false;
+      expect(util.isValidIpAddress(url4)).to.be.false;
+      expect(util.isValidIpAddress(url5)).to.be.false;
+    });
+
+    it("returns true if valid ip address is set", () => {
+      const ipV4 = '172.20.10.2';
+      const ipV6 = '::ffff:172.20.10.2';
+
+      expect(util.isValidIpAddress(ipV4)).to.be.true;
+      expect(util.isValidIpAddress(ipV6)).to.be.true;
+    });
+  });
+
+  describe("checkIpAddressFromPeerInfo", () => {
+    it("returns false if the give ip addresses are not the same", () => {
+      const ip1 = '172.20.10.1';
+      const ip2 = '172.20.10.2';
+
+      expect(util.checkIpAddressFromPeerInfo(ip1, ip2)).to.be.false;
+    });
+
+    it("returns true if the given ips are the same", () => {
+      const ip1 = '172.20.10.1';
+      const ip2 = '172.20.10.1';
+
+      expect(util.checkIpAddressFromPeerInfo(ip1, ip2)).to.be.true;
+    });
+
+    it("works also with mix matches", () => {
+      const ipV4 = '172.20.10.2';
+      const ipV6 = '::ffff:172.20.10.2';
+
+      expect(util.checkIpAddressFromPeerInfo(ipV4, ipV6)).to.be.true;
+    });
+  });
 });
