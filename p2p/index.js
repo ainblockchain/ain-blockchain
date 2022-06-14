@@ -63,7 +63,6 @@ class P2pClient {
     // 4. Start peer discovery process
     await this.discoverPeerWithGuardingFlag();
     this.setIntervalForPeerCandidatesConnection();
-    this.setIntervalForOldPeerCandidatesRemoval();
 
     // 5. Set up blockchain node
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
@@ -447,30 +446,6 @@ class P2pClient {
         await this.tryReorgPeerConnections();
       }
     }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
-  }
-
-  async removeOldPeerCandidates() {
-    const LOG_HEADER = 'removeOldPeerCandidates';
-    for (let entry of this.peerCandidates.entries()) {
-      const jsonRpcEndpoint = entry[0];
-      try {
-        const response = await sendGetRequest(
-            jsonRpcEndpoint, JSON_RPC_METHODS.NET_CONSENSUS_STATUS, { });
-        const isHealthy = _.get(response, 'data.result.result.health');
-        if (!isHealthy) {
-          this.peerCandidates.delete(jsonRpcEndpoint);
-        }
-      } catch (error) {
-        logger.error(`[${LOG_HEADER}] ${error}`);
-        continue;
-      }
-    }
-  }
-
-  setIntervalForOldPeerCandidatesRemoval() {
-    this.intervalOldPeerCandidatesRemoval = setInterval(async () => {
-      await this.removeOldPeerCandidates();
-    }, NodeConfigs.OLD_PEER_CANDIDATES_REMOVAL_INTERVAL_MS);
   }
 
   clearIntervalForPeerCandidateConnection() {
