@@ -799,7 +799,10 @@ class P2pServer {
     if (this.node.state !== BlockchainNodeStates.SERVING) {
       logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state})`);
       this.client.requestChainSegment();
-      return;
+      return {
+        tx_hash: null,
+        result: false
+      };
     }
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
