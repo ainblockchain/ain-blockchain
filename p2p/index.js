@@ -61,7 +61,7 @@ class P2pClient {
     }
 
     // 4. Start peer discovery process
-    await this.discoverPeerWithGuardingFlag();
+    await this.discoverNewPeer();
     this.setIntervalForPeerCandidatesConnection();
 
     // 5. Set up blockchain node
@@ -352,8 +352,8 @@ class P2pClient {
     }
   }
 
-  async discoverPeerWithGuardingFlag() {
-    const LOG_HEADER = 'discoverPeerWithGuardingFlag';
+  async discoverNewPeer() {
+    const LOG_HEADER = 'discoverNewPeer';
     if (!this.isConnectingToPeerCandidates) {
       this.peerConnectionStartedAt = Date.now();
       try {
@@ -433,7 +433,7 @@ class P2pClient {
       this.steadyIntervalCount = 0;
       this.disconnectRandomPeer();
       this.updateP2pState();
-      await this.discoverPeerWithGuardingFlag();
+      await this.discoverNewPeer();
     }
   }
 
@@ -441,7 +441,7 @@ class P2pClient {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       this.updateP2pState();
       if (this.p2pState === P2pNetworkStates.EXPANDING) {
-        await this.discoverPeerWithGuardingFlag();
+        await this.discoverNewPeer();
       } else if (this.p2pState === P2pNetworkStates.STEADY) {
         await this.tryReorgPeerConnections();
       }
