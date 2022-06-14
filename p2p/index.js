@@ -347,9 +347,49 @@ class P2pClient {
       if (notQueriedCandidateEntries.length > 0) {
         return _.shuffle(notQueriedCandidateEntries)[0][0];
       } else {
-        return _.shuffle(this.peerCandidates.keys())[0];
+        return _.shuffle([...this.peerCandidates.entries()])[0][0];
       }
     }
+  }
+
+  getMyJsonRpcUrl() {
+    return _.get(this.server.urls, 'jsonRpc.url', '');
+  }
+
+  async sendP2pGetPeerCandidateInfoRequest(peerCandidateJsonRpcUrl) {
+    const myJsonRpcUrl = this.getMyJsonRpcUrl();
+    if (P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
+      return null;
+    }
+    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '') {
+      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
+      throw new Error(`Wrong peerCandidateJsonRpcUrl(${peerCandidateJsonRpcUrl})`);
+    }
+    const resp = await sendGetRequest(
+        peerCandidateJsonRpcUrl, JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO, { });
+    const peerCandidateInfo = _.get(resp, 'data.result.result');
+    if (!peerCandidateInfo) {
+      throw new Error(`Invalid peerCandidateInfo from peer candidate url (${peerCandidateInfo}).`);
+    }
+    return peerCandidateInfo;
+  }
+
+  setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo) {
+    const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    const address = _.get(peerCandidateInfo, 'address');
+    if (!jsonRpcUrl || !address) {
+      throw new Error('peerCandidateInfo is not correctly set.' +
+          `(${JSON.stringify(peerCandidateInfo)})`);
+    }
+    this.setPeerCandidate(jsonRpcUrl, address, Date.now());
+    const myJsonRpcUrl = this.getMyJsonRpcUrl();
+    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
+    Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
+      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
+          P2pUtil.checkPeerWhitelist(address)) {
+        this.setPeerCandidate(url, address, null);
+      }
+    });
   }
 
   async discoverNewPeer() {
@@ -357,12 +397,25 @@ class P2pClient {
     if (!this.isConnectingToPeerCandidates) {
       this.peerConnectionStartedAt = Date.now();
       try {
+        // 1. Semaphore on
         this.isConnectingToPeerCandidates = true;
-        const nextPeerCandidate = this.assignRandomPeerCandidate();
-        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+        // 2. Take a random peer
+        const nextPeerCandidateJsonRpcUrl = this.assignRandomPeerCandidate();
+        // 3. Ask peer candidate info
+        const peerCandidateInfo =
+            await this.sendP2pGetPeerCandidateInfoRequest(nextPeerCandidateJsonRpcUrl);
+        if (peerCandidateInfo) {
+          // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
+          // use the json rpc url in response instead.
+          // 4. Update peerCandidate
+          this.setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo);
+          // 5. Try to connect to peer candidates
+          await this.connectWithPeerCandidateUrl(peerCandidateInfo);
+        }
       } catch (e) {
         logger.error(`[${LOG_HEADER}] ${e}`);
       } finally {
+        // 6. Semaphore off
         this.isConnectingToPeerCandidates = false;
       }
     }
@@ -1168,43 +1221,14 @@ class P2pClient {
    * @param {string} peerCandidateJsonRpcUrl should be something like
    * http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
-  async connectWithPeerCandidateUrl(peerCandidateJsonRpcUrl) {
+  async connectWithPeerCandidateUrl(peerCandidateInfo) {
     const LOG_HEADER = 'connectWithPeerCandidateUrl';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
-    const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
-    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
-        P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
-      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
-      return;
-    }
-    const resp = await sendGetRequest(
-        peerCandidateJsonRpcUrl, JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO, { });
-    const peerCandidateInfo = _.get(resp, 'data.result.result');
-    if (!peerCandidateInfo) {
-      logger.error(`Invalid peer candidate info from peer candidate url ` +
-          `(${peerCandidateJsonRpcUrl}).`);
-      return;
-    }
-    // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
-    // use the json rpc url in response instead.
-    const jsonRpcUrlFromResp = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!jsonRpcUrlFromResp) {
-      logger.error(`Invalid peer candidate json rpc url from peer candidate url ` +
-          `(${peerCandidateJsonRpcUrl}).`);
-      return;
-    }
-    if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.setPeerCandidate(jsonRpcUrlFromResp, address, Date.now());
-    }
-    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
-    Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
-          P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidate(url, address, null);
-      }
-    });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
+    if (!address || !newPeerP2pUrlList) {
+      throw new Error(`Wrong peerCandidateInfo(${JSON.stringify(peerCandidateInfo)})`);
+    }
     const newPeerP2pUrlListWithoutMyUrl = Object.entries(newPeerP2pUrlList)
       .filter(([address, p2pUrl]) => {
         return P2pUtil.checkPeerWhitelist(address) && p2pUrl !== myP2pUrl;
