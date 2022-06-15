@@ -2,6 +2,7 @@ const {
   ReadDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  DevFlags,
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -18,35 +19,55 @@ module.exports = function getDatabaseApis(node) {
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           retVal = node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          result = retVal.error !== undefined ? retVal.error : retVal.result;
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            result = retVal;
+          } else {
+            result = retVal.error !== undefined ? retVal.error : retVal.result;
+          }
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_RULE:
           retVal = node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          result = retVal.error !== undefined ? retVal.error : retVal.result;
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            result = retVal;
+          } else {
+            result = retVal.error !== undefined ? retVal.error : retVal.result;
+          }
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_FUNCTION:
           retVal = node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          result = retVal.error !== undefined ? retVal.error : retVal.result;
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            result = retVal;
+          } else {
+            result = retVal.error !== undefined ? retVal.error : retVal.result;
+          }
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_OWNER:
           retVal = node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          result = retVal.error !== undefined ? retVal.error : retVal.result;
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            result = retVal;
+          } else {
+            result = retVal.error !== undefined ? retVal.error : retVal.result;
+          }
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET:
           retVal = node.db.getWithError(args.op_list);
-          result = retVal.error !== undefined ? retVal.error : retVal.result;
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            result = retVal;
+          } else {
+            result = retVal.error !== undefined ? retVal.error : retVal.result;
+          }
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -54,12 +75,24 @@ module.exports = function getDatabaseApis(node) {
         default:
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({
-            result: {
-              code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
-              message: 'Invalid get operation'
-            }
-          }));
+          if (DevFlags.enableErrorResultSeparationForGetApis) {
+            done(null, JsonRpcUtil.addProtocolVersion({
+              result: {
+                result: null,
+                error: {
+                  code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+                  message: 'Invalid get operation'
+                }
+              }
+            }));
+          } else {
+            done(null, JsonRpcUtil.addProtocolVersion({
+              result: {
+                code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+                message: 'Invalid get operation'
+              }
+            }));
+          }
       }
     },
 
