@@ -12,35 +12,41 @@ module.exports = function getDatabaseApis(node) {
   return {
     [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
       const beginTime = Date.now();
+      let retVal;
       let result;
       let latency;
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
-          result = node.db.getValue(args.ref, CommonUtil.toGetOptions(args, true));
+          retVal = node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
+          result = retVal.error !== undefined ? retVal.error : retVal.result;
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_RULE:
-          result = node.db.getRule(args.ref, CommonUtil.toGetOptions(args, true));
+          retVal = node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
+          result = retVal.error !== undefined ? retVal.error : retVal.result;
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_FUNCTION:
-          result = node.db.getFunction(args.ref, CommonUtil.toGetOptions(args, true));
+          retVal = node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
+          result = retVal.error !== undefined ? retVal.error : retVal.result;
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_OWNER:
-          result = node.db.getOwner(args.ref, CommonUtil.toGetOptions(args, true));
+          retVal = node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
+          result = retVal.error !== undefined ? retVal.error : retVal.result;
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET:
-          result = node.db.get(args.op_list);
+          retVal = node.db.getWithError(args.op_list);
+          result = retVal.error !== undefined ? retVal.error : retVal.result;
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
