@@ -118,7 +118,8 @@ app.get('/last_block_number', (req, res, next) => {
 
 app.get('/get_value', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const retVal = node.db.getValueWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -132,7 +133,8 @@ app.get('/get_value', (req, res, next) => {
 
 app.get('/get_function', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const retVal = node.db.getFunctionWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -146,7 +148,8 @@ app.get('/get_function', (req, res, next) => {
 
 app.get('/get_rule', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const retVal = node.db.getRuleWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -160,7 +163,8 @@ app.get('/get_rule', (req, res, next) => {
 
 app.get('/get_owner', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const retVal = node.db.getOwnerWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -331,7 +335,8 @@ app.post('/eval_owner', (req, res, next) => {
 
 app.post('/get', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.get(req.body.op_list);
+  const retVal = node.db.getWithError(req.body.op_list);
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
