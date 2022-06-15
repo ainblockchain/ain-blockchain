@@ -194,10 +194,12 @@ module.exports = function getAdminApis(node) {
       if (_.get(args.message, 'method') !== JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM || !verified) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
-        done({
-          code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
-          message: `Forbidden request.`
-        });
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
+            message: `Forbidden request.`
+          }
+        }));
         return;
       }
 
