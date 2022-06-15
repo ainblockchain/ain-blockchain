@@ -1377,6 +1377,7 @@ class DB {
         'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
     if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
       return {
+        result_list: null,
         code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
         message: `The transaction exceeds the max op_list size limit: ` +
             `${opList.length} > ${setOpListSizeLimit}`
