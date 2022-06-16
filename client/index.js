@@ -119,18 +119,8 @@ app.get('/last_block_number', (req, res, next) => {
 app.get('/get_value', (req, res, next) => {
   const beginTime = Date.now();
   const retVal = node.db.getValueWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  let code;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    code = result.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  } else {
-    code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  }
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
+  const code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -139,24 +129,26 @@ app.get('/get_value', (req, res, next) => {
       code,
       result
     })
+    .end();
+});
+
+app.get('/get_value_v2', (req, res, next) => {
+  const beginTime = Date.now();
+  const retVal = node.db.getValueWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  retVal.code = retVal.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send(retVal)
     .end();
 });
 
 app.get('/get_function', (req, res, next) => {
   const beginTime = Date.now();
   const retVal = node.db.getFunctionWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  let code;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    code = result.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  } else {
-    code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  }
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
+  const code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -165,24 +157,26 @@ app.get('/get_function', (req, res, next) => {
       code,
       result
     })
+    .end();
+});
+
+app.get('/get_function_v2', (req, res, next) => {
+  const beginTime = Date.now();
+  const retVal = node.db.getFunctionWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  retVal.code = retVal.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send(retVal)
     .end();
 });
 
 app.get('/get_rule', (req, res, next) => {
   const beginTime = Date.now();
   const retVal = node.db.getRuleWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  let code;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    code = result.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  } else {
-    code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  }
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
+  const code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -194,21 +188,23 @@ app.get('/get_rule', (req, res, next) => {
     .end();
 });
 
+app.get('/get_rule_v2', (req, res, next) => {
+  const beginTime = Date.now();
+  const retVal = node.db.getRuleWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  retVal.code = retVal.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send(retVal)
+    .end();
+});
+
 app.get('/get_owner', (req, res, next) => {
   const beginTime = Date.now();
   const retVal = node.db.getOwnerWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  let code;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    code = result.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  } else {
-    code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  }
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
+  const code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -217,6 +213,18 @@ app.get('/get_owner', (req, res, next) => {
       code,
       result
     })
+    .end();
+});
+
+app.get('/get_owner_v2', (req, res, next) => {
+  const beginTime = Date.now();
+  const retVal = node.db.getOwnerWithError(req.query.ref, CommonUtil.toGetOptions(req.query, true));
+  retVal.code = retVal.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send(retVal)
     .end();
 });
 
@@ -380,18 +388,8 @@ app.post('/eval_owner', (req, res, next) => {
 app.post('/get', (req, res, next) => {
   const beginTime = Date.now();
   const retVal = node.db.getWithError(req.body.op_list);
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  let code;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    code = result.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  } else {
-    code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
-  }
+  const result = retVal.error !== undefined ? retVal.error : retVal.result;
+  const code = result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -400,6 +398,18 @@ app.post('/get', (req, res, next) => {
       code,
       result
     })
+    .end();
+});
+
+app.post('/get_v2', (req, res, next) => {
+  const beginTime = Date.now();
+  const retVal = node.db.getWithError(req.body.op_list);
+  retVal.code = retVal.error === undefined ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send(retVal)
     .end();
 });
 
