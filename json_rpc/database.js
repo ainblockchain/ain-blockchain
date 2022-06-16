@@ -21,7 +21,7 @@ function handleGetRequest(args, node) {
     case ReadDbOperations.GET:
       return node.db.getWithError(args.op_list);
     default:
-      return result = {
+      return {
         result: null,
         error: {
           code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
