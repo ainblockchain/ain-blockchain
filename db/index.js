@@ -785,7 +785,7 @@ class DB {
   }
 
   getWithError(opList) {
-    if (!CommonUtil.isArray(opList)) {
+    if (!CommonUtil.isArray(opList) || CommonUtil.isEmpty(opList)) {
       return {
         result: null,
         error: {

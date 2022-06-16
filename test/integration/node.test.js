@@ -725,6 +725,39 @@ describe('Blockchain Node', () => {
           ]
         });
       })
+
+      it('get with empty op_list', () => {
+        const request = {
+          op_list: [  // empty op_list
+          ]
+        };
+        const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 40001,
+          "error": {
+            "code": 30006,
+            "message": "Invalid op_list given"
+          },
+          "result": null
+        });
+      })
+
+      it('get with null op_list', () => {
+        const request = {
+          op_list: null  // null op_list
+        };
+        const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 40001,
+          "error": {
+            "code": 30006,
+            "message": "Invalid op_list given"
+          },
+          "result": null
+        });
+      })
     })
 
     describe('get_state_proof api', () => {
@@ -919,7 +952,22 @@ describe('Blockchain Node', () => {
         });
       });
 
-      it('returns error when invalid op_list is given', () => {
+      it('returns error when empty op_list is given', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET',
+          op_list: [  // empty op_list
+          ]
+        })
+        .then(res => {
+          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.error.message).to.equal('Invalid op_list given');
+        });
+      });
+
+      it('returns error when null op_list is given', () => {
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
