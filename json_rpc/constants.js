@@ -4,6 +4,7 @@ const JSON_RPC_METHODS = {
   AIN_EVAL_RULE: 'ain_evalRule',
   AIN_EVAL_OWNER: 'ain_evalOwner',
   AIN_GET: 'ain_get',
+  AIN_GET_V2: 'ain_getV2',
   AIN_GET_ADDRESS: 'ain_getAddress',
   AIN_GET_BALANCE: 'ain_getBalance',
   AIN_GET_BLOCK_BY_HASH: 'ain_getBlockByHash',
