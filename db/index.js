@@ -497,25 +497,38 @@ class DB {
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
     const isGlobal = options && options.isGlobal;
-    if (!stateRoot) return null;
+    if (!stateRoot) {
+      return {
+        result: null
+      };
+    }
     const parsedPath = CommonUtil.parsePath(refPath);
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
-      return null;
+      return {
+        result: null
+      };
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
     const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
     if (stateNode === null) {
-      return null;
+      return {
+        result: null
+      };
     }
     if (options && options.fromApi) {
       const limitChecked = DB.checkRespTreeLimits(stateNode, options);
       if (limitChecked !== true) {
-        return limitChecked;
+        return {
+          result: null,
+          error: limitChecked,
+        };
       }
     }
-    return stateNode.toStateSnapshot(options);
+    return {
+      result: stateNode.toStateSnapshot(options)
+    };
   }
 
   readDatabase(refPath, rootLabel, options) {
@@ -525,18 +538,34 @@ class DB {
   }
 
   getValue(valuePath, options) {
+    return this.getValueWithError(valuePath, options).result;
+  }
+
+  getValueWithError(valuePath, options) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
 
   getFunction(functionPath, options) {
+    return this.getFunctionWithError(functionPath, options).result;
+  }
+
+  getFunctionWithError(functionPath, options) {
     return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, options);
   }
 
   getRule(rulePath, options) {
+    return this.getRuleWithError(rulePath, options).result;
+  }
+
+  getRuleWithError(rulePath, options) {
     return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, options);
   }
 
   getOwner(ownerPath, options) {
+    return this.getOwnerWithError(ownerPath, options).result;
+  }
+
+  getOwnerWithError(ownerPath, options) {
     return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, options);
   }
 
@@ -560,7 +589,7 @@ class DB {
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, { isShallow }, []);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, { isShallow }, []).result;
   }
 
   /**
@@ -752,18 +781,28 @@ class DB {
   // TODO(platfowner): Add tests for op.fid.
   // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    return this.getWithError(opList).result;
+  }
+
+  getWithError(opList) {
     if (!CommonUtil.isArray(opList)) {
       return {
-        code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
-        message: `Invalid op_list given`
+        result: null,
+        error: {
+          code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
+          message: `Invalid op_list given`
+        },
       };
     }
     if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
       opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
       return {
-        code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
-        message: `The request exceeds the max op_list size limit of the requested node: ` +
-            `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
+        result: null,
+        error: {
+          code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+          message: `The request exceeds the max op_list size limit of the requested node: ` +
+              `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
+        }
       };
     }
     const resultList = [];
@@ -805,7 +844,9 @@ class DB {
             op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op, true)));
       }
     }
-    return resultList;
+    return {
+      result: resultList,
+    };
   }
 
   static getAccountNonceAndTimestampFromStateRoot(stateRoot, address) {
@@ -1336,6 +1377,7 @@ class DB {
         'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
     if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
       return {
+        result_list: null,
         code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
         message: `The transaction exceeds the max op_list size limit: ` +
             `${opList.length} > ${setOpListSizeLimit}`
