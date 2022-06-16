@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const {
   ReadDbOperations,
   TrafficEventTypes,
@@ -36,18 +37,13 @@ module.exports = function getDatabaseApis(node) {
     [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
       const beginTime = Date.now();
       const retVal = handleGetRequest(args, node);
-      const result = retVal.error !== undefined ? retVal.error : retVal.result;
+      const code = _.get(retVal, 'error.code', null);
+      if (code !== null) {
+        retVal.code = code;
+      }
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result }));
-    },
-
-    [JSON_RPC_METHODS.AIN_GET_V2]: function(args, done) {
-      const beginTime = Date.now();
-      const result = handleGetRequest(args, node);
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result }));
+      done(null, JsonRpcUtil.addProtocolVersion(retVal));
     },
 
     [JSON_RPC_METHODS.AIN_MATCH_FUNCTION]: function(args, done) {
