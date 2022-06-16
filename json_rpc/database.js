@@ -2,7 +2,6 @@ const {
   ReadDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
-  DevFlags,
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -10,25 +9,19 @@ const JsonRpcUtil = require('./json-rpc-util');
 const { JSON_RPC_METHODS } = require('./constants');
 
 function handleGetRequest(args, node) {
-  let retVal;
   switch (args.type) {
     case ReadDbOperations.GET_VALUE:
-      retVal = node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
-      break;
+      return node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
     case ReadDbOperations.GET_RULE:
-      retVal = node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
-      break;
+      return node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
     case ReadDbOperations.GET_FUNCTION:
-      retVal = node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
-      break;
+      return node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
     case ReadDbOperations.GET_OWNER:
-      retVal = node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
-      break;
+      return node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
     case ReadDbOperations.GET:
-      retVal = node.db.getWithError(args.op_list);
-      break;
+      return node.db.getWithError(args.op_list);
     default:
-      retVal = result = {
+      return result = {
         result: null,
         error: {
           code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
@@ -36,18 +29,20 @@ function handleGetRequest(args, node) {
         }
       };
   }
-  let result;
-  if (DevFlags.enableErrorResultSeparationForGetApis) {
-    result = retVal;
-  } else {
-    result = retVal.error !== undefined ? retVal.error : retVal.result;
-  }
-  return result;
 }
 
 module.exports = function getDatabaseApis(node) {
   return {
     [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
+      const beginTime = Date.now();
+      const retVal = handleGetRequest(args, node);
+      const result = retVal.error !== undefined ? retVal.error : retVal.result;
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({ result }));
+    },
+
+    [JSON_RPC_METHODS.AIN_GET_V2]: function(args, done) {
       const beginTime = Date.now();
       const result = handleGetRequest(args, node);
       const latency = Date.now() - beginTime;
