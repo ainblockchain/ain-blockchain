@@ -927,8 +927,9 @@ describe('Blockchain Node', () => {
           op_list: null
         })
         .then(res => {
-          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
-          expect(res.result.result.message).to.equal('Invalid op_list given');
+          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.error.message).to.equal('Invalid op_list given');
         });
       });
 
@@ -954,10 +955,10 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_value/some/path",
         })
         .then(res => {
-          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
-          expect(
-              res.result.result.message
-                  .includes('The data exceeds the max byte limit of the requested node'), true);
+          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
+          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
+          expect(res.result.error.message.includes(
+              'The data exceeds the max byte limit of the requested node'), true);
         });
       });
 
@@ -1008,10 +1009,10 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_value/some/path",
         })
         .then(res => {
-          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
-          expect(
-              res.result.result.message
-                  .includes('The data exceeds the max sibling limit of the requested node'), true);
+          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
+          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
+          expect(res.result.error.message.includes(
+              'The data exceeds the max sibling limit of the requested node'), true);
         });
       });
 
