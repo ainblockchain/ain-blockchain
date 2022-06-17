@@ -520,10 +520,7 @@ class DB {
     if (options && options.fromApi) {
       const limitChecked = DB.checkRespTreeLimits(stateNode, options);
       if (limitChecked !== true) {
-        return {
-          result: null,
-          error: limitChecked,
-        };
+        return Object.assign({ result: null }, limitChecked);
       }
     }
     return {
@@ -788,21 +785,17 @@ class DB {
     if (!CommonUtil.isArray(opList) || CommonUtil.isEmpty(opList)) {
       return {
         result: null,
-        error: {
-          code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
-          message: `Invalid op_list given`
-        },
+        code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
+        message: `Invalid op_list given`
       };
     }
     if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
       opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
       return {
         result: null,
-        error: {
-          code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
-          message: `The request exceeds the max op_list size limit of the requested node: ` +
-              `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
-        }
+        code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        message: `The request exceeds the max op_list size limit of the requested node: ` +
+            `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
       };
     }
     const resultList = [];

@@ -24,10 +24,8 @@ function handleGetRequest(args, node) {
     default:
       return {
         result: null,
-        error: {
-          code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
-          message: 'Invalid get operation'
-        }
+        code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+        message: 'Invalid get operation'
       };
   }
 }
@@ -37,10 +35,6 @@ module.exports = function getDatabaseApis(node) {
     [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
       const beginTime = Date.now();
       const retVal = handleGetRequest(args, node);
-      const code = _.get(retVal, 'error.code', null);
-      if (code !== null) {
-        retVal.code = code;
-      }
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion(retVal));
