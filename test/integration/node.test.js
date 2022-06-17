@@ -9,7 +9,6 @@ const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
-const { JsonRpcApiResultCode } = require('../../common/result-code');
 const {
   verifyStateProof,
 } = require('../../db/state-util');
@@ -956,7 +955,7 @@ describe('Blockchain Node', () => {
         })
         .then(res => {
           expect(res.result.result).to.equal(null);
-          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.code).to.equal(30006);
           expect(res.result.message).to.equal('Invalid op_list given');
         });
       });
@@ -970,7 +969,7 @@ describe('Blockchain Node', () => {
         })
         .then(res => {
           expect(res.result.result).to.equal(null);
-          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.code).to.equal(30006);
           expect(res.result.message).to.equal('Invalid op_list given');
         });
       });
@@ -998,7 +997,7 @@ describe('Blockchain Node', () => {
         })
         .then(res => {
           expect(res.result.result).to.equal(null);
-          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
+          expect(res.result.code).to.equal(30002);
           expect(res.result.message.includes(
               'The data exceeds the max byte limit of the requested node'), true);
         });
@@ -1052,7 +1051,7 @@ describe('Blockchain Node', () => {
         })
         .then(res => {
           expect(res.result.result).to.equal(null);
-          expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
+          expect(res.result.code).to.equal(30003);
           expect(res.result.message.includes(
               'The data exceeds the max sibling limit of the requested node'), true);
         });
@@ -2362,7 +2361,7 @@ describe('Blockchain Node', () => {
         }
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
-        expect(body.result.result.code).to.equal(JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT);
+        expect(body.result.result.code).to.equal(30005);
         expect(
             body.result.result.message
                 .includes('The transaction exceeds the max op_list size limit')).to.equal(true);
@@ -3972,6 +3971,58 @@ describe('Blockchain Node', () => {
         });
       })
 
+      it('rejects a transaction that exceeds the op_list size limit.', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const setOpListSizeLimit = BlockchainParams.resource.set_op_list_size_limit;
+        const opList = [];
+        for (let i = 0; i < setOpListSizeLimit + 1; i++) { // 1 more than the limit
+          opList.push({
+            type: 'SET_VALUE',
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value'
+          });
+        }
+        const txBody = {
+          operation: {
+            type: 'SET',
+            op_list: opList,
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          res.result.result.tx_hash = 'erased';
+          assert.deepEqual(res.result, {
+            "protoVer": BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            "result": {
+              "result": {
+                "code": 30005,
+                "gas_amount_charged": 0,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 0
+                  },
+                  "state": {
+                    "service": 0
+                  }
+                },
+                "gas_cost_total": 0,
+                "message": "The transaction exceeds the max op_list size limit: 51 > 50",
+                "result_list": null,
+              },
+              "tx_hash": "erased"
+            }
+          });
+        })
+      })
+
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
@@ -4327,7 +4378,7 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('accepts a batch transaction of under transaction list size limit.', () => {
+      it('accepts a batch transaction of under the tx_list size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const timestamp = Date.now();
         const txBodyTemplate = {
@@ -4363,7 +4414,7 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('rejects a batch transaction of over transaction list size limit.', () => {
+      it('rejects a batch transaction of over the tx_list size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const timestamp = Date.now();
         const txBodyTemplate = {
