@@ -163,7 +163,6 @@ module.exports = function getTransactionApis(node, p2pServer) {
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
             done(null, JsonRpcUtil.addProtocolVersion({
               result: null,
-              code: JsonRpcApiResultCode.BATCH_TX_EXCEEDS_SIZE_LIMIT,
               code: JsonRpcApiResultCode.BATCH_TX_MISSING_PROPERTIES,
               message: `Missing properties of transaction[${i}].`
             }));
