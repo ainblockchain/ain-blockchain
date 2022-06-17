@@ -3993,10 +3993,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30301,
-              message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
-            },
+            result: null,
+            code: 30301,
+            message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4022,10 +4021,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30302,
-              message: `Missing properties.`,
-            },
+            result: null,
+            code: 30302,
+            message: `Missing properties.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4051,10 +4049,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30303,
-              message: `Invalid transaction format.`,
-            },
+            result: null,
+            code: 30303,
+            message: `Invalid transaction format.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4080,10 +4077,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30304,
-              message: `Invalid transaction signature.`,
-            },
+            result: null,
+            code: 30304,
+            message: `Invalid transaction signature.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4323,10 +4319,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30401,
-              message: `Invalid batch transaction format.`
-            },
+            result: null,
+            code: 30401,
+            message: `Invalid batch transaction format.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4396,10 +4391,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30402,
-              message: `Batch transaction list size exceeds its limit: ${BlockchainParams.resource.batch_tx_list_size_limit}.`
-            },
+            result: null,
+            code: 30402,
+            message: `Batch transaction list size exceeds its limit: ${BlockchainParams.resource.batch_tx_list_size_limit}.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4518,10 +4512,9 @@ describe('Blockchain Node', () => {
           const resultList = _.get(res, 'result.result');
           expect(CommonUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
-            result: {
-              code: 30403,
-              message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
-            },
+            result: null,
+            code: 30403,
+            message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4556,10 +4549,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30404,
-              message: `Missing properties of transaction[1].`,
-            },
+            result: null,
+            code: 30404,
+            message: `Missing properties of transaction[1].`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4597,10 +4589,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30405,
-              message: `Invalid format of transaction[1].`
-            },
+            result: null,
+            code: 30405,
+            message: `Invalid format of transaction[1].`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4638,10 +4629,9 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
-            result: {
-              code: 30406,
-              message: `Invalid signature of transaction[1].`
-            },
+            result: null,
+            code: 30406,
+            message: `Invalid signature of transaction[1].`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
