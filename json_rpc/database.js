@@ -1,99 +1,49 @@
+const _ = require('lodash');
 const {
   ReadDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
-  DevFlags,
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const JsonRpcUtil = require('./json-rpc-util');
 const { JSON_RPC_METHODS } = require('./constants');
 
+function handleGetRequest(args, node) {
+  switch (args.type) {
+    case ReadDbOperations.GET_VALUE:
+      return node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
+    case ReadDbOperations.GET_RULE:
+      return node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
+    case ReadDbOperations.GET_FUNCTION:
+      return node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
+    case ReadDbOperations.GET_OWNER:
+      return node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
+    case ReadDbOperations.GET:
+      return node.db.getWithError(args.op_list);
+    default:
+      return {
+        result: null,
+        error: {
+          code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+          message: 'Invalid get operation'
+        }
+      };
+  }
+}
+
 module.exports = function getDatabaseApis(node) {
   return {
     [JSON_RPC_METHODS.AIN_GET]: function(args, done) {
       const beginTime = Date.now();
-      let retVal;
-      let result;
-      let latency;
-      switch (args.type) {
-        case ReadDbOperations.GET_VALUE:
-          retVal = node.db.getValueWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            result = retVal;
-          } else {
-            result = retVal.error !== undefined ? retVal.error : retVal.result;
-          }
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          return;
-        case ReadDbOperations.GET_RULE:
-          retVal = node.db.getRuleWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            result = retVal;
-          } else {
-            result = retVal.error !== undefined ? retVal.error : retVal.result;
-          }
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          return;
-        case ReadDbOperations.GET_FUNCTION:
-          retVal = node.db.getFunctionWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            result = retVal;
-          } else {
-            result = retVal.error !== undefined ? retVal.error : retVal.result;
-          }
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          return;
-        case ReadDbOperations.GET_OWNER:
-          retVal = node.db.getOwnerWithError(args.ref, CommonUtil.toGetOptions(args, true));
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            result = retVal;
-          } else {
-            result = retVal.error !== undefined ? retVal.error : retVal.result;
-          }
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          return;
-        case ReadDbOperations.GET:
-          retVal = node.db.getWithError(args.op_list);
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            result = retVal;
-          } else {
-            result = retVal.error !== undefined ? retVal.error : retVal.result;
-          }
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          return;
-        default:
-          latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          if (DevFlags.enableErrorResultSeparationForGetApis) {
-            done(null, JsonRpcUtil.addProtocolVersion({
-              result: {
-                result: null,
-                error: {
-                  code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
-                  message: 'Invalid get operation'
-                }
-              }
-            }));
-          } else {
-            done(null, JsonRpcUtil.addProtocolVersion({
-              result: {
-                code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
-                message: 'Invalid get operation'
-              }
-            }));
-          }
+      const retVal = handleGetRequest(args, node);
+      const code = _.get(retVal, 'error.code', null);
+      if (code !== null) {
+        retVal.code = code;
       }
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion(retVal));
     },
 
     [JSON_RPC_METHODS.AIN_MATCH_FUNCTION]: function(args, done) {
