@@ -23,8 +23,6 @@ const DevFlags = {
   // Enables p2p message tags checking.
   // TODO(liayoo): Add some security measures before turning this flag on.
   enableP2pMessageTagsChecking: false,
-  // Enables error-result separation for blockhain get APIs.
-  enableErrorResultSeparationForGetApis: false,
 
   // NOTE(liayoo): Below flags are added for performance optimization testing purposes.
   // Enables gas fee collection.
