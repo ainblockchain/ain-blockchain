@@ -734,12 +734,9 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {
-          "code": 40001,
-          "error": {
-            "code": 30006,
-            "message": "Invalid op_list given"
-          },
-          "result": null
+          "result": null,
+          "code": 30006,
+          "message": "Invalid op_list given"
         });
       })
 
@@ -750,12 +747,9 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/get', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {
-          "code": 40001,
-          "error": {
-            "code": 30006,
-            "message": "Invalid op_list given"
-          },
-          "result": null
+          "result": null,
+          "code": 30006,
+          "message": "Invalid op_list given"
         });
       })
     })
@@ -961,9 +955,9 @@ describe('Blockchain Node', () => {
           ]
         })
         .then(res => {
+          expect(res.result.result).to.equal(null);
           expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
-          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
-          expect(res.result.error.message).to.equal('Invalid op_list given');
+          expect(res.result.message).to.equal('Invalid op_list given');
         });
       });
 
@@ -975,9 +969,9 @@ describe('Blockchain Node', () => {
           op_list: null
         })
         .then(res => {
+          expect(res.result.result).to.equal(null);
           expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
-          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
-          expect(res.result.error.message).to.equal('Invalid op_list given');
+          expect(res.result.message).to.equal('Invalid op_list given');
         });
       });
 
@@ -1003,9 +997,9 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_value/some/path",
         })
         .then(res => {
+          expect(res.result.result).to.equal(null);
           expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
-          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
-          expect(res.result.error.message.includes(
+          expect(res.result.message.includes(
               'The data exceeds the max byte limit of the requested node'), true);
         });
       });
@@ -1057,9 +1051,9 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_value/some/path",
         })
         .then(res => {
+          expect(res.result.result).to.equal(null);
           expect(res.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
-          expect(res.result.error.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
-          expect(res.result.error.message.includes(
+          expect(res.result.message.includes(
               'The data exceeds the max sibling limit of the requested node'), true);
         });
       });
