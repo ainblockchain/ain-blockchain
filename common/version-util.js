@@ -1,6 +1,6 @@
 const semver = require('semver');
 const { BlockchainConsts } = require('../common/constants');
-const { DevClientApiResultCode } = require('../common/result-code');
+const { DevClientApiResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
 class VersionUtil {
@@ -50,7 +50,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: DevClientApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
+          code: JsonRpcApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
           message: 'Protocol version not specified.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -59,7 +59,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: DevClientApiResultCode.INVALID_PROTO_VERSION,
+          code: JsonRpcApiResultCode.PROTO_VERSION_INVALID,
           message: 'Invalid protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -69,7 +69,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: DevClientApiResultCode.INCOMPATIBLE_PROTO_VERSION,
+          code: JsonRpcApiResultCode.PROTO_VERSION_INCOMPATIBLE,
           message: 'Incompatible protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })

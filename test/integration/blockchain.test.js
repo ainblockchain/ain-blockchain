@@ -701,7 +701,7 @@ describe('Blockchain Cluster', () => {
           JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: 'a.b.c' })
           .then(res => {
-            expect(res.code).to.equal(40102);
+            expect(res.code).to.equal(30102);
             expect(res.message).to.equal("Invalid protocol version.");
           });
     });
@@ -711,7 +711,7 @@ describe('Blockchain Cluster', () => {
           JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: '0.01.0' })
           .then(res => {
-            expect(res.code).to.equal(40102);
+            expect(res.code).to.equal(30102);
             expect(res.message).to.equal("Invalid protocol version.");
           });
     });
@@ -721,7 +721,7 @@ describe('Blockchain Cluster', () => {
           JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: 'v0.1' })
           .then(res => {
-            expect(res.code).to.equal(40103);
+            expect(res.code).to.equal(30103);
             expect(res.message).to.equal("Incompatible protocol version.");
           });
     });
@@ -731,7 +731,7 @@ describe('Blockchain Cluster', () => {
           JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0, protoVer: '0.1.0' })
           .then(res => {
-            expect(res.code).to.equal(40103);
+            expect(res.code).to.equal(30103);
             expect(res.message).to.equal("Incompatible protocol version.");
           });
     });
@@ -741,7 +741,7 @@ describe('Blockchain Cluster', () => {
           JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
           { number: 0 })
           .then(res => {
-            expect(res.code).to.equal(40101);
+            expect(res.code).to.equal(30101);
             expect(res.message).to.equal("Protocol version not specified.");
           });
     });
