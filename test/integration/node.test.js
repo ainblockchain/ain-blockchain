@@ -4074,7 +4074,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30302,
-            message: `Missing properties.`,
+            message: 'Missing properties.',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4102,7 +4102,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30303,
-            message: `Invalid transaction format.`,
+            message: 'Invalid transaction format.',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4130,7 +4130,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30304,
-            message: `Invalid transaction signature.`,
+            message: 'Invalid transaction signature.',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4372,7 +4372,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30401,
-            message: `Invalid batch transaction format.`,
+            message: 'Invalid batch transaction format.',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4602,7 +4602,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30404,
-            message: `Missing properties of transaction[1].`,
+            message: 'Missing properties of transaction[1].',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
@@ -4642,7 +4642,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30405,
-            message: `Invalid format of transaction[1].`,
+            message: 'Invalid format of transaction[1].',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -4682,7 +4682,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30406,
-            message: `Invalid signature of transaction[1].`,
+            message: 'Invalid signature of transaction[1].',
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
