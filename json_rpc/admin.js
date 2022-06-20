@@ -31,7 +31,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_GET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
-          message: `Forbidden request.`
+          message: 'Forbidden request.'
         }));
         return;
       }
@@ -57,7 +57,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
-          message: `Forbidden request.`
+          message: 'Forbidden request.'
         }));
         return;
       }
@@ -78,7 +78,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
-          message: `(${args.message.value}) is not a string type.)}`
+          message: `Value '${args.message.value}' is not a string.`
         }));
         return;
       }
@@ -101,7 +101,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
-          message: `Forbidden request.`
+          message: 'Forbidden request.'
         }));
         return;
       }
@@ -132,7 +132,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
-          message: `(${args.message.value}) is not a string type.)}`
+          message: `Value '${args.message.value}' is not a string.`
         }));
         return;
       }
@@ -172,7 +172,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_FORBIDDEN_REQUEST,
-          message: `Forbidden request.`
+          message: 'Forbidden request.'
         }));
         return;
       }
@@ -203,7 +203,7 @@ module.exports = function getAdminApis(node) {
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
           code: JsonRpcApiResultCode.ADMIN_VALUE_NOT_A_STRING_TYPE,
-          message: `(${args.message.value}) is not a string type.)}`
+          message: `Value '${args.message.value}' is not a string.`
         }));
         return;
       }
