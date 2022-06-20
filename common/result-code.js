@@ -3,6 +3,8 @@
  *
  * @enum {number}
  */
+// NOTE(platfowner): The code values below need to be kept for the backward compatibility.
+// If they are altered and deployed, the full sync of the blockchain nodes can fail.
 const TxResultCode = {
   // Common code
   SUCCESS: 0,
@@ -46,6 +48,7 @@ const TxResultCode = {
   TX_INVALID_GAS_PRICE: 10714,
   TX_POOL_NOT_ENOUGH_FREE_ROOM: 10715,
   TX_POOL_NOT_ENOUGH_FREE_ROOM_FOR_ACCOUNT: 10716,
+  TX_SET_EXCEEDS_OP_LIST_SIZE_LIMIT: 30005,  // Moved from JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT
   // Billing
   BILLING_INVALID_PARAM: 10801,
   BILLING_NO_ACCOUNT_PERMISSION: 10802,
@@ -119,6 +122,8 @@ const FailedTxPrecheckCodeSet = new Set([
  *
  * @enum {number}
  */
+// NOTE(platfowner): The code values below need to be kept for the backward compatibility.
+// If they are altered and deployed, the full sync of the blockchain nodes can fail.
 const FunctionResultCode = {
   SUCCESS: 0,
   FAILURE: 20001,  // Normal failure
@@ -155,7 +160,7 @@ const JsonRpcApiResultCode = {
   GET_EXCEEDS_MAX_BYTES: 30002,
   GET_EXCEEDS_MAX_SIBLINGS: 30003,
   GET_EXCEEDS_OP_LIST_SIZE_LIMIT: 30004,
-  SET_EXCEEDS_OP_LIST_SIZE_LIMIT: 30005,
+  DEPRECATED_SET_EXCEEDS_OP_LIST_SIZE_LIMIT: 30005,  // Moved to TxResultCode.TX_SET_EXCEEDS_OP_LIST_SIZE_LIMIT
   GET_INVALID_OP_LIST: 30006,
   // ain_checkProtocolVersion
   PROTO_VERSION_NOT_SPECIFIED: 30101,
@@ -194,9 +199,6 @@ const DevClientApiResultCode = {
   // Common code
   SUCCESS: 0,
   FAILURE: 40001,
-  PROTO_VERSION_NOT_SPECIFIED: 40101,
-  INVALID_PROTO_VERSION: 40102,
-  INCOMPATIBLE_PROTO_VERSION: 40103,
 };
 
 /**
