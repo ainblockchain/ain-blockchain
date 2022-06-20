@@ -92,7 +92,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: null,
           code: JsonRpcApiResultCode.TX_MISSING_PROPERTIES,
-          message: `Missing properties.`
+          message: 'Missing properties.'
         }));
       } else {
         const chainId = node.getBlockchainParam('genesis/chain_id');
@@ -103,7 +103,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
           done(null, JsonRpcUtil.addProtocolVersion({
             result: null,
             code: JsonRpcApiResultCode.TX_INVALID_FORMAT,
-            message: `Invalid transaction format.`
+            message: 'Invalid transaction format.'
           }));
         } else {
           if (!NodeConfigs.LIGHTWEIGHT &&
@@ -112,7 +112,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
             done(null, JsonRpcUtil.addProtocolVersion({
               result: null,
               code: JsonRpcApiResultCode.TX_INVALID_SIGNATURE,
-              message: `Invalid transaction signature.`
+              message: 'Invalid transaction signature.'
             }));
           } else {
             const result = p2pServer.executeAndBroadcastTransaction(createdTx);
@@ -133,7 +133,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
         done(null, JsonRpcUtil.addProtocolVersion({
           result: null,
           code: JsonRpcApiResultCode.BATCH_INVALID_FORMAT,
-          message: `Invalid batch transaction format.`
+          message: 'Invalid batch transaction format.'
         }));
       } else if (args.tx_list.length > batchTxListSizeLimit) {
         const latency = Date.now() - beginTime;
