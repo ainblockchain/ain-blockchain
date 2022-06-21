@@ -357,7 +357,7 @@ class P2pClient {
   setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo) {
     const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!jsonRpcUrl || !address) {
+    if (!jsonRpcUrl || !this.isValidJsonRpcUrl(jsonRpcUrl) || !address) {
       throw new Error('peerCandidateInfo is not correctly set.' +
           `(${JSON.stringify(peerCandidateInfo)})`);
     }
@@ -386,6 +386,7 @@ class P2pClient {
         // 4. Try to connect to peer candidates
         await this.connectWithPeerCandidateUrl(peerCandidateInfo);
       } catch (e) {
+        this.peerCandidates.delete(jsonRpcUrl);
         logger.error(`[${LOG_HEADER}] ${e}`);
       } finally {
         // 5. Semaphore off
@@ -1176,21 +1177,19 @@ class P2pClient {
 
   /**
    * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
-   * @param {string} url is an IPv4 ip address.
+   * @param {string} url is json rpc endpoint url.
    */
   isValidJsonRpcUrl(url) {
-    if (!CommonUtil.isString(url)) {
+    const newUrl = new URL(url);
+    const urlWithProtocolAndHost = newUrl.protocol + '//' + newUrl.host;
+    if (!CommonUtil.isString(urlWithProtocolAndHost) ||
+        !(CommonUtil.isValidUrl(urlWithProtocolAndHost) || CommonUtil.isValidPrivateUrl(urlWithProtocolAndHost))) {
       return false;
     }
-    const JSON_RPC_PATH = '/json-rpc';
-    const urlWithoutJsonRpc =
-        url.endsWith(JSON_RPC_PATH) ? url.slice(0, -JSON_RPC_PATH.length) : false;
-    if (!urlWithoutJsonRpc) {
-      return urlWithoutJsonRpc;
-    } else {
-      return NodeConfigs.HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
-          CommonUtil.isValidUrl(urlWithoutJsonRpc);
+    if (newUrl.pathname !== '/json-rpc') {
+      return false;
     }
+    return true;
   }
 
   setPeerCandidate(jsonRpcUrl, address, queriedAt) {
