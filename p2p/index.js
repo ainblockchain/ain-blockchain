@@ -182,32 +182,13 @@ class P2pClient {
     return Object.fromEntries(outboundEntries);
   }
 
-  /**
-   * Returns P2p endpoint urls.
-   */
-  getPeerP2pUrlList() {
-    const outboundEntries = Object.entries(this.outbound)
-      .filter(([, peer]) => {
-        const incomingPeers =
-            _.get(peer, 'peerInfo.networkStatus.connectionStatus.incomingPeers', []);
-        const maxInbound = _.get(peer, 'peerInfo.networkStatus.connectionStatus.maxInbound', 0);
-        return incomingPeers.length < maxInbound;
-      })
-      .map(([address, peer]) => {
-        const p2pUrl = _.get(peer, 'peerInfo.networkStatus.urls.p2p.url');
-        return [address, p2pUrl];
-      });
-    return Object.fromEntries(outboundEntries);
-  }
-
   getPeerCandidateInfo() {
     return {
       address: this.server.getNodeAddress(),
       isAvailableForConnection:
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
-      peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList(),
-      newPeerP2pUrlList: this.getPeerP2pUrlList()
+      peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList()
     }
   }
 
