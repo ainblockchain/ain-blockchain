@@ -341,14 +341,13 @@ class P2pClient {
   }
 
   async sendP2pGetPeerCandidateInfoRequest(peerCandidateJsonRpcUrl) {
-    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '') {
-      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
+    if (!this.isValidJsonRpcUrl(peerCandidateJsonRpcUrl)) {
       throw new Error(`Wrong peerCandidateJsonRpcUrl(${peerCandidateJsonRpcUrl})`);
     }
     const resp = await sendGetRequest(
         peerCandidateJsonRpcUrl, JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO, { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
-    if (!peerCandidateInfo) {
+    if (!CommonUtil.isDict(peerCandidateInfo)) {
       throw new Error(`Invalid peerCandidateInfo from peer candidate url (${peerCandidateInfo}).`);
     }
     return peerCandidateInfo;
@@ -357,7 +356,7 @@ class P2pClient {
   setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo) {
     const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!jsonRpcUrl || !this.isValidJsonRpcUrl(jsonRpcUrl) || !address) {
+    if (!this.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isValAddr(address)) {
       throw new Error('peerCandidateInfo is not correctly set.' +
           `(${JSON.stringify(peerCandidateInfo)})`);
     }
@@ -1216,9 +1215,10 @@ class P2pClient {
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
       logger.info(`[${LOG_HEADER}] Try to connect(${peerCandidateP2pUrl})`);
-      const address = this.getAddrFromOutboundMapping(peerCandidateP2pUrl);
-      if (address) {
-        logger.debug(`Node ${address}(${peerCandidateP2pUrl}) is already a managed peer.`);
+      const addressFromOutbound = this.getAddrFromOutboundMapping(peerCandidateP2pUrl);
+      if (addressFromOutbound) {
+        logger.debug(`[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
+            `already a managed peer.`);
       } else {
         logger.info(`[${LOG_HEADER}] Connecting to peer(${peerCandidateP2pUrl})`);
         this.connectToPeer(peerCandidateP2pUrl);
