@@ -353,11 +353,15 @@ class P2pClient {
     return peerCandidateInfo;
   }
 
-  setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo) {
+  populatePeerCandidatesFromPeerCandidateInfo(peerCandidateInfo) {
+    const LOG_HEADER = 'populatePeerCandidatesFromPeerCandidateInfo';
     const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!this.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isValAddr(address)) {
-      throw new Error(`peerCandidateInfo is invalid.(${JSON.stringify(peerCandidateInfo)})`);
+    if (!this.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isCksumAddr(address)) {
+      const errorMsg = `[${LOG_HEADER}] peerCandidateInfo is invalid.` +
+          `(${JSON.stringify(peerCandidateInfo)})`;
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
     }
     this.updatePeerCandidateInfo(jsonRpcUrl, address, Date.now());
     const myJsonRpcUrl = this.getMyJsonRpcUrl();
@@ -376,7 +380,7 @@ class P2pClient {
       // 1. Ask peer candidate info
       const peerCandidateInfo = await this.sendP2pGetPeerCandidateInfoRequest(jsonRpcUrl);
       // 2. Update peerCandidate
-      this.setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo);
+      this.populatePeerCandidatesFromPeerCandidateInfo(peerCandidateInfo);
       // 3. Try to connect to peer candidates
       await this.connectWithPeerCandidateInfo(peerCandidateInfo);
     } catch (e) {
@@ -1203,9 +1207,6 @@ class P2pClient {
     const LOG_HEADER = 'connectWithPeerCandidateInfo';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!address) {
-      throw new Error(`Wrong peerCandidateInfo(${JSON.stringify(peerCandidateInfo)})`);
-    }
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
