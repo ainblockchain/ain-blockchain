@@ -320,14 +320,14 @@ class P2pClient {
     if (this.peerCandidates.size === 0) {
       return [NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL];
     } else {
-      const notQueriedCandidateEntries = [...this.peerCandidates.entries()].filter(([, value]) => {
+      const notQueriedCandidates = [...this.peerCandidates.entries()].filter(([, value]) => {
         // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
         // the node which queried more than 5 minutes ago can also be considered as notQueried.
         return value.queriedAt === null ? true :
             Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RETRY_THRESHOLD_MS;
+      }).map(([key,]) => {
+        return key;
       });
-      const notQueriedCandidatesObject = Object.fromEntries(notQueriedCandidateEntries);
-      const notQueriedCandidates = Object.keys(notQueriedCandidatesObject);
       if (notQueriedCandidates.length > 0) {
         return _.shuffle(notQueriedCandidates);
       } else {
