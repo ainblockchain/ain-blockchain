@@ -364,8 +364,8 @@ class P2pClient {
     const myJsonRpcUrl = this.getMyJsonRpcUrl();
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
-          P2pUtil.checkPeerWhitelist(address)) {
+      if (!P2pUtil.areIdenticalUrls(url, myJsonRpcUrl) && !this.peerCandidates.has(url) &&
+          this.isValidJsonRpcUrl(url) && P2pUtil.checkPeerWhitelist(address)) {
         this.setPeerCandidate(url, address, null);
       }
     });
@@ -395,14 +395,13 @@ class P2pClient {
   }
 
   async discoverNewPeers() {
-    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
     const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
-    const availableJsonRpcUrlList = nextPeerCandidateJsonRpcUrlList.slice(0, maxNumberOfNewPeers);
-    const myJsonRpcUrl = this.getMyJsonRpcUrl();
-    for (const jsonRpcUrl of availableJsonRpcUrlList) {
-      if (!P2pUtil.areIdenticalUrls(jsonRpcUrl, myJsonRpcUrl)) {
-        await this.discoverNewPeer(jsonRpcUrl);
+    for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
+      const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+      if (maxNumberOfNewPeers === 0) {
+        break;
       }
+      await this.discoverNewPeer(jsonRpcUrl);
     }
   }
 
