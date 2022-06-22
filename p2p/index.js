@@ -357,16 +357,15 @@ class P2pClient {
     const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
     if (!this.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isValAddr(address)) {
-      throw new Error('peerCandidateInfo is not correctly set.' +
-          `(${JSON.stringify(peerCandidateInfo)})`);
+      throw new Error(`peerCandidateInfo is invalid.(${JSON.stringify(peerCandidateInfo)})`);
     }
-    this.setPeerCandidate(jsonRpcUrl, address, Date.now());
+    this.updatePeerCandidateInfo(jsonRpcUrl, address, Date.now());
     const myJsonRpcUrl = this.getMyJsonRpcUrl();
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
       if (!P2pUtil.areIdenticalUrls(url, myJsonRpcUrl) && !this.peerCandidates.has(url) &&
           this.isValidJsonRpcUrl(url) && P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidate(url, address, null);
+        this.updatePeerCandidateInfo(url, address, null);
       }
     });
   }
@@ -379,7 +378,7 @@ class P2pClient {
       // 2. Update peerCandidate
       this.setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo);
       // 3. Try to connect to peer candidates
-      await this.connectWithPeerCandidateUrl(peerCandidateInfo);
+      await this.connectWithPeerCandidateInfo(peerCandidateInfo);
     } catch (e) {
       this.peerCandidates.delete(jsonRpcUrl);
       logger.error(`[${LOG_HEADER}] ${e}`);
@@ -1187,7 +1186,7 @@ class P2pClient {
     return true;
   }
 
-  setPeerCandidate(jsonRpcUrl, address, queriedAt) {
+  updatePeerCandidateInfo(jsonRpcUrl, address, queriedAt) {
     if (CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST) ||
         (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
             NodeConfigs.PEER_WHITELIST.includes(address))) {
@@ -1200,8 +1199,8 @@ class P2pClient {
    * @param {string} peerCandidateJsonRpcUrl should be something like
    * http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
-  async connectWithPeerCandidateUrl(peerCandidateInfo) {
-    const LOG_HEADER = 'connectWithPeerCandidateUrl';
+  async connectWithPeerCandidateInfo(peerCandidateInfo) {
+    const LOG_HEADER = 'connectWithPeerCandidateInfo';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const address = _.get(peerCandidateInfo, 'address');
     if (!address) {
