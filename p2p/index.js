@@ -371,37 +371,34 @@ class P2pClient {
     });
   }
 
-  async discoverNewPeer(jsonRpcUrl) {
-    const LOG_HEADER = 'discoverNewPeer';
-    if (!this.isConnectingToPeerCandidates) {
-      this.peerConnectionStartedAt = Date.now();
-      try {
-        // 1. Semaphore on
-        this.isConnectingToPeerCandidates = true;
-        // 2. Ask peer candidate info
-        const peerCandidateInfo = await this.sendP2pGetPeerCandidateInfoRequest(jsonRpcUrl);
-        // 3. Update peerCandidate
-        this.setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo);
-        // 4. Try to connect to peer candidates
-        await this.connectWithPeerCandidateUrl(peerCandidateInfo);
-      } catch (e) {
-        this.peerCandidates.delete(jsonRpcUrl);
-        logger.error(`[${LOG_HEADER}] ${e}`);
-      } finally {
-        // 5. Semaphore off
-        this.isConnectingToPeerCandidates = false;
-      }
+  async tryToQueryAndConnectNewPeer(jsonRpcUrl) {
+    const LOG_HEADER = 'tryToQueryAndConnectNewPeer';
+    try {
+      // 1. Ask peer candidate info
+      const peerCandidateInfo = await this.sendP2pGetPeerCandidateInfoRequest(jsonRpcUrl);
+      // 2. Update peerCandidate
+      this.setPeerCandidateFromPeerCandidateInfo(peerCandidateInfo);
+      // 3. Try to connect to peer candidates
+      await this.connectWithPeerCandidateUrl(peerCandidateInfo);
+    } catch (e) {
+      this.peerCandidates.delete(jsonRpcUrl);
+      logger.error(`[${LOG_HEADER}] ${e}`);
     }
   }
 
   async discoverNewPeers() {
-    const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
-    for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
-      const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
-      if (maxNumberOfNewPeers === 0) {
-        break;
+    this.peerConnectionStartedAt = Date.now();
+    if (!this.isConnectingToPeerCandidates) {
+      this.isConnectingToPeerCandidates = true;
+      const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
+      for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
+        const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+        if (maxNumberOfNewPeers === 0) {
+          break;
+        }
+        await this.tryToQueryAndConnectNewPeer(jsonRpcUrl);
       }
-      await this.discoverNewPeer(jsonRpcUrl);
+      this.isConnectingToPeerCandidates = false;
     }
   }
 
