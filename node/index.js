@@ -935,12 +935,12 @@ class BlockchainNode {
         resList.push(res);
       }
     }
-    if (isExecutionOnly) {
-      return;
-    }
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.tp.removeInvalidTxsFromPool(invalidTransactions);
+    if (isExecutionOnly) {
+      return;
+    }
     const gasPriceUnit =
         this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
