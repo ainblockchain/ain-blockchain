@@ -185,6 +185,23 @@ class P2pUtil {
       return ip.isEqual(ipAddressFromSocket, ipAddressFromPeerInfo);
     }
   }
+
+  /**
+   * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
+   * @param {string} url is json rpc endpoint url.
+   */
+  static isValidJsonRpcUrl(url) {
+    const newUrl = new URL(url);
+    const urlWithProtocolAndHost = newUrl.protocol + '//' + newUrl.host;
+    if (!CommonUtil.isString(urlWithProtocolAndHost) ||
+        !(CommonUtil.isValidUrl(urlWithProtocolAndHost) || CommonUtil.isValidPrivateUrl(urlWithProtocolAndHost))) {
+      return false;
+    }
+    if (newUrl.pathname !== '/json-rpc') {
+      return false;
+    }
+    return true;
+  }
 }
 
 module.exports = P2pUtil;
