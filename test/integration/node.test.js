@@ -1505,6 +1505,29 @@ describe('Blockchain Node', () => {
       });
     })
 
+    describe('json-rpc api: ain_validateAppName', () => {
+      it('returns true', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const request = { app_name: 'app_name_valid0', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
+        return client.request(JSON_RPC_METHODS.AIN_VALIDATE_APP_NAME, request)
+        .then(res => {
+          expect(res.result.is_valid).to.equal(true);
+          expect(res.result.code).to.equal(0);
+        })
+      });
+
+      it('returns false', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const request = { app_name: 'app/path', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
+        return client.request(JSON_RPC_METHODS.AIN_VALIDATE_APP_NAME, request)
+        .then(res => {
+          expect(res.result.is_valid).to.equal(false);
+          expect(res.result.code).to.equal(30601);
+          expect(res.result.message).to.equal('Invalid app name for state label: app/path');
+        })
+      });
+    });
+
     describe('json-rpc api: ain_getAddress', () => {
       it('returns the correct node address', () => {
         const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
