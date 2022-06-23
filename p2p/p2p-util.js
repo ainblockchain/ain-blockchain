@@ -191,16 +191,19 @@ class P2pUtil {
    * @param {string} url is json rpc endpoint url.
    */
   static isValidJsonRpcUrl(url) {
-    const newUrl = new URL(url);
-    const urlWithProtocolAndHost = newUrl.protocol + '//' + newUrl.host;
-    if (!CommonUtil.isString(urlWithProtocolAndHost) ||
-        !(CommonUtil.isValidUrl(urlWithProtocolAndHost) || CommonUtil.isValidPrivateUrl(urlWithProtocolAndHost))) {
+    try {
+      const newUrl = new URL(url);
+      const urlWithProtocolAndHost = newUrl.protocol + '//' + newUrl.host;
+      if (!(CommonUtil.isValidUrl(urlWithProtocolAndHost) || CommonUtil.isValidPrivateUrl(urlWithProtocolAndHost))) {
+        return false;
+      }
+      if (newUrl.pathname !== '/json-rpc') {
+        return false;
+      }
+      return true;
+    } catch (error) {
       return false;
     }
-    if (newUrl.pathname !== '/json-rpc') {
-      return false;
-    }
-    return true;
   }
 }
 

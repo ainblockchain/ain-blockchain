@@ -393,4 +393,42 @@ describe("P2P Util", () => {
       expect(util.checkIpAddressFromPeerInfo(ipV4, ipV6)).to.be.true;
     });
   });
+
+  describe("isValidJsonRpcUrl", () => {
+    it("returns false if invalid url is given", () => {
+      const stringValue = 'stringValue';
+      const numberValue = 123456789;
+      const booleanValue = true;
+      const nullValue = null;
+      const undefinedValue = undefined;
+      const arrayValue = [];
+      const objectValue = {};
+      const url1 = 'ainetwork.ai';
+      const url2 = 'https://*.ainetwork.ai';
+      const url3 = 'http://172.16.0.36:8080';
+      const url4 = 'http://172.16.0.36';
+
+      expect(util.isValidJsonRpcUrl(stringValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(numberValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(booleanValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(nullValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(undefinedValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(arrayValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(objectValue)).to.be.false;
+      expect(util.isValidJsonRpcUrl(url1)).to.be.false;
+      expect(util.isValidJsonRpcUrl(url2)).to.be.false;
+      expect(util.isValidJsonRpcUrl(url3)).to.be.false;
+      expect(util.isValidJsonRpcUrl(url4)).to.be.false;
+    });
+
+    it("returns true if valid", () => {
+      const url1 = 'https://api.ainetwork.ai/json-rpc';
+      const url2 = 'http://172.16.0.36/json-rpc';
+      const url3 = 'https://172.16.0.36:8080/json-rpc';
+
+      expect(util.isValidJsonRpcUrl(url1)).to.be.true;
+      expect(util.isValidJsonRpcUrl(url2)).to.be.true;
+      expect(util.isValidJsonRpcUrl(url3)).to.be.true;
+    });
+  });
 });
