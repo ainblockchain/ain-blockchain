@@ -61,7 +61,7 @@ class P2pClient {
     }
 
     // 4. Start peer discovery process
-    await this.discoverPeerWithGuardingFlag();
+    await this.discoverNewPeers();
     this.setIntervalForPeerCandidatesConnection();
 
     // 5. Set up blockchain node
@@ -182,32 +182,13 @@ class P2pClient {
     return Object.fromEntries(outboundEntries);
   }
 
-  /**
-   * Returns P2p endpoint urls.
-   */
-  getPeerP2pUrlList() {
-    const outboundEntries = Object.entries(this.outbound)
-      .filter(([, peer]) => {
-        const incomingPeers =
-            _.get(peer, 'peerInfo.networkStatus.connectionStatus.incomingPeers', []);
-        const maxInbound = _.get(peer, 'peerInfo.networkStatus.connectionStatus.maxInbound', 0);
-        return incomingPeers.length < maxInbound;
-      })
-      .map(([address, peer]) => {
-        const p2pUrl = _.get(peer, 'peerInfo.networkStatus.urls.p2p.url');
-        return [address, p2pUrl];
-      });
-    return Object.fromEntries(outboundEntries);
-  }
-
   getPeerCandidateInfo() {
     return {
       address: this.server.getNodeAddress(),
       isAvailableForConnection:
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
-      peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList(),
-      newPeerP2pUrlList: this.getPeerP2pUrlList()
+      peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList()
     }
   }
 
@@ -330,41 +311,97 @@ class P2pClient {
 
   /**
    * Returns randomly picked connectable peers. Refer to details below:
-   * 1) Pick one if it is never queried.
-   * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
+   * 1) Pick some if they are never queried.
+   * 2) Choose more candidates in all peerCandidates if there are not enough number of never queried
+   *    peerCandidates.
    * 3) Use PEER_CANDIDATE_JSON_RPC_URL if there are no peerCandidates at all.
    */
-  assignRandomPeerCandidate() {
+  assignRandomPeerCandidates() {
     if (this.peerCandidates.size === 0) {
-      return NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL;
+      return [NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL];
     } else {
-      const notQueriedCandidateEntries = [...this.peerCandidates.entries()].filter(([, value]) => {
+      const notQueriedCandidates = [...this.peerCandidates.entries()].filter(([, value]) => {
         // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
         // the node which queried more than 5 minutes ago can also be considered as notQueried.
         return value.queriedAt === null ? true :
             Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RETRY_THRESHOLD_MS;
+      }).map(([key,]) => {
+        return key;
       });
-      if (notQueriedCandidateEntries.length > 0) {
-        return _.shuffle(notQueriedCandidateEntries)[0][0];
+      if (notQueriedCandidates.length > 0) {
+        return _.shuffle(notQueriedCandidates);
       } else {
-        return _.shuffle(this.peerCandidates.keys())[0];
+        return _.shuffle(Array.from(this.peerCandidates.keys()));
       }
     }
   }
 
-  async discoverPeerWithGuardingFlag() {
-    const LOG_HEADER = 'discoverPeerWithGuardingFlag';
-    if (!this.isConnectingToPeerCandidates) {
-      this.peerConnectionStartedAt = Date.now();
-      try {
-        this.isConnectingToPeerCandidates = true;
-        const nextPeerCandidate = this.assignRandomPeerCandidate();
-        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
-      } catch (e) {
-        logger.error(`[${LOG_HEADER}] ${e}`);
-      } finally {
-        this.isConnectingToPeerCandidates = false;
+  getMyJsonRpcUrl() {
+    return _.get(this.server.urls, 'jsonRpc.url', '');
+  }
+
+  async sendP2pGetPeerCandidateInfoRequest(peerCandidateJsonRpcUrl) {
+    if (!P2pUtil.isValidJsonRpcUrl(peerCandidateJsonRpcUrl)) {
+      throw new Error(`Wrong peerCandidateJsonRpcUrl(${peerCandidateJsonRpcUrl})`);
+    }
+    const resp = await sendGetRequest(
+        peerCandidateJsonRpcUrl, JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO, { });
+    const peerCandidateInfo = _.get(resp, 'data.result.result');
+    if (!CommonUtil.isDict(peerCandidateInfo)) {
+      throw new Error(`Invalid peerCandidateInfo from peer candidate url (${peerCandidateInfo}).`);
+    }
+    return peerCandidateInfo;
+  }
+
+  populatePeerCandidatesFromPeerCandidateInfo(peerCandidateInfo) {
+    const LOG_HEADER = 'populatePeerCandidatesFromPeerCandidateInfo';
+    const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    const address = _.get(peerCandidateInfo, 'address');
+    if (!P2pUtil.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isCksumAddr(address)) {
+      const errorMsg = `[${LOG_HEADER}] peerCandidateInfo is invalid.` +
+          `(${JSON.stringify(peerCandidateInfo)})`;
+      logger.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    this.updatePeerCandidateInfo(jsonRpcUrl, address, Date.now());
+    const myJsonRpcUrl = this.getMyJsonRpcUrl();
+    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
+    Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
+      if (!P2pUtil.areIdenticalUrls(url, myJsonRpcUrl) && !this.peerCandidates.has(url) &&
+          P2pUtil.isValidJsonRpcUrl(url) && P2pUtil.checkPeerWhitelist(address)) {
+        this.updatePeerCandidateInfo(url, address, null);
       }
+    });
+  }
+
+  async tryToQueryAndConnectNewPeer(jsonRpcUrl) {
+    const LOG_HEADER = 'tryToQueryAndConnectNewPeer';
+    try {
+      // 1. Ask peer candidate info
+      const peerCandidateInfo = await this.sendP2pGetPeerCandidateInfoRequest(jsonRpcUrl);
+      // 2. Update peerCandidate
+      this.populatePeerCandidatesFromPeerCandidateInfo(peerCandidateInfo);
+      // 3. Try to connect to peer candidates
+      await this.connectWithPeerCandidateInfo(peerCandidateInfo);
+    } catch (e) {
+      this.peerCandidates.delete(jsonRpcUrl);
+      logger.error(`[${LOG_HEADER}] ${e}`);
+    }
+  }
+
+  async discoverNewPeers() {
+    this.peerConnectionStartedAt = Date.now();
+    if (!this.isConnectingToPeerCandidates) {
+      this.isConnectingToPeerCandidates = true;
+      const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
+      for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
+        const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+        if (maxNumberOfNewPeers === 0) {
+          break;
+        }
+        await this.tryToQueryAndConnectNewPeer(jsonRpcUrl);
+      }
+      this.isConnectingToPeerCandidates = false;
     }
   }
 
@@ -433,7 +470,7 @@ class P2pClient {
       this.steadyIntervalCount = 0;
       this.disconnectRandomPeer();
       this.updateP2pState();
-      await this.discoverPeerWithGuardingFlag();
+      await this.discoverNewPeers();
     }
   }
 
@@ -441,7 +478,7 @@ class P2pClient {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       this.updateP2pState();
       if (this.p2pState === P2pNetworkStates.EXPANDING) {
-        await this.discoverPeerWithGuardingFlag();
+        await this.discoverNewPeers();
       } else if (this.p2pState === P2pNetworkStates.STEADY) {
         await this.tryReorgPeerConnections();
       }
@@ -1136,26 +1173,7 @@ class P2pClient {
     }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
 
-  /**
-   * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
-   * @param {string} url is an IPv4 ip address.
-   */
-  isValidJsonRpcUrl(url) {
-    if (!CommonUtil.isString(url)) {
-      return false;
-    }
-    const JSON_RPC_PATH = '/json-rpc';
-    const urlWithoutJsonRpc =
-        url.endsWith(JSON_RPC_PATH) ? url.slice(0, -JSON_RPC_PATH.length) : false;
-    if (!urlWithoutJsonRpc) {
-      return urlWithoutJsonRpc;
-    } else {
-      return NodeConfigs.HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
-          CommonUtil.isValidUrl(urlWithoutJsonRpc);
-    }
-  }
-
-  setPeerCandidate(jsonRpcUrl, address, queriedAt) {
+  updatePeerCandidateInfo(jsonRpcUrl, address, queriedAt) {
     if (CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST) ||
         (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
             NodeConfigs.PEER_WHITELIST.includes(address))) {
@@ -1168,56 +1186,25 @@ class P2pClient {
    * @param {string} peerCandidateJsonRpcUrl should be something like
    * http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
-  async connectWithPeerCandidateUrl(peerCandidateJsonRpcUrl) {
-    const LOG_HEADER = 'connectWithPeerCandidateUrl';
+  async connectWithPeerCandidateInfo(peerCandidateInfo) {
+    const LOG_HEADER = 'connectWithPeerCandidateInfo';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
-    const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
-    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
-        P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
-      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
-      return;
-    }
-    const resp = await sendGetRequest(
-        peerCandidateJsonRpcUrl, JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO, { });
-    const peerCandidateInfo = _.get(resp, 'data.result.result');
-    if (!peerCandidateInfo) {
-      logger.error(`Invalid peer candidate info from peer candidate url ` +
-          `(${peerCandidateJsonRpcUrl}).`);
-      return;
-    }
+    const address = _.get(peerCandidateInfo, 'address');
+    const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
     // use the json rpc url in response instead.
-    const jsonRpcUrlFromResp = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
-    const address = _.get(peerCandidateInfo, 'address');
-    if (!jsonRpcUrlFromResp) {
-      logger.error(`Invalid peer candidate json rpc url from peer candidate url ` +
-          `(${peerCandidateJsonRpcUrl}).`);
-      return;
-    }
-    if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.setPeerCandidate(jsonRpcUrlFromResp, address, Date.now());
-    }
-    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
-    Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
-          P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidate(url, address, null);
-      }
-    });
-    const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
-    const newPeerP2pUrlListWithoutMyUrl = Object.entries(newPeerP2pUrlList)
-      .filter(([address, p2pUrl]) => {
-        return P2pUtil.checkPeerWhitelist(address) && p2pUrl !== myP2pUrl;
-      })
-      .map(([, p2pUrl]) => p2pUrl);
-    const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
-      // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
-      newPeerP2pUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
+      logger.info(`[${LOG_HEADER}] Try to connect(${peerCandidateP2pUrl})`);
+      const addressFromOutbound = this.getAddrFromOutboundMapping(peerCandidateP2pUrl);
+      if (addressFromOutbound) {
+        logger.debug(`[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
+            `already a managed peer.`);
+      } else {
+        logger.info(`[${LOG_HEADER}] Connecting to peer(${peerCandidateP2pUrl})`);
+        this.connectToPeer(peerCandidateP2pUrl);
+      }
     }
-    logger.info(`[${LOG_HEADER}] Try to connect(${JSON.stringify(newPeerP2pUrlListWithoutMyUrl)})`);
-    this.connectWithPeerUrlList(_.shuffle(newPeerP2pUrlListWithoutMyUrl));
   }
 
   setIsFirstNode(isFirstNode) {
@@ -1317,19 +1304,6 @@ class P2pClient {
     const totalConnections =
         Object.keys(this.outbound).length + this.peerConnectionsInProgress.size;
     return Math.max(0, NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
-  }
-
-  connectWithPeerUrlList(newPeerP2pUrlList) {
-    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
-    newPeerP2pUrlList.slice(0, maxNumberOfNewPeers).forEach((url) => {
-      const address = this.getAddrFromOutboundMapping(url);
-      if (address) {
-        logger.debug(`Node ${address}(${url}) is already a managed peer.`);
-      } else {
-        logger.info(`Connecting to peer(${url})`);
-        this.connectToPeer(url);
-      }
-    });
   }
 
   disconnectFromPeers() {
