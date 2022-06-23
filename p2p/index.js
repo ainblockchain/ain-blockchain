@@ -341,7 +341,7 @@ class P2pClient {
   }
 
   async sendP2pGetPeerCandidateInfoRequest(peerCandidateJsonRpcUrl) {
-    if (!this.isValidJsonRpcUrl(peerCandidateJsonRpcUrl)) {
+    if (!P2pUtil.isValidJsonRpcUrl(peerCandidateJsonRpcUrl)) {
       throw new Error(`Wrong peerCandidateJsonRpcUrl(${peerCandidateJsonRpcUrl})`);
     }
     const resp = await sendGetRequest(
@@ -357,7 +357,7 @@ class P2pClient {
     const LOG_HEADER = 'populatePeerCandidatesFromPeerCandidateInfo';
     const jsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     const address = _.get(peerCandidateInfo, 'address');
-    if (!this.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isCksumAddr(address)) {
+    if (!P2pUtil.isValidJsonRpcUrl(jsonRpcUrl) || !CommonUtil.isCksumAddr(address)) {
       const errorMsg = `[${LOG_HEADER}] peerCandidateInfo is invalid.` +
           `(${JSON.stringify(peerCandidateInfo)})`;
       logger.error(errorMsg);
@@ -368,7 +368,7 @@ class P2pClient {
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
       if (!P2pUtil.areIdenticalUrls(url, myJsonRpcUrl) && !this.peerCandidates.has(url) &&
-          this.isValidJsonRpcUrl(url) && P2pUtil.checkPeerWhitelist(address)) {
+          P2pUtil.isValidJsonRpcUrl(url) && P2pUtil.checkPeerWhitelist(address)) {
         this.updatePeerCandidateInfo(url, address, null);
       }
     });
@@ -1171,23 +1171,6 @@ class P2pClient {
           this.clearPeerConnectionsInProgress(socket);
         }
     }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
-  }
-
-  /**
-   * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
-   * @param {string} url is json rpc endpoint url.
-   */
-  isValidJsonRpcUrl(url) {
-    const newUrl = new URL(url);
-    const urlWithProtocolAndHost = newUrl.protocol + '//' + newUrl.host;
-    if (!CommonUtil.isString(urlWithProtocolAndHost) ||
-        !(CommonUtil.isValidUrl(urlWithProtocolAndHost) || CommonUtil.isValidPrivateUrl(urlWithProtocolAndHost))) {
-      return false;
-    }
-    if (newUrl.pathname !== '/json-rpc') {
-      return false;
-    }
-    return true;
   }
 
   updatePeerCandidateInfo(jsonRpcUrl, address, queriedAt) {
