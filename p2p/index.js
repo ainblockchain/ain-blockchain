@@ -1208,6 +1208,8 @@ class P2pClient {
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const address = _.get(peerCandidateInfo, 'address');
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
+    // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
+    // use the json rpc url in response instead.
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
       logger.info(`[${LOG_HEADER}] Try to connect(${peerCandidateP2pUrl})`);
