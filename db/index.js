@@ -885,10 +885,12 @@ class DB {
     return curAppValue === null;
   }
 
+  // TODO(platfowner): Remove is_valid once migration is completed.
   validateAppName(appName, blockNumber, stateLabelLengthLimit) {
     if (!isValidStateLabel(appName, stateLabelLengthLimit)) {
       return {
         is_valid: false,
+        result: false,
         code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_STATE_LABEL,
         message: `Invalid app name for state label: ${appName}`
       };
@@ -896,6 +898,7 @@ class DB {
     if (!isValidServiceName(appName, blockNumber)) {
       return {
         is_valid: false,
+        result: false,
         code: JsonRpcApiResultCode.INVALID_APP_NAME_FOR_SERVICE_NAME,
         message: `Invalid app name for service name: ${appName}`
       };
@@ -903,12 +906,14 @@ class DB {
     if (!this.isNonExistingApp(appName)) {
       return {
         is_valid: false,
+        result: false,
         code: JsonRpcApiResultCode.APP_NAME_ALREADY_IN_USE,
         message: `App name already in use: ${appName}`
       };
     }
     return {
       is_valid: true,
+      result: true,
       code: JsonRpcApiResultCode.SUCCESS
     };
   }

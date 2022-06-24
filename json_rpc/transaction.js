@@ -127,7 +127,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH]: function(args, done) {
       const beginTime = Date.now();
       const batchTxListSizeLimit = node.getBlockchainParam('resource/batch_tx_list_size_limit');
-      if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {
+      if (!CommonUtil.isArray(args.tx_list) || CommonUtil.isEmpty(args.tx_list)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({

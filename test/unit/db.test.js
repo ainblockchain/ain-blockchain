@@ -6430,6 +6430,7 @@ describe("Util methods", () => {
       const appName = 'app_name_valid0';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": true,
+        "result": true,
         "code": 0,
       });
     });
@@ -6438,6 +6439,7 @@ describe("Util methods", () => {
       const appName = 'app/path';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30601,
         "message": `Invalid app name for state label: ${appName}`,
       });
@@ -6450,6 +6452,7 @@ describe("Util methods", () => {
       }
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30601,
         "message": `Invalid app name for state label: ${appName}`,
       });
@@ -6459,6 +6462,7 @@ describe("Util methods", () => {
       const appName = 'balance_total_sum';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30602,
         "message": `Invalid app name for service name: ${appName}`,
       });
@@ -6468,6 +6472,7 @@ describe("Util methods", () => {
       const appName = 'appName';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30602,
         "message": `Invalid app name for service name: ${appName}`,
       });
@@ -6475,6 +6480,7 @@ describe("Util methods", () => {
       const appName2 = 'app-name';
       assert.deepEqual(node.db.validateAppName(appName2, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30602,
         "message": `Invalid app name for service name: ${appName2}`,
       });
@@ -6482,6 +6488,7 @@ describe("Util methods", () => {
       const appName3 = '0app';
       assert.deepEqual(node.db.validateAppName(appName3, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30602,
         "message": `Invalid app name for service name: ${appName3}`,
       });
@@ -6490,6 +6497,7 @@ describe("Util methods", () => {
     it("app name in use", () => {
       assert.deepEqual(node.db.validateAppName(appNameInUse, 2, stateLabelLengthLimit), {
         "is_valid": false,
+        "result": false,
         "code": 30603,
         "message": `App name already in use: ${appNameInUse}`,
       });
