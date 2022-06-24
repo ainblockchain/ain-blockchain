@@ -1463,8 +1463,8 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
         .then(res => {
+          expect(res.result.result).to.equal(true);
           expect(res.result.code).to.equal(0);
-          expect(res.result.result).to.equal("Success");
         });
       });
 
@@ -1472,6 +1472,7 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, {})
         .then(res => {
+          expect(res.result.result).to.equal(false);
           expect(res.result.code).to.equal(30101);
           expect(res.result.message).to.equal("Protocol version not specified.");
         });
@@ -1481,6 +1482,7 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, { protoVer: 'a.b.c' })
         .then(res => {
+          expect(res.result.result).to.equal(false);
           expect(res.result.code).to.equal(30102);
           expect(res.result.message).to.equal("Invalid protocol version.");
         });
@@ -1490,6 +1492,7 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, { protoVer: 0 })
         .then(res => {
+          expect(res.result.result).to.equal(false);
           expect(res.result.code).to.equal(30103);
           expect(res.result.message).to.equal("Incompatible protocol version.");
         });
@@ -1499,11 +1502,35 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_CHECK_PROTOCOL_VERSION, { protoVer: '0.0.1' })
         .then(res => {
+          expect(res.result.result).to.equal(false);
           expect(res.result.code).to.equal(30103);
           expect(res.result.message).to.equal("Incompatible protocol version.");
         });
       });
     })
+
+    describe('json-rpc api: ain_validateAppName', () => {
+      it('returns true', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const request = { app_name: 'app_name_valid0', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
+        return client.request(JSON_RPC_METHODS.AIN_VALIDATE_APP_NAME, request)
+        .then(res => {
+          expect(res.result.is_valid).to.equal(true);
+          expect(res.result.code).to.equal(0);
+        })
+      });
+
+      it('returns false', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const request = { app_name: 'app/path', protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
+        return client.request(JSON_RPC_METHODS.AIN_VALIDATE_APP_NAME, request)
+        .then(res => {
+          expect(res.result.is_valid).to.equal(false);
+          expect(res.result.code).to.equal(30601);
+          expect(res.result.message).to.equal('Invalid app name for state label: app/path');
+        })
+      });
+    });
 
     describe('json-rpc api: ain_getAddress', () => {
       it('returns the correct node address', () => {

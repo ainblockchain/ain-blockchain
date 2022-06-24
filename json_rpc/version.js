@@ -26,6 +26,7 @@ module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion)
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
+          result: false,
           code: JsonRpcApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
           message: 'Protocol version not specified.'
         }));
@@ -33,6 +34,7 @@ module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion)
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
+          result: false,
           code: JsonRpcApiResultCode.PROTO_VERSION_INVALID,
           message: 'Invalid protocol version.'
         }));
@@ -41,6 +43,7 @@ module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion)
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
+          result: false,
           code: JsonRpcApiResultCode.PROTO_VERSION_INCOMPATIBLE,
           message: 'Incompatible protocol version.'
         }));
@@ -48,8 +51,8 @@ module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion)
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
+          result: true,
           code: JsonRpcApiResultCode.SUCCESS,
-          result: 'Success'
         }));
       }
     },

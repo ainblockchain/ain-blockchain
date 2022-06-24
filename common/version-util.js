@@ -50,6 +50,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
+          result: null,
           code: JsonRpcApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
           message: 'Protocol version not specified.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -59,6 +60,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
+          result: null,
           code: JsonRpcApiResultCode.PROTO_VERSION_INVALID,
           message: 'Invalid protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -69,6 +71,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
+          result: null,
           code: JsonRpcApiResultCode.PROTO_VERSION_INCOMPATIBLE,
           message: 'Incompatible protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
