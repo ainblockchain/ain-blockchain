@@ -23,9 +23,7 @@ IMAGE_NAME=ainblockchain/ain-blockchain:$PACKAGE_VERSION
 IMAGE_NAME_LATEST=ainblockchain/ain-blockchain:latest
 
 docker login
-docker build -t $IMAGE_NAME .
-docker tag $IMAGE_NAME $IMAGE_NAME_LATEST
-docker push $IMAGE_NAME
-docker push $IMAGE_NAME_LATEST
-docker image rm $IMAGE_NAME
-docker image rm $IMAGE_NAME_LATEST
+docker buildx create --use --driver docker-container
+docker buildx build --push --platform linux/amd64,linux/arm64 -t $IMAGE_NAME .
+docker buildx build --push --platform linux/amd64,linux/arm64 -t $IMAGE_NAME_LATEST .
+docker buildx rm
