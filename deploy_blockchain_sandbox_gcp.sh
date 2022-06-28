@@ -410,21 +410,22 @@ printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 
 node_index=$START_NODE_IDX
 while [ $node_index -le $END_NODE_IDX ]; do
+    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+    NODE_ZONE=NODE_${node_index}_ZONE
+
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
+
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
-        UPDATE_FRONT_DB_OPTION="--update-front-db"
     else
         JSON_RPC_OPTION=""
-        UPDATE_FRONT_DB_OPTION=""
     fi
+    UPDATE_FRONT_DB_OPTION="--update-front-db"
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
     else
         REST_FUNC_OPTION=""
     fi
-    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-    NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
