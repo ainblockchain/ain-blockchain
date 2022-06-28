@@ -329,6 +329,11 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
 
     printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
 
+    if [[ $node_index -ge 5 ]]; then
+        JSON_RPC_OPTION="--json-rpc"
+    else
+        JSON_RPC_OPTION=""
+    fi
     UPDATE_FRONT_DB_OPTION="--update-front-db"
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
