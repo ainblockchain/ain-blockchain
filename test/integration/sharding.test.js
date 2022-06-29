@@ -457,6 +457,7 @@ describe('Sharding', () => {
         server1_proc.kill();
         await waitForNewBlocks(server2, sharding.reporting_period * 3);
         console.log(`        --> Restarting server[0]...`);
+        ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL = "http://localhost:9002/json-rpc";
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
         await waitUntilNodeSyncs(server1);
         await waitForNewShardingReports(parentServer, sharding.sharding_path);
