@@ -29,6 +29,7 @@ class RadixNode {
     this.treeHeight = 0;
     this.treeSize = 0;
     this.treeBytes = 0;
+    this.treeMaxSiblings = 0;
   }
 
   reset() {
@@ -44,11 +45,12 @@ class RadixNode {
     this.resetTreeHeight();
     this.resetTreeSize();
     this.resetTreeBytes();
+    this.resetTreeMaxSiblings();
   }
 
   static _create(
       version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash,
-      treeHeight, treeSize, treeBytes) {
+      treeHeight, treeSize, treeBytes, treeMaxSiblings) {
     const node = new RadixNode(version, serial, parentStateNode);
     if (childStateNode) {
       node.setChildStateNode(childStateNode);
@@ -59,6 +61,7 @@ class RadixNode {
     node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
     node.setTreeBytes(treeBytes);
+    node.setTreeMaxSiblings(treeMaxSiblings);
     return node;
   }
 
@@ -66,7 +69,7 @@ class RadixNode {
     const cloned = RadixNode._create(
         version, this.getSerial(), parentStateNode, this.getChildStateNode(), this.getLabelRadix(),
         this.getLabelSuffix(), this.getProofHash(), this.getTreeHeight(), this.getTreeSize(),
-        this.getTreeBytes());
+        this.getTreeBytes(), this.getTreeMaxSiblings());
     for (const child of this.getChildNodes()) {
       cloned.setChild(child.getLabelRadix(), child.getLabelSuffix(), child);
     }
@@ -445,12 +448,25 @@ class RadixNode {
     this.setTreeBytes(0);
   }
 
+  getTreeMaxSiblings() {
+    return this.treeMaxSiblings;
+  }
+
+  setTreeMaxSiblings(treeMaxSiblings) {
+    this.treeMaxSiblings = treeMaxSiblings;
+  }
+
+  resetTreeMaxSiblings() {
+    this.setTreeMaxSiblings(0);
+  }
+
   buildRadixInfo() {
     let treeInfo = {
       preimage: '',
       treeHeight: 0,
       treeSize: 0,
       treeBytes: 0,
+      treeMaxSiblings: 0,
     };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
@@ -461,6 +477,7 @@ class RadixNode {
         treeHeight: childStateNode.getTreeHeight(),
         treeSize: childStateNode.getTreeSize(),
         treeBytes: sizeof(childStateNodeLabel) + childStateNode.getTreeBytes(),
+        treeMaxSiblings: childStateNode.getTreeMaxSiblings(),
       };
     }
     treeInfo.preimage += StateLabelProperties.HASH_DELIMITER;
@@ -473,11 +490,13 @@ class RadixNode {
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
         const accTreeBytes = acc.treeBytes + child.getTreeBytes();
+        const accTreeMaxSiblings = Math.max(acc.treeMaxSiblings, child.getTreeMaxSiblings());
         return {
           preimage: accPreimage,
           treeHeight: accTreeHeight,
           treeSize: accTreeSize,
           treeBytes: accTreeBytes,
+          treeMaxSiblings: accTreeMaxSiblings,
         };
       }, treeInfo);
     }
@@ -487,6 +506,7 @@ class RadixNode {
       treeHeight: treeInfo.treeHeight,
       treeSize: treeInfo.treeSize,
       treeBytes: treeInfo.treeBytes,
+      treeMaxSiblings: treeInfo.treeMaxSiblings,
     };
   }
 
@@ -496,6 +516,7 @@ class RadixNode {
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
+    this.setTreeMaxSiblings(treeInfo.treeMaxSiblings);
   }
 
   verifyRadixInfo() {
@@ -503,7 +524,8 @@ class RadixNode {
     return this.getProofHash() === treeInfo.proofHash &&
         this.getTreeHeight() === treeInfo.treeHeight &&
         this.getTreeSize() === treeInfo.treeSize &&
-        this.getTreeBytes() === treeInfo.treeBytes;
+        this.getTreeBytes() === treeInfo.treeBytes &&
+        this.getTreeMaxSiblings() === treeInfo.treeMaxSiblings;
   }
 
   updateRadixInfoForRadixTree() {
@@ -735,6 +757,7 @@ class RadixNode {
       obj[StateLabelProperties.TREE_HEIGHT] = this.getTreeHeight();
       obj[StateLabelProperties.TREE_SIZE] = this.getTreeSize();
       obj[StateLabelProperties.TREE_BYTES] = this.getTreeBytes();
+      obj[StateLabelProperties.TREE_MAX_SIBLINGS] = this.getTreeMaxSiblings();
     }
     if (withNumParents) {
       obj[StateLabelProperties.NUM_PARENTS] = this.numParents();
