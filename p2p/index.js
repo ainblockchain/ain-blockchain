@@ -390,17 +390,20 @@ class P2pClient {
   }
 
   async discoverNewPeers() {
-    this.peerConnectionStartedAt = Date.now();
-    if (!this.isConnectingToPeerCandidates) {
-      this.isConnectingToPeerCandidates = true;
-      const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
-      for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
-        const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
-        if (maxNumberOfNewPeers === 0) {
-          break;
+    try {
+      this.peerConnectionStartedAt = Date.now();
+      if (!this.isConnectingToPeerCandidates) {
+        this.isConnectingToPeerCandidates = true;
+        const nextPeerCandidateJsonRpcUrlList = this.assignRandomPeerCandidates();
+        for (const jsonRpcUrl of nextPeerCandidateJsonRpcUrlList) {
+          const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+          if (maxNumberOfNewPeers === 0) {
+            break;
+          }
+          await this.tryToQueryAndConnectNewPeer(jsonRpcUrl);
         }
-        await this.tryToQueryAndConnectNewPeer(jsonRpcUrl);
       }
+    } finally {
       this.isConnectingToPeerCandidates = false;
     }
   }
