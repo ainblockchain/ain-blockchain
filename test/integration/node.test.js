@@ -797,6 +797,7 @@ describe('Blockchain Node', () => {
                 "#state_ph": "erased",
                 "#tree_bytes": 0,
                 "#tree_height": 2,
+                "#tree_max_siblings": 2,
                 "#tree_size": 5,
                 "#version": "erased",
               }});
@@ -822,6 +823,7 @@ describe('Blockchain Node', () => {
           "usage": {
             "tree_bytes": 12414,
             "tree_height": 24,
+            "tree_max_siblings": 12,
             "tree_size": 66
           }
         });
@@ -845,6 +847,7 @@ describe('Blockchain Node', () => {
           "usage": {
             "tree_bytes": 0,
             "tree_height": 0,
+            "tree_max_siblings": 0,
             "tree_size": 0
           }
         });
@@ -1388,6 +1391,7 @@ describe('Blockchain Node', () => {
             "#num_children": 2,
             "#state_ph": "erased",
             "#tree_height": 2,
+            "#tree_max_siblings": 2,
             "#tree_size": 5,
             "#tree_bytes": 0,
             "#version": "erased"
@@ -1416,6 +1420,7 @@ describe('Blockchain Node', () => {
             "usage": {
               "tree_bytes": 180186,
               "tree_height": 24,
+              "tree_max_siblings": 1010,
               "tree_size": 1066
             }
           });
@@ -1441,6 +1446,7 @@ describe('Blockchain Node', () => {
             "usage": {
               "tree_bytes": 0,
               "tree_height": 0,
+              "tree_max_siblings": 0,
               "tree_size": 0
             }
           });
