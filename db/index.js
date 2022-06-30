@@ -604,6 +604,7 @@ class DB {
       [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateLabelProperties.TREE_MAX_SIBLINGS]: stateNode.getTreeMaxSiblings(),
       [StateLabelProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
       [StateLabelProperties.VERSION]: stateNode.getVersion(),
     };
@@ -739,11 +740,11 @@ class DB {
   static checkRespTreeLimits(stateNode, options) {
     // NOTE: Skip sibling number limit check for isPartial = true cases.
     if (!(options && options.isPartial)) {
-      if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+      if (stateNode.getTreeMaxSiblings() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
         return {
           code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
           message: `The data exceeds the max sibling limit of the requested node: ` +
-              `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+              `${stateNode.getTreeMaxSiblings()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
         };
       }
     }

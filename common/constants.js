@@ -426,9 +426,10 @@ const StateLabelProperties = {
   STATE_PROOF_HASH: '#state_ph',
   VARIABLE_LABEL_PREFIX: '$',  // Prefix of variable labels
   VERSION: '#version',
-  TREE_HEIGHT: '#tree_height',
-  TREE_SIZE: '#tree_size',
   TREE_BYTES: '#tree_bytes',
+  TREE_HEIGHT: '#tree_height',
+  TREE_MAX_SIBLINGS: '#tree_max_siblings',
+  TREE_SIZE: '#tree_size',
 };
 
 /**

@@ -59,6 +59,7 @@ describe("state-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+      expect(node.treeMaxSiblings).to.equal(0);
     });
 
     it("reset", () => {
@@ -72,6 +73,7 @@ describe("state-node", () => {
       const treeHeight = 1;
       const treeSize = 10;
       const treeBytes = 100;
+      const treeMaxSiblings = 5;
 
       node.setVersion(version);
       node.setLabel(label);
@@ -82,6 +84,7 @@ describe("state-node", () => {
       node.setTreeHeight(treeHeight);
       node.setTreeSize(treeSize);
       node.setTreeBytes(treeBytes);
+      node.setTreeMaxSiblings(treeMaxSiblings);
 
       node.reset();
       expect(node.version).to.equal(null);
@@ -95,6 +98,7 @@ describe("state-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+      expect(node.treeMaxSiblings).to.equal(0);
     });
   });
 
@@ -112,6 +116,7 @@ describe("state-node", () => {
       expect(node2.treeHeight).to.equal(0);
       expect(node2.treeSize).to.equal(0);
       expect(node2.treeBytes).to.equal(0);
+      expect(node2.treeMaxSiblings).to.equal(0);
     });
   });
 
@@ -137,6 +142,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(node.getTreeMaxSiblings());
       assert.deepEqual(
           clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
           node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
@@ -174,6 +180,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(stateTree.getTreeMaxSiblings());
       assert.deepEqual(
           clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
           stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
@@ -197,6 +204,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(node.getTreeMaxSiblings());
     });
 
     it("internal node", () => {
@@ -224,6 +232,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(stateTree.getTreeMaxSiblings());
     });
   });
 
@@ -612,6 +621,9 @@ describe("state-node", () => {
         "#tree_height": 2,
         "#tree_height:a": 0,
         "#tree_height:b": 0,
+        "#tree_max_siblings": 4,
+        "#tree_max_siblings:a": 1,
+        "#tree_max_siblings:b": 1,
         "#tree_size": 9,
         "#tree_size:a": 1,
         "#tree_size:b": 1,
@@ -630,6 +642,9 @@ describe("state-node", () => {
           "#tree_height": 1,
           "#tree_height:ca": 0,
           "#tree_height:cb": 0,
+          "#tree_max_siblings": 2,
+          "#tree_max_siblings:ca": 1,
+          "#tree_max_siblings:cb": 1,
           "#tree_size": 3,
           "#tree_size:ca": 1,
           "#tree_size:cb": 1,
@@ -649,6 +664,9 @@ describe("state-node", () => {
           "#tree_height": 1,
           "#tree_height:da": 0,
           "#tree_height:db": 0,
+          "#tree_max_siblings": 2,
+          "#tree_max_siblings:da": 1,
+          "#tree_max_siblings:db": 1,
           "#tree_size": 3,
           "#tree_size:da": 1,
           "#tree_size:db": 1,
@@ -1507,6 +1525,16 @@ describe("state-node", () => {
     });
   });
 
+  describe("tree max siblings", () => {
+    it("getTreeMaxSiblings / setTreeMaxSiblings", () => {
+      expect(node.getTreeMaxSiblings()).to.equal(0);
+      node.setTreeMaxSiblings(5);
+      expect(node.getTreeMaxSiblings()).to.equal(5);
+      node.setTreeMaxSiblings(3);
+      expect(node.getTreeMaxSiblings()).to.equal(3);
+    });
+  });
+
   describe("buildStateInfo", () => {
     describe("proof hash", () => {
       it("leaf node", () => {
@@ -1675,6 +1703,41 @@ describe("state-node", () => {
         expect(stateTree.buildStateInfo().treeBytes).to.equal(324);
       });
     });
+
+    describe("tree max siblings", () => {
+      it("leaf node", () => {
+        node.setValue(true);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(10);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(-200);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue('');
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue('unittest');
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(null);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(undefined);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+      });
+
+      it("internal node", () => {
+        child1.setTreeMaxSiblings(5);
+        child2.setTreeMaxSiblings(15);
+        child3.setTreeMaxSiblings(25);
+        child4.setTreeMaxSiblings(35);
+        stateTree.radixTree.root.setTreeMaxSiblings(1000);
+
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = false
+        expect(stateTree.buildStateInfo(null, false).treeMaxSiblings).to.equal(1000);
+        // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
+        expect(stateTree.buildStateInfo(label1).treeMaxSiblings).to.equal(5);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = true
+        expect(stateTree.buildStateInfo().treeMaxSiblings).to.equal(35);
+      });
+    });
+
   });
 
   describe("updateStateInfo / verifyStateInfo", () => {
@@ -1730,6 +1793,10 @@ describe("state-node", () => {
       child2.setTreeSize(20);
       child3.setTreeSize(30);
       child4.setTreeSize(40);
+      child1.setTreeMaxSiblings(5);
+      child2.setTreeMaxSiblings(15);
+      child3.setTreeMaxSiblings(25);
+      child4.setTreeMaxSiblings(35);
       expect(stateTree.verifyStateInfo()).to.equal(false);
 
       // update without updatedChildLabel
