@@ -344,6 +344,10 @@ describe('HE Sharding', () => {
     });
 
     describe('Shard reporter node restart', () => {
+      before(() => {
+        ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL = "http://localhost:9092/json-rpc";
+      });
+
       it('can resume reporting after missing some reports', async () => {
         const latestBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
@@ -352,7 +356,6 @@ describe('HE Sharding', () => {
         server1_proc.kill();
         await waitForNewBlocks(server2, sharding.reporting_period * 3);
         console.log(`        --> Restarting server[0]...`);
-        ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL = "http://localhost:9092/json-rpc";
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
         await waitUntilNodeSyncs(server1);
         await waitForNewShardingReports(parentServer, sharding.sharding_path);
