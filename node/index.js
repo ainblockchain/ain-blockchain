@@ -612,6 +612,7 @@ class BlockchainNode {
       tree_height: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_HEIGHT] : 0,
       tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
       tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
+      tree_max_siblings: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_MAX_SIBLINGS] : 0,
     };
     const availableTreeBytes = appStake > 0 ?
         Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :

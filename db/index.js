@@ -604,6 +604,7 @@ class DB {
       [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateLabelProperties.TREE_MAX_SIBLINGS]: stateNode.getTreeMaxSiblings(),
       [StateLabelProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
       [StateLabelProperties.VERSION]: stateNode.getVersion(),
     };
