@@ -36,7 +36,7 @@ const ENV_VARIABLES = [
     UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    GET_RESP_BYTES_LIMIT: 77819, GET_RESP_MAX_SIBLINGS: 999, // For get_value limit tests
+    GET_RESP_BYTES_LIMIT: 77819, GET_RESP_MAX_SIBLINGS: 1000, // For get_value limit tests
   },
   {
     UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
@@ -977,11 +977,12 @@ describe('Blockchain Node', () => {
         });
       });
 
-      it('returns error when requested data exceeds the get response limits - bytes', async () => {
+      it('returns error when requested data exceeds the get response bytes limit', async () => {
+        // Note: GET_RESP_BYTES_LIMIT = 77819
         const bigTree = {};
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100; i++) {
           bigTree[i] = {};
-          for (let j = 0; j < 1000; j++) {
+          for (let j = 0; j < 100; j++) {
             bigTree[i][j] = 'a';
           }
         }
@@ -1009,9 +1010,9 @@ describe('Blockchain Node', () => {
       // the same as the previous test case but is_shallow = true
       it('returns a correct value with is_shallow = true', async () => {
         const bigTree = {};
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100; i++) {
           bigTree[i] = {};
-          for (let j = 0; j < 1000; j++) {
+          for (let j = 0; j < 100; j++) {
             bigTree[i][j] = 'a';
           }
         }
@@ -1030,18 +1031,47 @@ describe('Blockchain Node', () => {
           is_shallow: true  // w/ is_shallow = true
         })
         .then(res => {
-          expect(res.result.result.code).to.equal(undefined);
+          expect(res.result.code).to.equal(undefined);
         });
       });
 
-      it('returns error when requested data exceeds the get response limits - siblings', async () => {
+      it('returns error when requested data exceeds the get response max siblings limit - node num children', async () => {
+        // Note: GET_RESP_MAX_SIBLINGS = 1000
         const wideTree = {};
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 1001; i++) {
           wideTree[i] = 'a';
         }
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: '/apps/test/test_value/some/path',
-          value: wideTree, // 1000 siblings
+          value: wideTree, // 1001 siblings (num children)
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+        })
+        .then(res => {
+          expect(res.result.result).to.equal(null);
+          expect(res.result.code).to.equal(30003);
+          expect(res.result.message.includes(
+              'The data exceeds the max sibling limit of the requested node'), true);
+        });
+      });
+
+      it('returns error when requested data exceeds the get response max siblings limit - subtree num children', async () => {
+        // Note: GET_RESP_MAX_SIBLINGS = 1000
+        const wideTree = {};
+        wideTree[0] = {};
+        for (let i = 0; i < 1001; i++) {
+          wideTree[0][i] = 'a';
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: wideTree, // 1001 max siblings (subtree num children)
         }}).body.toString('utf-8'));
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -1062,13 +1092,14 @@ describe('Blockchain Node', () => {
 
       // the same as the previous test case but is_partial = true
       it('returns a correct value with is_partial = true', async () => {
+        // Note: GET_RESP_MAX_SIBLINGS = 1000
         const wideTree = {};
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 1001; i++) {
           wideTree[i] = 'a';
         }
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: '/apps/test/test_value/some/path',
-          value: wideTree, // 1000 siblings
+          value: wideTree, // 1001 siblings (num children)
         }}).body.toString('utf-8'));
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -1408,9 +1439,9 @@ describe('Blockchain Node', () => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
             "available": {
-              "tree_bytes": 2474819814,
+              "tree_bytes": 2474819644,
               "tree_height": 30,
-              "tree_size": 15467623.8375
+              "tree_size": 15467622.775
             },
             "staking": {
               "app": 1,
@@ -1418,10 +1449,10 @@ describe('Blockchain Node', () => {
               "unstakeable": 1
             },
             "usage": {
-              "tree_bytes": 180186,
+              "tree_bytes": 180356,
               "tree_height": 24,
-              "tree_max_siblings": 1010,
-              "tree_size": 1066
+              "tree_max_siblings": 1011,
+              "tree_size": 1067
             }
           });
         })

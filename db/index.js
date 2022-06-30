@@ -740,11 +740,11 @@ class DB {
   static checkRespTreeLimits(stateNode, options) {
     // NOTE: Skip sibling number limit check for isPartial = true cases.
     if (!(options && options.isPartial)) {
-      if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+      if (stateNode.getTreeMaxSiblings() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
         return {
           code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
           message: `The data exceeds the max sibling limit of the requested node: ` +
-              `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+              `${stateNode.getTreeMaxSiblings()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
         };
       }
     }
