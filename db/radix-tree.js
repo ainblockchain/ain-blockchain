@@ -428,6 +428,10 @@ class RadixTree {
     return this.root.getTreeBytes();
   }
 
+  getRootTreeMaxSiblings() {
+    return this.root.getTreeMaxSiblings();
+  }
+
   updateRadixInfoForRadixTree() {
     return this.root.updateRadixInfoForRadixTree();
   }
