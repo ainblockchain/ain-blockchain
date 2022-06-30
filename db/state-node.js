@@ -24,6 +24,7 @@ class StateNode {
     this.treeHeight = 0;
     this.treeSize = 0;
     this.treeBytes = 0;
+    this.treeMaxSiblings = 0;
   }
 
   reset() {
@@ -38,10 +39,11 @@ class StateNode {
     this.setTreeHeight(0);
     this.setTreeSize(0);
     this.setTreeBytes(0);
+    this.setTreeMaxSiblings(0);
   }
 
   static _create(
-      version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
+      version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes, treeMaxSiblings) {
     const node = new StateNode(version);
     node.setLabel(label);
     node.setIsLeaf(isLeaf);
@@ -50,6 +52,7 @@ class StateNode {
     node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
     node.setTreeBytes(treeBytes);
+    node.setTreeMaxSiblings(treeMaxSiblings);
     return node;
   }
 
@@ -58,7 +61,7 @@ class StateNode {
     const versionToSet = version ? version : this.version;
     const cloned = StateNode._create(
         versionToSet, this.label, this.isLeaf, this.value, this.proofHash,
-        this.treeHeight, this.treeSize, this.treeBytes);
+        this.treeHeight, this.treeSize, this.treeBytes, this.treeMaxSiblings);
     if (!this.getIsLeaf()) {
       cloned.setRadixTree(this.radixTree.clone(versionToSet, cloned));
     }
@@ -69,6 +72,8 @@ class StateNode {
   // from this calculation, since their sizes can vary and affect the gas costs and
   // state proof hashes.
   // 4(isLeaf) + 132(proofHash) + 8(treeHeight) + 8(treeSize) + 8(treeBytes) = 160
+  // NOTE(platfowner): treeMaxSiblings is not included in the node bytes computation since
+  // it was added later (see https://github.com/ainblockchain/ain-blockchain/issues/1067).
   computeNodeBytes() {
     return sizeof(this.value) + 160;
   }
@@ -156,6 +161,7 @@ class StateNode {
           obj[`${StateLabelProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
           obj[`${StateLabelProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateLabelProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
+          obj[`${StateLabelProperties.TREE_MAX_SIBLINGS}:${label}`] = childNode.getTreeMaxSiblings();
         }
         if (includeProof) {
           obj[`${StateLabelProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
@@ -179,6 +185,7 @@ class StateNode {
       obj[`${StateLabelProperties.TREE_HEIGHT}`] = this.getTreeHeight();
       obj[`${StateLabelProperties.TREE_SIZE}`] = this.getTreeSize();
       obj[`${StateLabelProperties.TREE_BYTES}`] = this.getTreeBytes();
+      obj[`${StateLabelProperties.TREE_MAX_SIBLINGS}`] = this.getTreeMaxSiblings();
     }
     if (includeProof) {
       obj[`${StateLabelProperties.STATE_PROOF_HASH}`] = this.getProofHash();
@@ -435,6 +442,14 @@ class StateNode {
     this.treeBytes = treeBytes;
   }
 
+  getTreeMaxSiblings() {
+    return this.treeMaxSiblings;
+  }
+
+  setTreeMaxSiblings(treeMaxSiblings) {
+    this.treeMaxSiblings = treeMaxSiblings;
+  }
+
   /**
    * Returns newly buildt proof hash. If updatedChildLabel is given, it signifies that
    * only the child of the given child label among the children is not up-to-date now,
@@ -454,7 +469,8 @@ class StateNode {
         proofHash,
         treeHeight: 0,
         treeSize: 1,
-        treeBytes: nodeBytes
+        treeBytes: nodeBytes,
+        treeMaxSiblings: 1
       };
     } else {
       if (shouldRebuildRadixInfo) {
@@ -468,7 +484,8 @@ class StateNode {
         proofHash: this.radixTree.getRootProofHash(),
         treeHeight: 1 + this.radixTree.getRootTreeHeight(),
         treeSize: 1 + this.radixTree.getRootTreeSize(),
-        treeBytes: nodeBytes + this.radixTree.getRootTreeBytes()
+        treeBytes: nodeBytes + this.radixTree.getRootTreeBytes(),
+        treeMaxSiblings: Math.max(this.numChildren(), this.radixTree.getRootTreeMaxSiblings())
       };
     }
   }
@@ -479,6 +496,7 @@ class StateNode {
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
+    this.setTreeMaxSiblings(treeInfo.treeMaxSiblings);
   }
 
   verifyStateInfo(updatedChildLabel = null) {
@@ -486,7 +504,8 @@ class StateNode {
     return this.getProofHash() === treeInfo.proofHash &&
         this.getTreeHeight() === treeInfo.treeHeight &&
         this.getTreeSize() === treeInfo.treeSize &&
-        this.getTreeBytes() === treeInfo.treeBytes;
+        this.getTreeBytes() === treeInfo.treeBytes &&
+        this.getTreeMaxSiblings() === treeInfo.treeMaxSiblings;
   }
 
   getProofOfStateNode(childLabel = null, childProof = null) {

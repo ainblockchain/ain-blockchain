@@ -424,6 +424,7 @@ describe("DB operations", () => {
           "#num_parents": 1,
           "#tree_bytes": 3708,
           "#tree_height": 4,
+          "#tree_max_siblings": 5,
           "#tree_size": 21,
           "ai": {
             "#num_children": 3,
@@ -442,6 +443,10 @@ describe("DB operations", () => {
             "#tree_height:baz": 0,
             "#tree_height:comcom": 0,
             "#tree_height:foo": 0,
+            "#tree_max_siblings": 3,
+            "#tree_max_siblings:baz": 1,
+            "#tree_max_siblings:comcom": 1,
+            "#tree_max_siblings:foo": 1,
             "#tree_size": 4,
             "#tree_size:baz": 1,
             "#tree_size:comcom": 1,
@@ -459,6 +464,8 @@ describe("DB operations", () => {
             "#tree_bytes:value": 168,
             "#tree_height": 1,
             "#tree_height:value": 0,
+            "#tree_max_siblings": 1,
+            "#tree_max_siblings:value": 1,
             "#tree_size": 2,
             "#tree_size:value": 1,
             "value": 20,
@@ -472,6 +479,8 @@ describe("DB operations", () => {
             "#tree_bytes:value": 168,
             "#tree_height": 1,
             "#tree_height:value": 0,
+            "#tree_max_siblings": 1,
+            "#tree_max_siblings:value": 1,
             "#tree_size": 2,
             "#tree_size:value": 1,
             "value": 20,
@@ -481,6 +490,7 @@ describe("DB operations", () => {
             "#num_parents": 1,
             "#tree_bytes": 502,
             "#tree_height": 2,
+            "#tree_max_siblings": 1,
             "#tree_size": 3,
             "far": {
               "#num_children": 1,
@@ -491,6 +501,8 @@ describe("DB operations", () => {
               "#tree_bytes:down": 168,
               "#tree_height": 1,
               "#tree_height:down": 0,
+              "#tree_max_siblings": 1,
+              "#tree_max_siblings:down": 1,
               "#tree_size": 2,
               "#tree_size:down": 1,
               "down": 456,
@@ -501,6 +513,7 @@ describe("DB operations", () => {
             "#num_parents": 1,
             "#tree_bytes": 1622,
             "#tree_height": 3,
+            "#tree_max_siblings": 2,
             "#tree_size": 9,
             "disabled_shard": {
               "#num_children": 2,
@@ -511,6 +524,8 @@ describe("DB operations", () => {
               "#tree_bytes:path": 168,
               "#tree_height": 2,
               "#tree_height:path": 0,
+              "#tree_max_siblings": 2,
+              "#tree_max_siblings:path": 1,
               "#tree_size": 4,
               "#tree_size:path": 1,
               ".shard": {
@@ -522,6 +537,8 @@ describe("DB operations", () => {
                 "#tree_bytes:sharding_enabled": 164,
                 "#tree_height": 1,
                 "#tree_height:sharding_enabled": 0,
+                "#tree_max_siblings": 1,
+                "#tree_max_siblings:sharding_enabled": 1,
                 "#tree_size": 2,
                 "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": false,
@@ -537,6 +554,8 @@ describe("DB operations", () => {
               "#tree_bytes:path": 168,
               "#tree_height": 2,
               "#tree_height:path": 0,
+              "#tree_max_siblings": 2,
+              "#tree_max_siblings:path": 1,
               "#tree_size": 4,
               "#tree_size:path": 1,
               ".shard": {
@@ -548,6 +567,8 @@ describe("DB operations", () => {
                 "#tree_bytes:sharding_enabled": 164,
                 "#tree_height": 1,
                 "#tree_height:sharding_enabled": 0,
+                "#tree_max_siblings": 1,
+                "#tree_max_siblings:sharding_enabled": 1,
                 "#tree_size": 2,
                 "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": true,
@@ -6055,6 +6076,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xe4fd1f81f45b74ccd16540efa905abde37b6660d3fe9fb18eb3bf6b3e7cd215a",
         "#tree_bytes": 922,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0"
       });
@@ -6063,6 +6085,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6071,6 +6094,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x19037329315c0182c0f965a786e6d0659bb374e907a3937f885f0da3984cfa6e",
         "#tree_bytes": 560,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6079,6 +6103,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
         "#tree_bytes": 184,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6087,6 +6112,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
         "#tree_bytes": 184,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6095,6 +6121,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "#tree_bytes": 536,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6103,6 +6130,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6111,6 +6139,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6130,6 +6159,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xe037f0083e30127f0e5088be69c2629a7e14e18518ee736fc31d86ec39b3c459",
         "#tree_bytes": 348,
         "#tree_height": 1,
+        "#tree_max_siblings": 1,
         "#tree_size": 2,
         "#version": "NODE:0"
       });
@@ -6138,6 +6168,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6147,6 +6178,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "#tree_bytes": 536,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6166,6 +6198,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
         "#tree_bytes": 906,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0"
       });
@@ -6174,6 +6207,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xdd1c06ba6d6ff93fea2f2a1a3a026692858cd3528424b2f86197e1761539b0e4",
         "#tree_bytes": 906,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0",
       });
@@ -6182,6 +6216,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xdfe61d4a6c026b34261bc83f4c9d5d24deaed1671177fee24a889930588edd89",
         "#tree_bytes": 544,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6190,6 +6225,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
         "#tree_bytes": 176,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6198,6 +6234,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
         "#tree_bytes": 176,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6206,6 +6243,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
