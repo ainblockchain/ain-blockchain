@@ -476,6 +476,10 @@ describe('Sharding', () => {
         expect(latestAfter).to.be.greaterThan(latestBefore);
       });
     });
+
+    after(() => {
+      delete ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL;
+    });
   });
 
   describe('API tests', () => {
