@@ -31,7 +31,6 @@ const middleware = new Middleware();
 app.use(middleware.expressJsonRequestBodySizeLimiter());
 app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 app.use(middleware.corsLimiter());
-app.use(middleware.ipWhitelistLimiter());
 app.use(middleware.blockchainApiRateLimiter);
 
 const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
@@ -111,6 +110,9 @@ app.get('/last_block_number', (req, res, next) => {
     .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
+
+// NOTE(platfowner): This middleware should be placed after minimally required APIs (see above).
+app.use(middleware.ipWhitelistLimiter());
 
 /**
  * Dev Client GET APIs (available to whitelisted IPs)
