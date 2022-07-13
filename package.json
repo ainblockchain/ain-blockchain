@@ -83,7 +83,7 @@
     "json-stream-stringify": "^2.0.4",
     "lodash": "^4.17.21",
     "match-url-wildcard": "^0.0.4",
-    "moment": "^2.29.2",
+    "moment": "^2.29.4",
     "natural-orderby": "^2.0.3",
     "node-cron": "^2.0.3",
     "ntpsync": "^0.2.3",
