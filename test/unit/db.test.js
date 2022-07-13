@@ -319,7 +319,7 @@ describe("DB operations", () => {
         node.db.stateManager.finalizeVersion(backupFinalVersion);
       })
 
-      it('getValue to retrieve value near top of database with is_shallow', () => {
+      it('getValue to retrieve value near top of database with isShallow = true', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
           'ai': {
             "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
@@ -339,12 +339,92 @@ describe("DB operations", () => {
         })
       });
 
+      it('getValue to retrieve value near top of database with isPartial = true and lastEndLabel', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
+          'ai': {
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            "#serial": 2,
+          },
+          'increment': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 5,
+          },
+          'decrement': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 7,
+          },
+          'nested': {
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
+            "#serial": 9,
+          },
+          'shards': {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
+          },
+          "#end_label": "736861726473"
+        })
+        // lastEndLabel = "736861726472" ("736861726473" - 1)
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "736861726472" }), {
+          'shards': {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
+          },
+          "#end_label": "736861726473"
+        })
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "736861726473" }), {
+          "#end_label": null
+        })
+      });
+
+      it('getValue to retrieve value near top of database with isPartial = true and lastEndLabel - chaining', () => {
+        // Change GET_RESP_MAX_SIBLINGS value for testing.
+        const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true }), {
+          "ai": {
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            "#serial": 2,
+          },
+          "decrement": {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 7,
+          },
+          "#end_label": "64656372656d656e74"
+        })
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "64656372656d656e74" }), {
+          "increment": {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#serial": 5,
+          },
+          "nested": {
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
+            "#serial": 9,
+          },
+          "#end_label": "6e6573746564"
+        })
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "6e6573746564" }), {
+          "shards": {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            "#serial": 11,
+          },
+          "#end_label": "736861726473"
+        })
+        assert.deepEqual(node.db.getValue('/apps/test', { isPartial: true, lastEndLabel: "736861726473" }), {
+          "#end_label": null
+        })
+
+        // Restore GET_RESP_MAX_SIBLINGS value.
+        NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+      });
+
       it('getValue to retrieve value with include_tree_info', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
           "#num_children": 5,
           "#num_parents": 1,
           "#tree_bytes": 3708,
           "#tree_height": 4,
+          "#tree_max_siblings": 5,
           "#tree_size": 21,
           "ai": {
             "#num_children": 3,
@@ -363,6 +443,10 @@ describe("DB operations", () => {
             "#tree_height:baz": 0,
             "#tree_height:comcom": 0,
             "#tree_height:foo": 0,
+            "#tree_max_siblings": 3,
+            "#tree_max_siblings:baz": 1,
+            "#tree_max_siblings:comcom": 1,
+            "#tree_max_siblings:foo": 1,
             "#tree_size": 4,
             "#tree_size:baz": 1,
             "#tree_size:comcom": 1,
@@ -380,6 +464,8 @@ describe("DB operations", () => {
             "#tree_bytes:value": 168,
             "#tree_height": 1,
             "#tree_height:value": 0,
+            "#tree_max_siblings": 1,
+            "#tree_max_siblings:value": 1,
             "#tree_size": 2,
             "#tree_size:value": 1,
             "value": 20,
@@ -393,6 +479,8 @@ describe("DB operations", () => {
             "#tree_bytes:value": 168,
             "#tree_height": 1,
             "#tree_height:value": 0,
+            "#tree_max_siblings": 1,
+            "#tree_max_siblings:value": 1,
             "#tree_size": 2,
             "#tree_size:value": 1,
             "value": 20,
@@ -402,6 +490,7 @@ describe("DB operations", () => {
             "#num_parents": 1,
             "#tree_bytes": 502,
             "#tree_height": 2,
+            "#tree_max_siblings": 1,
             "#tree_size": 3,
             "far": {
               "#num_children": 1,
@@ -412,6 +501,8 @@ describe("DB operations", () => {
               "#tree_bytes:down": 168,
               "#tree_height": 1,
               "#tree_height:down": 0,
+              "#tree_max_siblings": 1,
+              "#tree_max_siblings:down": 1,
               "#tree_size": 2,
               "#tree_size:down": 1,
               "down": 456,
@@ -422,6 +513,7 @@ describe("DB operations", () => {
             "#num_parents": 1,
             "#tree_bytes": 1622,
             "#tree_height": 3,
+            "#tree_max_siblings": 2,
             "#tree_size": 9,
             "disabled_shard": {
               "#num_children": 2,
@@ -432,6 +524,8 @@ describe("DB operations", () => {
               "#tree_bytes:path": 168,
               "#tree_height": 2,
               "#tree_height:path": 0,
+              "#tree_max_siblings": 2,
+              "#tree_max_siblings:path": 1,
               "#tree_size": 4,
               "#tree_size:path": 1,
               ".shard": {
@@ -443,6 +537,8 @@ describe("DB operations", () => {
                 "#tree_bytes:sharding_enabled": 164,
                 "#tree_height": 1,
                 "#tree_height:sharding_enabled": 0,
+                "#tree_max_siblings": 1,
+                "#tree_max_siblings:sharding_enabled": 1,
                 "#tree_size": 2,
                 "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": false,
@@ -458,6 +554,8 @@ describe("DB operations", () => {
               "#tree_bytes:path": 168,
               "#tree_height": 2,
               "#tree_height:path": 0,
+              "#tree_max_siblings": 2,
+              "#tree_max_siblings:path": 1,
               "#tree_size": 4,
               "#tree_size:path": 1,
               ".shard": {
@@ -469,6 +567,8 @@ describe("DB operations", () => {
                 "#tree_bytes:sharding_enabled": 164,
                 "#tree_height": 1,
                 "#tree_height:sharding_enabled": 0,
+                "#tree_max_siblings": 1,
+                "#tree_max_siblings:sharding_enabled": 1,
                 "#tree_size": 2,
                 "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": true,
@@ -603,7 +703,7 @@ describe("DB operations", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere")).to.equal(null)
       })
 
-      it("getValue to fail with value not present with is_shallow", () => {
+      it("getValue to fail with value not present with isShallow = true", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere", true, false)).to.equal(null)
       })
     })
@@ -957,11 +1057,32 @@ describe("DB operations", () => {
         });
       })
 
-      it("getFunction to retrieve existing function config with is_shallow", () => {
+      it("getFunction to retrieve existing function config with isShallow = true", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
-          some: {
+          "some": {
             "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
           },
+        });
+      })
+
+      it("getFunction to retrieve existing function config with isPartial = true and lastEndLabel", () => {
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true }), {
+          "some": {
+            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5",
+            "#serial": 2,
+          },
+          "#end_label": "736f6d65"
+        });
+        // lastEndLabel = "736f6d64" ("736f6d65" - 1)
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true, lastEndLabel: "736f6d64" }), {
+          "some": {
+            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5",
+            "#serial": 2,
+          },
+          "#end_label": "736f6d65"
+        });
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isPartial: true, lastEndLabel: "736f6d65" }), {
+          "#end_label": null
         });
       })
     })
@@ -1224,14 +1345,28 @@ describe("DB operations", () => {
         });
       })
 
-      it('getRule to retrieve existing rule config with is_shallow', () => {
-        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
+      it('getRule to retrieve existing rule config with isPartial = true and lastEndLabel', () => {
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true }), {
           "some": {
-            "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
+            "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038",
+            "#serial": 2,
           },
           "syntax": {
-            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732"
-          }
+            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732",
+            "#serial": 5,
+          },
+          "#end_label": "73796e746178"
+        });
+        // lastEndLabel = "73796e746177" ("73796e746178" - 1)
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true, lastEndLabel: "73796e746177" }), {
+          "syntax": {
+            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732",
+            "#serial": 5,
+          },
+          "#end_label": "73796e746178"
+        });
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isPartial: true, lastEndLabel: "73796e746178" }), {
+          "#end_label": null
         });
       });
     })
@@ -1764,11 +1899,32 @@ describe("DB operations", () => {
         });
       })
 
-      it("getOwner to retrieve existing owner config with is_shallow", () => {
+      it("getOwner to retrieve existing owner config with isShallow = true", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
-          some: {
+          "some": {
             "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80"
           },
+        })
+      })
+
+      it("getOwner to retrieve existing owner config with isPartial = true and lastEndLabel", () => {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true }), {
+          "some": {
+            "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80",
+            "#serial": 2,
+          },
+          "#end_label": "736f6d65"
+        })
+        // lastEndLabel = "736f6d64" ("736f6d65" - 1)
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true, lastEndLabel: "736f6d64" }), {
+          "some": {
+            "#state_ph": "0x6127bafe410040319f8d36b1ec0491e16db32d2d0be00f8fc28015c564582b80",
+            "#serial": 2,
+          },
+          "#end_label": "736f6d65"
+        })
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isPartial: true, lastEndLabel: "736f6d65" }), {
+          "#end_label": null
         })
       })
     })
@@ -5920,6 +6076,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xe4fd1f81f45b74ccd16540efa905abde37b6660d3fe9fb18eb3bf6b3e7cd215a",
         "#tree_bytes": 922,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0"
       });
@@ -5928,6 +6085,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -5936,6 +6094,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x19037329315c0182c0f965a786e6d0659bb374e907a3937f885f0da3984cfa6e",
         "#tree_bytes": 560,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -5944,6 +6103,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
         "#tree_bytes": 184,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -5952,6 +6112,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
         "#tree_bytes": 184,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -5960,6 +6121,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "#tree_bytes": 536,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -5968,6 +6130,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -5976,6 +6139,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -5995,6 +6159,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xe037f0083e30127f0e5088be69c2629a7e14e18518ee736fc31d86ec39b3c459",
         "#tree_bytes": 348,
         "#tree_height": 1,
+        "#tree_max_siblings": 1,
         "#tree_size": 2,
         "#version": "NODE:0"
       });
@@ -6003,6 +6168,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6012,6 +6178,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "#tree_bytes": 536,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6031,6 +6198,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
         "#tree_bytes": 906,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0"
       });
@@ -6039,6 +6207,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xdd1c06ba6d6ff93fea2f2a1a3a026692858cd3528424b2f86197e1761539b0e4",
         "#tree_bytes": 906,
         "#tree_height": 2,
+        "#tree_max_siblings": 2,
         "#tree_size": 5,
         "#version": "NODE:0",
       });
@@ -6047,6 +6216,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xdfe61d4a6c026b34261bc83f4c9d5d24deaed1671177fee24a889930588edd89",
         "#tree_bytes": 544,
         "#tree_height": 1,
+        "#tree_max_siblings": 2,
         "#tree_size": 3,
         "#version": "NODE:0",
       });
@@ -6055,6 +6225,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
         "#tree_bytes": 176,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6063,6 +6234,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
         "#tree_bytes": 176,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6071,6 +6243,7 @@ describe("State info - getStateInfo", () => {
         "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
         "#tree_bytes": 174,
         "#tree_height": 0,
+        "#tree_max_siblings": 1,
         "#tree_size": 1,
         "#version": "NODE:0",
       });
@@ -6295,6 +6468,7 @@ describe("Util methods", () => {
       const appName = 'app_name_valid0';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": true,
+        "result": true,
         "code": 0,
       });
     });
@@ -6303,7 +6477,8 @@ describe("Util methods", () => {
       const appName = 'app/path';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30701,
+        "result": false,
+        "code": 30601,
         "message": `Invalid app name for state label: ${appName}`,
       });
     });
@@ -6315,7 +6490,8 @@ describe("Util methods", () => {
       }
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30701,
+        "result": false,
+        "code": 30601,
         "message": `Invalid app name for state label: ${appName}`,
       });
     });
@@ -6324,7 +6500,8 @@ describe("Util methods", () => {
       const appName = 'balance_total_sum';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30702,
+        "result": false,
+        "code": 30602,
         "message": `Invalid app name for service name: ${appName}`,
       });
     });
@@ -6333,21 +6510,24 @@ describe("Util methods", () => {
       const appName = 'appName';
       assert.deepEqual(node.db.validateAppName(appName, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30702,
+        "result": false,
+        "code": 30602,
         "message": `Invalid app name for service name: ${appName}`,
       });
 
       const appName2 = 'app-name';
       assert.deepEqual(node.db.validateAppName(appName2, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30702,
+        "result": false,
+        "code": 30602,
         "message": `Invalid app name for service name: ${appName2}`,
       });
 
       const appName3 = '0app';
       assert.deepEqual(node.db.validateAppName(appName3, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30702,
+        "result": false,
+        "code": 30602,
         "message": `Invalid app name for service name: ${appName3}`,
       });
     });
@@ -6355,7 +6535,8 @@ describe("Util methods", () => {
     it("app name in use", () => {
       assert.deepEqual(node.db.validateAppName(appNameInUse, 2, stateLabelLengthLimit), {
         "is_valid": false,
-        "code": 30703,
+        "result": false,
+        "code": 30603,
         "message": `App name already in use: ${appNameInUse}`,
       });
     });

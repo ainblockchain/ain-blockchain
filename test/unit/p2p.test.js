@@ -208,6 +208,7 @@ describe("P2p", () => {
               "#state_ph": 'erased',
               "#tree_bytes": 'erased',
               "#tree_height": 11,
+              "#tree_max_siblings": 26,
               "#tree_size": 'erased',
               "#version": "NODE:0",
             },

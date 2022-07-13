@@ -13,8 +13,8 @@ on:
       - 'master'
     types: [opened, synchronize, reopened, closed]
 jobs:
-  build_and_test:
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited') }}
+  build_and_unit_test:
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -32,46 +32,6 @@ jobs:
         run: yarn install
       - name: run unittest
         run: yarn run test_unit
-      # integration test only run when master merging
-      - name: run blockchain integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'
-        run: yarn run test_integration_blockchain
-      - name: run consensus integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'
-        run: yarn run test_integration_consensus
-      - name: run dapp integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'
-        run: yarn run test_integration_dapp
-      - name: run node integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'
-        run: yarn run test_integration_node
-      - name: run sharding integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'
-        run: yarn run test_integration_sharding
-  check_protocol_version:
-    if: ${{ github.event_name == 'push' }}
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: test
-        if: github.event_name == 'push'
-        run: echo ${{github.event_name}}
-      - name: get current version
-        run: echo "VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
-      - name: get min/max versions
-        run: |
-          echo "MIN_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].min')" >> $GITHUB_ENV
-          echo "MAX_VERSION=$(cat client/protocol_versions.json | jq -r --arg var "$VERSION" '.[$var].max')" >> $GITHUB_ENV
-      - name: send results
-        env:
-          SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-        run: |
-          curl -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
-            -H "Content-Type: application/json" \
-            -d '{"username": "AIN-BLOCKCHAIN",
-            "channel": "blockchain-testnet-deploy",
-            "text": "New PR has just been merged(${{ github.ref }}, ${{ github.sha }}).\nCurrent version: '"$VERSION"', compatible with min('"$MIN_VERSION"'), max('"$MAX_VERSION"')",
-            "icon_emoji": ":gem:"}'
   performance_test:
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.event.pull_request.base.ref == 'develop'
     runs-on: ubuntu-latest
@@ -84,43 +44,3 @@ jobs:
         run: |-
           gcloud compute ssh "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE }}" --zone "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE }}" -- "cd ~/../workspace/testnet-performance-test-pipeline && nohup node start_performance_test.js ${{ secrets.PERF_TEST_PIPELINE_TEST_SEASON }} ${{ secrets.PERF_TEST_PIPELINE_TEST_BRANCH }} ${{ github.event.pull_request.head.ref }} >> test_log.txt 2>&1 &" &
           sleep 60
-  check_deployment:
-    if: github.event.pull_request.base.ref == 'master'
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-            node-version: '16.x'
-            registry-url: 'https://registry.npmjs.org'
-      - name: setup key
-        env:
-          PRIV_KEY_FOR_DOWNLOAD: ${{ secrets.DEPLOYMENT_PRIV_KEY_FOR_DOWNLOAD }}
-          KNOWN_HOSTS: ${{ secrets.DEPLOYMENT_KNOWN_HOSTS }}
-        run: |
-          echo "$PRIV_KEY_FOR_DOWNLOAD" > ./tools/cicd/id_rsa
-          chmod 600 ./tools/cicd/id_rsa
-          echo $KNOWN_HOSTS >> ~/.ssh/known_hosts
-      - name: check apps
-        env:
-          ENV_ID: ${{ secrets.DEPLOYMENT_ENV_ID }}
-          CLIENT_EMAIL: ${{ secrets.DEPLOYMENT_CLIENT_EMAIL }}
-          PRIVATE_KEY: ${{ secrets.DEPLOYMENT_PRIVATE_KEY}}
-          GPT2: ${{ secrets.DEPLOYMENT_GPT2 }}
-          INSIGHT: ${{ secrets.DEPLOYMENT_INSIGHT }}
-          FAUCET: ${{ secrets.DEPLOYMENT_FAUCET }}
-          PIPELINE: ${{ secrets.DEPLOYMENT_PIPELINE }}
-          DATA: ${{ secrets.DEPLOYMENT_DATA }}
-        run: |
-          yarn add dotenv google-spreadsheet semver
-          node tools/cicd/deployment.js
-      - name: send slack message
-        env:
-            SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
-        run: |
-          curl -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
-            -H "Content-Type: application/json" \
-            -d '{"username": "APP_VERSION_CHECK",
-            "channel": "blockchain-testnet-deploy",
-            "text": "New blockchain version has just been released. Please check compatibility of app versions below:\n ${{ secrets.DEPLOYMENT_SHEET_URL }}",
-            "icon_emoji": ":bomb:"}'

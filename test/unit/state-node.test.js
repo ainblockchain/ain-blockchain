@@ -3,6 +3,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
+const { NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const RadixNode = require('../../db/radix-node');
 const RadixTree = require('../../db/radix-tree');
@@ -58,6 +59,7 @@ describe("state-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+      expect(node.treeMaxSiblings).to.equal(0);
     });
 
     it("reset", () => {
@@ -71,6 +73,7 @@ describe("state-node", () => {
       const treeHeight = 1;
       const treeSize = 10;
       const treeBytes = 100;
+      const treeMaxSiblings = 5;
 
       node.setVersion(version);
       node.setLabel(label);
@@ -81,6 +84,7 @@ describe("state-node", () => {
       node.setTreeHeight(treeHeight);
       node.setTreeSize(treeSize);
       node.setTreeBytes(treeBytes);
+      node.setTreeMaxSiblings(treeMaxSiblings);
 
       node.reset();
       expect(node.version).to.equal(null);
@@ -94,6 +98,7 @@ describe("state-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+      expect(node.treeMaxSiblings).to.equal(0);
     });
   });
 
@@ -111,6 +116,7 @@ describe("state-node", () => {
       expect(node2.treeHeight).to.equal(0);
       expect(node2.treeSize).to.equal(0);
       expect(node2.treeBytes).to.equal(0);
+      expect(node2.treeMaxSiblings).to.equal(0);
     });
   });
 
@@ -136,6 +142,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(node.getTreeMaxSiblings());
       assert.deepEqual(
           clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
           node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
@@ -173,6 +180,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(stateTree.getTreeMaxSiblings());
       assert.deepEqual(
           clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
           stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
@@ -196,6 +204,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(node.getTreeMaxSiblings());
     });
 
     it("internal node", () => {
@@ -223,6 +232,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
+      expect(clone.getTreeMaxSiblings()).to.equal(stateTree.getTreeMaxSiblings());
     });
   });
 
@@ -611,6 +621,9 @@ describe("state-node", () => {
         "#tree_height": 2,
         "#tree_height:a": 0,
         "#tree_height:b": 0,
+        "#tree_max_siblings": 4,
+        "#tree_max_siblings:a": 1,
+        "#tree_max_siblings:b": 1,
         "#tree_size": 9,
         "#tree_size:a": 1,
         "#tree_size:b": 1,
@@ -629,6 +642,9 @@ describe("state-node", () => {
           "#tree_height": 1,
           "#tree_height:ca": 0,
           "#tree_height:cb": 0,
+          "#tree_max_siblings": 2,
+          "#tree_max_siblings:ca": 1,
+          "#tree_max_siblings:cb": 1,
           "#tree_size": 3,
           "#tree_size:ca": 1,
           "#tree_size:cb": 1,
@@ -648,6 +664,9 @@ describe("state-node", () => {
           "#tree_height": 1,
           "#tree_height:da": 0,
           "#tree_height:db": 0,
+          "#tree_max_siblings": 2,
+          "#tree_max_siblings:da": 1,
+          "#tree_max_siblings:db": 1,
           "#tree_size": 3,
           "#tree_size:da": 1,
           "#tree_size:db": 1,
@@ -976,11 +995,13 @@ describe("state-node", () => {
   describe("child", () => {
     const label1 = 'label1';
     const label2 = 'label2';
+    const label3 = 'label3';
 
     let parent1;
     let parent2;
     let child1;
     let child2;
+    let child3;
 
     beforeEach(() => {
       parent1 = new StateNode();
@@ -991,6 +1012,9 @@ describe("state-node", () => {
 
       child2 = new StateNode();
       child2.setValue('value2');
+
+      child3 = new StateNode();
+      child3.setValue('value3');
     });
 
     it("get / set / has / delete with single parent", () => {
@@ -1234,7 +1258,24 @@ describe("state-node", () => {
       expect(child2.getIsLeaf()).to.equal(true);
       expect(parent1.getIsLeaf()).to.equal(false);
 
+      parent1.setChild(label3, child3);
+      assert.deepEqual(parent1.getChildLabels(), ['label1', 'label2', 'label3']);
+      assert.deepEqual(parent1.getChildNodes(), [child1, child2, child3]);
+      expect(parent1.numChildren()).to.equal(3);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
+      expect(child3.getIsLeaf()).to.equal(true);
+      expect(parent1.getIsLeaf()).to.equal(false);
+
       parent1.deleteChild(label2);
+      assert.deepEqual(parent1.getChildLabels(), ['label1', 'label3']);
+      assert.deepEqual(parent1.getChildNodes(), [child1, child3]);
+      expect(parent1.numChildren()).to.equal(2);
+      expect(child1.getIsLeaf()).to.equal(true);
+      expect(child2.getIsLeaf()).to.equal(true);
+      expect(parent1.getIsLeaf()).to.equal(false);
+
+      parent1.deleteChild(label3);
       assert.deepEqual(parent1.getChildLabels(), ['label1']);
       assert.deepEqual(parent1.getChildNodes(), [child1]);
       expect(parent1.numChildren()).to.equal(1);
@@ -1249,6 +1290,174 @@ describe("state-node", () => {
       expect(child1.getIsLeaf()).to.equal(true);
       expect(child2.getIsLeaf()).to.equal(true);
       expect(parent1.getIsLeaf()).to.equal(true);
+    });
+
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true", () => {
+      // Change GET_RESP_MAX_SIBLINGS value for testing.
+      const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+      const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel1.list, []);
+      assert.deepEqual(labelsWithEndLabel1.serialList, []);
+      expect(labelsWithEndLabel1.endLabel).to.equal(null);
+      const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel1.list, []);
+      assert.deepEqual(nodesWithEndLabel1.serialList, []);
+      expect(nodesWithEndLabel1.endLabel).to.equal(null);
+
+      parent1.setChild(label1, child1);
+      parent1.setChild(label2, child2);
+      const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel2.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [2, 5]);
+      expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel2.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [2, 5]);
+      expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c32');
+
+      parent1.setChild(label3, child3);
+      const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true);
+      // skip label3
+      assert.deepEqual(labelsWithEndLabel3.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel3.serialList, [2, 5]);
+      expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true);
+      // skip child3
+      assert.deepEqual(nodesWithEndLabel3.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel3.serialList, [2, 5]);
+      expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c32');
+
+      parent1.deleteChild(label2);
+      const labelsWithEndLabel4 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel4.list, ['label1', 'label3']);
+      assert.deepEqual(labelsWithEndLabel4.serialList, [2, 7]);
+      expect(labelsWithEndLabel4.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel4 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel4.list, [child1, child3]);
+      assert.deepEqual(nodesWithEndLabel4.serialList, [2, 7]);
+      expect(nodesWithEndLabel4.endLabel).to.equal('6c6162656c33');
+
+      parent1.deleteChild(label3);
+      parent1.deleteChild(label1);
+      const labelsWithEndLabel5 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel5.list, []);
+      assert.deepEqual(labelsWithEndLabel5.serialList, []);
+      expect(labelsWithEndLabel5.endLabel).to.equal(null);
+      const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel5.list, []);
+      assert.deepEqual(nodesWithEndLabel5.serialList, []);
+      expect(nodesWithEndLabel5.endLabel).to.equal(null);
+
+      // Restore GET_RESP_MAX_SIBLINGS value.
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+    });
+
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true and lastEndLabel", () => {
+      // Change GET_RESP_MAX_SIBLINGS value for testing.
+      const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+      // lastEndLabel = ''6c6162656c31' (child1)
+
+      const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel1.list, []);
+      assert.deepEqual(labelsWithEndLabel1.serialList, []);
+      expect(labelsWithEndLabel1.endLabel).to.equal(null);
+      const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel1.list, []);
+      assert.deepEqual(nodesWithEndLabel1.serialList, []);
+      expect(nodesWithEndLabel1.endLabel).to.equal(null);
+
+      parent1.setChild(label1, child1);
+      parent1.setChild(label2, child2);
+      const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel2.list, ['label2']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [5]);
+      expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel2.list, [child2]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [5]);
+      expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c32');
+
+      parent1.setChild(label3, child3);
+      const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      // skip label1
+      assert.deepEqual(labelsWithEndLabel3.list, ['label2', 'label3']);
+      assert.deepEqual(labelsWithEndLabel3.serialList, [5, 7]);
+      expect(labelsWithEndLabel3.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      // skip child1
+      assert.deepEqual(nodesWithEndLabel3.list, [child2, child3]);
+      assert.deepEqual(nodesWithEndLabel3.serialList, [5, 7]);
+      expect(nodesWithEndLabel3.endLabel).to.equal('6c6162656c33');
+
+      parent1.deleteChild(label2);
+      const labelsWithEndLabel4 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      // skip label1
+      assert.deepEqual(labelsWithEndLabel4.list, ['label3']);
+      assert.deepEqual(labelsWithEndLabel4.serialList, [7]);
+      expect(labelsWithEndLabel4.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel4 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      // skip child1
+      assert.deepEqual(nodesWithEndLabel4.list, [child3]);
+      assert.deepEqual(nodesWithEndLabel4.serialList, [7]);
+      expect(nodesWithEndLabel4.endLabel).to.equal('6c6162656c33');
+
+      parent1.deleteChild(label3);
+      parent1.deleteChild(label1);
+      const labelsWithEndLabel5 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(labelsWithEndLabel5.list, []);
+      assert.deepEqual(labelsWithEndLabel5.serialList, []);
+      expect(labelsWithEndLabel5.endLabel).to.equal(null);
+      const nodesWithEndLabel5 = parent1.getChildNodesWithEndLabel(true, '6c6162656c31');
+      assert.deepEqual(nodesWithEndLabel5.list, []);
+      assert.deepEqual(nodesWithEndLabel5.serialList, []);
+      expect(nodesWithEndLabel5.endLabel).to.equal(null);
+
+      // Restore GET_RESP_MAX_SIBLINGS value.
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
+    });
+
+    it("getChildLabelsWithEndLabel / getChildNodesWithEndLabel with isPartial = true and lastEndLabel - chaining", () => {
+      // Change GET_RESP_MAX_SIBLINGS value for testing.
+      const originalGetRespMaxSiblings = NodeConfigs.GET_RESP_MAX_SIBLINGS;
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = 2;
+
+      parent1.setChild(label1, child1);
+      parent1.setChild(label2, child2);
+      parent1.setChild(label3, child3);
+
+      const labelsWithEndLabel1 = parent1.getChildLabelsWithEndLabel(true);
+      assert.deepEqual(labelsWithEndLabel1.list, ['label1', 'label2']);
+      assert.deepEqual(labelsWithEndLabel1.serialList, [2, 5]);
+      expect(labelsWithEndLabel1.endLabel).to.equal('6c6162656c32');
+      const nodesWithEndLabel1 = parent1.getChildNodesWithEndLabel(true);
+      assert.deepEqual(nodesWithEndLabel1.list, [child1, child2]);
+      assert.deepEqual(nodesWithEndLabel1.serialList, [2, 5]);
+      expect(nodesWithEndLabel1.endLabel).to.equal('6c6162656c32');
+
+      const labelsWithEndLabel2 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c32');
+      assert.deepEqual(labelsWithEndLabel2.list, ['label3']);
+      assert.deepEqual(labelsWithEndLabel2.serialList, [7]);
+      expect(labelsWithEndLabel2.endLabel).to.equal('6c6162656c33');
+      const nodesWithEndLabel2 = parent1.getChildNodesWithEndLabel(true, '6c6162656c32');
+      assert.deepEqual(nodesWithEndLabel2.list, [child3]);
+      assert.deepEqual(nodesWithEndLabel2.serialList, [7]);
+      expect(nodesWithEndLabel2.endLabel).to.equal('6c6162656c33');
+
+      const labelsWithEndLabel3 = parent1.getChildLabelsWithEndLabel(true, '6c6162656c33');
+      assert.deepEqual(labelsWithEndLabel3.list, []);
+      assert.deepEqual(labelsWithEndLabel3.serialList, []);
+      expect(labelsWithEndLabel3.endLabel).to.equal(null);
+      const nodesWithEndLabel3 = parent1.getChildNodesWithEndLabel(true, '6c6162656c33');
+      assert.deepEqual(nodesWithEndLabel3.list, []);
+      assert.deepEqual(nodesWithEndLabel3.serialList, []);
+      expect(nodesWithEndLabel3.endLabel).to.equal(null);
+
+      // Restore GET_RESP_MAX_SIBLINGS value.
+      NodeConfigs.GET_RESP_MAX_SIBLINGS = originalGetRespMaxSiblings;
     });
   });
 
@@ -1313,6 +1522,16 @@ describe("state-node", () => {
       expect(node.getTreeBytes()).to.equal(10);
       node.setTreeBytes(5);
       expect(node.getTreeBytes()).to.equal(5);
+    });
+  });
+
+  describe("tree max siblings", () => {
+    it("getTreeMaxSiblings / setTreeMaxSiblings", () => {
+      expect(node.getTreeMaxSiblings()).to.equal(0);
+      node.setTreeMaxSiblings(5);
+      expect(node.getTreeMaxSiblings()).to.equal(5);
+      node.setTreeMaxSiblings(3);
+      expect(node.getTreeMaxSiblings()).to.equal(3);
     });
   });
 
@@ -1484,6 +1703,41 @@ describe("state-node", () => {
         expect(stateTree.buildStateInfo().treeBytes).to.equal(324);
       });
     });
+
+    describe("tree max siblings", () => {
+      it("leaf node", () => {
+        node.setValue(true);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(10);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(-200);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue('');
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue('unittest');
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(null);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+        node.setValue(undefined);
+        expect(node.buildStateInfo().treeMaxSiblings).to.equal(1);
+      });
+
+      it("internal node", () => {
+        child1.setTreeMaxSiblings(5);
+        child2.setTreeMaxSiblings(15);
+        child3.setTreeMaxSiblings(25);
+        child4.setTreeMaxSiblings(35);
+        stateTree.radixTree.root.setTreeMaxSiblings(1000);
+
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = false
+        expect(stateTree.buildStateInfo(null, false).treeMaxSiblings).to.equal(1000);
+        // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
+        expect(stateTree.buildStateInfo(label1).treeMaxSiblings).to.equal(5);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = true
+        expect(stateTree.buildStateInfo().treeMaxSiblings).to.equal(35);
+      });
+    });
+
   });
 
   describe("updateStateInfo / verifyStateInfo", () => {
@@ -1539,6 +1793,10 @@ describe("state-node", () => {
       child2.setTreeSize(20);
       child3.setTreeSize(30);
       child4.setTreeSize(40);
+      child1.setTreeMaxSiblings(5);
+      child2.setTreeMaxSiblings(15);
+      child3.setTreeMaxSiblings(25);
+      child4.setTreeMaxSiblings(35);
       expect(stateTree.verifyStateInfo()).to.equal(false);
 
       // update without updatedChildLabel

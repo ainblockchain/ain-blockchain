@@ -57,10 +57,9 @@ app.get('/network_status', (req, res, next) => {
 });
 
 app.get('/network_topology', (req, res) => {
-  res.render(__dirname + '/index.html', {}, (err, html) => {
-    const networkStatus = tracker.getNetworkStatus();
-    const graphData = getGraphData(networkStatus);
-    html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
+  const networkStatus = tracker.getNetworkStatus();
+  const graphData = getGraphData(networkStatus);
+  res.render(__dirname + '/index.html', { data: JSON.stringify(graphData) }, (err, html) => {
     res.send(html);
   });
 });

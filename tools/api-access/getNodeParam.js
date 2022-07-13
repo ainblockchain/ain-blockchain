@@ -6,18 +6,17 @@ const { BlockchainConsts } = require('../../common/constants');
 const { getAccountPrivateKey } = require('./util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
-async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip) {
+async function sendGetNodeParamRequest(endpointUrl, privateKey, chainId, param) {
   const message = {
     timestamp: Date.now(),
-    method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
-    param: 'DEV_CLIENT_API_IP_WHITELIST',
-    value: ip,
+    method: JSON_RPC_METHODS.AIN_GET_NODE_PARAM,
+    param,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
+      method: JSON_RPC_METHODS.AIN_GET_NODE_PARAM,
       params: {
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         message,
@@ -31,9 +30,9 @@ async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, priva
   });
 }
 
-async function removeFromDevClientApiIpWhitelist(endpointUrl, chainId, type, keystoreFilePath, ip) {
+async function getNodeParam(endpointUrl, chainId, type, keystoreFilePath, param) {
   const privateKey = await getAccountPrivateKey(type, keystoreFilePath);
-  const res = await sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip);
+  const res = await sendGetNodeParamRequest(endpointUrl, privateKey, chainId, param);
   console.log('Result:', res);
 }
 
@@ -45,26 +44,22 @@ async function processArguments() {
   const chainId = Number(process.argv[3]);
   const accountType = process.argv[4];
   let keystoreFilePath = null;
-  let ip = null;
+  let param = null;
   if (accountType === 'keystore') {
     keystoreFilePath = process.argv[5];
-    ip = process.argv[6];
+    param = process.argv[6];
   } else {
-    ip = process.argv[5];
+    param = process.argv[5];
   }
-  if (!ip) {
-    console.error('Please specify an IP');
-    usage();
-  }
-  await removeFromDevClientApiIpWhitelist(endpointUrl, chainId, accountType, keystoreFilePath, ip);
+  await getNodeParam(endpointUrl, chainId, accountType, keystoreFilePath, param);
 }
 
 function usage() {
-  console.log('\nUsage:\n  node removeFromDevClientApiIpWhitelist.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <IP_ADDRESS>\n');
+  console.log('\nUsage:\n  node getNodeParam.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <PARAM>\n');
   console.log('\nExamples:');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file "*"');
+  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 private_key DEV_CLIENT_API_IP_WHITELIST');
+  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 mnemonic P2P_MESSAGE_TIMEOUT_MS');
+  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 keystore /path/to/keystore/file SYNC_MODE');
   process.exit(0);
 }
 

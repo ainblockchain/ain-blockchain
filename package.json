@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -40,7 +40,6 @@
     "test_unit_db": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/db.test.js",
     "test_unit_event_handler": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/event-handler.test.js",
     "test_unit_functions": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/functions.test.js",
-    "test_unit_network_util": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/network-util.test.js",
     "test_unit_object_util": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/object-util.test.js",
     "test_unit_p2p": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 320000 test/unit/p2p.test.js",
     "test_unit_p2p_util": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/p2p-util.test.js",

@@ -344,6 +344,80 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isValidIpV4", () => {
+    it("when invalid input", () => {
+      util.isValid
+      expect(util.isValidIpV4(true)).to.equal(false);
+      expect(util.isValidIpV4(false)).to.equal(false);
+      expect(util.isValidIpV4(0)).to.equal(false);
+      expect(util.isValidIpV4(10)).to.equal(false);
+      expect(util.isValidIpV4(null)).to.equal(false);
+      expect(util.isValidIpV4(undefined)).to.equal(false);
+      expect(util.isValidIpV4(Infinity)).to.equal(false);
+      expect(util.isValidIpV4(NaN)).to.equal(false);
+      expect(util.isValidIpV4('')).to.equal(false);
+      expect(util.isValidIpV4('abc')).to.equal(false);
+      expect(util.isValidIpV4('0')).to.equal(false);
+      expect(util.isValidIpV4([10])).to.equal(false);
+      expect(util.isValidIpV4({a: 'A'})).to.equal(false);
+      expect(util.isValidIpV4('0x')).to.equal(false);
+      expect(util.isValidIpV4('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidIpV4('ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV4('https://*.ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV4('http://172.16.0.36:8080/json-rpc')).to.equal(false);
+      expect(util.isValidIpV4('http://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV4('https://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV4('http://172.16.0.36:8080')).to.equal(false);
+      expect(util.isValidIpV4('https://172.16.0.36:9000')).to.equal(false);
+      expect(util.isValidIpV4('::ffff:172.20.10.2')).to.equal(false);
+      expect(util.isValidIpV4('172.')).to.equal(false);
+      expect(util.isValidIpV4('172.16.')).to.equal(false);
+      expect(util.isValidIpV4('172.16.0.')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidIpV4('0.0.0.0')).to.equal(true);
+      expect(util.isValidIpV4('172.16.0.36')).to.equal(true);
+      expect(util.isValidIpV4('255.255.255.255')).to.equal(true);
+    })
+  })
+
+  describe("isValidIpV6", () => {
+    it("when invalid input", () => {
+      expect(util.isValidIpV6(true)).to.equal(false);
+      expect(util.isValidIpV6(false)).to.equal(false);
+      expect(util.isValidIpV6(0)).to.equal(false);
+      expect(util.isValidIpV6(10)).to.equal(false);
+      expect(util.isValidIpV6(null)).to.equal(false);
+      expect(util.isValidIpV6(undefined)).to.equal(false);
+      expect(util.isValidIpV6(Infinity)).to.equal(false);
+      expect(util.isValidIpV6(NaN)).to.equal(false);
+      expect(util.isValidIpV6('')).to.equal(false);
+      expect(util.isValidIpV6('abc')).to.equal(false);
+      expect(util.isValidIpV6('0')).to.equal(false);
+      expect(util.isValidIpV6([10])).to.equal(false);
+      expect(util.isValidIpV6({a: 'A'})).to.equal(false);
+      expect(util.isValidIpV6('0x')).to.equal(false);
+      expect(util.isValidIpV6('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidIpV6('ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV6('https://*.ainetwork.ai')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36:8080/json-rpc')).to.equal(false);
+      expect(util.isValidIpV6('172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('https://172.16.0.36')).to.equal(false);
+      expect(util.isValidIpV6('http://172.16.0.36:8080')).to.equal(false);
+      expect(util.isValidIpV6('https://172.16.0.36:9000')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidIpV6('::ffff:172.20.10.2')).to.equal(true);
+      expect(util.isValidIpV6('1:2:3:4:5:6:7:8')).to.equal(true);
+      expect(util.isValidIpV6('1::4:5:6:7:8')).to.equal(true);
+      expect(util.isValidIpV6('::2:3:4:5:6:7:8')).to.equal(true);
+      expect(util.isValidIpV6('::255.255.255.255')).to.equal(true);
+    })
+  })
+
   describe("isValidUrlWhitelistItem", () => {
     it("when invalid input", () => {
       expect(util.isValidUrlWhitelistItem(true)).to.equal(false);
