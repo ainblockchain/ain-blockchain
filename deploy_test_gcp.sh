@@ -144,7 +144,7 @@ function deploy_test() {
         if [[ $FOREGROUND_OPTION = "--fg" ]]; then
             TEST_CMD="cd ./ain-blockchain; yarn run ${testing_option}"
         else
-            TEST_CMD="cd ./ain-blockchain; nohup yarn run ${testing_option} > test_log.txt &"
+            TEST_CMD="cd ./ain-blockchain; nohup yarn run ${testing_option} >test_log.txt 2>&1 &"
         fi
         printf "\nTEST_CMD=$TEST_CMD\n\n"
         gcloud compute ssh ${test_target_addr} --command "$TEST_CMD" --project $PROJECT_ID --zone ${TEST_ZONE}

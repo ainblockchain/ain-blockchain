@@ -218,11 +218,10 @@ function deploy_node() {
 
     if [[ $node_index -ge 5 ]]; then
         JSON_RPC_OPTION="--json-rpc"
-        UPDATE_FRONT_DB_OPTION="--update-front-db"
     else
         JSON_RPC_OPTION=""
-        UPDATE_FRONT_DB_OPTION=""
     fi
+    UPDATE_FRONT_DB_OPTION="--update-front-db"
     if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
         REST_FUNC_OPTION="--rest-func"
     else

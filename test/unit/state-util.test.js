@@ -690,6 +690,9 @@ describe("state-util", () => {
       expect(isValidWriteRule({}, "newData = 'some code'")).to.equal(false);
       // assignment & invoke
       expect(isValidWriteRule({}, "newData = 'some code'; newData();")).to.equal(false);
+      // function
+      expect(isValidWriteRule({}, "[function(){while(true){}}][0]()")).to.equal(false);
+      expect(isValidWriteRule({}, "[()=>{while(true){}}][0]()")).to.equal(false);
     })
 
     it('when valid input', () => {
@@ -2414,6 +2417,7 @@ describe("state-util", () => {
         "#state_ph": null,
         "#tree_bytes": 0,
         "#tree_height": 0,
+        "#tree_max_siblings": 0,
         "#tree_size": 0,
         "#version": "ver3",
         "label1": {
@@ -2432,6 +2436,9 @@ describe("state-util", () => {
           "#tree_height": 0,
           "#tree_height:label11": 0,
           "#tree_height:label12": 0,
+          "#tree_max_siblings": 0,
+          "#tree_max_siblings:label11": 0,
+          "#tree_max_siblings:label12": 0,
           "#tree_size": 0,
           "#tree_size:label11": 0,
           "#tree_size:label12": 0,
@@ -2457,6 +2464,9 @@ describe("state-util", () => {
           "#tree_height": 0,
           "#tree_height:label21": 0,
           "#tree_height:label22": 0,
+          "#tree_max_siblings": 0,
+          "#tree_max_siblings:label21": 0,
+          "#tree_max_siblings:label22": 0,
           "#tree_size": 0,
           "#tree_size:label21": 0,
           "#tree_size:label22": 0,
@@ -2476,6 +2486,7 @@ describe("state-util", () => {
         "#state_ph": null,
         "#tree_bytes": 0,
         "#tree_height": 0,
+        "#tree_max_siblings": 0,
         "#tree_size": 0,
         "#version": "ver3",
         "label1": {
@@ -2494,6 +2505,9 @@ describe("state-util", () => {
           "#tree_height": 0,
           "#tree_height:label11": 0,
           "#tree_height:label12": 0,
+          "#tree_max_siblings": 0,
+          "#tree_max_siblings:label11": 0,
+          "#tree_max_siblings:label12": 0,
           "#tree_size": 0,
           "#tree_size:label11": 0,
           "#tree_size:label12": 0,
@@ -2519,6 +2533,9 @@ describe("state-util", () => {
           "#tree_height": 0,
           "#tree_height:label21": 0,
           "#tree_height:label22": 0,
+          "#tree_max_siblings": 0,
+          "#tree_max_siblings:label21": 0,
+          "#tree_max_siblings:label22": 0,
           "#tree_size": 0,
           "#tree_size:label21": 0,
           "#tree_size:label22": 0,
@@ -2628,6 +2645,9 @@ describe("state-util", () => {
         "#tree_height": 1,
         "#tree_height:label1": 0,
         "#tree_height:label2": 0,
+        "#tree_max_siblings": 2,
+        "#tree_max_siblings:label1": 1,
+        "#tree_max_siblings:label2": 1,
         "#tree_size": 3,
         "#tree_size:label1": 1,
         "#tree_size:label2": 1,

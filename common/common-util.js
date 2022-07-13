@@ -152,6 +152,14 @@ class CommonUtil {
     return ruleUtil.isValidPrivateUrl(url);
   }
 
+  static isValidIpV4(ipAddress) {
+    return ruleUtil.isValidIpV4(ipAddress);
+  }
+
+  static isValidIpV6(ipAddress) {
+    return ruleUtil.isValidIpV6(ipAddress);
+  }
+
   static isWildcard(value) {
     return value === '*';
   }
@@ -243,6 +251,15 @@ class CommonUtil {
     }
     if (args.is_shallow !== undefined) {
       options.isShallow = CommonUtil.toBool(args.is_shallow);
+    } else {
+      options.isShallow = false;
+    }
+    if (args.is_partial !== undefined) {
+      options.isPartial = CommonUtil.toBool(args.is_partial);
+      options.lastEndLabel = args.last_end_label !== undefined ?
+          CommonUtil.toString(args.last_end_label) : null;
+    } else {
+      options.isPartial = false;
     }
     if (args.include_version !== undefined) {
       options.includeVersion = CommonUtil.toBool(args.include_version);
@@ -261,6 +278,9 @@ class CommonUtil {
 
   static toMatchOrEvalOptions(args, fromApi = false) {
     const options = {};
+    // NOTE: Not allowed true values of isShallow or isPartial options in match/eval requests.
+    options.isShallow = false;
+    options.isPartial = false;
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }

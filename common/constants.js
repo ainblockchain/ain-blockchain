@@ -132,11 +132,11 @@ setNodeConfigs();
 
 // ** Enums **
 /**
- * Message types for communication between nodes.
+ * Types of P2P network messages.
  *
  * @enum {string}
  */
-const MessageTypes = {
+const P2pMessageTypes = {
   ADDRESS_REQUEST: 'ADDRESS_REQUEST',
   ADDRESS_RESPONSE: 'ADDRESS_RESPONSE',
   CHAIN_SEGMENT_REQUEST: 'CHAIN_SEGMENT_REQUEST',
@@ -412,6 +412,7 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateLabelProperties = {
+  END_LABEL: '#end_label',
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
   HASH_DELIMITER: '#',  // Hash delimiter
   META_LABEL_PREFIX: '#',  // Prefix of all meta labels
@@ -425,9 +426,10 @@ const StateLabelProperties = {
   STATE_PROOF_HASH: '#state_ph',
   VARIABLE_LABEL_PREFIX: '$',  // Prefix of variable labels
   VERSION: '#version',
-  TREE_HEIGHT: '#tree_height',
-  TREE_SIZE: '#tree_size',
   TREE_BYTES: '#tree_bytes',
+  TREE_HEIGHT: '#tree_height',
+  TREE_MAX_SIBLINGS: '#tree_max_siblings',
+  TREE_SIZE: '#tree_size',
 };
 
 /**
@@ -803,7 +805,7 @@ module.exports = {
   TimerFlagEnabledBandageMap,
   BlockchainParams,
   NodeConfigs,
-  MessageTypes,
+  P2pMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   PredefinedDbPaths,

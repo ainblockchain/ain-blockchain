@@ -612,6 +612,7 @@ class BlockchainNode {
       tree_height: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_HEIGHT] : 0,
       tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
       tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
+      tree_max_siblings: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_MAX_SIBLINGS] : 0,
     };
     const availableTreeBytes = appStake > 0 ?
         Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
@@ -935,12 +936,12 @@ class BlockchainNode {
         resList.push(res);
       }
     }
-    if (isExecutionOnly) {
-      return;
-    }
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.tp.removeInvalidTxsFromPool(invalidTransactions);
+    if (isExecutionOnly) {
+      return;
+    }
     const gasPriceUnit =
         this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
@@ -1065,7 +1066,7 @@ class BlockchainNode {
       if (NodeConfigs.UPDATE_NEW_FINAL_FRONT_DB_WITH_TX_POOL) {
         // Apply the txs from the tx pool to the new final front db.
         this.executeAndGetValidTransactions(
-            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true, ValueChangedEventSources.USER);
+            null, lastFinalizedBlock.number, lastFinalizedBlock.timestamp, this.db, true);
       }
       // Clean up block pool
       this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);

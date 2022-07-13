@@ -16,7 +16,7 @@ const {
   DevFlags,
   BlockchainConsts,
   NodeConfigs,
-  MessageTypes,
+  P2pMessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
@@ -36,11 +36,11 @@ const {
   sendGetRequest,
   signAndSendTx,
   sendTxAndWaitForFinalization,
-  getIpAddress,
-  convertIpv6ToIpv4
+  getIpAddress
 } = require('../common/network-util');
 const P2pUtil = require('./p2p-util');
 const PathUtil = require('../common/path-util');
+const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
@@ -387,16 +387,6 @@ class P2pServer {
     return 0;
   }
 
-  /**
-   * Returns true if the socket ip address is the same as the given p2p url ip address,
-   * false otherwise.
-   * @param {string} ipv4Address is ipv4 socket._socket.remoteAddress
-   * @param {string} url is peerInfo.networkStatus.urls.p2p.url
-   */
-  checkIpAddressFromPeerInfo(ipv4Address, url) {
-    return url.includes(ipv4Address);
-  }
-
   setServerSidePeerEventHandlers(socket, url) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', async (message) => {
@@ -433,9 +423,9 @@ class P2pServer {
         }
 
         switch (_.get(parsedMessage, 'type')) {
-          case MessageTypes.ADDRESS_REQUEST:
+          case P2pMessageTypes.ADDRESS_REQUEST:
             const dataVersionCheckForAddress =
-                this.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_REQUEST);
+                this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.ADDRESS_REQUEST);
             if (dataVersionCheckForAddress < 0) {
               // TODO(minsulee2): need to convert message when updating ADDRESS_REQUEST necessary.
               // this.convertAddressMessage();
@@ -496,7 +486,7 @@ class P2pServer {
               P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
               const jsonRpcUrl = _.get(peerInfo, 'networkStatus.urls.jsonRpc.url');
               if (!this.client.peerCandidates.has(jsonRpcUrl)) {
-                this.client.setPeerCandidate(jsonRpcUrl, address, null);
+                this.client.updatePeerCandidateInfo(jsonRpcUrl, address, null);
               }
               const body = {
                 address: this.getNodeAddress(),
@@ -511,7 +501,7 @@ class P2pServer {
                 return;
               }
               const payload = P2pUtil.encapsulateMessage(
-                  MessageTypes.ADDRESS_RESPONSE, { body: body, signature: signature });
+                  P2pMessageTypes.ADDRESS_RESPONSE, { body: body, signature: signature });
               if (!payload) {
                 logger.error('The address cannot be sent because of msg encapsulation failure.');
                 const latency = Date.now() - beginTime;
@@ -521,8 +511,9 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const ipv4Address = convertIpv6ToIpv4(socket._socket.remoteAddress);
-                if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
+                const ipAddressFromSocket = _.get(socket, '_socket.remoteAddress');
+                const ipAddressFromPeerInfo = P2pUtil.toHostname(p2pUrl);
+                if (P2pUtil.checkIpAddressFromPeerInfo(ipAddressFromSocket, ipAddressFromPeerInfo)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
@@ -531,9 +522,9 @@ class P2pServer {
               }
             }
             break;
-          case MessageTypes.CONSENSUS:
+          case P2pMessageTypes.CONSENSUS:
             const dataVersionCheckForConsensus =
-                this.checkDataProtoVer(dataProtoVer, MessageTypes.CONSENSUS);
+                this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.CONSENSUS);
             if (dataVersionCheckForConsensus !== 0) {
               logger.error(`[${LOG_HEADER}] The message DATA_PROTOCOL_VERSION(${dataProtoVer}) ` +
                   'is not compatible. CANNOT proceed the CONSENSUS message.');
@@ -559,9 +550,9 @@ class P2pServer {
               this.client.requestChainSegment();
             }
             break;
-          case MessageTypes.TRANSACTION:
+          case P2pMessageTypes.TRANSACTION:
             const dataVersionCheckForTransaction =
-                this.checkDataProtoVer(dataProtoVer, MessageTypes.TRANSACTION);
+                this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.TRANSACTION);
             if (dataVersionCheckForTransaction > 0) {
               logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
                   `version(${dataProtoVer}). Discard the TRANSACTION message.`);
@@ -629,7 +620,7 @@ class P2pServer {
               }
             }
             break;
-          case MessageTypes.SNAPSHOT_CHUNK_REQUEST:
+          case P2pMessageTypes.SNAPSHOT_CHUNK_REQUEST:
             logger.info(`[${LOG_HEADER}] Receiving a snapshot chunk request`);
             if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.info(`[${LOG_HEADER}] Not ready to accept snapshot chunk requests.\n` +
@@ -641,7 +632,7 @@ class P2pServer {
             // Send the chunks of the latest snapshot one by one to the requester.
             await this.loadAndStreamLatestSnapshot(socket);
             break;
-          case MessageTypes.CHAIN_SEGMENT_REQUEST:
+          case P2pMessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlockNumber = _.get(parsedMessage, 'data.lastBlockNumber');
             logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ${lastBlockNumber}`);
             if (this.node.bc.chain.length === 0) {
@@ -683,7 +674,7 @@ class P2pServer {
               );
             }
             break;
-          case MessageTypes.OLD_CHAIN_SEGMENT_REQUEST:
+          case P2pMessageTypes.OLD_CHAIN_SEGMENT_REQUEST:
             const oldestBlockNumber = _.get(parsedMessage, 'data.oldestBlockNumber');
             logger.info(`[${LOG_HEADER}] Receiving an old chain segment request: ${oldestBlockNumber}`);
             if (!CommonUtil.isNumber(oldestBlockNumber) || oldestBlockNumber <= 0) {
@@ -703,7 +694,7 @@ class P2pServer {
             const oldChainSegment = this.node.bc.getOldBlockList(oldestBlockNumber - 1);
             this.sendOldChainSegment(socket, oldChainSegment);
             break;
-          case MessageTypes.PEER_INFO_UPDATE:
+          case P2pMessageTypes.PEER_INFO_UPDATE:
             const updatePeerInfo = parsedMessage.data;
             const addressFromSocket = P2pUtil.getAddressFromSocket(this.inbound, socket);
             // Keep updating both inbound and outbound.
@@ -758,7 +749,7 @@ class P2pServer {
     logger.info(
         `[${LOG_HEADER}] Sending a snapshot chunk ${chunkIndex} / ${numChunks} of blockNumber ${blockNumber}.`);
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.SNAPSHOT_CHUNK_RESPONSE, { blockNumber, numChunks, chunkIndex, chunk });
+        P2pMessageTypes.SNAPSHOT_CHUNK_RESPONSE, { blockNumber, numChunks, chunkIndex, chunk });
     if (!payload) {
       logger.error(
           `[${LOG_HEADER}] The snapshot chunk couldn't be sent because of msg encapsulation failure.`);
@@ -770,7 +761,7 @@ class P2pServer {
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
     const LOG_HEADER = 'sendChainSegment';
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo });
+        P2pMessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo });
     if (!payload) {
       logger.error(
           `[${LOG_HEADER}] The chain segment couldn't be sent because of msg encapsulation failure.`);
@@ -788,7 +779,7 @@ class P2pServer {
         `[${LOG_HEADER}] Sending an old chain segment of size ${segmentSize} ` +
         `(${fromBlockNumber} ~ ${toBlockNumber})`);
     const payload = P2pUtil.encapsulateMessage(
-        MessageTypes.OLD_CHAIN_SEGMENT_RESPONSE, { oldChainSegment });
+        P2pMessageTypes.OLD_CHAIN_SEGMENT_RESPONSE, { oldChainSegment });
     if (!payload) {
       logger.error(
           `[${LOG_HEADER}] The old chain segment couldn't be sent because of msg encapsulation failure.`);
@@ -808,7 +799,10 @@ class P2pServer {
     if (this.node.state !== BlockchainNodeStates.SERVING) {
       logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state})`);
       this.client.requestChainSegment();
-      return;
+      return {
+        tx_hash: null,
+        result: false
+      };
     }
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
@@ -960,7 +954,7 @@ class P2pServer {
   static async getLastReportedBlockNumber(parentChainEndpoint, shardingPath) {
     const resp = await sendGetRequest(
         parentChainEndpoint,
-        'ain_get',
+        JSON_RPC_METHODS.AIN_GET,
         {
           type: ReadDbOperations.GET_VALUE,
           ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/${ShardingProperties.LATEST_BLOCK_NUMBER}`
@@ -970,7 +964,7 @@ class P2pServer {
   }
 
   static async getShardingAppConfig(parentChainEndpoint, appName) {
-    const resp = await sendGetRequest(parentChainEndpoint, 'ain_get', {
+    const resp = await sendGetRequest(parentChainEndpoint, JSON_RPC_METHODS.AIN_GET, {
       type: ReadDbOperations.GET_VALUE,
       ref: PathUtil.getManageAppConfigPath(appName)
     });

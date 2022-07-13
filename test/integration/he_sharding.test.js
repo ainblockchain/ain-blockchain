@@ -344,6 +344,10 @@ describe('HE Sharding', () => {
     });
 
     describe('Shard reporter node restart', () => {
+      before(() => {
+        ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL = "http://localhost:9092/json-rpc";
+      });
+
       it('can resume reporting after missing some reports', async () => {
         const latestBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
@@ -368,6 +372,10 @@ describe('HE Sharding', () => {
           blockNumber++;
         }
         expect(latestAfter).to.be.greaterThan(latestBefore);
+      });
+
+      after(() => {
+        delete ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL;
       });
     });
   });

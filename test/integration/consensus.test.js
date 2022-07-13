@@ -29,6 +29,7 @@ const {
 const { Block } = require('../../blockchain/block');
 const Functions = require('../../db/functions');
 const ConsensusUtil = require('../../consensus/consensus-util');
+const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -72,7 +73,6 @@ const server5 = 'http://localhost:8085';
 const serverList = [server1, server2, server3, server4, server5];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 
 class Process {
   constructor(application, envVariables) {
@@ -142,7 +142,7 @@ describe('Consensus', () => {
     await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
+      jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET_LAST_BLOCK,
           {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
@@ -192,7 +192,7 @@ describe('Consensus', () => {
       };
       const signature =
           ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
-      const res = await client.request('ain_sendSignedTransaction', {
+      const res = await client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION, {
         tx_body: txBody,
         signature,
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION

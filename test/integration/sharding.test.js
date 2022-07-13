@@ -34,6 +34,7 @@ const {
   setUpApp,
   eraseEvalResMatched,
 } = require('../test-util');
+const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
@@ -448,6 +449,10 @@ describe('Sharding', () => {
     });
 
     describe('Shard reporter node restart', () => {
+      before(() => {
+        ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL = "http://localhost:9002/json-rpc";
+      });
+
       it('can resume reporting after missing some reports', async () => {
         const latestBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
@@ -473,6 +478,10 @@ describe('Sharding', () => {
         }
         expect(latestAfter).to.be.greaterThan(latestBefore);
       });
+    });
+
+    after(() => {
+      delete ENV_VARIABLES[2].PEER_CANDIDATE_JSON_RPC_URL;
     });
   });
 
@@ -1251,7 +1260,7 @@ describe('Sharding', () => {
         it('ain_get with is_global = false', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-          return jsonRpcClient.request('ain_get', {
+          return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/test/test_value/some/path"
@@ -1264,7 +1273,7 @@ describe('Sharding', () => {
         it('ain_get with is_global = false (explicit)', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-          return jsonRpcClient.request('ain_get', {
+          return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/test/test_value/some/path",
@@ -1278,7 +1287,7 @@ describe('Sharding', () => {
         it('ain_get with is_global = true', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-          return jsonRpcClient.request('ain_get', {
+          return jsonRpcClient.request(JSON_RPC_METHODS.AIN_GET, {
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/afan/apps/test/test_value/some/path",
@@ -1294,7 +1303,7 @@ describe('Sharding', () => {
         it('ain_matchFunction with is_global = false', () => {
           const ref = "/apps/test/test_function/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_FUNCTION, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
@@ -1320,7 +1329,7 @@ describe('Sharding', () => {
         it('ain_matchFunction with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_function/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_FUNCTION, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
@@ -1348,7 +1357,7 @@ describe('Sharding', () => {
         it('ain_matchRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_RULE, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "write": {
@@ -1383,7 +1392,7 @@ describe('Sharding', () => {
         it('ain_matchRule with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_rule/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_RULE, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "write": {
@@ -1420,7 +1429,7 @@ describe('Sharding', () => {
         it('ain_matchOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_OWNER, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
@@ -1447,7 +1456,7 @@ describe('Sharding', () => {
         it('ain_matchOwner with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_owner/some/path";
           const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_MATCH_OWNER, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
@@ -1478,7 +1487,7 @@ describe('Sharding', () => {
           const value = "value";
           const address = "abcd";
           const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_EVAL_RULE, request)
           .then(res => {
             assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
@@ -1493,7 +1502,7 @@ describe('Sharding', () => {
           const address = "abcd";
           const request =
               { ref, value, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_EVAL_RULE, request)
           .then(res => {
             assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
@@ -1509,7 +1518,7 @@ describe('Sharding', () => {
           const address = "abcd";
           const permission = "write_owner";
           const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_EVAL_OWNER, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "code": 0,
@@ -1552,7 +1561,7 @@ describe('Sharding', () => {
           const permission = "write_owner";
           const request =
               { ref, permission, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
-          return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
+          return jayson.client.http(server1 + '/json-rpc').request(JSON_RPC_METHODS.AIN_EVAL_OWNER, request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "code": 0,
@@ -2037,7 +2046,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction',
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
               { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
@@ -2086,8 +2095,8 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
+              { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
@@ -2135,8 +2144,8 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
+              { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
@@ -2185,7 +2194,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,
@@ -2243,7 +2252,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,
@@ -2304,7 +2313,7 @@ describe('Sharding', () => {
           }
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request('ain_sendSignedTransactionBatch', {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH, {
             tx_list: [
               {
                 tx_body: txBody,
