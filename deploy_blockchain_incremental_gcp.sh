@@ -2,7 +2,7 @@
 
 if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev my_username 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev gcp_user 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
     printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
@@ -180,7 +180,7 @@ function deploy_tracker() {
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
     printf "\n"
-    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
     printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
     eval $START_TRACKER_CMD
 }
@@ -243,7 +243,7 @@ function deploy_node() {
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 

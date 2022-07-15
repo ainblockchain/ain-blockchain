@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ "$#" -gt 1 ]]; then
-    printf "Usage: bash start_tracker_incremental_gcp.sh [--keep-code|--no-keep-code]\n"
-    printf "Example: bash start_tracker_incremental_gcp.sh --keep-code\n"
+if [[ "$#" -gt 2 ]]; then
+    printf "Usage: bash start_tracker_incremental_gcp.sh <GCP Username> [--keep-code|--no-keep-code]\n"
+    printf "Example: bash start_tracker_incremental_gcp.sh gcp_user --keep-code\n"
     printf "\n"
     exit
 fi
@@ -11,19 +11,22 @@ printf "\n[[[[[ start_tracker_incremental_gcp.sh ]]]]]\n\n"
 # 1. Configure env vars
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
+GCP_USER="$1"
+
 KEEP_CODE_OPTION="--keep-code"
 
-if [[ $# = 1 ]]; then
-    if [[ $1 = '--keep-code' ]]; then
-        KEEP_CODE_OPTION=$1
-    elif [[ $1 = '--no-keep-code' ]]; then
-        KEEP_CODE_OPTION=$1
+if [[ $# = 2 ]]; then
+    if [[ $2 = '--keep-code' ]]; then
+        KEEP_CODE_OPTION=$2
+    elif [[ $2 = '--no-keep-code' ]]; then
+        KEEP_CODE_OPTION=$2
     else
-        printf "Invalid option: $1\n"
+        printf "Invalid option: $2\n"
         exit
     fi
 fi
 
+printf "GCP_USER=$GCP_USER\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
 # 2. Get currently used directory & new directory
@@ -44,20 +47,20 @@ printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new data directory..\n'
-    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R root:root $NEW_DIR_PATH"
+    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $NEW_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    INSTALL_CMD="sudo yarn install --ignore-engines"
+    INSTALL_CMD="yarn install --ignore-engines"
     printf "\nINSTALL_CMD=$INSTALL_CMD\n"
     eval $INSTALL_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
-    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 fi

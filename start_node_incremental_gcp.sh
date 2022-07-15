@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync\n"
     printf "\n"
     exit
 fi
@@ -44,21 +44,24 @@ function parse_options() {
 
 # Parse options.
 SEASON="$1"
+GCP_USER="$2"
+
 number_re='^[0-9]+$'
-if ! [[ $2 =~ $number_re ]] ; then
-    printf "Invalid <Shard Index> argument: $2\n"
-    exit
-fi
-SHARD_INDEX="$2"
 if ! [[ $3 =~ $number_re ]] ; then
-    printf "Invalid <Node Index> argument: $3\n"
+    printf "Invalid <Shard Index> argument: $3\n"
     exit
 fi
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 9 ]]; then
-    printf "Invalid <Node Index> argument: $3\n"
+SHARD_INDEX="$3"
+
+if ! [[ $4 =~ $number_re ]] ; then
+    printf "Invalid <Node Index> argument: $4\n"
     exit
 fi
-NODE_INDEX="$3"
+if [[ "$4" -lt 0 ]] || [[ "$4" -gt 9 ]]; then
+    printf "Invalid <Node Index> argument: $4\n"
+    exit
+fi
+NODE_INDEX="$4"
 
 ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
@@ -69,13 +72,14 @@ UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
 EVENT_HANDLER_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
 
 printf "SEASON=$SEASON\n"
+printf "GCP_USER=$GCP_USER\n"
 printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 printf "\n"
@@ -299,20 +303,20 @@ printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
-    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R root:root $NEW_DIR_PATH"
+    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $NEW_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    INSTALL_CMD="sudo yarn install --ignore-engines"
+    INSTALL_CMD="yarn install --ignore-engines"
     printf "\nINSTALL_CMD=$INSTALL_CMD\n"
     eval $INSTALL_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
-    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 fi
@@ -333,13 +337,13 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf '\n'
     printf 'Reusing existing data directory..\n'
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 fi
