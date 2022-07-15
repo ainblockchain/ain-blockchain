@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
-if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
-    printf "Example: bash start_node_genesis_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 12 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func]\n"
+    printf "Example: bash start_node_genesis_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "\n"
     return 1
 fi
@@ -29,6 +29,10 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--fast-sync' ]]; then
         SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--no-chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
     elif [[ $option = '--update-front-db' ]]; then
@@ -69,6 +73,7 @@ ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
+CHOWN_DATA_OPTION="--chown-data"
 JSON_RPC_OPTION=""
 UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
@@ -90,6 +95,7 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
@@ -171,12 +177,20 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    else
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
+    fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf 'Reusing existing data directory..\n'
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    else
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
+    fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 fi

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh gcp_user 10 99 --setup\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh gcp_user 10 99 --setup --no-chown-data\n"
     printf "\n"
     exit
 fi
@@ -17,6 +17,7 @@ GCP_USER="$1"
 START_NODE_IDX="$2"
 END_NODE_IDX="$3"
 ACCOUNT_INJECTION_OPTION="--private-key" # always use the private keys
+
 printf "GCP_USER=$GCP_USER\n"
 printf "START_NODE_IDX=$START_NODE_IDX\n"
 printf "END_NODE_IDX=$END_NODE_IDX\n"
@@ -39,6 +40,10 @@ function parse_options() {
         KEEP_DATA_OPTION="$option"
     elif [[ $option = '--no-keep-data' ]]; then
         KEEP_DATA_OPTION="$option"
+    elif [[ $option = '--chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--no-chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
             printf "You cannot use both --skip-kill and --kill-only\n"
@@ -61,6 +66,7 @@ function parse_options() {
 SETUP_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 KEEP_DATA_OPTION="--no-keep-data"
+CHOWN_DATA_OPTION="--chown-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
@@ -71,6 +77,7 @@ done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
 
@@ -407,6 +414,7 @@ printf "\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 
 node_index=$START_NODE_IDX
 while [ $node_index -le $END_NODE_IDX ]; do
@@ -429,12 +437,13 @@ while [ $node_index -le $END_NODE_IDX ]; do
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+    printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
