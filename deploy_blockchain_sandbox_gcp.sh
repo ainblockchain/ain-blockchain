@@ -2,7 +2,7 @@
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh my_username 10 99 --setup\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh gcp_user 10 99 --setup\n"
     printf "\n"
     exit
 fi
@@ -434,7 +434,7 @@ while [ $node_index -le $END_NODE_IDX ]; do
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
