@@ -2,7 +2,7 @@
 
 if [[ "$#" -lt 2 ]]; then
     printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username>  [--setup]\n"
-    printf "Example: bash deploy_monitoring_gcp.sh dev my_username\n"
+    printf "Example: bash deploy_monitoring_gcp.sh dev gcp_user \n"
     printf "\n"
     exit
 fi
@@ -61,4 +61,4 @@ fi
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running monitoring #\n############################\n\n"
-gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_gcp.sh ${SEASON} && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_gcp.sh $SEASON $GCP_USER && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE
