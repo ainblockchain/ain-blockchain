@@ -373,6 +373,11 @@ class PathUtil {
   static getSingleBlockchainParamPath(category, name) {
     return CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, category, name]);
   }
+
+  static getP2pNetworkPeerNodesParams(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.P2P_NETWORK, PredefinedDbPaths.P2P_NETWORK_PEER_NODES, address]);
+  }
 }
 
 module.exports = PathUtil;

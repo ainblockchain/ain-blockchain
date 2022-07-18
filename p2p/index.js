@@ -6,6 +6,7 @@ const Websocket = require('ws');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
+const PathUtil = require('../common/path-util');
 const {
   DevFlags,
   BlockchainConsts,
@@ -19,10 +20,14 @@ const {
   TimerFlags,
   TimerFlagEnabledBandageMap,
   isEnabledTimerFlag,
+  WriteDbOperations
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const P2pUtil = require('./p2p-util');
-const { sendGetRequest } = require('../common/network-util');
+const {
+  sendGetRequest,
+  sendTxAndWaitForFinalization
+} = require('../common/network-util');
 const { Block } = require('../blockchain/block');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
@@ -55,21 +60,23 @@ class P2pClient {
     // 2. Start p2p server
     await this.server.listen();
 
-    // 3. Set interval for tracker updates
-    if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) {
-      this.setIntervalForTrackerUpdate();
-    }
-
-    // 4. Start peer discovery process
-    await this.discoverNewPeers();
-    this.setIntervalForPeerCandidatesConnection();
-
-    // 5. Set up blockchain node
+    // 3. Set up blockchain node
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       const isFirstNode = P2pUtil.areIdenticalUrls(
           NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
       this.setIsFirstNode(isFirstNode);
       await this.prepareBlockchainNode();
+    }
+
+    await this.registerMyAddress();
+
+    // 4. Start peer discovery process
+    await this.discoverNewPeers();
+    this.setIntervalForPeerCandidatesConnection();
+
+    // 5. Set interval for tracker updates
+    if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) {
+      this.setIntervalForTrackerUpdate();
     }
   }
 
@@ -189,6 +196,34 @@ class P2pClient {
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
       peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList()
+    }
+  }
+
+  buildAddressRegisterTxBody() {
+    const myAccount = this.server.getNodeAddress();
+    const myP2pIpAddress = this.server.urls.p2p.url;
+    const myP2pPort = this.server.urls.p2p.port;
+    const stringArray = [myAccount, myP2pIpAddress, myP2pPort];
+    return {
+      operation: {
+        type: WriteDbOperations.SET_VALUE,
+        ref: PathUtil.getP2pNetworkPeerNodesParams(myAccount),
+        value: CommonUtil.hashString(stringArray.join(':'))
+      },
+      timestamp: Date.now(),
+      nonce: -1,
+      gas_price: 0
+    };
+  }
+
+  async registerMyAddress() {
+    if (!this.isFirstNode) {
+
+    } else {
+      const txBody = this.buildAddressRegisterTxBody();
+      const privateKey = this.server.getNodePrivateKey();
+      console.log(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, txBody, privateKey)
+      await sendTxAndWaitForFinalization(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, txBody, privateKey);
     }
   }
 

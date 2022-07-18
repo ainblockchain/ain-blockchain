@@ -339,6 +339,9 @@ const PredefinedDbPaths = {
   SHARDING_SHARD_REPORTING_PERIOD: 'reporting_period',
   SHARDING_SHARD_SHARD_OWNER: 'shard_owner',
   SHARDING_SHARD_SHARD_REPORTER: 'shard_reporter',
+  // P2p network
+  P2P_NETWORK: 'p2p_network',
+  P2P_NETWORK_PEER_NODES: 'peer_nodes',
 };
 
 /**
