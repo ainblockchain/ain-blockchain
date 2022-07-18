@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev my_username 0 --setup --keystore --no-keep-code\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev gcp_user 0 --setup --keystore --no-keep-code --no-chown-data\n"
     printf "\n"
     exit
 fi
@@ -59,6 +59,10 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--fast-sync' ]]; then
         SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--no-chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
         if [[ "$KILL_OPTION" ]]; then
             printf "You cannot use both --skip-kill and --kill-only\n"
@@ -83,6 +87,7 @@ ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
+CHOWN_DATA_OPTION="--chown-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
@@ -95,6 +100,7 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
@@ -242,14 +248,14 @@ fi
 # install node modules on GCP instances
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "\n* >> Installing node modules for parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-    gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
 
     for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
         NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
         NODE_ZONE=NODE_${node_index}_ZONE
 
         printf "\n* >> Installing node modules for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone ${!NODE_ZONE}
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone ${!NODE_ZONE}
     done
 fi
 
@@ -319,7 +325,7 @@ printf "\n* >> Starting parent tracker (${TRACKER_TARGET_ADDR}) ****************
 printf "\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
-START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
 printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
 
@@ -350,13 +356,14 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+    printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
     inject_account "$node_index"
@@ -411,30 +418,30 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
         # install node modules on GCP instances
         if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             printf "\n* >> Installing node modules for shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
+            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
             printf "\n* >> Installing node modules for shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_0_ZONE
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_0_ZONE
             printf "\n* >> Installing node modules for shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_1_ZONE
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_1_ZONE
             printf "\n* >> Installing node modules for shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ./ain-blockchain; sudo yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_2_ZONE
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_2_ZONE
         fi
 
         # ssh into each instance, install packages and start up the server
         printf "\n* >> Starting shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-        START_TRACKER_CMD="gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        START_TRACKER_CMD="gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
         eval $START_TRACKER_CMD
         printf "\n* >> Starting shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
+        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $GCP_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
         printf "START_NODE_CMD=$START_NODE_CMD\n"
         eval $START_NODE_CMD
         printf "\n* >> Starting shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
+        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $GCP_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
         printf "START_NODE_CMD=$START_NODE_CMD\n"
         eval $START_NODE_CMD
         printf "\n* >> Starting shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
+        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $GCP_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
         printf "START_NODE_CMD=$START_NODE_CMD\n"
         eval $START_NODE_CMD
     done
