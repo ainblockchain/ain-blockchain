@@ -24,10 +24,7 @@ const {
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const P2pUtil = require('./p2p-util');
-const {
-  sendGetRequest,
-  sendTxAndWaitForFinalization
-} = require('../common/network-util');
+const { sendGetRequest } = require('../common/network-util');
 const { Block } = require('../blockchain/block');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
 
@@ -67,8 +64,6 @@ class P2pClient {
       this.setIsFirstNode(isFirstNode);
       await this.prepareBlockchainNode();
     }
-
-    await this.registerMyAddress();
 
     // 4. Start peer discovery process
     await this.discoverNewPeers();
@@ -225,6 +220,7 @@ class P2pClient {
     const myAccount = this.server.getNodeAddress();
     const b = this.server.node.db.getValue(PathUtil.getP2pNetworkPeerNodesParams(myAccount));
     console.log(b);
+    return result.tx_hash;
   }
 
   /**
@@ -583,6 +579,9 @@ class P2pClient {
     logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
     this.server.consensus.initConsensus();
     logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
+    logger.info(`[${LOG_HEADER}] Registering My address on the state..`);
+    const fingerPrint = await this.registerMyAddress();
+    logger.info(`[${LOG_HEADER}] My address has just been registered(${fingerPrint})`);
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {
@@ -961,6 +960,7 @@ class P2pClient {
     }
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
+      this.registerMyAddress();
     }
     return true;
   }
