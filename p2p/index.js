@@ -194,33 +194,53 @@ class P2pClient {
     }
   }
 
-  buildAddressRegisterTxOperation() {
-    const myAccount = this.server.getNodeAddress();
+  // Need to move network util?
+  buildAddressRegistrationFingerPrint(myAccount) {
     const myP2pIpAddress = this.server.urls.p2p.url;
     const myP2pPort = this.server.urls.p2p.port;
     const stringArray = [myAccount, myP2pIpAddress, myP2pPort];
+    return CommonUtil.hashString(stringArray.join(':'));
+  }
+
+  buildAddressRegisterTxOperation(myAccount) {
+    const fingerPrint = this.buildAddressRegistrationFingerPrint(myAccount);
     return {
       type: WriteDbOperations.SET_VALUE,
       ref: PathUtil.getP2pNetworkPeerNodesParams(myAccount),
-      value: CommonUtil.hashString(stringArray.join(':'))
+      value: fingerPrint
     };
   }
 
-  async registerMyAddress() {
+  InitMyAccount() {
+    const myAccount = this.server.getNodeAddress();
+    const addressPath = PathUtil.getP2pNetworkPeerNodesParams(myAccount);
+    const registered = this.server.node.db.getValue(addressPath);
+    if (registered) {
+      const fingerPrint = this.buildAddressRegistrationFingerPrint(myAccount);
+      if (registered !== fingerPrint) {
+        // Replace the registration if info is updated.
+        this.registerMyAddress(myAccount);
+      } else {
+        logger.info(`Already Registered on the states(${fingerPrint})`);
+      }
+    } else {
+      this.registerMyAddress(myAccount);
+    }
+  }
+
+  registerMyAddress(myAccount) {
     const LOG_HEADER = 'registerMyAddress';
-    const operation = this.buildAddressRegisterTxOperation();
+    const operation = this.buildAddressRegisterTxOperation(myAccount);
     const gasPrice = this.server.node.getBlockchainParam('resource/min_gas_price');
     const tx = this.server.node.createTransaction({ operation, nonce: -1, gas_price: gasPrice });
     const result = this.server.executeAndBroadcastTransaction(tx);
     if (!result.tx_hash) {
       logger.error(`[${LOG_HEADER}] Fail to register my account on the blockchain state,` +
           'The p2p node won\'t be able to send CONSENSUS and TRANSACTION messages.');
+    } else {
+      logger.info(`[${LOG_HEADER}] My account has just been registered on /p2p_network/peer_nodes` +
+          `(${result.tx_hash})`);
     }
-    // REMOVE THIS
-    const myAccount = this.server.getNodeAddress();
-    const b = this.server.node.db.getValue(PathUtil.getP2pNetworkPeerNodesParams(myAccount));
-    console.log(b);
-    return result.tx_hash;
   }
 
   /**
@@ -580,8 +600,8 @@ class P2pClient {
     this.server.consensus.initConsensus();
     logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
     logger.info(`[${LOG_HEADER}] Registering My address on the state..`);
-    const fingerPrint = await this.registerMyAddress();
-    logger.info(`[${LOG_HEADER}] My address has just been registered(${fingerPrint})`);
+    this.InitMyAccount();
+    logger.info(`[${LOG_HEADER}] My address has just been registered`);
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {
@@ -960,7 +980,7 @@ class P2pClient {
     }
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
-      this.registerMyAddress();
+      this.InitMyAccount();
     }
     return true;
   }
