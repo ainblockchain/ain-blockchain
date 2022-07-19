@@ -38,7 +38,6 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
 
 async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
   const res = await signAndSendTx(endpoint, tx, privateKey);
-  console.log(res)
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }

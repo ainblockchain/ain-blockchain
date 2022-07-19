@@ -199,32 +199,32 @@ class P2pClient {
     }
   }
 
-  buildAddressRegisterTxBody() {
+  buildAddressRegisterTxOperation() {
     const myAccount = this.server.getNodeAddress();
     const myP2pIpAddress = this.server.urls.p2p.url;
     const myP2pPort = this.server.urls.p2p.port;
     const stringArray = [myAccount, myP2pIpAddress, myP2pPort];
     return {
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: PathUtil.getP2pNetworkPeerNodesParams(myAccount),
-        value: CommonUtil.hashString(stringArray.join(':'))
-      },
-      timestamp: Date.now(),
-      nonce: -1,
-      gas_price: 0
+      type: WriteDbOperations.SET_VALUE,
+      ref: PathUtil.getP2pNetworkPeerNodesParams(myAccount),
+      value: CommonUtil.hashString(stringArray.join(':'))
     };
   }
 
   async registerMyAddress() {
-    if (!this.isFirstNode) {
-
-    } else {
-      const txBody = this.buildAddressRegisterTxBody();
-      const privateKey = this.server.getNodePrivateKey();
-      console.log(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, txBody, privateKey)
-      await sendTxAndWaitForFinalization(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, txBody, privateKey);
+    const LOG_HEADER = 'registerMyAddress';
+    const operation = this.buildAddressRegisterTxOperation();
+    const gasPrice = this.server.node.getBlockchainParam('resource/min_gas_price');
+    const tx = this.server.node.createTransaction({ operation, nonce: -1, gas_price: gasPrice });
+    const result = this.server.executeAndBroadcastTransaction(tx);
+    if (!result.tx_hash) {
+      logger.error(`[${LOG_HEADER}] Fail to register my account on the blockchain state,` +
+          'The p2p node won\'t be able to send CONSENSUS and TRANSACTION messages.');
     }
+    // REMOVE THIS
+    const myAccount = this.server.getNodeAddress();
+    const b = this.server.node.db.getValue(PathUtil.getP2pNetworkPeerNodesParams(myAccount));
+    console.log(b);
   }
 
   /**
