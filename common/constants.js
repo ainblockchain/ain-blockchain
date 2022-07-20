@@ -572,6 +572,13 @@ function isTxInBlock(state) {
   return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
 }
 
+function isPermanentState(state) {
+  return state === TransactionStates.FINALIZED ||
+      state === TransactionStates.REVERTED ||
+      state === TransactionStates.FAILED ||
+      state === TransactionStates.TIMED_OUT;
+}
+
 /**
  * State versions.
  *
@@ -650,6 +657,8 @@ const TrafficEventTypes = {
 const BlockchainEventTypes = {
   BLOCK_FINALIZED: 'BLOCK_FINALIZED',
   VALUE_CHANGED: 'VALUE_CHANGED',
+  TX_STATE_CHANGED: 'TX_STATE_CHANGED',
+  FILTER_DELETED: 'FILTER_DELETED',
 };
 
 const BlockchainEventMessageTypes = {
@@ -663,6 +672,11 @@ const ValueChangedEventSources = {
   BLOCK: 'BLOCK',
   USER: 'USER',
 };
+
+const CauseForFilterDeletion = {
+  TIMED_OUT: 'TIMED_OUT',
+  PERMANENT_STATE: 'PERMANENT_STATE',
+}
 
 // ** Lists & Sets **
 
@@ -825,6 +839,7 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   isTxInBlock,
+  isPermanentState,
   StateVersions,
   getBlockchainConfig,
   SyncModeOptions,
@@ -832,6 +847,7 @@ module.exports = {
   BlockchainEventTypes,
   BlockchainEventMessageTypes,
   ValueChangedEventSources,
+  CauseForFilterDeletion,
   isServiceType,
   isServiceAccountServiceType,
   isReservedServiceName,

@@ -54,7 +54,7 @@ class BlockchainNode {
 
     this.eh = eventHandler;
     this.bc = new Blockchain(String(NodeConfigs.PORT));
-    this.tp = new TransactionPool(this);
+    this.tp = new TransactionPool(this, eventHandler);
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
