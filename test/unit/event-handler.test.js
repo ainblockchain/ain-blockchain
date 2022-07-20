@@ -2,7 +2,15 @@ const EventHandler = require('../../event-handler');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../../common/network-util');
-const { NodeConfigs, BlockchainEventTypes } = require('../../common/constants');
+const { NodeConfigs, BlockchainEventTypes, TransactionStates, BlockchainParams }
+    = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
+const Transaction = require('../../tx-pool/transaction');
+const _ = require('lodash');
+
+const validTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2'
+const dummyTx = new Transaction({}, 'signature', validTxHash, 'address', true, Date.now());
+const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
 
 describe('EventHandler Test', () => {
   let eventHandler;
@@ -46,7 +54,7 @@ describe('EventHandler Test', () => {
         })).to.throw('Invalid block_number type. (string)');
       });
       it('validate VALUE_CHANGED config with right config', () => {
-        expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.BLOCK_FINALIZED, {
+        expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.VALUE_CHANGED, {
           path: '/apps/test',
         })).to.equal(undefined);
       });
@@ -57,6 +65,27 @@ describe('EventHandler Test', () => {
             path: wrongPath,
           })).to.throw(`Invalid format path (${wrongPath})`);
         }
+      });
+      it('validate TX_STATE_CHANGED config with right config', () => {
+        expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: validTxHash,
+          timeout: NodeConfigs.TX_POOL_TIMEOUT_MS
+        })).to.equal(undefined);
+      });
+      it('validate TX_STATE_CHANGED config with wrong config', () => {
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: validTxHash,
+        })).to.throw('config.tx_hash or config.timeout is missing' +
+            ' ({"tx_hash":"0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2"})');
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: validTxHash,
+          timeout: -1
+        })).to.throw(`Invalid timeout (${-1})` +
+        `\nTimeout must be a number between ${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: 123,
+          timeout: epochMs
+        })).to.throw('Invalid tx hash (123)');
       });
     });
 
@@ -86,6 +115,148 @@ describe('EventHandler Test', () => {
               });
         } catch (err) {}
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
+
+      it('create, register and wait until deregistered', async () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+            BlockchainEventTypes.TX_STATE_CHANGED, {
+              tx_hash: validTxHash,
+              timeout: epochMs
+            });
+        let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        await CommonUtil.sleep(1000);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
+    });
+
+    describe('emitTxStateChanged', () => {
+      beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      });
+
+      it('emit tx_state_changed event which is not permenant state', async () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        const now = Date.now();
+        eventHandler.createAndRegisterEventFilter(now, now,
+        BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: validTxHash,
+          timeout: 2 * epochMs
+        });
+        // NOTE(ehgmsdk20): To check whether the timer of deleteCallback is reset
+        // when A is executed, the delay is divided.
+        await CommonUtil.sleep(epochMs);
+        let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.EXECUTED);
+        await CommonUtil.sleep(epochMs);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        await CommonUtil.sleep(epochMs);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
+
+      it('emit tx_state_changed event which is permenant state', () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        const now = Date.now();
+        eventHandler.createAndRegisterEventFilter(now, now,
+        BlockchainEventTypes.TX_STATE_CHANGED, {
+          tx_hash: validTxHash,
+          timeout: 2 * epochMs
+        });
+        let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
+    });
+
+    describe('deregisterEventFilter', () => {
+      beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      });
+
+      describe('deregister filter registered', () => {
+        beforeEach( async () => {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        });
+
+        it('BLOCK_FINALIZED event', () => {
+          const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+          const now = Date.now();
+          eventHandler.createAndRegisterEventFilter(now, now,
+              BlockchainEventTypes.BLOCK_FINALIZED, {
+                block_number: 100,
+              });
+          let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+          eventHandler.deregisterEventFilter(now, now);
+          numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        });
+
+        it('value_changed event', () => {
+          const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+          const now = Date.now();
+          const eventFilterId = eventHandler.createAndRegisterEventFilter(now, now,
+              BlockchainEventTypes.VALUE_CHANGED, {
+                path: '/apps/test',
+              }).id;
+          let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+          expect(eventHandler.stateEventTreeManager.filterIdToParsedPath[eventFilterId]).to.exist;
+          eventHandler.deregisterEventFilter(now, now);
+          numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+          expect(eventHandler.stateEventTreeManager.filterIdToParsedPath[eventFilterId])
+              .to.be.undefined;
+        });
+
+        it('tx_state_changed event', () => {
+          const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+          const now = Date.now();
+          const eventFilterId = eventHandler.createAndRegisterEventFilter(now, now,
+          BlockchainEventTypes.TX_STATE_CHANGED, {
+            tx_hash: validTxHash,
+            timeout: epochMs
+          }).id;
+          let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+          expect(eventHandler.eventFilterIdToDeleteCallback.has(eventFilterId)).to.be.true;
+          eventHandler.deregisterEventFilter(now, now);
+          numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+          expect(eventHandler.eventFilterIdToDeleteCallback.has(eventFilterId)).to.be.false;
+        });
+      });
+
+      it('deregister filter which does not exist', () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        const now = Date.now();
+        eventHandler.deregisterEventFilter(now, now);
+        const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+      });
+
+      it('deregister filter already deregistered', () => {
+        const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        const now = Date.now();
+        eventHandler.createAndRegisterEventFilter(now, now,
+            BlockchainEventTypes.BLOCK_FINALIZED, {
+              block_number: 100,
+            });
+        let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        eventHandler.deregisterEventFilter(now, now);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        eventHandler.deregisterEventFilter(now, now);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
     });
