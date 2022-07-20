@@ -11,6 +11,8 @@ const {
   NodeConfigs,
   BlockchainEventMessageTypes,
   BlockchainEventTypes,
+  TransactionStates,
+  CauseForFilterDeletion,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const {
@@ -50,6 +52,7 @@ const serverList = [
 ];
 const testAppName = 'test';
 const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
+const dummyTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2';
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -131,7 +134,8 @@ function setValue(nodeEndpoint, ref, value) {
 
 // TODO(cshcomcom): Add to deploy_test_gcp.sh
 describe('Event Handler Test', function() {
-  let tracker_proc, server_proc_list = [];
+  const server_proc_list = [];
+  let tracker_proc;
 
   before(async function() {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
@@ -169,7 +173,8 @@ describe('Event Handler Test', function() {
   });
 
   describe('Full flow', () => {
-    let wsClient = null, filterId = null;
+    let wsClient = null;
+    let filterId = null;
 
     it('Connect to event handler & check number of channels === 1', async function() {
       // Connect to event handler
@@ -279,6 +284,107 @@ describe('Event Handler Test', function() {
         }
       });
       setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'dummy');
+    });
+
+    describe('TX_STATE_CHANGED', () => {
+      it('send valid transaction', function(done) {
+        this.timeout(10 * epochMs);
+        const filterId = Date.now();
+        const targetPath = `/apps/${testAppName}`;
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+          timeout: 10 * epochMs
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        wsClient.once('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const txState = _.get(parsedMessage, 'data.payload.tx_state');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+            expect(txState.before).to.equal(TransactionStates.EXECUTED);
+            expect(txState.after).to.equal(TransactionStates.FINALIZED);
+            done();
+          }
+        });
+      });
+
+      it('send invalid transaction', function(done) {
+        this.timeout(10 * epochMs);
+        const filterId = Date.now();
+        const invalidTargetPath = `/apps/dummy`;
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], invalidTargetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+          timeout: 10 * epochMs
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        wsClient.once('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const txState = _.get(parsedMessage, 'data.payload.tx_state');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+            expect(txState.before).to.equal(TransactionStates.PENDING);
+            expect(txState.after).to.equal(TransactionStates.REVERTED);
+            done();
+          }
+        });
+      });
+    });
+
+    describe('FILTER_DELETED', () => {
+      it('deleted because of timeout', function(done) {
+        this.timeout(3 * epochMs);
+        const filterId = Date.now();
+        const config = {
+          tx_hash: dummyTxHash,
+          timeout: epochMs
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        wsClient.on('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const payload = _.get(parsedMessage, 'data.payload');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.FILTER_DELETED) {
+            expect(payload.cause).to.equal(CauseForFilterDeletion.TIMED_OUT);
+            expect(payload.filter_id).to.equal(filterId.toString());
+            done();
+          }
+        });
+      });
+
+      it('deleted because of permanent state', function(done) {
+        this.timeout(10 * epochMs);
+        const filterId = Date.now();
+        const targetPath = `/apps/${testAppName}`;
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+          timeout: 10 * epochMs
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        wsClient.on('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const payload = _.get(parsedMessage, 'data.payload');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.FILTER_DELETED) {
+            expect(payload.cause).to.equal(CauseForFilterDeletion.PERMANENT_STATE);
+            expect(payload.filter_id).to.equal(filterId.toString());
+            done();
+          }
+        });
+      });
     });
   });
 });
