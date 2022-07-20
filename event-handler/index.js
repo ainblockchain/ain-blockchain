@@ -2,7 +2,8 @@ const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
 const StateEventTreeManager = require('./state-event-tree-manager');
-const { BlockchainEventTypes } = require('../common/constants');
+const { BlockchainEventTypes, isPermanentState, CauseForFilterDeletion, BlockchainParams }
+    = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
@@ -18,6 +19,7 @@ class EventHandler {
     this.stateEventTreeManager = new StateEventTreeManager();
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
+    this.eventFilterIdToDeleteCallback = new Map();
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
@@ -120,6 +122,72 @@ class EventHandler {
     }
   }
 
+  emitTxStateChanged(transaction, beforeState, afterState) {
+    const LOG_HEADER = 'emitTxStateChanged';
+    if (!_.get(transaction, 'hash', null)) {
+      logger.error(`[${LOG_HEADER}] Invalid Tx(${JSON.stringify(transaction)})`);
+      return;
+    }
+    for (const eventFilterId of this.eventTypeToEventFilterIds[
+          BlockchainEventTypes.TX_STATE_CHANGED]) {
+      const eventFilter = this.eventFilters[eventFilterId];
+      const txHash = _.get(eventFilter, 'config.tx_hash', null);
+      const timeout = _.get(eventFilter, 'config.timeout', null);
+
+      if (!txHash || !timeout) {
+        logger.error(`[${LOG_HEADER}] Missing config in eventFilter(${eventFilterId})`);
+        continue;
+      }
+
+      if (txHash !== transaction.hash) {
+        continue;
+      }
+
+      const deleteCallback = this.eventFilterIdToDeleteCallback.get(eventFilterId);
+
+      if (deleteCallback) {
+        clearTimeout(deleteCallback);
+      }
+
+      const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.TX_STATE_CHANGED, {
+        transaction: transaction,
+        tx_state: {
+          before: beforeState,
+          after: afterState,
+        },
+      });
+      this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+      const [channelId, clientFilterId] = eventFilterId.split(':');
+
+      // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
+      if (isPermanentState(afterState)) {
+        this.emitFilterDeleted(eventFilterId, CauseForFilterDeletion.PERMANENT_STATE);
+        this.deregisterEventFilter(clientFilterId, channelId);
+        return;
+      }
+
+      this.eventFilterIdToDeleteCallback.set(eventFilterId, setTimeout(() => {
+        this.emitFilterDeleted(eventFilterId, CauseForFilterDeletion.TIMED_OUT);
+        this.deregisterEventFilter(clientFilterId, channelId);
+      }, timeout));
+    }
+  }
+
+  emitFilterDeleted(eventFilterId, causeForFilterDeletion) {
+    const LOG_HEADER = 'emitFilterDeleted';
+
+    if (!eventFilterId) {
+      logger.error(`[${LOG_HEADER}] EventFilterId is empty.`);
+      return;
+    }
+    const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.FILTER_DELETED, {
+      filter_id: clientFilterId, // Client needs client filter ID.
+      cause: causeForFilterDeletion,
+    });
+    this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+  }
+
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
@@ -158,6 +226,32 @@ class EventHandler {
               `Invalid format path (${path})`);
         }
         break;
+      case BlockchainEventTypes.TX_STATE_CHANGED:
+        const txHash = _.get(config, 'tx_hash', null);
+        const timeout = _.get(config, 'timeout', null);
+
+        // NOTE(ehgmsdk20): If the epoch_ms is changed, it must be changed to get it
+        // through the getBlockchainParams function.
+        const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
+
+        if (!txHash|| !timeout) {
+          throw new EventHandlerError(EventHandlerErrorCode.MISSING_PARAMS_IN_CONFIG,
+              `config.tx_hash or config.timeout is missing (${JSON.stringify(config)})`);
+        }
+        if (!CommonUtil.isValidHash(txHash)) {
+          throw new EventHandlerError(EventHandlerErrorCode.INVALID_TX_HASH,
+              `Invalid tx hash (${txHash})`);
+        }
+        if (
+          !CommonUtil.isNumber(timeout) ||
+          timeout > NodeConfigs.TX_POOL_TIMEOUT_MS ||
+          timeout < epochMs
+        ) {
+          throw new EventHandlerError(EventHandlerErrorCode.INVALID_TIMEOUT,
+            `Invalid timeout (${timeout})\nTimeout must be a number between ` +
+            `${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
+        }
+        break;
       default:
         throw new EventHandlerError(EventHandlerErrorCode.INVALID_EVENT_TYPE_IN_VALIDATE_FUNC,
             `Invalid event type (${eventType})`);
@@ -178,6 +272,11 @@ class EventHandler {
       this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
+      } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+        this.eventFilterIdToDeleteCallback.set(eventFilterId, setTimeout(() => {
+          this.emitFilterDeleted(eventFilterId, CauseForFilterDeletion.TIMED_OUT);
+          this.deregisterEventFilter(clientFilterId, channelId);
+        }, config.timeout));
       }
       logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
           `eventType: ${eventType}, config: ${JSON.stringify(config)})`);
@@ -208,6 +307,12 @@ class EventHandler {
       }
       if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
+      } else if (eventFilter.type === BlockchainEventTypes.TX_STATE_CHANGED) {
+        const deleteCallback = this.eventFilterIdToDeleteCallback.get(eventFilterId);
+        if (deleteCallback) {
+          clearTimeout(deleteCallback);
+        }
+        this.eventFilterIdToDeleteCallback.delete(eventFilterId);
       }
       logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
       return eventFilter;
