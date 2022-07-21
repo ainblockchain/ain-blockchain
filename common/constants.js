@@ -673,7 +673,7 @@ const ValueChangedEventSources = {
   USER: 'USER',
 };
 
-const CauseForFilterDeletion = {
+const FilterDeletionReasons = {
   TIMED_OUT: 'TIMED_OUT',
   PERMANENT_STATE: 'PERMANENT_STATE',
 }
@@ -847,7 +847,7 @@ module.exports = {
   BlockchainEventTypes,
   BlockchainEventMessageTypes,
   ValueChangedEventSources,
-  CauseForFilterDeletion,
+  FilterDeletionReasons,
   isServiceType,
   isServiceAccountServiceType,
   isReservedServiceName,
