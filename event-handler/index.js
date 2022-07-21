@@ -161,13 +161,7 @@ class EventHandler {
       if (isEndedState(afterState)) {
         this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_OF_STATE);
         this.deregisterEventFilter(clientFilterId, channelId);
-        continue;
       }
-
-      this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
-        this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
-        this.deregisterEventFilter(clientFilterId, channelId);
-      }, timeout));
     }
   }
 
