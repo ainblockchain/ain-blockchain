@@ -387,6 +387,13 @@ class P2pServer {
     return 0;
   }
 
+  isAccountRegistered(socket) {
+    const myAccount = P2pUtil.getAddressFromSocket(this.inbound, socket);
+    const addressPath = PathUtil.getP2pNetworkPeerNodesParams(myAccount);
+    const registered = this.node.db.getValue(addressPath);
+    return registered;
+  }
+
   setServerSidePeerEventHandlers(socket, url) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', async (message) => {
@@ -523,6 +530,11 @@ class P2pServer {
             }
             break;
           case P2pMessageTypes.CONSENSUS:
+            // if (!this.isAccountRegistered(socket)) {
+            //   logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
+            //       'Skip the Consensus Message.');
+            //   return;
+            // }
             const dataVersionCheckForConsensus =
                 this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.CONSENSUS);
             if (dataVersionCheckForConsensus !== 0) {
@@ -551,6 +563,11 @@ class P2pServer {
             }
             break;
           case P2pMessageTypes.TRANSACTION:
+            // if (!this.isAccountRegistered(socket)) {
+            //   logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
+            //       'Skip the Consensus Message.');
+            //   return;
+            // }
             const dataVersionCheckForTransaction =
                 this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.TRANSACTION);
             if (dataVersionCheckForTransaction > 0) {

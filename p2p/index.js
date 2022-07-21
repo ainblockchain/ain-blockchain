@@ -599,9 +599,12 @@ class P2pClient {
     logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
     this.server.consensus.initConsensus();
     logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
-    logger.info(`[${LOG_HEADER}] Registering My address on the state..`);
-    this.InitMyAccount();
-    logger.info(`[${LOG_HEADER}] My address has just been registered`);
+    // FIXME(minsu): where should isEnabledTimerFlag be?
+    if (isEnabledTimerFlag('register_p2p_network_peer_nodes', 0)) {
+      logger.info(`[${LOG_HEADER}] Registering My address on the state..`);
+      this.InitMyAccount();
+      logger.info(`[${LOG_HEADER}] My address has just been registered`);
+    }
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {

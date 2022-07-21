@@ -271,15 +271,6 @@
       }
     }
   },
-  "p2p_network": {
-    "peer_nodes": {
-      "$node_addr": {
-        ".rule": {
-          "write": "auth.addr === $node_addr && util.isString(newData) && util.length(newData) === 66"
-        }
-      }
-    }
-  },
   "payments": {
     "$service_name": {
       "$user_addr": {

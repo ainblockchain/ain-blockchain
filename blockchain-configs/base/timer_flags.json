@@ -39,5 +39,9 @@
   "add_app_creation_gas_amount": {
     "enabled_block": 2,
     "has_bandage": true
+  },
+  "register_p2p_network_peer_nodes": {
+    "enabled_block": 2,
+    "has_bandage": true
   }
 }
