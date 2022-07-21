@@ -120,17 +120,21 @@ describe('EventHandler Test', () => {
 
       it('create, register and wait until deregistered', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+        const now = Date.now()
+        eventHandler.createAndRegisterEventFilter(now, now,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
               timeout: epochMs
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+            [eventHandler.getGlobalFilterId(now, now)]);
         await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         // Filter is deleted due to filter timeout
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
     });
 
@@ -155,12 +159,17 @@ describe('EventHandler Test', () => {
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.EXECUTED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+          [eventHandler.getGlobalFilterId(now, now)]);
         await CommonUtil.sleep(timeout);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+          [eventHandler.getGlobalFilterId(now, now)]);
         eventHandler.deregisterEventFilter(now, now);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
 
       it('emit tx_state_changed event which is permenant state', () => {
@@ -174,10 +183,13 @@ describe('EventHandler Test', () => {
         });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+          [eventHandler.getGlobalFilterId(now, now)]);
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         // Filter is deleted due to end of state
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
     });
 
@@ -205,7 +217,7 @@ describe('EventHandler Test', () => {
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
         });
 
-        it('value_changed event', () => {
+        it('VALUE_CHANGED event', () => {
           const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
           const now = Date.now();
           const eventFilterId = eventHandler.createAndRegisterEventFilter(now, now,
@@ -222,7 +234,7 @@ describe('EventHandler Test', () => {
               .to.be.undefined;
         });
 
-        it('tx_state_changed event', () => {
+        it('TX_STATE_CHANGED event', () => {
           const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
           const now = Date.now();
           const eventFilterId = eventHandler.createAndRegisterEventFilter(now, now,
@@ -233,10 +245,13 @@ describe('EventHandler Test', () => {
           let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.true;
+          expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+            [eventHandler.getGlobalFilterId(now, now)]);
           eventHandler.deregisterEventFilter(now, now);
           numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.false;
+          expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
         });
       });
 

@@ -20,6 +20,7 @@ class EventHandler {
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
     this.eventFilterIdToTimeoutCallback = new Map();
+    this.txHashToEventFilterIds = new Map();
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
@@ -128,20 +129,11 @@ class EventHandler {
       logger.error(`[${LOG_HEADER}] Invalid Tx(${JSON.stringify(transaction)})`);
       return;
     }
-    for (const eventFilterId of this.eventTypeToEventFilterIds[
-          BlockchainEventTypes.TX_STATE_CHANGED]) {
-      const eventFilter = this.eventFilters[eventFilterId];
-      const txHash = _.get(eventFilter, 'config.tx_hash', null);
-      const timeout = _.get(eventFilter, 'config.timeout', null);
-      if (!txHash || !timeout) {
-        logger.error(`[${LOG_HEADER}] Missing config in eventFilter(${eventFilterId})`);
-        continue;
-      }
-
-      if (txHash !== transaction.hash) {
-        continue;
-      }
-
+    const eventFilterIds = this.txHashToEventFilterIds.get(transaction.hash);
+    if (!eventFilterIds) {
+      return;
+    }
+    for (const eventFilterId of eventFilterIds) {
       const deleteCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
       if (deleteCallback) {
         clearTimeout(deleteCallback);
@@ -265,6 +257,12 @@ class EventHandler {
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
       } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+        const eventFilterIds = this.txHashToEventFilterIds.get(config.tx_hash)
+        if (eventFilterIds) {
+          eventFilterIds.push(eventFilterId);
+        } else {
+          this.txHashToEventFilterIds.set(config.tx_hash, [eventFilterId]);
+        }
         this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
           this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
           this.deregisterEventFilter(clientFilterId, channelId);
@@ -305,6 +303,19 @@ class EventHandler {
           clearTimeout(deleteCallback);
         }
         this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
+
+        const txHash = _.get(eventFilter.config, 'tx_hash', null);
+        if (!txHash) {
+          throw new EventHandlerError(EventHandlerErrorCode.MISSING_PARAMS_IN_CONFIG,
+              `Missing tx_hash in config (${eventFilterId})`, eventFilterId);
+        }
+        let eventFilterIds = this.txHashToEventFilterIds.get(txHash);
+        eventFilterIds = eventFilterIds.filter((filterId) => filterId !== eventFilterId)
+        if (eventFilterIds.length === 0) {
+          this.txHashToEventFilterIds.delete(txHash)
+        } else {
+          this.txHashToEventFilterIds.set(txHash, eventFilterIds);
+        }
       }
       logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
       return eventFilter;
