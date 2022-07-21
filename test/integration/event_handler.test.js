@@ -12,7 +12,7 @@ const {
   BlockchainEventMessageTypes,
   BlockchainEventTypes,
   TransactionStates,
-  CauseForFilterDeletion,
+  FilterDeletionReasons,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const {
@@ -354,7 +354,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.cause).to.equal(CauseForFilterDeletion.TIMED_OUT);
+            expect(payload.cause).to.equal(FilterDeletionReasons.TIMED_OUT);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
@@ -379,7 +379,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.cause).to.equal(CauseForFilterDeletion.PERMANENT_STATE);
+            expect(payload.cause).to.equal(FilterDeletionReasons.PERMANENT_STATE);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
