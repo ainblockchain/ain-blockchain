@@ -29,6 +29,7 @@ const {
   StateLabelProperties,
   TrafficEventTypes,
   trafficStatsManager,
+  isEnabledTimerFlag
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusStates } = require('../consensus/constants');
@@ -429,6 +430,7 @@ class P2pServer {
           return;
         }
 
+        const blockStatus = this.getBlockStatus();
         switch (_.get(parsedMessage, 'type')) {
           case P2pMessageTypes.ADDRESS_REQUEST:
             const dataVersionCheckForAddress =
@@ -530,11 +532,12 @@ class P2pServer {
             }
             break;
           case P2pMessageTypes.CONSENSUS:
-            // if (!this.isAccountRegistered(socket)) {
-            //   logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
-            //       'Skip the Consensus Message.');
-            //   return;
-            // }
+            if (!this.isAccountRegistered(socket) &&
+                isEnabledTimerFlag('register_p2p_network_peer_nodes', blockStatus.number)) {
+              logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
+                  'Skip the Consensus Message.');
+              return;
+            }
             const dataVersionCheckForConsensus =
                 this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.CONSENSUS);
             if (dataVersionCheckForConsensus !== 0) {
@@ -563,11 +566,12 @@ class P2pServer {
             }
             break;
           case P2pMessageTypes.TRANSACTION:
-            // if (!this.isAccountRegistered(socket)) {
-            //   logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
-            //       'Skip the Consensus Message.');
-            //   return;
-            // }
+            if (!this.isAccountRegistered(socket) &&
+                isEnabledTimerFlag('register_p2p_network_peer_nodes', blockStatus.number)) {
+              logger.error(`[${LOG_HEADER}] Account hasn't registered on the state. ` +
+                  'Skip the TRANSACTION Message.');
+              return;
+            }
             const dataVersionCheckForTransaction =
                 this.checkDataProtoVer(dataProtoVer, P2pMessageTypes.TRANSACTION);
             if (dataVersionCheckForTransaction > 0) {
