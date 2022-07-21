@@ -127,8 +127,9 @@ describe('EventHandler Test', () => {
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
-        await CommonUtil.sleep(1000);
+        await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        // Filter is deleted due to filter timeout
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
     });
@@ -141,21 +142,23 @@ describe('EventHandler Test', () => {
       it('emit tx_state_changed event which is not permenant state', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const now = Date.now();
+        const timeout = 2 * epochMs;
         eventHandler.createAndRegisterEventFilter(now, now,
         BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-          timeout: 2 * epochMs
+          timeout,
         });
         // NOTE(ehgmsdk20): To check whether the timer of deleteCallback is reset
         // when A is executed, the delay is divided.
-        await CommonUtil.sleep(epochMs);
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.EXECUTED);
-        await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
-        await CommonUtil.sleep(epochMs);
+        await CommonUtil.sleep(timeout);
+        numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
+        eventHandler.deregisterEventFilter(now, now);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
@@ -163,15 +166,17 @@ describe('EventHandler Test', () => {
       it('emit tx_state_changed event which is permenant state', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const now = Date.now();
+        const timeout = 2 * epochMs;
         eventHandler.createAndRegisterEventFilter(now, now,
         BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-          timeout: 2 * epochMs
+          timeout,
         });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        // Filter is deleted due to end of state
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
     });
