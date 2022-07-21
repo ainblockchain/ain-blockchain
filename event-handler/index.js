@@ -163,7 +163,7 @@ class EventHandler {
       if (isPermanentState(afterState)) {
         this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.PERMANENT_STATE);
         this.deregisterEventFilter(clientFilterId, channelId);
-        return;
+        continue;
       }
 
       this.eventFilterIdToDeleteCallback.set(eventFilterId, setTimeout(() => {

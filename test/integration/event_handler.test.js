@@ -312,6 +312,37 @@ describe('Event Handler Test', function() {
         });
       });
 
+      it('send valid transaction with two filters', function(done) {
+        this.timeout(10 * epochMs);
+        let filterId = Date.now();
+        let msgCnt = 0;
+        const targetPath = `/apps/${testAppName}`;
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+          timeout: 10 * epochMs
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        filterId += 1;
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        wsClient.on('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const txState = _.get(parsedMessage, 'data.payload.tx_state');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+            expect(txState.before).to.equal(TransactionStates.EXECUTED);
+            expect(txState.after).to.equal(TransactionStates.FINALIZED);
+            msgCnt += 1;
+            if (msgCnt === 2) {
+              done();
+            }
+          }
+        });
+      });
+
       it('send invalid transaction', function(done) {
         this.timeout(10 * epochMs);
         const filterId = Date.now();
@@ -354,7 +385,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.cause).to.equal(FilterDeletionReasons.TIMED_OUT);
+            expect(payload.reason).to.equal(FilterDeletionReasons.TIMED_OUT);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
@@ -379,7 +410,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.cause).to.equal(FilterDeletionReasons.PERMANENT_STATE);
+            expect(payload.reason).to.equal(FilterDeletionReasons.PERMANENT_STATE);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
