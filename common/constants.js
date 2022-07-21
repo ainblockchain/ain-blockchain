@@ -572,7 +572,7 @@ function isTxInBlock(state) {
   return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
 }
 
-function isPermanentState(state) {
+function isEndedState(state) {
   return state === TransactionStates.FINALIZED ||
       state === TransactionStates.REVERTED ||
       state === TransactionStates.FAILED ||
@@ -674,8 +674,8 @@ const ValueChangedEventSources = {
 };
 
 const FilterDeletionReasons = {
-  TIMED_OUT: 'TIMED_OUT',
-  PERMANENT_STATE: 'PERMANENT_STATE',
+  FILTER_TIMEOUT: 'FILTER_TIMEOUT',
+  END_OF_STATE: 'END_OF_STATE',
 }
 
 // ** Lists & Sets **
@@ -839,7 +839,7 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   isTxInBlock,
-  isPermanentState,
+  isEndedState,
   StateVersions,
   getBlockchainConfig,
   SyncModeOptions,

@@ -227,11 +227,11 @@ describe('EventHandler Test', () => {
           }).id;
           let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
-          expect(eventHandler.eventFilterIdToDeleteCallback.has(eventFilterId)).to.be.true;
+          expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.true;
           eventHandler.deregisterEventFilter(now, now);
           numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
-          expect(eventHandler.eventFilterIdToDeleteCallback.has(eventFilterId)).to.be.false;
+          expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.false;
         });
       });
 

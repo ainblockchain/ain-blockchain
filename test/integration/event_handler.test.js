@@ -385,7 +385,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.reason).to.equal(FilterDeletionReasons.TIMED_OUT);
+            expect(payload.reason).to.equal(FilterDeletionReasons.FILTER_TIMEOUT);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
@@ -410,7 +410,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.reason).to.equal(FilterDeletionReasons.PERMANENT_STATE);
+            expect(payload.reason).to.equal(FilterDeletionReasons.END_OF_STATE);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }
