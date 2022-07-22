@@ -255,6 +255,7 @@ function deploy_node() {
     eval $START_NODE_CMD
 
     # 4. Inject node account
+    sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
