@@ -177,19 +177,15 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
-    if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
-    else
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
-    fi
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf 'Reusing existing data directory..\n'
-    if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    if [[ $CHOWN_DATA_OPTION = "--no-chown-data" ]]; then
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod 777 /home/ain_blockchain_data; sudo chown $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     else
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
