@@ -3,6 +3,7 @@ const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
+const fs = require('fs');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
@@ -59,8 +60,7 @@ class P2pClient {
 
     // 3. Set up blockchain node
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      const isFirstNode = P2pUtil.areIdenticalUrls(
-          NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
+      const isFirstNode = this.checkFirstNode();
       this.setIsFirstNode(isFirstNode);
       await this.prepareBlockchainNode();
     }
@@ -173,6 +173,14 @@ class P2pClient {
     return Object.fromEntries(TimerFlagEnabledBandageMap.entries());
   }
 
+  checkFirstNode() {
+    const condition1 = P2pUtil.areIdenticalUrls(
+        NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL, _.get(this.server.urls, 'jsonRpc.url', ''));
+    const condition2 = fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR +
+        `/snapshots/${NodeConfigs.PORT}/${BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME}/0.json.gz`);
+    return condition1 && condition2;
+  }
+
   /**
    * Returns json rpc urls.
    */
@@ -194,7 +202,6 @@ class P2pClient {
     }
   }
 
-  // Need to move network util?
   buildAddressRegistrationFingerPrint(myAccount) {
     const myP2pIpAddress = this.server.urls.p2p.url;
     const myP2pPort = this.server.urls.p2p.port;
