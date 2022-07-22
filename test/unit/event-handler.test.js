@@ -143,7 +143,7 @@ describe('EventHandler Test', () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
       });
 
-      it('emit tx_state_changed event which is not permenant state', async () => {
+      it('emit tx_state_changed event which is not an end state', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const now = Date.now();
         const timeout = 2 * epochMs;
@@ -152,7 +152,7 @@ describe('EventHandler Test', () => {
           tx_hash: validTxHash,
           timeout,
         });
-        // NOTE(ehgmsdk20): To check whether the timer of deleteCallback is reset
+        // NOTE(ehgmsdk20): To check whether the timer of timeoutCallback is reset
         // when A is executed, the delay is divided.
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
@@ -172,7 +172,7 @@ describe('EventHandler Test', () => {
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
 
-      it('emit tx_state_changed event which is permenant state', () => {
+      it('emit tx_state_changed event which is an end state', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const now = Date.now();
         const timeout = 2 * epochMs;

@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
 const StateEventTreeManager = require('./state-event-tree-manager');
-const { BlockchainEventTypes, isEndedState, FilterDeletionReasons, BlockchainParams }
+const { BlockchainEventTypes, isEndState, FilterDeletionReasons, BlockchainParams }
     = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
@@ -134,9 +134,9 @@ class EventHandler {
       return;
     }
     for (const eventFilterId of eventFilterIds) {
-      const deleteCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
-      if (deleteCallback) {
-        clearTimeout(deleteCallback);
+      const timeoutCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
+      if (timeoutCallback) {
+        clearTimeout(timeoutCallback);
       }
 
       const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.TX_STATE_CHANGED, {
@@ -150,8 +150,8 @@ class EventHandler {
       const [channelId, clientFilterId] = eventFilterId.split(':');
 
       // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
-      if (isEndedState(afterState)) {
-        this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_OF_STATE);
+      if (isEndState(afterState)) {
+        this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_STATE_REACHED);
         this.deregisterEventFilter(clientFilterId, channelId);
       }
     }
@@ -226,11 +226,9 @@ class EventHandler {
           throw new EventHandlerError(EventHandlerErrorCode.INVALID_TX_HASH,
               `Invalid tx hash (${txHash})`);
         }
-        if (
-          !CommonUtil.isNumber(timeout) ||
+        if (!CommonUtil.isNumber(timeout) ||
           timeout > NodeConfigs.TX_POOL_TIMEOUT_MS ||
-          timeout < epochMs
-        ) {
+          timeout < epochMs) {
           throw new EventHandlerError(EventHandlerErrorCode.INVALID_TIMEOUT,
             `Invalid timeout (${timeout})\nTimeout must be a number between ` +
             `${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
@@ -298,9 +296,9 @@ class EventHandler {
       if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
       } else if (eventFilter.type === BlockchainEventTypes.TX_STATE_CHANGED) {
-        const deleteCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
-        if (deleteCallback) {
-          clearTimeout(deleteCallback);
+        const timeoutCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
+        if (timeoutCallback) {
+          clearTimeout(timeoutCallback);
         }
         this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
 
