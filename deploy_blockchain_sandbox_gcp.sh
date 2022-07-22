@@ -447,6 +447,7 @@ while [ $node_index -le $END_NODE_IDX ]; do
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
+    sleep 5
     inject_account "$node_index"
     ((node_index++))
     sleep 1
