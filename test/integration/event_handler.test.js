@@ -392,7 +392,7 @@ describe('Event Handler Test', function() {
         });
       });
 
-      it('deleted because of permanent state', function(done) {
+      it('deleted because end state reached', function(done) {
         this.timeout(10 * epochMs);
         const filterId = Date.now();
         const targetPath = `/apps/${testAppName}`;
@@ -410,7 +410,7 @@ describe('Event Handler Test', function() {
           const payload = _.get(parsedMessage, 'data.payload');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
-            expect(payload.reason).to.equal(FilterDeletionReasons.END_OF_STATE);
+            expect(payload.reason).to.equal(FilterDeletionReasons.END_STATE_REACHED);
             expect(payload.filter_id).to.equal(filterId.toString());
             done();
           }

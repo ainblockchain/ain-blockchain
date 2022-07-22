@@ -572,7 +572,7 @@ function isTxInBlock(state) {
   return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
 }
 
-function isEndedState(state) {
+function isEndState(state) {
   return state === TransactionStates.FINALIZED ||
       state === TransactionStates.REVERTED ||
       state === TransactionStates.FAILED ||
@@ -675,7 +675,7 @@ const ValueChangedEventSources = {
 
 const FilterDeletionReasons = {
   FILTER_TIMEOUT: 'FILTER_TIMEOUT',
-  END_OF_STATE: 'END_OF_STATE',
+  END_STATE_REACHED: 'END_STATE_REACHED',
 }
 
 // ** Lists & Sets **
@@ -839,7 +839,7 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   isTxInBlock,
-  isEndedState,
+  isEndState,
   StateVersions,
   getBlockchainConfig,
   SyncModeOptions,
