@@ -129,7 +129,7 @@ describe('EventHandler Test', () => {
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            [eventHandler.getGlobalFilterId(now, now)]);
+            new Set([eventHandler.getGlobalFilterId(now, now)]));
         await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         // Filter is deleted due to filter timeout
@@ -160,12 +160,12 @@ describe('EventHandler Test', () => {
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-          [eventHandler.getGlobalFilterId(now, now)]);
+            new Set([eventHandler.getGlobalFilterId(now, now)]));
         await CommonUtil.sleep(timeout);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-          [eventHandler.getGlobalFilterId(now, now)]);
+            new Set([eventHandler.getGlobalFilterId(now, now)]));
         eventHandler.deregisterEventFilter(now, now);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
@@ -184,7 +184,7 @@ describe('EventHandler Test', () => {
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-          [eventHandler.getGlobalFilterId(now, now)]);
+            new Set([eventHandler.getGlobalFilterId(now, now)]));
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         // Filter is deleted due to end of state
@@ -246,7 +246,7 @@ describe('EventHandler Test', () => {
           expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.true;
           expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            [eventHandler.getGlobalFilterId(now, now)]);
+              new Set([eventHandler.getGlobalFilterId(now, now)]));
           eventHandler.deregisterEventFilter(now, now);
           numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
