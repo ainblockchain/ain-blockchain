@@ -346,7 +346,7 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
         DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     else
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod 777 /home/ain_blockchain_data"
     fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
@@ -356,7 +356,7 @@ else
     if [[ $CHOWN_DATA_OPTION = "--chown-data" ]]; then
         DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     else
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod 777 /home/ain_blockchain_data"
     fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
