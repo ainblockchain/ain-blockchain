@@ -255,11 +255,11 @@ class EventHandler {
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
       } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-        const eventFilterIds = this.txHashToEventFilterIds.get(config.tx_hash)
+        const eventFilterIds = this.txHashToEventFilterIds.get(config.tx_hash);
         if (eventFilterIds) {
-          eventFilterIds.push(eventFilterId);
+          eventFilterIds.add(eventFilterId);
         } else {
-          this.txHashToEventFilterIds.set(config.tx_hash, [eventFilterId]);
+          this.txHashToEventFilterIds.set(config.tx_hash, new Set([eventFilterId]));
         }
         this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
           this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
@@ -303,16 +303,10 @@ class EventHandler {
         this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
 
         const txHash = _.get(eventFilter.config, 'tx_hash', null);
-        if (!txHash) {
-          throw new EventHandlerError(EventHandlerErrorCode.MISSING_PARAMS_IN_CONFIG,
-              `Missing tx_hash in config (${eventFilterId})`, eventFilterId);
-        }
-        let eventFilterIds = this.txHashToEventFilterIds.get(txHash);
-        eventFilterIds = eventFilterIds.filter((filterId) => filterId !== eventFilterId)
-        if (eventFilterIds.length === 0) {
-          this.txHashToEventFilterIds.delete(txHash)
-        } else {
-          this.txHashToEventFilterIds.set(txHash, eventFilterIds);
+        const eventFilterIds = this.txHashToEventFilterIds.get(txHash);
+        eventFilterIds.delete(eventFilterId);
+        if (eventFilterIds.size === 0) {
+          this.txHashToEventFilterIds.delete(txHash);
         }
       }
       logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
