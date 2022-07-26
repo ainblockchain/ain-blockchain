@@ -147,12 +147,10 @@ class EventHandler {
         },
       });
       this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
-      const [channelId, clientFilterId] = eventFilterId.split(':');
 
       // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
       if (isEndState(afterState)) {
         this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_STATE_REACHED);
-        this.deregisterEventFilter(clientFilterId, channelId);
       }
     }
   }
@@ -164,12 +162,19 @@ class EventHandler {
       logger.error(`[${LOG_HEADER}] EventFilterId is empty.`);
       return;
     }
+    const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
+    if (!channel) {
+      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
+          `(eventFilterId: ${eventFilterId})`);
+      return;
+    }
     const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
     const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.FILTER_DELETED, {
       filter_id: clientFilterId, // Client needs client filter ID.
       reason: filterDeletionReason,
     });
     this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+    this.eventChannelManager.deregisterFilter(channel, clientFilterId);
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
@@ -263,7 +268,6 @@ class EventHandler {
         }
         this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
           this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
-          this.deregisterEventFilter(clientFilterId, channelId);
         }, config.timeout));
       }
       logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +

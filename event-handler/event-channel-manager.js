@@ -44,6 +44,12 @@ class EventChannelManager {
     return channelInfo;
   }
 
+  getChannelByEventFilterId(eventFilterId) {
+    const channelId = this.filterIdToChannelId[eventFilterId];
+    const channel = this.channels[channelId];
+    return channel;
+  }
+
   startListening() {
     this.wsServer = new ws.Server({
       port: NodeConfigs.EVENT_HANDLER_PORT,
@@ -114,7 +120,10 @@ class EventChannelManager {
           `Can't find config from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
+    this.registerFilter(channel, clientFilterId, eventType, config);
+  }
 
+  registerFilter(channel, clientFilterId, eventType, config) {
     const filter =
         this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
             eventType, config);
@@ -198,8 +207,7 @@ class EventChannelManager {
 
   transmitEventByEventFilterId(eventFilterId, event) {
     const LOG_HEADER = 'transmitEventByEventFilterId';
-    const channelId = this.filterIdToChannelId[eventFilterId];
-    const channel = this.channels[channelId];
+    const channel = this.getChannelByEventFilterId(eventFilterId);
     if (!channel) {
       logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
           `(eventFilterId: ${eventFilterId})`);
