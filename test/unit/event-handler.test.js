@@ -1,4 +1,5 @@
 const EventHandler = require('../../event-handler');
+const EventChannel = require('../../event-handler/event-channel');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../../common/network-util');
@@ -11,6 +12,18 @@ const _ = require('lodash');
 const validTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2'
 const dummyTx = new Transaction({}, 'signature', validTxHash, 'address', true, Date.now());
 const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
+
+class MockWebSockect {
+  close() {
+    return;
+  }
+  terminate() {
+    return;
+  }
+  send() {
+    return;
+  }
+}
 
 describe('EventHandler Test', () => {
   let eventHandler;
@@ -90,112 +103,163 @@ describe('EventHandler Test', () => {
     });
 
     describe('createAndRegisterFilter', () => {
+      let channel;
+
       beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        channel = new EventChannel(Date.now(), new MockWebSockect());
+        eventHandler.eventChannelManager.channels[channel.id] = channel;
+      });
+
+      afterEach(() => {
+        eventHandler.eventChannelManager.closeChannel(channel);
       });
 
       it('create and register with right config', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        const now = Date.now();
-        eventHandler.createAndRegisterEventFilter(now, now,
+        const clientFilterId = Date.now();
+        eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.BLOCK_FINALIZED, {
               block_number: 100,
             });
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
-        eventHandler.deregisterEventFilter(now, now);
+        const numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
+        expect(numberOfFiltersPerChannel).to.equal(1);
+        eventHandler.eventChannelManager.deregisterFilter(channel, clientFilterId);
       });
 
       it('create and register with wrong config', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+        const clientFilterId = Date.now();
         try { // NOTE(cshcomcom): createAndRegisterEventFilter throws error in this case.
-          eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(),
+          eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
               BlockchainEventTypes.BLOCK_FINALIZED, {
                 block_number: -1,
               });
         } catch (err) {}
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        const numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
+        expect(numberOfFiltersPerChannel).to.equal(0);
       });
 
       it('create, register and wait until deregistered', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        const now = Date.now()
-        eventHandler.createAndRegisterEventFilter(now, now,
+        const clientFilterId = Date.now();
+        eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
               timeout: epochMs
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            new Set([eventHandler.getGlobalFilterId(now, now)]));
+            new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
         await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
         // Filter is deleted due to filter timeout
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(0);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
     });
 
     describe('emitTxStateChanged', () => {
+      let channel;
+
       beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        channel = new EventChannel(Date.now(), new MockWebSockect());
+        eventHandler.eventChannelManager.channels[channel.id] = channel;
+      });
+
+      afterEach(() => {
+        eventHandler.eventChannelManager.closeChannel(channel);
       });
 
       it('emit tx_state_changed event which is not an end state', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        const now = Date.now();
+        const clientFilterId = Date.now();
         const timeout = 2 * epochMs;
-        eventHandler.createAndRegisterEventFilter(now, now,
-        BlockchainEventTypes.TX_STATE_CHANGED, {
-          tx_hash: validTxHash,
-          timeout,
-        });
-        // NOTE(ehgmsdk20): To check whether the timer of timeoutCallback is reset
-        // when A is executed, the delay is divided.
+        eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
+            BlockchainEventTypes.TX_STATE_CHANGED, {
+              tx_hash: validTxHash,
+              timeout,
+            });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+            .getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(1);
+
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.EXECUTED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+            .getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            new Set([eventHandler.getGlobalFilterId(now, now)]));
+            new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
+
         await CommonUtil.sleep(timeout);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
+        expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            new Set([eventHandler.getGlobalFilterId(now, now)]));
-        eventHandler.deregisterEventFilter(now, now);
+            new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
+
+        eventHandler.eventChannelManager.deregisterFilter(channel, clientFilterId);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+            .getFilterIdsSize();
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(0);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
 
       it('emit tx_state_changed event which is an end state', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-        const now = Date.now();
+        const clientFilterId = Date.now();
         const timeout = 2 * epochMs;
-        eventHandler.createAndRegisterEventFilter(now, now,
-        BlockchainEventTypes.TX_STATE_CHANGED, {
-          tx_hash: validTxHash,
-          timeout,
-        });
+        eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
+            BlockchainEventTypes.TX_STATE_CHANGED, {
+              tx_hash: validTxHash,
+              timeout,
+            });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+            .getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-            new Set([eventHandler.getGlobalFilterId(now, now)]));
+            new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
+
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+        numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+            .getFilterIdsSize();
         // Filter is deleted due to end of state
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+        expect(numberOfFiltersPerChannel).to.equal(0);
         expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
       });
     });
 
     describe('deregisterEventFilter', () => {
+      let channel;
+
       beforeEach( async () => { // NOTE(cshcomcom): To avoid id collisions.
         await new Promise((resolve) => setTimeout(resolve, 1000));
+        channel = new EventChannel(Date.now(), new MockWebSockect());
+        eventHandler.eventChannelManager.channels[channel.id] = channel;
+      });
+
+      afterEach(() => {
+        eventHandler.eventChannelManager.closeChannel(channel);
       });
 
       describe('deregister filter registered', () => {
@@ -236,20 +300,28 @@ describe('EventHandler Test', () => {
 
         it('TX_STATE_CHANGED event', () => {
           const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-          const now = Date.now();
-          const eventFilterId = eventHandler.createAndRegisterEventFilter(now, now,
-          BlockchainEventTypes.TX_STATE_CHANGED, {
-            tx_hash: validTxHash,
-            timeout: epochMs
-          }).id;
+          const clientFilterId = Date.now();
+          const eventFilterId = eventHandler.getGlobalFilterId(channel.id, clientFilterId);
+          eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
+              BlockchainEventTypes.TX_STATE_CHANGED, {
+                tx_hash: validTxHash,
+                timeout: epochMs
+              });
           let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+              .getFilterIdsSize();
           expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
+          expect(numberOfFiltersPerChannel).to.equal(1);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.true;
           expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
-              new Set([eventHandler.getGlobalFilterId(now, now)]));
-          eventHandler.deregisterEventFilter(now, now);
+              new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
+
+          eventHandler.eventChannelManager.deregisterFilter(channel, clientFilterId);
           numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
+          numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
+              .getFilterIdsSize();
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
+          expect(numberOfFiltersPerChannel).to.equal(0);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.false;
           expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
         });

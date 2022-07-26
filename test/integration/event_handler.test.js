@@ -412,9 +412,18 @@ describe('Event Handler Test', function() {
               eventType === BlockchainEventTypes.FILTER_DELETED) {
             expect(payload.reason).to.equal(FilterDeletionReasons.END_STATE_REACHED);
             expect(payload.filter_id).to.equal(filterId.toString());
-            done();
+            // NOTE(ehgmsdk20): Wait until filter deleted after event emited
+            setTimeout(()=>{
+              const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+              expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+              expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
+              done();
+            }, 1000)
           }
         });
+        const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+        expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+        expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(1);
       });
     });
   });
