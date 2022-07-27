@@ -20,7 +20,7 @@ class EventHandler {
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
     this.eventFilterIdToTimeoutCallback = new Map();
-    this.txHashToEventFilterIds = new Map();
+    this.txHashToEventFilterIdSet = new Map();
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
@@ -129,11 +129,11 @@ class EventHandler {
       logger.error(`[${LOG_HEADER}] Invalid Tx(${JSON.stringify(transaction)})`);
       return;
     }
-    const eventFilterIds = this.txHashToEventFilterIds.get(transaction.hash);
-    if (!eventFilterIds) {
+    const eventFilterIdSet = this.txHashToEventFilterIdSet.get(transaction.hash);
+    if (!eventFilterIdSet) {
       return;
     }
-    for (const eventFilterId of eventFilterIds) {
+    for (const eventFilterId of eventFilterIdSet) {
       const timeoutCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
       if (timeoutCallback) {
         clearTimeout(timeoutCallback);
@@ -150,7 +150,10 @@ class EventHandler {
 
       // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
       if (isEndState(afterState)) {
+        // NOTE(ehgmsdk20): Send message that the filter has been deleted before deleting,
+        // because once the filter is deleted, the message cannot be sent.
         this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_STATE_REACHED);
+        this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
       }
     }
   }
@@ -162,19 +165,12 @@ class EventHandler {
       logger.error(`[${LOG_HEADER}] EventFilterId is empty.`);
       return;
     }
-    const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
-    if (!channel) {
-      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
-          `(eventFilterId: ${eventFilterId})`);
-      return;
-    }
     const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
     const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.FILTER_DELETED, {
       filter_id: clientFilterId, // Client needs client filter ID.
       reason: filterDeletionReason,
     });
     this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
-    this.eventChannelManager.deregisterFilter(channel, clientFilterId);
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
@@ -260,14 +256,15 @@ class EventHandler {
       if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
         this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
       } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-        const eventFilterIds = this.txHashToEventFilterIds.get(config.tx_hash);
-        if (eventFilterIds) {
-          eventFilterIds.add(eventFilterId);
+        const eventFilterIdSet = this.txHashToEventFilterIdSet.get(config.tx_hash);
+        if (eventFilterIdSet) {
+          eventFilterIdSet.add(eventFilterId);
         } else {
-          this.txHashToEventFilterIds.set(config.tx_hash, new Set([eventFilterId]));
+          this.txHashToEventFilterIdSet.set(config.tx_hash, new Set([eventFilterId]));
         }
         this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
           this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
+          this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
         }, config.timeout_ms));
       }
       logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
@@ -307,10 +304,10 @@ class EventHandler {
         this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
 
         const txHash = _.get(eventFilter.config, 'tx_hash', null);
-        const eventFilterIds = this.txHashToEventFilterIds.get(txHash);
-        eventFilterIds.delete(eventFilterId);
-        if (eventFilterIds.size === 0) {
-          this.txHashToEventFilterIds.delete(txHash);
+        const eventFilterIdSet = this.txHashToEventFilterIdSet.get(txHash);
+        eventFilterIdSet.delete(eventFilterId);
+        if (eventFilterIdSet.size === 0) {
+          this.txHashToEventFilterIdSet.delete(txHash);
         }
       }
       logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);

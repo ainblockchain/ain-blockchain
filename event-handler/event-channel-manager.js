@@ -137,6 +137,18 @@ class EventChannelManager {
     delete this.filterIdToChannelId[filter.id];
   }
 
+  deregisterFilterByEventFilterId(eventFilterId) {
+    const LOG_HEADER = 'deregisterFilterByEventFilterId';
+    const channel = this.getChannelByEventFilterId(eventFilterId);
+    if (!channel) {
+      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
+          `(eventFilterId: ${eventFilterId})`);
+      return;
+    }
+    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    this.deregisterFilter(channel, clientFilterId);
+  }
+
   handleDeregisterFilterMessage(channel, messageData) {
     const clientFilterId = messageData.id;
     this.deregisterFilter(channel, clientFilterId);
