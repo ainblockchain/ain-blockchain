@@ -217,25 +217,25 @@ class EventHandler {
         break;
       case BlockchainEventTypes.TX_STATE_CHANGED:
         const txHash = _.get(config, 'tx_hash', null);
-        const timeout = _.get(config, 'timeout', null);
+        const timeoutMs = _.get(config, 'timeout_ms', null);
 
         // NOTE(ehgmsdk20): If the epoch_ms is changed, it must be changed to get it
         // through the getBlockchainParams function.
         const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
 
-        if (!txHash|| !timeout) {
+        if (!txHash|| !timeoutMs) {
           throw new EventHandlerError(EventHandlerErrorCode.MISSING_PARAMS_IN_CONFIG,
-              `config.tx_hash or config.timeout is missing (${JSON.stringify(config)})`);
+              `config.tx_hash or config.timeout_ms is missing (${JSON.stringify(config)})`);
         }
         if (!CommonUtil.isValidHash(txHash)) {
           throw new EventHandlerError(EventHandlerErrorCode.INVALID_TX_HASH,
               `Invalid tx hash (${txHash})`);
         }
-        if (!CommonUtil.isNumber(timeout) ||
-          timeout > NodeConfigs.TX_POOL_TIMEOUT_MS ||
-          timeout < epochMs) {
+        if (!CommonUtil.isNumber(timeoutMs) ||
+          timeoutMs > NodeConfigs.TX_POOL_TIMEOUT_MS ||
+          timeoutMs < epochMs) {
           throw new EventHandlerError(EventHandlerErrorCode.INVALID_TIMEOUT,
-            `Invalid timeout (${timeout})\nTimeout must be a number between ` +
+            `Invalid timeout (${timeoutMs})\nTimeout must be a number between ` +
             `${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
         }
         break;
@@ -268,7 +268,7 @@ class EventHandler {
         }
         this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
           this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
-        }, config.timeout));
+        }, config.timeout_ms));
       }
       logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
           `eventType: ${eventType}, config: ${JSON.stringify(config)})`);

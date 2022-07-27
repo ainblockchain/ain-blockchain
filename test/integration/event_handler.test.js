@@ -295,7 +295,7 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout: 10 * epochMs
+          timeout_ms: 10 * epochMs
         };
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.once('message', (message) => {
@@ -321,7 +321,7 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout: 10 * epochMs
+          timeout_ms: 10 * epochMs
         };
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         filterId += 1;
@@ -351,7 +351,7 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout: 10 * epochMs
+          timeout_ms: 10 * epochMs
         };
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.once('message', (message) => {
@@ -375,7 +375,7 @@ describe('Event Handler Test', function() {
         const filterId = Date.now();
         const config = {
           tx_hash: dummyTxHash,
-          timeout: epochMs
+          timeout_ms: epochMs
         };
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.on('message', (message) => {
@@ -400,7 +400,7 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout: 10 * epochMs
+          timeout_ms: 10 * epochMs
         };
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.on('message', (message) => {

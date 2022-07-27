@@ -82,22 +82,22 @@ describe('EventHandler Test', () => {
       it('validate TX_STATE_CHANGED config with right config', () => {
         expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-          timeout: NodeConfigs.TX_POOL_TIMEOUT_MS
+          timeout_ms: NodeConfigs.TX_POOL_TIMEOUT_MS
         })).to.equal(undefined);
       });
       it('validate TX_STATE_CHANGED config with wrong config', () => {
         expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-        })).to.throw('config.tx_hash or config.timeout is missing' +
+        })).to.throw('config.tx_hash or config.timeout_ms is missing' +
             ' ({"tx_hash":"0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2"})');
         expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-          timeout: -1
+          timeout_ms: -1
         })).to.throw(`Invalid timeout (${-1})` +
         `\nTimeout must be a number between ${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
         expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: 123,
-          timeout: epochMs
+          timeout_ms: epochMs
         })).to.throw('Invalid tx hash (123)');
       });
     });
@@ -150,7 +150,7 @@ describe('EventHandler Test', () => {
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout: epochMs
+              timeout_ms: epochMs
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
@@ -188,7 +188,7 @@ describe('EventHandler Test', () => {
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout,
+              timeout_ms: timeout,
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
@@ -228,7 +228,7 @@ describe('EventHandler Test', () => {
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout,
+              timeout_ms: timeout,
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
@@ -305,7 +305,7 @@ describe('EventHandler Test', () => {
           eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
               BlockchainEventTypes.TX_STATE_CHANGED, {
                 tx_hash: validTxHash,
-                timeout: epochMs
+                timeout_ms: epochMs
               });
           let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
