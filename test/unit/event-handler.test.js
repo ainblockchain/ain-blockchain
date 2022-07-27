@@ -156,7 +156,7 @@ describe('EventHandler Test', () => {
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(1);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
         await CommonUtil.sleep(epochMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
@@ -164,7 +164,7 @@ describe('EventHandler Test', () => {
         // Filter is deleted due to filter timeout
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(0);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.equal(undefined);
       });
     });
 
@@ -202,14 +202,14 @@ describe('EventHandler Test', () => {
             .getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(1);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
         await CommonUtil.sleep(timeout);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
         expect(numberOfFiltersPerChannel).to.equal(1);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
         eventHandler.eventChannelManager.deregisterFilter(channel, clientFilterId);
@@ -218,7 +218,7 @@ describe('EventHandler Test', () => {
             .getFilterIdsSize();
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(0);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.equal(undefined);
       });
 
       it('emit tx_state_changed event which is an end state', () => {
@@ -235,7 +235,7 @@ describe('EventHandler Test', () => {
             .getFilterIdsSize();
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(1);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
         eventHandler.emitTxStateChanged(dummyTx, null, TransactionStates.FINALIZED);
@@ -245,7 +245,7 @@ describe('EventHandler Test', () => {
         // Filter is deleted due to end of state
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(0);
-        expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
+        expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.equal(undefined);
       });
     });
 
@@ -313,7 +313,7 @@ describe('EventHandler Test', () => {
           expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
           expect(numberOfFiltersPerChannel).to.equal(1);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.true;
-          expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.deep.equal(
+          expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
               new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
           eventHandler.eventChannelManager.deregisterFilter(channel, clientFilterId);
@@ -323,7 +323,7 @@ describe('EventHandler Test', () => {
           expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
           expect(numberOfFiltersPerChannel).to.equal(0);
           expect(eventHandler.eventFilterIdToTimeoutCallback.has(eventFilterId)).to.be.false;
-          expect(eventHandler.txHashToEventFilterIds.get(validTxHash)).to.equal(undefined);
+          expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.equal(undefined);
         });
       });
 
