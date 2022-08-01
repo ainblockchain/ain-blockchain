@@ -46,7 +46,7 @@ class Blockchain {
         // NOTE(platfowner): This write is not awaited.
         FileUtil.writeSnapshotFile(snapshotDir, blockNumber, snapshot, snapshotChunkSize);
         // Write the block from the snapshot to the blockchain dir.
-        this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK]);
+        this.writeBlock(snapshot[BlockchainSnapshotProperties.BLOCK], 'initBlockchain:snapshot');
       }
     }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
@@ -58,7 +58,7 @@ class Blockchain {
         logger.info('############################################################');
         logger.info('\n');
         // Copy the genesis block from the genesis configs dir to the blockchain dir.
-        this.writeBlock(this.genesisBlock);
+        this.writeBlock(this.genesisBlock, 'initBlockchain:genesis');
       } else {
         logger.info('\n');
         logger.info('#############################################################');
@@ -212,7 +212,7 @@ class Blockchain {
     this.addBlockToChain(block);
     this.updateNumberToBlockInfo(block);
     if (writeToDisk) {
-      this.writeBlock(block);
+      this.writeBlock(block, 'addBlockToChainAndWriteToDisk');
     }
     return true;
   }
@@ -243,8 +243,11 @@ class Blockchain {
     return true;
   }
 
-  writeBlock(block) {
+  writeBlock(block, from = '') {
     const LOG_HEADER = 'writeBlock';
+    if (!block) {
+      logger.error(`[${LOG_HEADER}] Writing an empty block ${block} from ${from}`);
+    }
 
     if (FileUtil.hasBlockFile(this.blockchainPath, block)) {
       logger.error(
