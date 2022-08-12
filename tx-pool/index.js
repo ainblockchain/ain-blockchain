@@ -15,9 +15,8 @@ const Transaction = require('./transaction');
 const { isFailedTx } = require('../common/common-util');
 
 class TransactionPool {
-  constructor(node, eventHandler) {
+  constructor(node) {
     this.node = node;
-    this.eh = eventHandler;
     this.transactions = new Map();
     this.transactionTracker = new Map();
     this.txCountTotal = 0;
@@ -96,8 +95,8 @@ class TransactionPool {
       this.freeTxCountTotal++;
       this.updateFreeTxCountPerAccount(tx.address, 1);
     }
-    if (this.eh) {
-      this.eh.emitTxStateChanged(tx, null, txState);
+    if (this.node.eh) {
+      this.node.eh.emitTxStateChanged(tx, null, txState);
     }
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
@@ -430,8 +429,8 @@ class TransactionPool {
           if (tracked && !isTxInBlock(beforeState)) {
             tracked.state = TransactionStates.TIMED_OUT;
           }
-          if (this.eh) {
-            this.eh.emitTxStateChanged(tx, beforeState, TransactionStates.TIMED_OUT);
+          if (this.node.eh) {
+            this.node.eh.emitTxStateChanged(tx, beforeState, TransactionStates.TIMED_OUT);
           }
         }
         return !isTimedOut;
@@ -467,8 +466,8 @@ class TransactionPool {
       if (tracked && !isTxInBlock(beforeState)) {
         tracked.state = TransactionStates.FAILED;
       }
-      if (this.eh) {
-        this.eh.emitTxStateChanged(tx, beforeState, TransactionStates.FAILED);
+      if (this.node.eh) {
+        this.node.eh.emitTxStateChanged(tx, beforeState, TransactionStates.FAILED);
       }
     });
     for (const [address, invalidTxSet] of addrToInvalidTxSet.entries()) {
@@ -551,8 +550,8 @@ class TransactionPool {
         finalized_at: finalizedAt,
       });
 
-      if (this.eh) {
-        this.eh.emitTxStateChanged(voteTx, beforeState, TransactionStates.FINALIZED);
+      if (this.node.eh) {
+        this.node.eh.emitTxStateChanged(voteTx, beforeState, TransactionStates.FINALIZED);
       }
       inBlockTxs.add(voteTx.hash);
     }
@@ -581,8 +580,8 @@ class TransactionPool {
       });
       inBlockTxs.add(tx.hash);
 
-      if (this.eh) {
-        this.eh.emitTxStateChanged(tx, beforeState, txState);
+      if (this.node.eh) {
+        this.node.eh.emitTxStateChanged(tx, beforeState, txState);
       }
       const lastNonce = addrToNonce[tx.address];
       const lastTimestamp = addrToTimestamp[tx.address];

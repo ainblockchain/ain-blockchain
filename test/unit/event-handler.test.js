@@ -8,10 +8,12 @@ const { NodeConfigs, BlockchainEventTypes, TransactionStates, BlockchainParams }
 const CommonUtil = require('../../common/common-util');
 const Transaction = require('../../tx-pool/transaction');
 const _ = require('lodash');
+const BlockchainNode = require('../../node');
 
 const validTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2'
 const dummyTx = new Transaction({}, 'signature', validTxHash, 'address', true, Date.now());
 const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
+const filterDeletionTimeoutMs = 5 * epochMs;
 
 class MockWebSockect {
   close() {
@@ -26,13 +28,17 @@ class MockWebSockect {
 }
 
 describe('EventHandler Test', () => {
-  let eventHandler;
+  let eventHandler = null;
+  let node = null;
 
-  before(() => {
-    eventHandler = new EventHandler();
+  before(async () => {
+    NodeConfigs.ENABLE_EVENT_HANDLER = true;
+    node = new BlockchainNode();
+    eventHandler = node.eh;
   });
 
   after(() => {
+    NodeConfigs.ENABLE_EVENT_HANDLER = false;
     // TODO(cshcomcom): stop & cleanup logic
   });
 
@@ -82,22 +88,13 @@ describe('EventHandler Test', () => {
       it('validate TX_STATE_CHANGED config with right config', () => {
         expect(EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: validTxHash,
-          timeout_ms: NodeConfigs.TX_POOL_TIMEOUT_MS
         })).to.equal(undefined);
       });
       it('validate TX_STATE_CHANGED config with wrong config', () => {
-        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
-          tx_hash: validTxHash,
-        })).to.throw('config.tx_hash or config.timeout_ms is missing' +
-            ' ({"tx_hash":"0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2"})');
-        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
-          tx_hash: validTxHash,
-          timeout_ms: -1
-        })).to.throw(`Invalid timeout (${-1})` +
-        `\nTimeout must be a number between ${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
+        expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED,
+            {})).to.throw('config.tx_hash is missing ({})');
         expect(() => EventHandler.validateEventFilterConfig(BlockchainEventTypes.TX_STATE_CHANGED, {
           tx_hash: 123,
-          timeout_ms: epochMs
         })).to.throw('Invalid tx hash (123)');
       });
     });
@@ -150,7 +147,6 @@ describe('EventHandler Test', () => {
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout_ms: epochMs
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
@@ -158,7 +154,7 @@ describe('EventHandler Test', () => {
         expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
-        await CommonUtil.sleep(epochMs);
+        await CommonUtil.sleep(filterDeletionTimeoutMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
         // Filter is deleted due to filter timeout
@@ -184,11 +180,9 @@ describe('EventHandler Test', () => {
       it('emit tx_state_changed event which is not an end state', async () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const clientFilterId = Date.now();
-        const timeout = 2 * epochMs;
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout_ms: timeout,
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
@@ -205,9 +199,10 @@ describe('EventHandler Test', () => {
         expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
-        await CommonUtil.sleep(timeout);
+        // Check whether FilterDeletionTimeout is deleted
+        await CommonUtil.sleep(filterDeletionTimeoutMs);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
-        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter); // Filter is not deleted
+        expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
@@ -224,11 +219,9 @@ describe('EventHandler Test', () => {
       it('emit tx_state_changed event which is an end state', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const clientFilterId = Date.now();
-        const timeout = 2 * epochMs;
         eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
             BlockchainEventTypes.TX_STATE_CHANGED, {
               tx_hash: validTxHash,
-              timeout_ms: timeout,
             });
         let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]
@@ -305,7 +298,6 @@ describe('EventHandler Test', () => {
           eventHandler.eventChannelManager.registerFilter(channel, clientFilterId,
               BlockchainEventTypes.TX_STATE_CHANGED, {
                 tx_hash: validTxHash,
-                timeout_ms: epochMs
               });
           let numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
           let numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id]

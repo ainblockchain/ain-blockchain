@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventChannelManager = require('./event-channel-manager');
 const StateEventTreeManager = require('./state-event-tree-manager');
-const { BlockchainEventTypes, isEndState, FilterDeletionReasons, BlockchainParams }
+const { BlockchainEventTypes, isEndState, FilterDeletionReasons }
     = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const EventFilter = require('./event-filter');
@@ -14,8 +14,9 @@ const {
 } = require('../common/constants');
 
 class EventHandler {
-  constructor() {
-    this.eventChannelManager = null;
+  constructor(node) {
+    this.node = node;
+    this.eventChannelManager = new EventChannelManager(node);
     this.stateEventTreeManager = new StateEventTreeManager();
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
@@ -29,7 +30,6 @@ class EventHandler {
 
   run() {
     const LOG_HEADER = 'run';
-    this.eventChannelManager = new EventChannelManager(this);
     this.eventChannelManager.startListening();
     logger.info(`[${LOG_HEADER}] Event handler started!`);
   }
@@ -173,6 +173,25 @@ class EventHandler {
     this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
   }
 
+  setFilterDeletionTimeout(eventFilterId) {
+    const LOG_HEADER = 'setFilterDeletionTimeout';
+
+    if (!eventFilterId) {
+      logger.error(`[${LOG_HEADER}] EventFilterId is empty.`);
+      return;
+    }
+    const timeoutId = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
+    this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
+      this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
+      this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
+    }, 5 * epochMs));
+  }
+
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
     const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
@@ -213,26 +232,13 @@ class EventHandler {
         break;
       case BlockchainEventTypes.TX_STATE_CHANGED:
         const txHash = _.get(config, 'tx_hash', null);
-        const timeoutMs = _.get(config, 'timeout_ms', null);
-
-        // NOTE(ehgmsdk20): If the epoch_ms is changed, it must be changed to get it
-        // through the getBlockchainParams function.
-        const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
-
-        if (!txHash|| !timeoutMs) {
-          throw new EventHandlerError(EventHandlerErrorCode.MISSING_PARAMS_IN_CONFIG,
-              `config.tx_hash or config.timeout_ms is missing (${JSON.stringify(config)})`);
+        if (!txHash) {
+          throw new EventHandlerError(EventHandlerErrorCode.MISSING_TX_HASH_IN_CONFIG,
+              `config.tx_hash is missing (${JSON.stringify(config)})`);
         }
         if (!CommonUtil.isValidHash(txHash)) {
           throw new EventHandlerError(EventHandlerErrorCode.INVALID_TX_HASH,
               `Invalid tx hash (${txHash})`);
-        }
-        if (!CommonUtil.isNumber(timeoutMs) ||
-          timeoutMs > NodeConfigs.TX_POOL_TIMEOUT_MS ||
-          timeoutMs < epochMs) {
-          throw new EventHandlerError(EventHandlerErrorCode.INVALID_TIMEOUT,
-            `Invalid timeout (${timeoutMs})\nTimeout must be a number between ` +
-            `${epochMs} and ${NodeConfigs.TX_POOL_TIMEOUT_MS}`);
         }
         break;
       default:
@@ -262,10 +268,6 @@ class EventHandler {
         } else {
           this.txHashToEventFilterIdSet.set(config.tx_hash, new Set([eventFilterId]));
         }
-        this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
-          this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
-          this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
-        }, config.timeout_ms));
       }
       logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
           `eventType: ${eventType}, config: ${JSON.stringify(config)})`);

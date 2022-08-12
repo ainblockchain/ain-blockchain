@@ -291,41 +291,7 @@ describe('Event Handler Test', function() {
         this.timeout(10 * epochMs);
         const filterId = Date.now();
         const targetPath = `/apps/${testAppName}`;
-        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
-            .result;
-        const config = {
-          tx_hash: txResult.tx_hash,
-          timeout_ms: 10 * epochMs
-        };
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
-        wsClient.once('message', (message) => {
-          const parsedMessage = JSON.parse(message);
-          const messageType = parsedMessage.type;
-          const eventType = _.get(parsedMessage, 'data.type');
-          const txState = _.get(parsedMessage, 'data.payload.tx_state');
-          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
-              eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-            expect(txState.before).to.equal(TransactionStates.EXECUTED);
-            expect(txState.after).to.equal(TransactionStates.FINALIZED);
-            done();
-          }
-        });
-      });
-
-      it('send valid transaction with two filters', function(done) {
-        this.timeout(10 * epochMs);
-        let filterId = Date.now();
-        let msgCnt = 0;
-        const targetPath = `/apps/${testAppName}`;
-        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
-            .result;
-        const config = {
-          tx_hash: txResult.tx_hash,
-          timeout_ms: 10 * epochMs
-        };
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
-        filterId += 1;
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        let eventTriggeredCnt = 0;
         wsClient.on('message', (message) => {
           const parsedMessage = JSON.parse(message);
           const messageType = parsedMessage.type;
@@ -333,14 +299,59 @@ describe('Event Handler Test', function() {
           const txState = _.get(parsedMessage, 'data.payload.tx_state');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-            expect(txState.before).to.equal(TransactionStates.EXECUTED);
-            expect(txState.after).to.equal(TransactionStates.FINALIZED);
-            msgCnt += 1;
-            if (msgCnt === 2) {
+            if (eventTriggeredCnt === 0) {
+              expect(txState.before).to.equal(null);
+              expect(txState.after).to.equal(TransactionStates.EXECUTED);
+              eventTriggeredCnt++;
+            } else {
+              expect(txState.before).to.equal(TransactionStates.EXECUTED);
+              expect(txState.after).to.equal(TransactionStates.FINALIZED);
               done();
             }
           }
         });
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+      });
+
+      it('send valid transaction with two filters', function(done) {
+        this.timeout(10 * epochMs);
+        let filterId = Date.now();
+        let eventTriggeredCnt = 0;
+        const targetPath = `/apps/${testAppName}`;
+        wsClient.on('message', (message) => {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          const eventType = _.get(parsedMessage, 'data.type');
+          const txState = _.get(parsedMessage, 'data.payload.tx_state');
+          if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+              eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+            if (eventTriggeredCnt < 2) {
+              expect(txState.before).to.equal(null);
+              expect(txState.after).to.equal(TransactionStates.EXECUTED);
+              eventTriggeredCnt++;
+            } else {
+              expect(txState.before).to.equal(TransactionStates.EXECUTED);
+              expect(txState.after).to.equal(TransactionStates.FINALIZED);
+              eventTriggeredCnt++;
+              if (eventTriggeredCnt === 4) {
+                done();
+              }
+            }
+          }
+        });
+        const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
+            .result;
+        const config = {
+          tx_hash: txResult.tx_hash,
+        };
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        filterId += 1;
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
       });
 
       it('send invalid transaction', function(done) {
@@ -351,33 +362,37 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout_ms: 10 * epochMs
         };
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
-        wsClient.once('message', (message) => {
+        let eventTriggeredCnt = 0;
+        wsClient.on('message', (message) => {
           const parsedMessage = JSON.parse(message);
           const messageType = parsedMessage.type;
           const eventType = _.get(parsedMessage, 'data.type');
           const txState = _.get(parsedMessage, 'data.payload.tx_state');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-            expect(txState.before).to.equal(TransactionStates.PENDING);
-            expect(txState.after).to.equal(TransactionStates.REVERTED);
-            done();
+            if (eventTriggeredCnt === 0) {
+              expect(txState.before).to.equal(null);
+              expect(txState.after).to.equal(TransactionStates.PENDING);
+              eventTriggeredCnt++;
+            } else {
+              expect(txState.before).to.equal(TransactionStates.PENDING);
+              expect(txState.after).to.equal(TransactionStates.REVERTED);
+              done();
+            }
           }
         });
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
       });
     });
 
     describe('FILTER_DELETED', () => {
       it('deleted because of timeout', function(done) {
-        this.timeout(3 * epochMs);
+        this.timeout(10 * epochMs);
         const filterId = Date.now();
         const config = {
           tx_hash: dummyTxHash,
-          timeout_ms: epochMs
         };
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.on('message', (message) => {
           const parsedMessage = JSON.parse(message);
           const messageType = parsedMessage.type;
@@ -387,9 +402,19 @@ describe('Event Handler Test', function() {
               eventType === BlockchainEventTypes.FILTER_DELETED) {
             expect(payload.reason).to.equal(FilterDeletionReasons.FILTER_TIMEOUT);
             expect(payload.filter_id).to.equal(filterId.toString());
-            done();
+            // NOTE(ehgmsdk20): Wait until filter deleted after event emited
+            setTimeout(()=>{
+              const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+              expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+              expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
+              done();
+            }, 1000)
           }
         });
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
+        const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+        expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+        expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(1);
       });
 
       it('deleted because end state reached', function(done) {
@@ -400,9 +425,7 @@ describe('Event Handler Test', function() {
             .result;
         const config = {
           tx_hash: txResult.tx_hash,
-          timeout_ms: 10 * epochMs
         };
-        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         wsClient.on('message', (message) => {
           const parsedMessage = JSON.parse(message);
           const messageType = parsedMessage.type;
@@ -421,6 +444,7 @@ describe('Event Handler Test', function() {
             }, 1000)
           }
         });
+        registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
         const eventHandlerChannelInfo = getEventHandlerChannelInfo();
         expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
         expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(1);
