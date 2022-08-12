@@ -37,9 +37,10 @@ const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
+const EventHandler = require('../event-handler');
 
 class BlockchainNode {
-  constructor(account = null, eventHandler = null) {
+  constructor(account = null) {
     this.keysDir = path.resolve(NodeConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(NodeConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
@@ -52,16 +53,16 @@ class BlockchainNode {
     this.urlInternal = null;
     this.urlExternal = null;
 
-    this.eh = eventHandler;
+    this.eh = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler(this) : null;
     this.bc = new Blockchain(String(NodeConfigs.PORT));
-    this.tp = new TransactionPool(this, eventHandler);
+    this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     // Node's front db
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
-        this.stateManager, eventHandler);
+        this.stateManager, this.eh);
     this.bootstrapSnapshotSource = null;
     this.bootstrapSnapshot = null;
     this.bootstrapSnapshotBlockNumber = -1;
