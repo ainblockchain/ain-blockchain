@@ -185,11 +185,10 @@ class EventHandler {
       clearTimeout(timeoutId);
     }
 
-    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
       this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
       this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
-    }, 5 * epochMs));
+    }, NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS));
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
