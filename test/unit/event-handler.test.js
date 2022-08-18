@@ -3,17 +3,14 @@ const EventChannel = require('../../event-handler/event-channel');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../../common/network-util');
-const { NodeConfigs, BlockchainEventTypes, TransactionStates, BlockchainParams }
+const { NodeConfigs, BlockchainEventTypes, TransactionStates }
     = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const Transaction = require('../../tx-pool/transaction');
-const _ = require('lodash');
 const BlockchainNode = require('../../node');
 
 const validTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2'
 const dummyTx = new Transaction({}, 'signature', validTxHash, 'address', true, Date.now());
-const epochMs = _.get(BlockchainParams, 'genesis.epoch_ms', 30000);
-const filterDeletionTimeoutMs = 5 * epochMs;
 
 class MockWebSockect {
   close() {
@@ -30,15 +27,19 @@ class MockWebSockect {
 describe('EventHandler Test', () => {
   let eventHandler = null;
   let node = null;
+  const origianlfilterDeletionTimeout = NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS;
 
   before(async () => {
     NodeConfigs.ENABLE_EVENT_HANDLER = true;
+    // NOTE(ehgmsdk20): Reduce EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS for faster test
+    NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS = 10000;
     node = new BlockchainNode();
     eventHandler = node.eh;
   });
 
   after(() => {
     NodeConfigs.ENABLE_EVENT_HANDLER = false;
+    NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS = origianlfilterDeletionTimeout
     // TODO(cshcomcom): stop & cleanup logic
   });
 
@@ -154,7 +155,7 @@ describe('EventHandler Test', () => {
         expect(numberOfFiltersPerChannel).to.equal(1);
         expect(eventHandler.txHashToEventFilterIdSet.get(validTxHash)).to.deep.equal(
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
-        await CommonUtil.sleep(filterDeletionTimeoutMs);
+        await CommonUtil.sleep(NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
         // Filter is deleted due to filter timeout
@@ -200,7 +201,7 @@ describe('EventHandler Test', () => {
             new Set([eventHandler.getGlobalFilterId(channel.id, clientFilterId)]));
 
         // Check whether FilterDeletionTimeout is deleted
-        await CommonUtil.sleep(filterDeletionTimeoutMs);
+        await CommonUtil.sleep(NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
         expect(numberOfFiltersPerChannel).to.equal(1);

@@ -42,6 +42,9 @@ const ENV_VARIABLES = [
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     ENABLE_EVENT_HANDLER: true, EVENT_HANDLER_PORT: 6000,
+    // NOTE(ehgmsdk20): Epoch time for test nodes is 1000ms, so set
+    // EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS = 5 * epoch_ms = 5000
+    EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS: 5000,
   },
 ];
 
@@ -402,7 +405,7 @@ describe('Event Handler Test', function() {
               eventType === BlockchainEventTypes.FILTER_DELETED) {
             expect(payload.reason).to.equal(FilterDeletionReasons.FILTER_TIMEOUT);
             expect(payload.filter_id).to.equal(filterId.toString());
-            // NOTE(ehgmsdk20): Wait until filter deleted after event emited
+            // NOTE(ehgmsdk20): Wait until filter is deleted after event is emitted
             setTimeout(()=>{
               const eventHandlerChannelInfo = getEventHandlerChannelInfo();
               expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
