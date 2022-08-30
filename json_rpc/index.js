@@ -25,7 +25,7 @@ const { JSON_RPC_METHODS } = require('./constants');
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion) {
+module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   // Minimally required APIs
   const apis = {
     ...getAdminApis(node),
@@ -45,8 +45,8 @@ module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVers
     Object.assign(apis, { [JSON_RPC_METHODS.P2P_GET_PEER_CANDIDATE_INFO]:
         getNetworkApis(node, p2pServer).p2p_getPeerCandidateInfo });
   }
-  if (eventHandler !== null) {
-    Object.assign(apis, getEventHandlerApis(eventHandler));
+  if (node.eh !== null) {
+    Object.assign(apis, getEventHandlerApis(node.eh));
   }
 
   return apis;
