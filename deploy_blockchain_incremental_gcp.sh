@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 5 ]] || [[ $# -gt 12 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev gcp_user 0 -1 1 --setup --keystore --no-keep-code --full-sync --no-chown-data\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1 1 --setup --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
@@ -26,19 +26,19 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-GCP_USER="$2"
+GCP_USER="runner"
 printf "GCP_USER=$GCP_USER\n"
 
 number_re='^[0-9]+$'
-if ! [[ $3 =~ $number_re ]] ; then
-    printf "Invalid <# of Shards> argument: $3\n"
+if ! [[ $2 =~ $number_re ]] ; then
+    printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
-NUM_SHARDS=$3
+NUM_SHARDS=$2
 printf "NUM_SHARDS=$NUM_SHARDS\n"
-BEGIN_PARENT_NODE_INDEX=$4
+BEGIN_PARENT_NODE_INDEX=$3
 printf "BEGIN_PARENT_NODE_INDEX=$BEGIN_PARENT_NODE_INDEX\n"
-END_PARENT_NODE_INDEX=$5
+END_PARENT_NODE_INDEX=$4
 printf "END_PARENT_NODE_INDEX=$END_PARENT_NODE_INDEX\n"
 printf "\n"
 
@@ -82,7 +82,7 @@ KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 CHOWN_DATA_OPTION="--no-chown-data"
 
-ARG_INDEX=6
+ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))

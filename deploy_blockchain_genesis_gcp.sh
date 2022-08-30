@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev gcp_user 0 --setup --keystore --no-keep-code --no-chown-data\n"
+if [[ $# -lt 2 ]] || [[ $# -gt 8 ]]; then
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --setup --keystore --no-keep-code --no-chown-data\n"
     printf "\n"
     exit
 fi
@@ -24,15 +24,15 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-GCP_USER="$2"
+GCP_USER="runner"
 printf "GCP_USER=$GCP_USER\n"
 
 number_re='^[0-9]+$'
-if ! [[ $3 =~ $number_re ]] ; then
-    printf "Invalid <# of Shards> argument: $3\n"
+if ! [[ $2 =~ $number_re ]] ; then
+    printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
-NUM_SHARDS=$3
+NUM_SHARDS=$2
 printf "NUM_SHARDS=$NUM_SHARDS\n"
 printf "\n"
 
@@ -90,7 +90,7 @@ SYNC_MODE_OPTION="--fast-sync"
 CHOWN_DATA_OPTION="--no-chown-data"
 KILL_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=3
 while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
