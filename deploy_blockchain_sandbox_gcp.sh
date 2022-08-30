@@ -66,7 +66,7 @@ function parse_options() {
 SETUP_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 KEEP_DATA_OPTION="--no-keep-data"
-CHOWN_DATA_OPTION="--chown-data"
+CHOWN_DATA_OPTION="--no-chown-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
