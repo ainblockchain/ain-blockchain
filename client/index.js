@@ -8,7 +8,6 @@ const express = require('express');
 const jayson = require('jayson/promise');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
-const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const { sendGetRequest } = require('../common/network-util');
@@ -33,8 +32,7 @@ app.use(middleware.expressUrlencdedRequestBodySizeLimiter());
 app.use(middleware.corsLimiter());
 app.use(middleware.blockchainApiRateLimiter);
 
-const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
-const node = new BlockchainNode(null, eventHandler);
+const node = new BlockchainNode(null);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
@@ -54,7 +52,7 @@ const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
 const jsonRpcApis = require('../json_rpc')(
-    node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion);
+    node, p2pServer, minProtocolVersion, maxProtocolVersion);
 
 app.post(
   '/json-rpc',
@@ -823,10 +821,10 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   });
 }
 
-if (eventHandler) {
+if (node.eh) {
   // NOTE(cshcomcom): For event handler load balancer! It doesn't mean healthy.
   app.get('/eh_load_balancer_health_check', (req, res, next) => {
-    const result = eventHandler.getEventHandlerHealth();
+    const result = node.eh.getEventHandlerHealth();
     res.status(200)
       .set('Content-Type', 'text/plain')
       .send(result)

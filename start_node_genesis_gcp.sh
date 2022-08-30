@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
-if [[ $# -lt 3 ]] || [[ $# -gt 10 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--json-rpc] [--update-front-db] [--rest-func]\n"
-    printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore --no-keep-code --full-sync\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 12 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func]\n"
+    printf "Example: bash start_node_genesis_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "\n"
     return 1
 fi
@@ -29,6 +29,10 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--fast-sync' ]]; then
         SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--no-chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
     elif [[ $option = '--update-front-db' ]]; then
@@ -45,39 +49,44 @@ function parse_options() {
 
 # Parse options.
 SEASON="$1"
+GCP_USER="$2"
+
 number_re='^[0-9]+$'
-if ! [[ $2 =~ $number_re ]] ; then
-    printf "Invalid <Shard Index> argument: $2\n"
+if ! [[ $3 =~ $number_re ]] ; then
+    printf "Invalid <Shard Index> argument: $3\n"
     return 1
 fi
-SHARD_INDEX="$2"
-if ! [[ $3 =~ $number_re ]] ; then
-    printf "Invalid <Node Index> argument: $3\n"
+SHARD_INDEX="$3"
+
+if ! [[ $4 =~ $number_re ]] ; then
+    printf "Invalid <Node Index> argument: $4\n"
     return 1
 fi
 # NOTE(minsulee2): Sandbox has 100 nodes.
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 100 ]]; then
-    printf "Invalid <Node Index> argument: $3\n"
+if [[ "$4" -lt 0 ]] || [[ "$4" -gt 100 ]]; then
+    printf "Invalid <Node Index> argument: $4\n"
     return 1
 fi
-NODE_INDEX="$3"
+NODE_INDEX="$4"
 
 ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
+CHOWN_DATA_OPTION="--chown-data"
 JSON_RPC_OPTION=""
 UPDATE_FRONT_DB_OPTION=""
 REST_FUNC_OPTION=""
 EVENT_HANDLER_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
 
 printf "SEASON=$SEASON\n"
+printf "GCP_USER=$GCP_USER\n"
 printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 printf "\n"
@@ -86,6 +95,7 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
@@ -149,7 +159,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
     sudo rm -rf /home/ain-blockchain*
-    CODE_CMD="cd ~; sudo mv ain-blockchain /home; sudo chmod -R 777 /home/ain-blockchain; sudo chown -R root:root /home/ain-blockchain; cd /home/ain-blockchain"
+    CODE_CMD="cd ~; sudo mv ain-blockchain /home; sudo chmod -R 777 /home/ain-blockchain; sudo chown -R $GCP_USER:$GCP_USER /home/ain-blockchain; cd /home/ain-blockchain"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 else
@@ -157,7 +167,7 @@ else
     printf 'Reusing existing working directory..\n'
     OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
-    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R root:root $OLD_DIR_PATH"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 fi
@@ -167,12 +177,16 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     sudo rm -rf /home/ain_blockchain_data/chains
     sudo rm -rf /home/ain_blockchain_data/snapshots
     sudo rm -rf /home/ain_blockchain_data/logs
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf 'Reusing existing data directory..\n'
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R root:root /home/ain_blockchain_data"
+    if [[ $CHOWN_DATA_OPTION = "--no-chown-data" ]]; then
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod 777 /home/ain_blockchain_data; sudo chown $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    else
+        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 fi

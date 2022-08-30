@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 5 ]] || [[ $# -gt 11 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev my_username 0 -1 1 --setup --keystore --no-keep-code --full-sync\n"
+if [[ $# -lt 5 ]] || [[ $# -gt 12 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev gcp_user 0 -1 1 --setup --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "Note: <Begin Parent Node Index> = -1 is for tracker\n"
     printf "Note: <End Parent Node Index> is inclusive\n"
     printf "\n"
@@ -64,6 +64,10 @@ function parse_options() {
         SYNC_MODE_OPTION="$option"
     elif [[ $option = '--fast-sync' ]]; then
         SYNC_MODE_OPTION="$option"
+    elif [[ $option = '--chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--no-chown-data' ]]; then
+        CHOWN_DATA_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -76,6 +80,7 @@ ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
+CHOWN_DATA_OPTION="--chown-data"
 
 ARG_INDEX=6
 while [ $ARG_INDEX -le $# ]; do
@@ -88,6 +93,7 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
@@ -180,7 +186,7 @@ function deploy_tracker() {
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
     printf "\n"
-    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
     printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
     eval $START_TRACKER_CMD
 }
@@ -237,17 +243,19 @@ function deploy_node() {
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
     printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+    printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
     printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
     # 4. Inject node account
+    sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"

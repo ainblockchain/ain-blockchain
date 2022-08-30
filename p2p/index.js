@@ -1149,7 +1149,7 @@ class P2pClient {
 
   writeOldChainSegment(oldChainSegment) {
     for (const block of oldChainSegment) {
-      this.server.node.bc.writeBlock(block);
+      this.server.node.bc.writeBlock(block, 'writeOldChainSegment');
     }
   }
 

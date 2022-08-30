@@ -5,13 +5,15 @@ const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
   NodeConfigs,
+  BlockchainEventTypes,
 } = require('../common/constants');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
+const BlockchainEvent = require('./blockchain-event');
 
 class EventChannelManager {
-  constructor(eventHandler) {
-    this.eventHandler = eventHandler;
+  constructor(node) {
+    this.node = node;
     this.wsServer = null;
     // TODO(cshcomcom): Use Map data structure.
     this.channels = {}; // [channelId]: Channel
@@ -28,7 +30,7 @@ class EventChannelManager {
       maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
       numEventChannels: this.getNumEventChannels(),
       maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
-      numEventFilters: this.eventHandler.getNumEventFilters(),
+      numEventFilters: this.node.eh.getNumEventFilters(),
     }
   }
 
@@ -42,6 +44,12 @@ class EventChannelManager {
       channelInfo[channelId] = channel.toObject();
     }
     return channelInfo;
+  }
+
+  getChannelByEventFilterId(eventFilterId) {
+    const channelId = this.filterIdToChannelId[eventFilterId];
+    const channel = this.channels[channelId];
+    return channel;
   }
 
   startListening() {
@@ -92,7 +100,7 @@ class EventChannelManager {
 
   handleRegisterFilterMessage(channel, messageData) {
     const clientFilterId = messageData.id;
-    if (this.eventHandler.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
+    if (this.node.eh.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
       throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT,
           `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`,
           null, clientFilterId);
@@ -114,18 +122,48 @@ class EventChannelManager {
           `Can't find config from message.data (${JSON.stringify(messageData)})`,
           null, clientFilterId);
     }
+    this.registerFilter(channel, clientFilterId, eventType, config);
+  }
 
+  registerFilter(channel, clientFilterId, eventType, config) {
     const filter =
-        this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
+        this.node.eh.createAndRegisterEventFilter(clientFilterId, channel.id,
             eventType, config);
     channel.addEventFilterId(filter.id);
     this.filterIdToChannelId[filter.id] = channel.id;
+    if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+      const transactionInfo = this.node.getTransactionByHash(config.tx_hash);
+      if (!transactionInfo) {
+        this.node.eh.setFilterDeletionTimeout(filter.id);
+      } else {
+        const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.TX_STATE_CHANGED, {
+          transaction: transactionInfo.transaction,
+          tx_state: {
+            before: null,
+            after: transactionInfo.state,
+          },
+        });
+        this.transmitEventByEventFilterId(filter.id, blockchainEvent);
+      }
+    }
   }
 
   deregisterFilter(channel, clientFilterId) {
-    const filter = this.eventHandler.deregisterEventFilter(clientFilterId, channel.id);
+    const filter = this.node.eh.deregisterEventFilter(clientFilterId, channel.id);
     channel.deleteEventFilterId(filter.id);
     delete this.filterIdToChannelId[filter.id];
+  }
+
+  deregisterFilterByEventFilterId(eventFilterId) {
+    const LOG_HEADER = 'deregisterFilterByEventFilterId';
+    const channel = this.getChannelByEventFilterId(eventFilterId);
+    if (!channel) {
+      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
+          `(eventFilterId: ${eventFilterId})`);
+      return;
+    }
+    const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    this.deregisterFilter(channel, clientFilterId);
   }
 
   handleDeregisterFilterMessage(channel, messageData) {
@@ -138,7 +176,7 @@ class EventChannelManager {
     try {
       const globalFilterId = eventErr.globalFilterId;
       const clientFilterId = eventErr.clientFilterId ||
-          this.eventHandler.getClientFilterIdFromGlobalFilterId(globalFilterId);
+          this.node.eh.getClientFilterIdFromGlobalFilterId(globalFilterId);
       if (!clientFilterId) {
         logger.error(`[${LOG_HEADER}] Can't find client filter ID (${eventErr.message})`);
         return;
@@ -198,15 +236,14 @@ class EventChannelManager {
 
   transmitEventByEventFilterId(eventFilterId, event) {
     const LOG_HEADER = 'transmitEventByEventFilterId';
-    const channelId = this.filterIdToChannelId[eventFilterId];
-    const channel = this.channels[channelId];
+    const channel = this.getChannelByEventFilterId(eventFilterId);
     if (!channel) {
       logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
           `(eventFilterId: ${eventFilterId})`);
       return;
     }
     const eventObj = event.toObject();
-    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(eventFilterId);
     Object.assign(eventObj, { filter_id: clientFilterId });
     this.transmitEventObj(channel, eventObj);
   }
@@ -237,7 +274,7 @@ class EventChannelManager {
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
-        const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(filterId);
+        const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(filterId);
         this.deregisterFilter(channel, clientFilterId);
       }
       delete this.channels[channel.id];
