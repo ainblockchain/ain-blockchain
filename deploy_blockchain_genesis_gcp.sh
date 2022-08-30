@@ -87,7 +87,7 @@ ACCOUNT_INJECTION_OPTION="--private-key"
 KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
-CHOWN_DATA_OPTION="--chown-data"
+CHOWN_DATA_OPTION="--no-chown-data"
 KILL_OPTION=""
 
 ARG_INDEX=4
