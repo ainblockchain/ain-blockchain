@@ -40,13 +40,13 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
 #### On Google Coud Platform (GCP)
 
 - Deploy code (in common with Node server)
-  Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
+  Set <# of Shards> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-# For one-off deploy
-bash deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For genesis deploy
+bash deploy_blockchain_genesis_gcp.sh {dev|staging|spring|summer} <# of Shards> [--setup]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|exp|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
@@ -127,13 +127,13 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 DEBUG=
 #### On Google Cloud Platform (GCP)
 
 - Deploy code (in common with Tracker server) 
-  Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
+  Set <# of Shards> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.
 ```
 gcloud init
-# For one-off deploy
-bash deploy_blockchain_gcp.sh {dev|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+# For genesis deploy
+bash deploy_blockchain_genesis_gcp.sh {dev|staging|spring|summer} <# of Shards> [--setup]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|exp|spring|summer} <YOUR_GCP_USER_NAME> <NUMBER_OF_SHARDS> [--setup]
+bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
