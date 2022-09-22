@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function usage() {
-    printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Parent Node Index> [download|upload]\n"
+    printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload]\n"
     printf "Example: bash copy_blockchain_data_gcp.sh spring 5 download\n"
     printf "\n"
     exit
@@ -34,16 +34,16 @@ printf "GCP_USER=$GCP_USER\n"
 number_re='^[0-9]+$'
 if ! [[ $2 =~ $number_re ]] ; then
     printf "\n"
-    printf "Invalid <Parent Node Index> argument: $2\n"
+    printf "Invalid <Node Index> argument: $2\n"
     exit
 fi
-PARENT_NODE_INDEX=$2
-if [[ $PARENT_NODE_INDEX -lt 0 ]] || [[ $PARENT_NODE_INDEX -gt 9 ]]; then
+NODE_INDEX=$2
+if [[ $NODE_INDEX -lt 0 ]] || [[ $NODE_INDEX -gt 9 ]]; then
     printf "\n"
-    printf "Out-of-range <Parent Node Index> argument: $PARENT_NODE_INDEX\n"
+    printf "Out-of-range <Node Index> argument: $NODE_INDEX\n"
     exit
 fi
-printf "PARENT_NODE_INDEX=$PARENT_NODE_INDEX\n"
+printf "NODE_INDEX=$NODE_INDEX\n"
 
 if [[ "$3" = 'download' ]] || [[ "$3" = 'upload' ]]; then
     COMMAND="$3"
@@ -138,8 +138,8 @@ function upload_data() {
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
 
-    # 1. Copy tgz file from node
-    printf "\n\n<<< Copying tgz file from node $node_index >>>\n\n"
+    # 1. Copy tgz file to node
+    printf "\n\n<<< Copying tgz file to node $node_index >>>\n\n"
     SCP_CMD="gcloud compute scp ./ain_blockchain_data.tar.gz $node_target_addr:~ --project $PROJECT_ID --zone $node_zone"
     printf "SCP_CMD=$SCP_CMD\n\n"
     eval $SCP_CMD
@@ -158,7 +158,7 @@ function upload_data() {
 }
 
 if [[ "$COMMAND" = 'upload' ]]; then
-    upload_data "$PARENT_NODE_INDEX"
+    upload_data "$NODE_INDEX"
 else
-    download_data "$PARENT_NODE_INDEX"
+    download_data "$NODE_INDEX"
 fi
