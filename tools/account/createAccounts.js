@@ -35,7 +35,7 @@ async function processArguments() {
     usage();
   }
   const numAccounts = Number(process.argv[2])
-  console.log('Number of accounts to generate: ' + numAccounts)
+  console.log('Number of accounts to create: ' + numAccounts)
   if (!CommonUtil.isNumber(numAccounts) || numAccounts <= 0) {
     console.log('Invalid value: ' + numAccounts)
     usage();
@@ -50,9 +50,9 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nUsage: node generateAccounts.js <Account Number> <Prefix String>\n')
-  console.log('Example:  node generateAccounts.js 10 A');
-  console.log('Example:  node generateAccounts.js 10 AA');
+  console.log('\nUsage: node createAccounts.js <Account Number> <Prefix String>\n')
+  console.log('Example:  node createAccounts.js 10 A');
+  console.log('Example:  node createAccounts.js 10 AA');
   process.exit(0)
 }
 
