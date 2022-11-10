@@ -6,6 +6,7 @@ const {
   BlockchainEventMessageTypes,
   NodeConfigs,
   BlockchainEventTypes,
+  FilterDeletionReasons,
 } = require('../common/constants');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
@@ -50,6 +51,15 @@ class EventChannelManager {
     const channelId = this.filterIdToChannelId[eventFilterId];
     const channel = this.channels[channelId];
     return channel;
+  }
+
+  getChannelAndClientFilterIdByEventFilterId(eventFilterId) {
+    const [channelId, clientFilterId] = eventFilterId.split(':');
+    const channel = this.channels[channelId];
+    return {
+      channel,
+      clientFilterId,
+    };
   }
 
   startListening() {
@@ -99,30 +109,43 @@ class EventChannelManager {
   }
 
   handleRegisterFilterMessage(channel, messageData) {
+    const LOG_HEADER = 'handleRegisterFilterMessage';
     const clientFilterId = messageData.id;
-    if (this.node.eh.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
-      throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT,
-          `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`,
-          null, clientFilterId);
-    }
-    if (channel.getFilterIdsSize() >= NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
-      throw new EventHandlerError(EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT_PER_CHANNEL,
+    try {
+      if (this.node.eh.getNumEventFilters() >= NodeConfigs.MAX_NUM_EVENT_FILTERS) {
+        throw new EventHandlerError(
+          EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT,
+          `The number of event filters exceeds its limit (${NodeConfigs.MAX_NUM_EVENT_FILTERS})`
+        );
+      }
+      if (channel.getFilterIdsSize() >= NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
+        throw new EventHandlerError(
+          EventHandlerErrorCode.EVENT_FILTER_EXCEEDS_SIZE_LIMIT_PER_CHANNEL,
           `The number of event filters exceeds its limit per channel ` +
-          `(${NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL})`, null, clientFilterId);
+              `(${NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL})`
+        );
+      }
+      const eventType = messageData.type;
+      if (!eventType) {
+        throw new EventHandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
+            `Can't find eventType from message.data (${JSON.stringify(messageData)})`);
+      }
+      const config = messageData.config;
+      if (!config) {
+        throw new EventHandlerError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
+            `Can't find config from message.data (${JSON.stringify(messageData)})`);
+      }
+      this.registerFilter(channel, clientFilterId, eventType, config);
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Can't register event filter ` +
+        `(clientFilterId: ${clientFilterId}, channelId: ${channel.id}, ` +
+        `messageData: ${messageData}, err: ${err.message} at ${err.stack})`);
+      throw new EventHandlerError(
+        EventHandlerErrorCode.FAILED_TO_REGISTER_FILTER,
+        `Failed to register filter with filter ID: ${clientFilterId} due to error: ${err.message}`,
+        clientFilterId
+      );
     }
-    const eventType = messageData.type;
-    if (!eventType) {
-      throw new EventHandlerError(EventHandlerErrorCode.MISSING_EVENT_TYPE_IN_MSG_DATA,
-          `Can't find eventType from message.data (${JSON.stringify(messageData)})`,
-          null, clientFilterId);
-    }
-    const config = messageData.config;
-    if (!config) {
-      throw new EventHandlerError(EventHandlerErrorCode.MISSING_CONFIG_IN_MSG_DATA,
-          `Can't find config from message.data (${JSON.stringify(messageData)})`,
-          null, clientFilterId);
-    }
-    this.registerFilter(channel, clientFilterId, eventType, config);
   }
 
   registerFilter(channel, clientFilterId, eventType, config) {
@@ -154,38 +177,56 @@ class EventChannelManager {
     delete this.filterIdToChannelId[filter.id];
   }
 
-  deregisterFilterByEventFilterId(eventFilterId) {
-    const LOG_HEADER = 'deregisterFilterByEventFilterId';
-    const channel = this.getChannelByEventFilterId(eventFilterId);
-    if (!channel) {
-      logger.error(`[${LOG_HEADER}] Can't find channel by event filter id ` +
-          `(eventFilterId: ${eventFilterId})`);
-      return;
+  deregisterFilterAndEmitEvent(channel, clientFilterId, filterDeletionReason) {
+    const LOG_HEADER = 'deregisterFilterAndEmitEvent';
+    try {
+      this.deregisterFilter(channel, clientFilterId);
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Can't deregister event filter ` +
+        `(clientFilterId: ${clientFilterId}, channelId: ${channel.id}, ` +
+        `messageData: ${messageData}, err: ${err.message} at ${err.stack})`);
+      throw new EventHandlerError(
+        EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER,
+        `Failed to deregister filter with filter ID: ${clientFilterId} ` +
+          `due to error: ${err.message}`,
+        clientFilterId
+      );
     }
-    const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(eventFilterId);
-    this.deregisterFilter(channel, clientFilterId);
+    const blockchainEvent = new BlockchainEvent(
+      BlockchainEventTypes.FILTER_DELETED,
+      {
+        filter_id: clientFilterId,
+        reason: filterDeletionReason
+      },
+    );
+    const eventObj = blockchainEvent.toObject();
+    Object.assign(eventObj, { filter_id: clientFilterId });
+    this.transmitEventObj(channel, eventObj);
   }
 
   handleDeregisterFilterMessage(channel, messageData) {
     const clientFilterId = messageData.id;
-    this.deregisterFilter(channel, clientFilterId);
+    this.deregisterFilterAndEmitEvent(
+        channel, clientFilterId, FilterDeletionReasons.DELETED_BY_USER);
   }
 
   handleEventError(channel, eventErr) {
     const LOG_HEADER = 'handleEventError';
+    const { clientFilterId, message } = eventErr;
     try {
-      const globalFilterId = eventErr.globalFilterId;
-      const clientFilterId = eventErr.clientFilterId ||
-          this.node.eh.getClientFilterIdFromGlobalFilterId(globalFilterId);
-      if (!clientFilterId) {
-        logger.error(`[${LOG_HEADER}] Can't find client filter ID (${eventErr.message})`);
-        return;
+      this.transmitEventError(channel, eventErr);
+      if (
+        clientFilterId &&
+        eventErr.code !== EventHandlerErrorCode.FAILED_TO_REGISTER_FILTER &&
+        eventErr.code !== EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER
+      ) {
+        this.deregisterFilterAndEmitEvent(
+          channel, clientFilterId, FilterDeletionReasons.ERROR_OCCURED
+        );
       }
-      this.transmitEventError(channel, clientFilterId, eventErr);
-      this.deregisterFilter(channel, clientFilterId);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] errorMessage: ${err.message}, ` +
-          `eventErr: ${eventErr.message}`);
+          `eventErr: ${message}`);
     }
   }
 
@@ -242,6 +283,7 @@ class EventChannelManager {
           `(eventFilterId: ${eventFilterId})`);
       return;
     }
+    // TODO(ehgmsdk20): reuse same object for memory
     const eventObj = event.toObject();
     const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(eventFilterId);
     Object.assign(eventObj, { filter_id: clientFilterId });
@@ -253,9 +295,8 @@ class EventChannelManager {
     channel.webSocket.send(JSON.stringify(errorMessage));
   }
 
-  transmitEventError(channel, clientFilterId, eventErr) {
+  transmitEventError(channel, eventErr) {
     const errObj = eventErr.toObject();
-    Object.assign(errObj, { filter_id: clientFilterId }); // Client needs client filter ID.
     this.transmitEventErrorObj(channel, errObj);
   }
 
@@ -275,6 +316,7 @@ class EventChannelManager {
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
         const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(filterId);
+        // NOTE(ehgmsdk20): Do not emit filter_deleted event because the channel is already closed.
         this.deregisterFilter(channel, clientFilterId);
       }
       delete this.channels[channel.id];
