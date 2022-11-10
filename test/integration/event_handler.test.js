@@ -21,6 +21,7 @@ const {
   waitUntilNetworkIsReady,
 } = require('../test-util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
+const { EventHandlerErrorCode } = require('../../common/result-code');
 const SET_VALUE_ENDPOINT = '/set_value';
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -104,7 +105,12 @@ function connectEventHandler() {
   const eventHandlerNetworkInfo = getEventHandlerNetworkInfo();
   const url = _.get(eventHandlerNetworkInfo, 'url', null);
   expect(url).to.not.equal(null);
-  return new WebSocket(url, [], {});
+  const ws = new WebSocket(url, [], {});
+  return new Promise(async (resolve, reject) => {
+    ws.on('open', () => {
+      resolve(ws);
+    });
+  })
 }
 
 function registerFilter(wsClient, filterId, eventType, config) {
@@ -179,10 +185,16 @@ describe('Event Handler Test', function() {
     let wsClient = null;
     let filterId = null;
 
+    before(async function() {
+      wsClient = await connectEventHandler();
+    });
+
+    beforeEach(() => {
+      wsClient.removeAllListeners();
+    })
+
     it('Connect to event handler & check number of channels === 1', async function() {
       // Connect to event handler
-      wsClient = await connectEventHandler();
-      await CommonUtil.sleep(5000); // Wait connecting
       expect(wsClient.readyState).to.equal(1); // OPEN
 
       // Check number of channels === 1
@@ -192,7 +204,7 @@ describe('Event Handler Test', function() {
 
     it('Register filter & check number of filters === 1', async function() {
       // Register filter
-      filterId = Date.now();
+      filterId = Date.now().toString();
       const config = {
         block_number: null,
       };
@@ -216,20 +228,55 @@ describe('Event Handler Test', function() {
       });
     });
 
-    it('Deregister filter & check number of filters === 0', async function() {
+    it('Deregister filter & check number of filters === 0', function(done) {
       // Deregister filter
+      wsClient.on('message', (message) => {
+        const parsedMessage = JSON.parse(message);
+        const messageType = parsedMessage.type;
+        const eventType = _.get(parsedMessage, 'data.type');
+        const payload = _.get(parsedMessage, 'data.payload');
+        const filter_id = _.get(parsedMessage, 'data.filter_id');
+        if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
+            eventType === BlockchainEventTypes.FILTER_DELETED) {
+          expect(payload.reason).to.equal(FilterDeletionReasons.DELETED_BY_USER);
+          expect(filter_id).to.equal(filterId);
+          // Check number of filters === 0
+          const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+          expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+          expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
+          done();
+        }
+      });
       deregisterFilter(wsClient, filterId);
-      await CommonUtil.sleep(5000); // Wait deleting
+    });
 
-      // Check number of filters === 0
-      const eventHandlerFilterInfo = getEventHandlerFilterInfo();
-      expect(Object.keys(eventHandlerFilterInfo).length).to.equal(0);
+    it('Register too many filters', function(done) {
+      let exceededCnt = 0;
+      wsClient.on('message', (message) => {
+        const parsedMessage = JSON.parse(message);
+        const messageType = parsedMessage.type;
+        const errorCode = _.get(parsedMessage, 'data.code');
+        if (messageType === BlockchainEventMessageTypes.EMIT_ERROR) {
+          expect(errorCode).to.equal(EventHandlerErrorCode.FAILED_TO_REGISTER_FILTER);
+          exceededCnt++;
+          if(exceededCnt === 10 - NodeConfigs.MAX_NUM_EVENT_FILTERS_PER_CHANNEL) {
+            done();
+          }
+        }
+      });
+      filterId = Date.now();
+      const config = {
+        block_number: null,
+      };
+      for(let i=0; i<10; i++) {
+        registerFilter(wsClient, filterId + i, BlockchainEventTypes.BLOCK_FINALIZED, config);
+      }
     });
 
     it('Disconnect & check number of channels === 0', async function() {
-      // Disconnect
       wsClient.terminate();
-      await CommonUtil.sleep(5000); // Wait terminating
+      expect(wsClient.readyState).to.equal(2); // CLOSING
+      await CommonUtil.sleep(10000); // Wait terminating
       expect(wsClient.readyState).to.equal(3); // CLOSED
 
       // Check number of channels === 0
@@ -243,7 +290,6 @@ describe('Event Handler Test', function() {
 
     beforeEach(async function() {
       wsClient = await connectEventHandler();
-      await CommonUtil.sleep(5000); // Wait connecting
     });
 
     afterEach(async function() {
@@ -392,7 +438,7 @@ describe('Event Handler Test', function() {
     describe('FILTER_DELETED', () => {
       it('deleted because of timeout', function(done) {
         this.timeout(10 * epochMs);
-        const filterId = Date.now();
+        const filterId = Date.now().toString();
         const config = {
           tx_hash: dummyTxHash,
         };
@@ -401,17 +447,15 @@ describe('Event Handler Test', function() {
           const messageType = parsedMessage.type;
           const eventType = _.get(parsedMessage, 'data.type');
           const payload = _.get(parsedMessage, 'data.payload');
+          const filter_id = _.get(parsedMessage, 'data.filter_id');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
             expect(payload.reason).to.equal(FilterDeletionReasons.FILTER_TIMEOUT);
-            expect(payload.filter_id).to.equal(filterId.toString());
-            // NOTE(ehgmsdk20): Wait until filter is deleted after event is emitted
-            setTimeout(()=>{
-              const eventHandlerChannelInfo = getEventHandlerChannelInfo();
-              expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
-              expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
-              done();
-            }, 1000)
+            expect(filter_id).to.equal(filterId);
+            const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+            expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+            expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
+            done();
           }
         });
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
@@ -422,7 +466,7 @@ describe('Event Handler Test', function() {
 
       it('deleted because end state reached', function(done) {
         this.timeout(10 * epochMs);
-        const filterId = Date.now();
+        const filterId = Date.now().toString();
         const targetPath = `/apps/${testAppName}`;
         const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
             .result;
@@ -434,17 +478,15 @@ describe('Event Handler Test', function() {
           const messageType = parsedMessage.type;
           const eventType = _.get(parsedMessage, 'data.type');
           const payload = _.get(parsedMessage, 'data.payload');
+          const filter_id = _.get(parsedMessage, 'data.filter_id');
           if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
               eventType === BlockchainEventTypes.FILTER_DELETED) {
             expect(payload.reason).to.equal(FilterDeletionReasons.END_STATE_REACHED);
-            expect(payload.filter_id).to.equal(filterId.toString());
-            // NOTE(ehgmsdk20): Wait until filter deleted after event emited
-            setTimeout(()=>{
-              const eventHandlerChannelInfo = getEventHandlerChannelInfo();
-              expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
-              expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
-              done();
-            }, 1000)
+            expect(filter_id).to.equal(filterId);
+            const eventHandlerChannelInfo = getEventHandlerChannelInfo();
+            expect(Object.keys(eventHandlerChannelInfo).length).to.equal(1);
+            expect(Object.values(eventHandlerChannelInfo)[0].eventFilterIds.length).to.equal(0);
+            done();
           }
         });
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);
