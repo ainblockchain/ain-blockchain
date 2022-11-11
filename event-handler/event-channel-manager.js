@@ -184,7 +184,7 @@ class EventChannelManager {
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Can't deregister event filter ` +
         `(clientFilterId: ${clientFilterId}, channelId: ${channel.id}, ` +
-        `messageData: ${messageData}, err: ${err.message} at ${err.stack})`);
+        `err: ${err.message} at ${err.stack})`);
       throw new EventHandlerError(
         EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER,
         `Failed to deregister filter with filter ID: ${clientFilterId} ` +
