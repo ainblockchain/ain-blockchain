@@ -93,7 +93,7 @@ class StateEventTreeManager {
     }
     if (!eventNode.filterIdSet.delete(filterId)) {
       throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_SET,
-          `Can't delete filter id(${filterId}) from filterIdSet ` +
+          `Can't delete filter id (${filterId}) from filterIdSet ` +
           `(${JSON.stringify(eventNode.filterIdSet.values())})`);
     }
   }
