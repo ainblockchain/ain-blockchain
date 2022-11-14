@@ -150,8 +150,8 @@ class EventHandler {
 
       // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
       if (isEndState(afterState)) {
-        const { channel, clientFilterId } =
-            this.eventChannelManager.getChannelAndClientFilterIdByEventFilterId(eventFilterId);
+        const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
+        const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
         this.eventChannelManager.deregisterFilterAndEmitEvent(
           channel, clientFilterId, FilterDeletionReasons.END_STATE_REACHED
         );
@@ -172,8 +172,8 @@ class EventHandler {
     }
 
     this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
-      const { channel, clientFilterId } =
-          this.eventChannelManager.getChannelAndClientFilterIdByEventFilterId(eventFilterId);
+      const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
+      const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
       this.eventChannelManager.deregisterFilterAndEmitEvent(
         channel, clientFilterId, FilterDeletionReasons.FILTER_TIMEOUT
       );

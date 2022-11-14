@@ -53,15 +53,6 @@ class EventChannelManager {
     return channel;
   }
 
-  getChannelAndClientFilterIdByEventFilterId(eventFilterId) {
-    const [channelId, clientFilterId] = eventFilterId.split(':');
-    const channel = this.channels[channelId];
-    return {
-      channel,
-      clientFilterId,
-    };
-  }
-
   startListening() {
     this.wsServer = new ws.Server({
       port: NodeConfigs.EVENT_HANDLER_PORT,
