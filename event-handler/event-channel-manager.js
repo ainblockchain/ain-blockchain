@@ -212,7 +212,7 @@ class EventChannelManager {
         eventErr.code !== EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER
       ) {
         this.deregisterFilterAndEmitEvent(
-          channel, clientFilterId, FilterDeletionReasons.ERROR_OCCURED
+          channel, clientFilterId, FilterDeletionReasons.ERROR_OCCURRED
         );
       }
     } catch (err) {
