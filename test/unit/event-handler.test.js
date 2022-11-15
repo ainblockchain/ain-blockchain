@@ -8,6 +8,7 @@ const { NodeConfigs, BlockchainEventTypes, TransactionStates }
 const CommonUtil = require('../../common/common-util');
 const Transaction = require('../../tx-pool/transaction');
 const BlockchainNode = require('../../node');
+const { EventHandlerErrorCode } = require('../../common/result-code');
 
 const validTxHash = '0x9ac44b45853c2244715528f89072a337540c909c36bab4c9ed2fd7b7dbab47b2'
 const dummyTx = new Transaction({}, 'signature', validTxHash, 'address', true, Date.now());
@@ -135,7 +136,9 @@ describe('EventHandler Test', () => {
               BlockchainEventTypes.BLOCK_FINALIZED, {
                 block_number: -1,
               });
-        } catch (err) {}
+        } catch (err) {
+          expect(err.code).to.equal(EventHandlerErrorCode.NEGATIVE_BLOCK_NUMBER);
+        }
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
         const numberOfFiltersPerChannel = eventHandler.eventChannelManager.channels[channel.id].getFilterIdsSize();
@@ -323,7 +326,11 @@ describe('EventHandler Test', () => {
       it('deregister filter which does not exist', () => {
         const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
         const now = Date.now();
-        eventHandler.deregisterEventFilter(now, now);
+        try {
+          eventHandler.deregisterEventFilter(now, now);
+        } catch (err) {
+          expect(err.code).to.equal(EventHandlerErrorCode.NO_MATCHED_FILTERS);
+        }
         const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
@@ -340,7 +347,11 @@ describe('EventHandler Test', () => {
         eventHandler.deregisterEventFilter(now, now);
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
-        eventHandler.deregisterEventFilter(now, now);
+        try {
+          eventHandler.deregisterEventFilter(now, now);
+        } catch (err) {
+          expect(err.code).to.equal(EventHandlerErrorCode.NO_MATCHED_FILTERS)
+        }
         numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
         expect(numberOfFiltersBefore).to.equal(numberOfFiltersAfter);
       });
