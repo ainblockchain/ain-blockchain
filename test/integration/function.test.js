@@ -2639,13 +2639,57 @@ describe('Native Function', () => {
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
+      it('transfer: transfer with zero value', async () => {
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: transferPath + '/3/value',
+          value: 0,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const toAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        expect(fromAfterBalance).to.equal(fromBeforeBalance);
+        expect(toAfterBalance).to.equal(toBeforeBalance);
+      });
+
+      it('transfer: transfer with negative value', async () => {
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: transferPath + '/4/value',
+          value: -transferAmount,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const toAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        expect(fromAfterBalance).to.equal(fromBeforeBalance);
+        expect(toAfterBalance).to.equal(toBeforeBalance);
+      });
+
       it('transfer: transfer more than account balance', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferPath + '/2/value',
+          ref: transferPath + '/5/value',
           value: fromBeforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2666,7 +2710,7 @@ describe('Native Function', () => {
         let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
-          ref: transferPath + '/3/value',
+          ref: transferPath + '/6/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2695,7 +2739,7 @@ describe('Native Function', () => {
       it('transfer: transfer with same addresses', async () => {
         const transferPathSameAddrs = `/transfer/${transferFrom}/${transferFrom}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferPathSameAddrs + '/4/value',
+          ref: transferPathSameAddrs + '/7/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2764,7 +2808,7 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result || 0;
         const transferServicePath = `/transfer/${transferFrom}/${transferToService}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferServicePath + '/1/value',
+          ref: transferServicePath + '/201/value',
           value: transferAmount,
           nonce: -1,
           timestamp: 1234567890000,
@@ -2825,7 +2869,7 @@ describe('Native Function', () => {
         const transferToService = `${invalidServiceType}|${serviceName}|${transferTo}|0`;
         const transferServicePath = `/transfer/${transferFrom}/${transferToService}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferServicePath + '/1/value',
+          ref: transferServicePath + '/202/value',
           value: transferAmount,
           nonce: -1,
           timestamp: 1234567890000,
@@ -2849,7 +2893,7 @@ describe('Native Function', () => {
               },
               "gas_cost_total": 0
             },
-            "tx_hash": "0x6cce46b284beb254c6b67205f5ba00f04c85028d7457410b4fa4b4d8522c14be"
+            "tx_hash": "0x43a01635e66527d07219bb1eaf427ac4ad0ff686d7f35e90f1e894c1e574718d"
           }
         });
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -2874,7 +2918,7 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const transferServicePath = `/transfer/${transferFrom}/${transferToService}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferServicePath + '/2/value',
+          ref: transferServicePath + '/203/value',
           value: transferAmount,
           nonce: -1,
           timestamp: 1234567890001,
