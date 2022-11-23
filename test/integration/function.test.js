@@ -2893,7 +2893,7 @@ describe('Native Function', () => {
               },
               "gas_cost_total": 0
             },
-            "tx_hash": "0x43a01635e66527d07219bb1eaf427ac4ad0ff686d7f35e90f1e894c1e574718d"
+            "tx_hash": "0x21e1739495576cd1978228c6ee58ad1b090e3b2e3d90b43d8465b33b3d6a5198"
           }
         });
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -2936,7 +2936,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "message": "Write rule evaluated false: [(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData] at '/transfer/$from/$to/$key/value' for value path '/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/2/value' with path vars '{\"$key\":\"2\",\"$to\":\"staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0\",\"$from\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '33', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp '1234567890001'",
+          "message": "Write rule evaluated false: [(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && newData > 0 && util.getBalance($from, getValue) >= newData] at '/transfer/$from/$to/$key/value' for value path '/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/203/value' with path vars '{\"$key\":\"203\",\"$to\":\"staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0\",\"$from\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '33', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp '1234567890001'",
         });
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
