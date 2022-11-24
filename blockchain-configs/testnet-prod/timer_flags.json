@@ -42,5 +42,9 @@
   "add_app_creation_gas_amount": {
     "enabled_block": 569800,
     "has_bandage": true
+  },
+  "allow_non_negative_transfer_value_only": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
