@@ -44,11 +44,11 @@
     "has_bandage": true
   },
   "allow_non_negative_transfer_value_only": {
-    "enabled_block": null,
+    "enabled_block": 1411300,
     "has_bandage": true
   },
   "update_min_gc_num_siblings_deleted": {
-    "enabled_block": null,
+    "enabled_block": 1411300,
     "has_bandage": true
   }
 }
