@@ -676,6 +676,8 @@ const ValueChangedEventSources = {
 const FilterDeletionReasons = {
   FILTER_TIMEOUT: 'FILTER_TIMEOUT',
   END_STATE_REACHED: 'END_STATE_REACHED',
+  DELETED_BY_USER: 'DELETED_BY_USER',
+  ERROR_OCCURRED: 'ERROR_OCCURRED',
 }
 
 // ** Lists & Sets **

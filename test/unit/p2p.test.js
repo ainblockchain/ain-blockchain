@@ -286,7 +286,8 @@ describe("P2p", () => {
         // (> 12.16) and (<= 12.17), which newly includes arrayBuffers info as well.
         // See also: the issue #419(https://github.com/ainblockchain/ain-blockchain/issues/419)
         expect(Object.keys(actual.heap)).include.members(Object.keys(expected.heap));
-        assert.deepEqual(Object.keys(actual.heapStats), Object.keys(expected.heapStats));
+        // NOTE(platfowner): The same case as actual.heap.
+        expect(Object.keys(actual.heapStats)).include.members(Object.keys(expected.heapStats));
       });
     });
 

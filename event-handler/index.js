@@ -150,27 +150,13 @@ class EventHandler {
 
       // NOTE(ehgmsdk20): When the state no longer changes, the event filter is removed.
       if (isEndState(afterState)) {
-        // NOTE(ehgmsdk20): Send message that the filter has been deleted before deleting,
-        // because once the filter is deleted, the message cannot be sent.
-        this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.END_STATE_REACHED);
-        this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
+        const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
+        const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
+        this.eventChannelManager.deregisterFilterAndEmitEvent(
+          channel, clientFilterId, FilterDeletionReasons.END_STATE_REACHED
+        );
       }
     }
-  }
-
-  emitFilterDeleted(eventFilterId, filterDeletionReason) {
-    const LOG_HEADER = 'emitFilterDeleted';
-
-    if (!eventFilterId) {
-      logger.error(`[${LOG_HEADER}] EventFilterId is empty.`);
-      return;
-    }
-    const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
-    const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.FILTER_DELETED, {
-      filter_id: clientFilterId, // Client needs client filter ID.
-      reason: filterDeletionReason,
-    });
-    this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
   }
 
   setFilterDeletionTimeout(eventFilterId) {
@@ -186,17 +172,19 @@ class EventHandler {
     }
 
     this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
-      this.emitFilterDeleted(eventFilterId, FilterDeletionReasons.FILTER_TIMEOUT);
-      this.eventChannelManager.deregisterFilterByEventFilterId(eventFilterId);
+      const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
+      const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
+      this.eventChannelManager.deregisterFilterAndEmitEvent(
+        channel, clientFilterId, FilterDeletionReasons.FILTER_TIMEOUT
+      );
     }, NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS));
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
-    const [channelId, clientFilterId] = globalFilterId.split(':');
+    const clientFilterId = globalFilterId.split(':')[1];
     if (!clientFilterId) {
       throw new EventHandlerError(EventHandlerErrorCode.PARSING_GLOBAL_FILTER_ID_FAILURE,
-          `Can't get client filter ID from global filter ID (globalFilterId: ${globalFilterId})`,
-          globalFilterId);
+          `Can't get client filter ID from global filter ID (globalFilterId: ${globalFilterId})`);
     }
     return clientFilterId;
   }
@@ -248,76 +236,61 @@ class EventHandler {
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
     const LOG_HEADER = 'createAndRegisterEventFilter';
-    try {
-      const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
-      if (this.eventFilters[eventFilterId]) {
-        throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_GLOBAL_FILTER_ID,
-            `Event filter ID ${eventFilterId} is already in use`, eventFilterId);
-      }
-      EventHandler.validateEventFilterConfig(eventType, config);
-      const eventFilter = new EventFilter(eventFilterId, eventType, config);
-      this.eventFilters[eventFilterId] = eventFilter;
-      this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
-      if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
-        this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
-      } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
-        const eventFilterIdSet = this.txHashToEventFilterIdSet.get(config.tx_hash);
-        if (eventFilterIdSet) {
-          eventFilterIdSet.add(eventFilterId);
-        } else {
-          this.txHashToEventFilterIdSet.set(config.tx_hash, new Set([eventFilterId]));
-        }
-      }
-      logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
-          `eventType: ${eventType}, config: ${JSON.stringify(config)})`);
-      return eventFilter;
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Can't create and register event filter ` +
-          `(clientFilterId: ${clientFilterId}, channelId: ${channelId}, eventType: ${eventType}, ` +
-          `config: ${JSON.stringify(config)}, err: ${err.message})`);
-      err.clientFilterId = clientFilterId;
-      throw err;
+    const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
+    if (this.eventFilters[eventFilterId]) {
+      throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_GLOBAL_FILTER_ID,
+          `Event filter ID ${eventFilterId} is already in use`, eventFilterId);
     }
+    EventHandler.validateEventFilterConfig(eventType, config);
+    const eventFilter = new EventFilter(eventFilterId, eventType, config);
+    this.eventFilters[eventFilterId] = eventFilter;
+    this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
+    if (eventType === BlockchainEventTypes.VALUE_CHANGED) {
+      this.stateEventTreeManager.registerEventFilterId(config.path, eventFilterId);
+    } else if (eventType === BlockchainEventTypes.TX_STATE_CHANGED) {
+      const eventFilterIdSet = this.txHashToEventFilterIdSet.get(config.tx_hash);
+      if (eventFilterIdSet) {
+        eventFilterIdSet.add(eventFilterId);
+      } else {
+        this.txHashToEventFilterIdSet.set(config.tx_hash, new Set([eventFilterId]));
+      }
+    }
+    logger.info(`[${LOG_HEADER}] New filter is registered. (eventFilterId: ${eventFilterId}, ` +
+        `eventType: ${eventType}, config: ${JSON.stringify(config)})`);
+    return eventFilter;
   }
 
   deregisterEventFilter(clientFilterId, channelId) {
     const LOG_HEADER = 'deregisterEventFilter';
-    try {
-      const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
-      const eventFilter = this.eventFilters[eventFilterId];
-      if (!eventFilter) {
-        throw new EventHandlerError(EventHandlerErrorCode.NO_MATCHED_FILTERS,
-            `Can't find filter by filter id`, eventFilterId);
-      }
-      delete this.eventFilters[eventFilterId];
-      if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
-        throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_TYPE_TO_FILTER_IDS,
-            `Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`,
-            eventFilterId);
-      }
-      if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
-        this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
-      } else if (eventFilter.type === BlockchainEventTypes.TX_STATE_CHANGED) {
-        const timeoutCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
-        if (timeoutCallback) {
-          clearTimeout(timeoutCallback);
-        }
-        this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
-
-        const txHash = _.get(eventFilter.config, 'tx_hash', null);
-        const eventFilterIdSet = this.txHashToEventFilterIdSet.get(txHash);
-        eventFilterIdSet.delete(eventFilterId);
-        if (eventFilterIdSet.size === 0) {
-          this.txHashToEventFilterIdSet.delete(txHash);
-        }
-      }
-      logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
-      return eventFilter;
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Can't deregister event filter ` +
-          `(clientFilterId: ${clientFilterId}, channelId: ${channelId}, err: ${err.message})`);
-      // NOTE(cshcomcom): After deregister, no error propagation because the callback is not valid.
+    const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
+    const eventFilter = this.eventFilters[eventFilterId];
+    if (!eventFilter) {
+      throw new EventHandlerError(EventHandlerErrorCode.NO_MATCHED_FILTERS,
+          `Can't find filter by filter id`, eventFilterId);
     }
+    delete this.eventFilters[eventFilterId];
+    if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
+      throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_TYPE_TO_FILTER_IDS,
+          `Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`);
+    }
+    if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
+      this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
+    } else if (eventFilter.type === BlockchainEventTypes.TX_STATE_CHANGED) {
+      const timeoutCallback = this.eventFilterIdToTimeoutCallback.get(eventFilterId);
+      if (timeoutCallback) {
+        clearTimeout(timeoutCallback);
+      }
+      this.eventFilterIdToTimeoutCallback.delete(eventFilterId);
+
+      const txHash = _.get(eventFilter.config, 'tx_hash', null);
+      const eventFilterIdSet = this.txHashToEventFilterIdSet.get(txHash);
+      eventFilterIdSet.delete(eventFilterId);
+      if (eventFilterIdSet.size === 0) {
+        this.txHashToEventFilterIdSet.delete(txHash);
+      }
+    }
+    logger.info(`[${LOG_HEADER}] Filter is deregistered. (eventFilterId: ${eventFilterId})`);
+    return eventFilter;
   }
 }
 

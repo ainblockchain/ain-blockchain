@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh gcp_user 10 99 --setup --no-chown-data\n"
+if [[ $# -lt 2 ]] || [[ $# -gt 7 ]]; then
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh 10 99 --setup --no-chown-data\n"
     printf "\n"
     exit
 fi
@@ -13,9 +13,9 @@ PROJECT_ID=testnet-$SEASON-ground
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-GCP_USER="$1"
-START_NODE_IDX="$2"
-END_NODE_IDX="$3"
+GCP_USER="runner"
+START_NODE_IDX="$1"
+END_NODE_IDX="$2"
 ACCOUNT_INJECTION_OPTION="--private-key" # always use the private keys
 
 printf "GCP_USER=$GCP_USER\n"
@@ -66,10 +66,10 @@ function parse_options() {
 SETUP_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 KEEP_DATA_OPTION="--no-keep-data"
-CHOWN_DATA_OPTION="--chown-data"
+CHOWN_DATA_OPTION="--no-chown-data"
 KILL_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=3
 while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))

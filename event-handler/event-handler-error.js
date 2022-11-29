@@ -1,8 +1,7 @@
 class EventHandlerError extends Error {
-  constructor(code, message, globalFilterId = null, clientFilterId = null) {
+  constructor(code, message, clientFilterId = null) {
     super(message);
     this.code = code;
-    this.globalFilterId = globalFilterId;
     this.clientFilterId = clientFilterId;
   }
 
@@ -10,6 +9,9 @@ class EventHandlerError extends Error {
     return {
       code: this.code,
       message: this.message,
+      ...(this.clientFilterId && {
+        filter_id: this.clientFilterId
+      })
     };
   }
 }
