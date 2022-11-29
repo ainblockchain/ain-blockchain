@@ -5,7 +5,7 @@ const CommonUtil = require('../../common/common-util');
 const PADDING_LENGTH = 2;
 
 function createAccount(prefix) {
-  console.log(`Creating an account with prefix ${prefix}..`);
+  console.log(`Creating an account with prefix '${prefix}'..`);
   let count = 0;
   while (true) {
     const account = ainUtil.createAccount(); // { private_key, public_key, address }
@@ -24,35 +24,38 @@ function createAccount(prefix) {
 function createAccounts(numAccounts, prefixStr) {
   const accounts = [];
   for (let i = 0; i < numAccounts; i++) {
-    const prefixWithPadding = _.padStart(i, PADDING_LENGTH, '0') + prefixStr;
+    const prefixWithPadding = prefixStr ? _.padStart(i, PADDING_LENGTH, '0') + prefixStr : '';
     accounts.push(createAccount(prefixWithPadding));
   }
-  console.log(`Generated accounts:\n${JSON.stringify(accounts, null, 2)}`);
+  console.log(`Created accounts:\n${JSON.stringify(accounts, null, 2)}`);
 }
 
 async function processArguments() {
-  if (process.argv.length !== 4) {
+  if (process.argv.length !== 3 && process.argv.length !== 4) {
     usage();
   }
   const numAccounts = Number(process.argv[2])
-  console.log('Number of accounts to generate: ' + numAccounts)
+  console.log('Number of accounts to create: ' + numAccounts)
   if (!CommonUtil.isNumber(numAccounts) || numAccounts <= 0) {
     console.log('Invalid value: ' + numAccounts)
     usage();
   }
-  const prefixStr = String(process.argv[3])
-  console.log('Prefix string: ' + prefixStr)
-  if (!CommonUtil.isString(prefixStr)) {
-    console.log('Invalid value: ' + prefixStr)
-    usage();
+  let prefixStr = '';
+  if (process.argv.length === 4) {
+    prefixStr = String(process.argv[3])
+    console.log('Prefix string: ' + prefixStr)
+    if (!CommonUtil.isString(prefixStr)) {
+      console.log('Invalid value: ' + prefixStr)
+      usage();
+    }
   }
   createAccounts(numAccounts, prefixStr);
 }
 
 function usage() {
-  console.log('\nUsage: node generateAccounts.js <Account Number> <Prefix String>\n')
-  console.log('Example:  node generateAccounts.js 10 A');
-  console.log('Example:  node generateAccounts.js 10 AA');
+  console.log('\nUsage: node createAccounts.js <Account Number> <Prefix String>\n')
+  console.log('Example:  node createAccounts.js 1');
+  console.log('Example:  node createAccounts.js 10 AA');
   process.exit(0)
 }
 
