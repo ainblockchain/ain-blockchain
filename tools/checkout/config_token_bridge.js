@@ -8,6 +8,6 @@ module.exports = {
   // AIN Native token pool (Local)
   tokenPoolAddr: "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
   tokenPoolPrivateKey: "REDACTED",
-  checkoutId: Date.now(),
+  checkoutId: 1669889444877,
   tokenAmount: 10000
 };
