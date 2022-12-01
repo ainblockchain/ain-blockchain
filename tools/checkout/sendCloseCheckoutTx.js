@@ -2,7 +2,7 @@ const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
-function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = false) {
+function buildCloseCheckoutTxBody(ainErc20Address, fromAddr, tokenAmount, checkoutId, failed = false) {
   const response = {
     tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
   };
@@ -15,7 +15,7 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkoutId}`,
+      ref: `/checkout/history/ETH/3/${ainErc20Address}/${fromAddr}/${checkoutId}`,
       value: {
         request: {
           amount: tokenAmount,
@@ -35,7 +35,7 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
 async function sendTransaction(failed) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const txBody = buildCloseCheckoutTxBody(config.userAddr, config.tokenAmount, config.checkoutId, failed);
+  const txBody = buildCloseCheckoutTxBody(config.ainErc20Address, config.userAddr, config.tokenAmount, config.checkoutId, failed);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.tokenPoolPrivateKey);
