@@ -2,11 +2,11 @@ const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
-function buildCancelCheckinTxBody(fromAddr, checkinId) {
+function buildCancelCheckinTxBody(ainErc20Address, fromAddr, checkinId) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
+      ref: `/checkin/requests/ETH/3/${ainErc20Address}/${fromAddr}/${checkinId}`,
       value: null,
       is_global: true,
     },
@@ -19,7 +19,7 @@ function buildCancelCheckinTxBody(fromAddr, checkinId) {
 async function sendTransaction() {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const txBody = buildCancelCheckinTxBody(config.userAddr, config.checkinId);
+  const txBody = buildCancelCheckinTxBody(config.ainErc20Address, config.userAddr, config.checkinId);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.userPrivateKey);

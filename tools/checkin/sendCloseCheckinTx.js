@@ -5,10 +5,10 @@ const { sendGetRequest } = require('../../common/network-util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 let config = {};
 
-async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
+async function buildCloseCheckinTxBody(ainErc20Address, fromAddr, checkinId, failed = false) {
   const request = (await sendGetRequest(`${config.endpointUrl}/json-rpc`, JSON_RPC_METHODS.AIN_GET, {
     type: 'GET_VALUE',
-    ref: `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
+    ref: `/checkin/requests/ETH/3/${ainErc20Address}/${fromAddr}/${checkinId}`,
   })).data.result.result;
   console.log(`request to close = ${JSON.stringify(request, null, 2)}`);
   if (!request) {
@@ -27,7 +27,7 @@ async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkin/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
+      ref: `/checkin/history/ETH/3/${ainErc20Address}/${fromAddr}/${checkinId}`,
       value: {
         request,
         response
@@ -43,7 +43,7 @@ async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
 async function sendTransaction(failed) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const txBody = await buildCloseCheckinTxBody(config.userAddr, config.checkinId, failed);
+  const txBody = await buildCloseCheckinTxBody(config.ainErc20Address, config.userAddr, config.checkinId, failed);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.tokenPoolPrivateKey);
