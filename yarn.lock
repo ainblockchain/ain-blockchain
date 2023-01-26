@@ -2898,10 +2898,10 @@ gcp-metadata@^4.0.0, gcp-metadata@^4.2.0:
     gaxios "^4.0.0"
     json-bigint "^1.0.0"
 
-geoip-lite@^1.3.8:
-  version "1.4.5"
-  resolved "https://registry.yarnpkg.com/geoip-lite/-/geoip-lite-1.4.5.tgz#abb3b72bf2cc5daa3d53bee696347df31b28d444"
-  integrity sha512-3L8s0vaTaoS4Hc7aMqTdQCSUmlANhMCZE4A50dAZUMHgmBxUcQ4f3o+rMmfgsS/4Xd5ljATPDPE0Ob2dkD1QNg==
+geoip-lite@^1.4.7:
+  version "1.4.7"
+  resolved "https://registry.yarnpkg.com/geoip-lite/-/geoip-lite-1.4.7.tgz#0142051023e3a2fb12bd539c5d627dcaff69af74"
+  integrity sha512-JQHntlH7B/nR6Ec8ZJTuKsSdRNrR+snrfBNy0y0wVYWyVVi/MoDlXyv7P3wmozdlyshta6rXfbtK7qu/9lvEog==
   dependencies:
     async "2.1 - 2.6.4"
     chalk "4.1 - 4.1.2"
