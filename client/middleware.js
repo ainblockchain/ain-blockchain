@@ -6,7 +6,6 @@ const rateLimit = require('express-rate-limit');
 
 const { NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { isWhitelistedIp } = require('../common/network-util');
 const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
@@ -42,7 +41,7 @@ class Middleware {
   }
 
   ipWhitelistLimiter() {
-    return ipWhitelist((ip) => isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
+    return ipWhitelist((ip) => CommonUtil.isWhitelistedUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
   }
 
   blockchainApiRateLimiter = (req, res, next) => {
