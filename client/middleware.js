@@ -3,13 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const ipWhitelist = require('ip-whitelist');
 const rateLimit = require('express-rate-limit');
-const matchUrl = require('match-url-wildcard');
 
 const { NodeConfigs } = require('../common/constants');
-const {
-  getRegexpList,
-  isWildcard
-} = require('../common/common-util');
+const CommonUtil = require('../common/common-util');
+const { isWhitelistedIp } = require('../common/network-util');
 const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
@@ -41,14 +38,11 @@ class Middleware {
 
   corsLimiter() {
     return cors({ origin: NodeConfigs.CORS_WHITELIST === '*' ?
-        NodeConfigs.CORS_WHITELIST : getRegexpList(NodeConfigs.CORS_WHITELIST) });
+        NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST) });
   }
 
   ipWhitelistLimiter() {
-    return ipWhitelist((ip) => {
-      return isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-          matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
-    })
+    return ipWhitelist(isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
   }
 
   blockchainApiRateLimiter = (req, res, next) => {
