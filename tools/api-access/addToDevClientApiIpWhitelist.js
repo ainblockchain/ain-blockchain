@@ -14,8 +14,9 @@ async function sendAddToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, 
     value: ip,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
+  const nodeUrl = endpointUrl + (_.endsWith(endpointUrl, '/') ? 'json-rpc' : '/json-rpc');
   return await axios.post(
-    `${endpointUrl}/json-rpc`,
+    nodeUrl,
     {
       method: JSON_RPC_METHODS.AIN_ADD_TO_WHITELIST_NODE_PARAM,
       params: {
