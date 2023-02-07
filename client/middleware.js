@@ -42,7 +42,7 @@ class Middleware {
   }
 
   ipWhitelistLimiter() {
-    return ipWhitelist(isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
+    return ipWhitelist((ip) => isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
   }
 
   blockchainApiRateLimiter = (req, res, next) => {
