@@ -2187,6 +2187,82 @@ describe("CommonUtil", () => {
     });
   })
 
+  describe('isWhitelistedUrl', () => { 
+    it("when abnormal input", () => {
+      expect(CommonUtil.isWhitelistedUrl(null, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(null, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(null, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(undefined, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(undefined, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(undefined, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl({}, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl({}, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl({}, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl([], null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl([], undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl([], {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://comcom.ai', null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://comcom.ai', undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://comcom.ai', {})).to.equal(false);
+    });
+
+    it("when normal input w/ wildcard", () => {
+      expect(CommonUtil.isWhitelistedUrl(null, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl(undefined, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl({}, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl([], '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('https://comcom.ai', '*')).to.equal(true);
+    });
+
+    it("when normal input w/ array", () => {
+      const whitelist = [
+        'https://*.ainetwork.ai',
+        'https://*.ainize.ai',
+        'https://*.afan.ai',
+        'http://localhost:3000',
+        'http://32.190.239.181:8080'
+      ];
+      expect(CommonUtil.isWhitelistedUrl(null, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl(undefined, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl({}, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl([], whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://comcom.ai', whitelist)).to.equal(false);
+
+      expect(CommonUtil.isWhitelistedUrl('ainetwork.ai', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://ainetwork.ai', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://ainetwork.ai', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://ainetwork.ai/some/path', whitelist)).to.equal(false);
+
+      expect(CommonUtil.isWhitelistedUrl('docs.ainetwork.ai', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('docs.ainetwork.ai:8080', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('docs.ainetwork.ai/some/path', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('http://docs.ainetwork.ai', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://docs.ainetwork.ai', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('https://docs.ainetwork.ai:8080', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('https://docs.ainetwork.ai/some/path', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('https://docs.ainetwork.ai:8080/some/path', whitelist)).to.equal(true);
+
+      expect(CommonUtil.isWhitelistedUrl('localhost', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('localhost:3000', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('localhost:8080', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost:3000', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost:8080', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost/some/path', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost:3000/some/path', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('http://localhost:8080/some/path', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('https://localhost:3000', whitelist)).to.equal(false);
+
+      expect(CommonUtil.isWhitelistedUrl('32.190.239.181', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('32.190.239.181:8080', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('http://32.190.239.181', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://32.190.239.181:8080', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('http://32.190.239.181/some/path', whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedUrl('http://32.190.239.181:8080/some/path', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedUrl('https://32.190.239.181:8080', whitelist)).to.equal(false);
+    });
+  })
+
   describe('hasTimerFlagEnabled', () => { 
     it("when invalid input", () => {
       expect(CommonUtil.hasTimerFlagEnabled({}, 'some_flag', 0)).to.equal(false);

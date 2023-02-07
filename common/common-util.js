@@ -944,6 +944,12 @@ class CommonUtil {
     return CommonUtil.isWildcard(value) ? value : value.split(',');
   }
 
+  static isWhitelistedUrl(url, whitelist) {
+    if (CommonUtil.isWildcard(whitelist)) return true;
+    if (!CommonUtil.isArray(whitelist)) return false;
+    return matchUrl(url, whitelist);
+  }
+
   static countMaxOccurrences(list) {
     if (!CommonUtil.isArray(list)) {
       return 0;
@@ -1049,15 +1055,6 @@ class CommonUtil {
       }
     }
     return map;
-  }
-
-  static isWhitelistedUrl(url, whitelist) {
-    if (CommonUtil.isWildcard(whitelist)) return true;
-    if (!CommonUtil.isArray(whitelist)) return false;
-    for (const listItem of whitelist) {
-      if (matchUrl(url, listItem)) return true;
-    }
-    return false;
   }
 }
 
