@@ -2263,6 +2263,58 @@ describe("CommonUtil", () => {
     });
   })
 
+  describe('isWhitelistedIp', () => { 
+    it("when abnormal input", () => {
+      expect(CommonUtil.isWhitelistedIp(null, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(null, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(null, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(undefined, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(undefined, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(undefined, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp({}, null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp({}, undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp({}, {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp([], null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp([], undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp([], {})).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp('32.190.239.181', null)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp('32.190.239.181', undefined)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp('32.190.239.181', {})).to.equal(false);
+    });
+
+    it("when normal input w/ wildcard", () => {
+      expect(CommonUtil.isWhitelistedIp(null, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp(undefined, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp({}, '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp([], '*')).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp('32.190.239.181', '*')).to.equal(true);
+    });
+
+    it("when normal input w/ array", () => {
+      const whitelist = [
+        '32.190.239.181',
+        '30.115.17.188'
+      ];
+
+      expect(CommonUtil.isWhitelistedIp(null, [])).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(undefined, [])).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp({}, [])).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp([], [])).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp('40.90.140.55', [])).to.equal(false);
+
+      expect(CommonUtil.isWhitelistedIp(null, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp(undefined, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp({}, whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp([], whitelist)).to.equal(false);
+      expect(CommonUtil.isWhitelistedIp('40.90.140.55', whitelist)).to.equal(false);
+
+      expect(CommonUtil.isWhitelistedIp('32.190.239.181', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp('::ffff:32.190.239.181', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp('30.115.17.188', whitelist)).to.equal(true);
+      expect(CommonUtil.isWhitelistedIp('::ffff:30.115.17.188', whitelist)).to.equal(true);
+    });
+  })
+
   describe('hasTimerFlagEnabled', () => { 
     it("when invalid input", () => {
       expect(CommonUtil.hasTimerFlagEnabled({}, 'some_flag', 0)).to.equal(false);

@@ -46,7 +46,7 @@ class Middleware {
   ipWhitelistLimiter() {
     const LOG_HEADER = 'ipWhitelistLimiter';
     return ipWhitelist((ip) => {
-      const isWhitelisted = CommonUtil.isWhitelistedUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+      const isWhitelisted = CommonUtil.isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
       logger.info(`[${LOG_HEADER}] IP whitelisting check for [${ip}] ${isWhitelisted ? 'succeeded' : 'failed'}!`);
       return isWhitelisted;
     });
