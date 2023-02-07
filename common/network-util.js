@@ -122,7 +122,12 @@ function getIpAddress(internal = false) {
 }
 
 function isWhitelistedIp(ip, whitelist) {
-  return CommonUtil.isWildcard(whitelist) || matchUrl(ip, whitelist);
+  if (CommonUtil.isWildcard(whitelist)) return true;
+  if (!CommonUtil.isArray(whitelist)) return false;
+  for (const listItem of whitelist) {
+    if (matchUrl(ip, listItem)) return true;
+  }
+  return false;
 }
 
 module.exports = {
