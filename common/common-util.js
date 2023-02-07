@@ -4,6 +4,7 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const matchUrl = require('match-url-wildcard');
 const {
   FailedTxPrecheckCodeSet,
   FunctionResultCode,

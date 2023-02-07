@@ -5,7 +5,6 @@ const axios = require('axios');
 const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const ip = require('ip');
 const extIp = require('ext-ip')();
-const matchUrl = require('match-url-wildcard');
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
@@ -126,5 +125,5 @@ module.exports = {
   sendSignedTx,
   signAndSendTx,
   sendGetRequest,
-  getIpAddress,
+  getIpAddress
 };
