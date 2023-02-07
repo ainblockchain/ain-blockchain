@@ -1,3 +1,5 @@
+const logger = new (require('../logger'))('MIDDLEWARE');
+
 const _ = require('lodash');
 const express = require('express');
 const cors = require('cors');
@@ -42,7 +44,12 @@ class Middleware {
   }
 
   ipWhitelistLimiter() {
-    return ipWhitelist((ip) => CommonUtil.isWhitelistedUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST));
+    const LOG_HEADER = 'ipWhitelistLimiter';
+    return ipWhitelist((ip) => {
+      const isWhitelisted = CommonUtil.isWhitelistedUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+      logger.info(`[${LOG_HEADER}] IP whitelisting check for [${ip}] ${isWhitelisted ? 'succeeded' : 'failed'}!`);
+      return isWhitelisted;
+    });
   }
 
   blockchainApiRateLimiter = (req, res, next) => {
