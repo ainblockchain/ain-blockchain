@@ -2,7 +2,6 @@ const logger = new (require('../logger'))('FUNCTIONS');
 
 const axios = require('axios');
 const _ = require('lodash');
-const matchUrl = require('match-url-wildcard');
 const Accounts = require('web3-eth-accounts');
 const stringify = require('fast-json-stable-stringify');
 const {
@@ -238,7 +237,7 @@ class Functions {
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (NodeConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
-            matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
+            CommonUtil.isWhitelistedUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
