@@ -4,6 +4,8 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const matchUrl = require('match-url-wildcard');
+const ip = require('ip');
 const {
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
@@ -941,6 +943,30 @@ class CommonUtil {
 
   static getWhitelistFromString(value) {
     return CommonUtil.isWildcard(value) ? value : value.split(',');
+  }
+
+  static isWhitelistedUrl(url, whitelist) {
+    if (CommonUtil.isWildcard(whitelist)) return true;
+    if (!CommonUtil.isArray(whitelist)) return false;
+    return matchUrl(url, whitelist);
+  }
+
+  static isWhitelistedIp(ipAddr, whitelist) {
+    if (CommonUtil.isWildcard(whitelist)) return true;
+    if (!CommonUtil.isArray(whitelist)) return false;
+    if (!CommonUtil.isValidIpV4(ipAddr) && !CommonUtil.isValidIpV6(ipAddr)) {
+      return false;
+    }
+    for (const listItem of whitelist) {
+      try {
+        if (ip.isEqual(ipAddr, listItem)) {
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+    return false;
   }
 
   static countMaxOccurrences(list) {
