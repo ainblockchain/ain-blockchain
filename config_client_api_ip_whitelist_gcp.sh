@@ -1,0 +1,104 @@
+#!/bin/bash
+
+function usage() {
+    printf "\n"
+    printf "Usage: bash config_client_api_ip_whitelist_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [get|add|remove] [<IP Address]\n"
+    printf "Example: bash config_client_api_ip_whitelist_gcp.sh dev get\n"
+    printf "Example: bash config_client_api_ip_whitelist_gcp.sh dev add 32.190.239.181\n"
+    printf "Example: bash config_client_api_ip_whitelist_gcp.sh dev add '*'\n"
+    printf "Example: bash config_client_api_ip_whitelist_gcp.sh dev remove 32.190.239.181\n"
+    printf "\n"
+    exit
+}
+
+if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
+    usage
+fi
+printf "\n[[[[[ config_client_api_ip_whitelist_gcp.sh ]]]]]\n\n"
+
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+    SEASON="$1"
+else
+    printf "Invalid <Project/Season> argument: $1\n"
+    usage
+fi
+printf "SEASON=$SEASON\n"
+
+if [[ "$2" = 'get' ]]; then
+    COMMAND="$2"
+elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]]; then
+    COMMAND="$2"
+    IP_ADDR="$3"
+    if [[ "$IP_ADDR" = "" ]]; then
+        printf "\nInvalid <IP Address> argument: $IP_ADDR\n"
+        usage
+    fi
+else
+    printf "Invalid <Command> argument: $2\n"
+    usage
+fi
+printf "COMMAND=$COMMAND\n"
+printf "IP_ADDR=$IP_ADDR\n"
+
+# Get confirmation.
+if [[ "$SEASON" = "mainnet" ]]; then
+    printf "\n"
+    printf "Do you want to proceed for $SEASON? Enter [mainnet]: "
+    read CONFIRM
+    printf "\n\n"
+    if [[ ! $CONFIRM = "mainnet" ]]
+    then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+else
+    printf "\n"
+    read -p "Do you want to proceed for $SEASON? [y/N]: " -n 1 -r
+    printf "\n\n"
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+fi
+
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+
+# Get keystore password
+printf "Enter password: "
+read -s PASSWORD
+printf "\n\n"
+if [[ $SEASON = "mainnet" ]]; then
+    KEYSTORE_DIR="mainnet_prod_keys"
+elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+    KEYSTORE_DIR="testnet_prod_keys"
+else
+    KEYSTORE_DIR="testnet_dev_staging_keys"
+fi
+
+if [[ $COMMAND = "add" ]]; then
+    COMMAND_NODE_JS_FILE="addToDevClientApiIpWhitelist.js"
+elif [[ $COMMAND = "remove" ]]; then
+    COMMAND_NODE_JS_FILE="removeFromDevClientApiIpWhitelist.js"
+else
+    COMMAND_NODE_JS_FILE="getDevClientApiIpWhitelist.js"
+fi
+
+function config_node() {
+    local node_index="$1"
+    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+
+    printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_ip_addr) >>>\n\n"
+
+    KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
+    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr 0 keystore $KEYSTORE_FILE_PATH"
+    if [[ ! $COMMAND = "get" ]]; then
+        CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$IP_ADDR'"
+    fi
+
+    printf "\n"
+    printf "CONFIG_NODE_CMD=$CONFIG_NODE_CMD\n\n"
+    eval "echo $PASSWORD | $CONFIG_NODE_CMD"
+}
+
+for j in `seq $(( 0 )) $(( 9 ))`; do
+    config_node "$j"
+done
