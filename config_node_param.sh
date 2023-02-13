@@ -2,19 +2,20 @@
 
 function usage() {
     printf "\n"
-    printf "Usage: bash config_client_api_ip_whitelist.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [get|add|remove] [<IP Address>]\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev get\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev add 32.190.239.181\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev add '*'\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev remove 32.190.239.181\n"
+    printf "Usage: bash config_node_param.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [get|add|remove] <Param> [<Value>]\n"
+    printf "Example: bash config_node_param.sh dev get DEV_CLIENT_API_IP_WHITELIST\n"
+    printf "Example: bash config_node_param.sh dev add DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
+    printf "Example: bash config_node_param.sh dev add DEV_CLIENT_API_IP_WHITELIST '*'\n"
+    printf "Example: bash config_node_param.sh dev remove DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
+    printf "Example: bash config_node_param.sh dev set DEV_CLIENT_API_IP_WHITELIST '*'\n"
     printf "\n"
     exit
 }
 
-if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 4 ]]; then
     usage
 fi
-printf "\n[[[[[ config_client_api_ip_whitelist.sh ]]]]]\n\n"
+printf "\n[[[[[ config_node_param.sh ]]]]]\n\n"
 
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
@@ -26,16 +27,22 @@ printf "SEASON=$SEASON\n"
 
 if [[ "$2" = 'get' ]]; then
     COMMAND="$2"
-    IP_ADDR="$3"
-    if [[ ! "$IP_ADDR" = "" ]]; then
-        printf "\nInvalid argument: $IP_ADDR\n"
+    PARAM="$3"
+    VALUE="$4"
+    if [[ ! "$VALUE" = "" ]]; then
+        printf "\nInvalid argument: $VALUE\n"
         usage
     fi
-elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]]; then
+elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]] || [[ "$2" = 'set' ]]; then
     COMMAND="$2"
-    IP_ADDR="$3"
-    if [[ "$IP_ADDR" = "" ]]; then
-        printf "\nInvalid <IP Address> argument: $IP_ADDR\n"
+    PARAM="$3"
+    VALUE="$4"
+    if [[ "$PARAM" = "" ]]; then
+        printf "\nInvalid <Param> argument: $PARAM\n"
+        usage
+    fi
+    if [[ "$VALUE" = "" ]]; then
+        printf "\nInvalid <Value> argument: $VALUE\n"
         usage
     fi
 else
@@ -43,7 +50,8 @@ else
     usage
 fi
 printf "COMMAND=$COMMAND\n"
-printf "IP_ADDR=$IP_ADDR\n"
+printf "PARAM=$PARAM\n"
+printf "VALUE=$VALUE\n"
 
 # Get confirmation.
 if [[ "$SEASON" = "mainnet" ]]; then
@@ -80,11 +88,13 @@ else
 fi
 
 if [[ $COMMAND = "add" ]]; then
-    COMMAND_NODE_JS_FILE="addToDevClientApiIpWhitelist.js"
+    COMMAND_NODE_JS_FILE="addToWhitelistNodeParam.js"
 elif [[ $COMMAND = "remove" ]]; then
-    COMMAND_NODE_JS_FILE="removeFromDevClientApiIpWhitelist.js"
+    COMMAND_NODE_JS_FILE="removeFromWhitelistNodeParam.js"
+elif [[ $COMMAND = "set" ]]; then
+    COMMAND_NODE_JS_FILE="setNodeParam.js"
 else
-    COMMAND_NODE_JS_FILE="getDevClientApiIpWhitelist.js"
+    COMMAND_NODE_JS_FILE="getNodeParam.js"
 fi
 
 function config_node() {
@@ -94,9 +104,9 @@ function config_node() {
     printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_ip_addr) >>>\n\n"
 
     KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
-    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr 0 keystore $KEYSTORE_FILE_PATH"
+    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr 0 keystore $KEYSTORE_FILE_PATH $PARAM"
     if [[ ! $COMMAND = "get" ]]; then
-        CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$IP_ADDR'"
+        CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$VALUE'"
     fi
 
     printf "\n"
