@@ -175,7 +175,7 @@ function deploy_tracker() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up tracker
         printf "\n\n[[[ Setting up tracker ]]]\n\n"
-        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
