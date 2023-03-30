@@ -1,15 +1,13 @@
+const logger = new (require('../logger'))('MIDDLEWARE');
+
 const _ = require('lodash');
 const express = require('express');
 const cors = require('cors');
 const ipWhitelist = require('ip-whitelist');
 const rateLimit = require('express-rate-limit');
-const matchUrl = require('match-url-wildcard');
 
 const { NodeConfigs } = require('../common/constants');
-const {
-  getRegexpList,
-  isWildcard
-} = require('../common/common-util');
+const CommonUtil = require('../common/common-util');
 const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
 class Middleware {
@@ -39,16 +37,19 @@ class Middleware {
     });
   }
 
+  // TODO(platfowner): Use dynamic origin (see https://www.npmjs.com/package/cors).
   corsLimiter() {
     return cors({ origin: NodeConfigs.CORS_WHITELIST === '*' ?
-        NodeConfigs.CORS_WHITELIST : getRegexpList(NodeConfigs.CORS_WHITELIST) });
+        NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST) });
   }
 
   ipWhitelistLimiter() {
+    const LOG_HEADER = 'ipWhitelistLimiter';
     return ipWhitelist((ip) => {
-      return isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
-          matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
-    })
+      const isWhitelisted = CommonUtil.isWhitelistedIp(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+      logger.info(`[${LOG_HEADER}] IP whitelisting check for [${ip}] ${isWhitelisted ? 'succeeded' : 'failed'}!`);
+      return isWhitelisted;
+    });
   }
 
   blockchainApiRateLimiter = (req, res, next) => {

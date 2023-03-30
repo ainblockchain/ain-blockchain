@@ -9,15 +9,16 @@ const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 async function sendSetNodeParamRequest(endpointUrl, privateKey, chainId, param, value) {
   const message = {
     timestamp: Date.now(),
-    method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
+    method: JSON_RPC_METHODS.AIN_SET_NODE_PARAM,
     param,
     value,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
+  const nodeUrl = endpointUrl + (_.endsWith(endpointUrl, '/') ? 'json-rpc' : '/json-rpc');
   return await axios.post(
-    `${endpointUrl}/json-rpc`,
+    nodeUrl,
     {
-      method: JSON_RPC_METHODS.AIN_REMOVE_FROM_WHITELIST_NODE_PARAM,
+      method: JSON_RPC_METHODS.AIN_SET_NODE_PARAM,
       params: {
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         message,
