@@ -2,7 +2,9 @@
 
 if [[ $# -lt 2 ]] || [[ $# -gt 8 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --setup --keystore --no-keep-code --no-chown-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --keystore --no-keep-code --keep-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --keystore --keep-code --keep-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --setup --keystore --no-keep-code\n"
     printf "\n"
     exit
 fi
