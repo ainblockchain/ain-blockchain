@@ -4,7 +4,7 @@ printf "\n[[[[[ setup_monitoring_ubuntu.sh ]]]]]\n\n"
 
 printf 'Installing NodeJS..\n'
 sudo apt update
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt install -y nodejs
 
 printf 'node -v\n'
