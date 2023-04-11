@@ -31,7 +31,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
     if [[ -z "$PRIVATE_KEY" ]]; then
         printf 'You should manually inject your account into this node.\n'
     else
-        echo $PRIVATE_KEY | node inject_account_gcp.js $NODE_ENDPOINT --private-key
+        echo $PRIVATE_KEY | node inject_node_account.js $NODE_ENDPOINT --private-key
         unset PRIVATE_KEY
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
@@ -42,7 +42,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
             echo $KEYSTORE_FILE_PATH
             sleep 1
             echo $PASSWORD
-        } | node inject_account_gcp.js $NODE_ENDPOINT --keystore
+        } | node inject_node_account.js $NODE_ENDPOINT --keystore
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
     if [[ -z "$MNEMONIC" ]]; then
@@ -52,7 +52,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "mnemonic" ]]; then
             echo $MNEMONIC
             sleep 1
             echo 0
-        } | node inject_account_gcp.js $NODE_ENDPOINT --mnemonic
+        } | node inject_node_account.js $NODE_ENDPOINT --mnemonic
         unset MNEMONIC
     fi
 else

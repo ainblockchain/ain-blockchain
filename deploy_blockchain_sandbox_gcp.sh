@@ -100,7 +100,7 @@ function inject_account() {
     printf "\n* >> Injecting an account for node $node_index ********************\n\n"
     printf "node_ip_addr='$node_ip_addr'\n"
     PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
-    echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    echo $PRIVATE_KEY | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
 }
 
 # GCP node address
