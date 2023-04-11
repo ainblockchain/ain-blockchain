@@ -7,6 +7,10 @@ sudo apt update
 # skip prompting (see https://serverfault.com/questions/527789/how-to-automate-changed-config-files-during-apt-get-upgrade-in-ubuntu-12)
 apt-get --yes --force-yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
+printf 'Uninstalling NodeJS..\n'
+sudo apt-get -y purge nodejs
+sudo apt-get -y autoremove
+
 printf 'Installing NodeJS..\n'
 sudo apt update
 sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates
