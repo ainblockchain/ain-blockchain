@@ -173,9 +173,9 @@ You can use some environment variables, and these have the following options.
 ```
 After the node is executed, you should inject your account into the node.
 ```
-node inject_account_gcp.js <NODE_ENDPOINT_URL> --private-key
-node inject_account_gcp.js <NODE_ENDPOINT_URL> --keystore
-node inject_account_gcp.js <NODE_ENDPOINT_URL> --mnemonic
+node inject_node_account.js <NODE_ENDPOINT_URL> --private-key
+node inject_node_account.js <NODE_ENDPOINT_URL> --keystore
+node inject_node_account.js <NODE_ENDPOINT_URL> --mnemonic
 ```
 If you want to inject your account automatically, add one of these environment variables before running the node.
 ```

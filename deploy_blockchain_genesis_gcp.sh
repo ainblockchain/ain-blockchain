@@ -2,7 +2,9 @@
 
 if [[ $# -lt 2 ]] || [[ $# -gt 8 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
-    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --setup --keystore --no-keep-code --no-chown-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --keystore --no-keep-code --keep-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --keystore --keep-code --keep-data\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 --setup --keystore --no-keep-code\n"
     printf "\n"
     exit
 fi
@@ -158,7 +160,7 @@ function inject_account() {
             echo $KEYSTORE_FILE_PATH
             sleep 1
             echo $PASSWORD
-        } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        } | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
@@ -167,7 +169,7 @@ function inject_account() {
             echo $MNEMONIC
             sleep 1
             echo 0
-        } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        } | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     else
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
@@ -176,7 +178,7 @@ function inject_account() {
             GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
         fi
         PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
-        echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        echo $PRIVATE_KEY | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 }
 

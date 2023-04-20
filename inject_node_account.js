@@ -142,7 +142,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node inject_account_gcp.js <ENDPOINT_URL> <ACCOUNT_INJECTION_OPTION>\n');
+  console.log('\nExample commandlines:\n  node inject_node_account.js <ENDPOINT_URL> <ACCOUNT_INJECTION_OPTION>\n');
   process.exit(0);
 }
 
