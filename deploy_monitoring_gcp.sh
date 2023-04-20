@@ -1,8 +1,9 @@
 #!/bin/bash
 
-if [[ "$#" -lt 2 ]]; then
-    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username>  [--setup]\n"
-    printf "Example: bash deploy_monitoring_gcp.sh dev gcp_user \n"
+if [[ "$#" -lt 1 ]]; then
+    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [--setup]\n"
+    printf "Example: bash deploy_monitoring_gcp.sh dev --setup\n"
+    printf "Example: bash deploy_monitoring_gcp.sh dev\n"
     printf "\n"
     exit
 fi
@@ -24,10 +25,10 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
-GCP_USER="$2"
+GCP_USER="runner"
 printf "GCP_USER=$GCP_USER\n"
 
-OPTIONS="$3"
+OPTIONS="$2"
 printf "OPTIONS=$OPTIONS\n"
 
 # Get confirmation.
