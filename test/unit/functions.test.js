@@ -300,6 +300,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x00001": {
@@ -342,7 +343,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -400,6 +403,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x10001": {
@@ -442,7 +446,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "arbitrary"
               },
@@ -502,6 +508,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x20001": {
@@ -548,7 +555,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -607,7 +616,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -680,6 +691,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
@@ -771,7 +783,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -858,7 +872,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -947,7 +963,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -1026,7 +1044,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -1105,7 +1125,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "path"
               },
@@ -1184,7 +1206,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "other_path"
               },
@@ -1265,7 +1289,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "path"
               },
@@ -1344,7 +1370,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "other_path"
               },
@@ -1454,6 +1482,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
@@ -1572,7 +1601,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1672,7 +1703,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1774,7 +1807,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1855,7 +1890,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1936,7 +1973,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "existing_path"
               },
@@ -2019,7 +2058,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "path"
               },
@@ -2100,7 +2141,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "other_path"
               },
@@ -2181,7 +2224,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "existing_path"
               },
@@ -2264,7 +2309,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "path"
               },
@@ -2345,7 +2392,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "other_path"
               },
@@ -2428,7 +2477,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
@@ -2514,7 +2565,9 @@ describe("Functions", () => {
                 "timestamp": 1234567890000,
                 "blockNumber": 1000,
                 "blockTime": 1234567890999,
+                "eventSource": "USER",
               },
+              "eventSource": "USER",
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
@@ -2595,12 +2648,83 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
             fail_count: 1,
+          });
+        });
+      })
+
+      it("REST function with 'BLOCK' eventSource", () => {
+        const value = 'value';
+        const tx = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRest,
+              "type": "SET_VALUE",
+              "value": value,
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const triggerRes = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+              eventSource: 'BLOCK',
+            });
+        return triggerRes.func_promises.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
+          });
+        });
+      })
+
+      it("REST function with null eventSource", () => {
+        const value = 'value';
+        const tx = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRest,
+              "type": "SET_VALUE",
+              "value": value,
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const triggerRes = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+              eventSource: null,
+            });
+        return triggerRes.func_promises.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 0,
+            fail_count: 0,
           });
         });
       })
@@ -2612,7 +2736,7 @@ describe("Functions", () => {
             "operation": {
               "ref": refPathRestNotWhitelisted,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -2629,6 +2753,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
@@ -2674,6 +2799,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
@@ -2711,6 +2837,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
@@ -2745,6 +2872,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
@@ -2809,6 +2937,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
@@ -2862,6 +2991,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
@@ -2915,6 +3045,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
@@ -2968,6 +3099,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
@@ -3025,6 +3157,7 @@ describe("Functions", () => {
               timestamp: 1234567890000,
               blockNumber: 1000,
               blockTime: 1234567890999,
+              eventSource: 'USER',
             });
         assert.deepEqual(triggerRes.func_results, {
           "0x90001": {

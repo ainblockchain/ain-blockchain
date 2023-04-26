@@ -154,6 +154,7 @@ class Functions {
     const timestamp = _.get(options, 'timestamp', null);
     const blockNumber = _.get(options, 'blockNumber', null);
     const blockTime = _.get(options, 'blockTime', null);
+    const eventSource = _.get(options, 'eventSource', null);
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
@@ -190,7 +191,6 @@ class Functions {
             const newAuth = Object.assign(
                 {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             let result = null;
-            const eventSource = _.get(options, 'eventSource', null);
             try {
               result = nativeFunction.func(
                   value,
@@ -208,11 +208,11 @@ class Functions {
                     blockNumber,
                     blockTime,
                     options,
+                    eventSource,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
                     ...blockchainParams,
-                    eventSource,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -236,51 +236,64 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
-            CommonUtil.isWhitelistedUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
-            if (DevFlags.enableRichFunctionLogging) {
+          // NOTE: Skipped when the event source is null.
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL &&
+              eventSource !== null &&
+              functionEntry.function_url) {
+            const restFunctionUrlWhitelist = this.db.getRestFunctionsUrlWhitelist();
+            if (!CommonUtil.isWhitelistedUrl(functionEntry.function_url, restFunctionUrlWhitelist)) {
+              // NOTE: Skipped when the function url is not in the whitelist.
               logger.info(
-                  `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
-                  `function_url '${functionEntry.function_url}' with:\n` +
+                  `Skipped triggering REST function [[ ${functionEntry.function_id} ]] of ` +
+                  `function_url '${functionEntry.function_url}' which is NOT in the whitelist: \n` +
+                  `${JSON.stringify(restFunctionUrlWhitelist)}` +
                   formattedParams);
-            }
-            const newAuth = Object.assign(
-                {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
-            promises.push(axios.post(functionEntry.function_url, {
-              fid: functionEntry.function_id,
-              function: functionEntry,
-              valuePath,
-              functionPath,
-              value,
-              prevValue,
-              params,
-              timestamp,
-              executedAt,
-              transaction,
-              blockNumber,
-              blockTime,
-              options,
-              auth: newAuth,
-              chainId: blockchainParams.chainId,
-              networkId: blockchainParams.networkId,
-            }, {
-              timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
-            }).catch((error) => {
+            } else {
               if (DevFlags.enableRichFunctionLogging) {
-                logger.error(
-                    `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
-                    `function_url '${functionEntry.function_url}' with error: \n` +
-                    `${JSON.stringify(error)}` +
+                logger.info(
+                    `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
+                    `function_url '${functionEntry.function_url}' with:\n` +
                     formattedParams);
               }
-              failCount++;
-              return true;
-            }));
-            funcResults[functionEntry.function_id] = {
-              code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: blockchainParams.restFunctionCallGasAmount,
-            };
-            triggerCount++;
+              const newAuth = Object.assign(
+                  {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
+              promises.push(axios.post(functionEntry.function_url, {
+                fid: functionEntry.function_id,
+                function: functionEntry,
+                valuePath,
+                functionPath,
+                value,
+                prevValue,
+                params,
+                timestamp,
+                executedAt,
+                transaction,
+                blockNumber,
+                blockTime,
+                options,
+                eventSource,
+                auth: newAuth,
+                chainId: blockchainParams.chainId,
+                networkId: blockchainParams.networkId,
+              }, {
+                timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
+              }).catch((error) => {
+                if (DevFlags.enableRichFunctionLogging) {
+                  logger.error(
+                      `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
+                      `function_url '${functionEntry.function_url}' with error: \n` +
+                      `${JSON.stringify(error)}` +
+                      formattedParams);
+                }
+                failCount++;
+                return true;
+              }));
+              funcResults[functionEntry.function_id] = {
+                code: FunctionResultCode.SUCCESS,
+                bandwidth_gas_amount: blockchainParams.restFunctionCallGasAmount,
+              };
+              triggerCount++;
+            }
           }
         }
       }
