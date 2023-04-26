@@ -9,7 +9,7 @@ function buildCreateAppTxBody(address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/manage_app/chatbots/create/${timestamp}`,
+      ref: `/manage_app/${config.appName}/create/${timestamp}`,
       value: {
         admin: { [address]: true },
       }
@@ -27,7 +27,7 @@ function buildChatbotConfigTxBody(timestamp) {
       op_list: [
         {
           type: "SET_OWNER",
-          ref: "/apps/chatbots/common/messages",
+          ref: `/apps/${config.appName}/common/messages`,
           value: {
             ".owner": {
               owners: {
@@ -43,7 +43,7 @@ function buildChatbotConfigTxBody(timestamp) {
         },
         {
           type: "SET_RULE",
-          ref: "/apps/chatbots/common/messages/$key",
+          ref: `/apps/${config.appName}/common/messages/$key`,
           value: {
             ".rule": {
               "write": true
@@ -52,7 +52,7 @@ function buildChatbotConfigTxBody(timestamp) {
         },
         {
           type: "SET_FUNCTION",
-          ref: "/apps/chatbots/common/messages/$key/user",
+          ref: `/apps/${config.appName}/common/messages/$key/user`,
           value: {
             ".function": {
               "liayoo-ainjs": {

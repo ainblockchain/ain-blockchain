@@ -8,7 +8,7 @@ function buildMessageTxBody(timestamp, message) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/apps/chatbots/common/messages/${timestamp}/user`,
+      ref: `/apps/${config.appName}/common/messages/${timestamp}/user`,
       value: message,
     },
     gas_price: 500,
