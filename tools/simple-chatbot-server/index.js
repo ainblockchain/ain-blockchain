@@ -8,6 +8,7 @@ const app = express();
 const PORT = 3000;
 const BLOCKCHAIN_ENDPOINT = 'http://localhost:8081/';
 const ain = new AinJs(BLOCKCHAIN_ENDPOINT, 0);
+const APP_NAME = 'chatbots';
 const BOT_NAME = 'echo-bot';
 const BOT_PK = 'ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640';
 const BOT_ADDRESS = AinJs.utils.toChecksumAddress(ain.wallet.add(BOT_PK)); // 0x09A0d53FDf1c36A131938eb379b98910e55EEfe1
@@ -40,7 +41,7 @@ app.post('/trigger', async (req, res) => {
   const ref = _.get(tx, 'tx_body.operation.ref');
   const parsedRef = CommonUtil.parsePath(ref);
   const userVal = _.get(tx, 'tx_body.operation.value');
-  if (parsedRef.length !== 6 || parsedRef[0] !== 'apps' || parsedRef[1] !== 'chatbots' ||
+  if (parsedRef.length !== 6 || parsedRef[0] !== 'apps' || parsedRef[1] !== APP_NAME ||
       parsedRef[3] !== 'messages' || parsedRef[5] !== 'user') {
     console.log(`Not supported path pattern: ${ref}`);
     return;
