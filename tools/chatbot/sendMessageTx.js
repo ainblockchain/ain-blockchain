@@ -1,3 +1,5 @@
+// A tool to send chatting messages to chatbots.
+// This can be used with the server code under tools/simple-chatbot-server.
 const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
@@ -6,9 +8,10 @@ function buildMessageTxBody(timestamp, message) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/apps/chatbots/common/message/${timestamp}`,
+      ref: `/apps/${config.appName}/common/messages/${timestamp}/user`,
       value: message,
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   };
