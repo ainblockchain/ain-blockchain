@@ -1,4 +1,4 @@
-// A tool to register an address to the developers user whitelist.
+// A tool to deregister an address from the developers user whitelist.
 // This can be tested with the tool scripts under tools/chatbot.
 const path = require('path');
 const CommonUtil = require('../../common/common-util');
@@ -12,7 +12,7 @@ function buildTxBody(timestamp, address) {
     operation: {
       type: 'SET_VALUE',
       ref: userPath,
-      value: true,
+      value: null,
     },
     gas_price: 500,
     timestamp,
@@ -49,7 +49,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log("\nExample commandlines:\n  node sendAddToDevelopersUserWhitelistTx.js config_local.js")
+  console.log("\nExample commandlines:\n  node sendRemoveFromDevelopersUserWhitelistTx.js config_local.js")
   process.exit(0)
 }
 
