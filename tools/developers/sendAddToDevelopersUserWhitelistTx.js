@@ -1,4 +1,5 @@
 // A tool to register an address to the developers user whitelist.
+// This should be executed with blockchain owner's keystore files.
 // This can be tested with the tool scripts under tools/chatbot.
 const path = require('path');
 const CommonUtil = require('../../common/common-util');
