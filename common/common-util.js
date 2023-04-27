@@ -146,6 +146,10 @@ class CommonUtil {
     return ruleUtil.isValidatorOffenseType(type);
   }
 
+  static isValidUrlWhitelistItem(url) {
+    return ruleUtil.isValidUrlWhitelistItem(url);
+  }
+
   static isValidUrl(url) {
     return ruleUtil.isValidUrl(url);
   }
