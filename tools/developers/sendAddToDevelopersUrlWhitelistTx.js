@@ -3,7 +3,7 @@
 const path = require('path');
 const CommonUtil = require('../../common/common-util');
 const PathUtil = require('../../common/path-util');
-const { signAndSendTx, confirmTransaction } = require('../util');
+const { keystoreToAccount, signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
 function buildTxBody(timestamp, address, urlKey, urlValue) {
@@ -21,18 +21,18 @@ function buildTxBody(timestamp, address, urlKey, urlValue) {
   };
 }
 
-async function sendTransaction(urlKey, urlValue) {
+async function sendTransaction(urlKey, urlValue, keystoreAccount) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  if (!CommonUtil.isCksumAddr(config.developerAddr)) {
-    console.log(`The developer address is NOT a checksum address: ${config.developerAddr}`);
+  if (!CommonUtil.isCksumAddr(keystoreAccount.address)) {
+    console.log(`The developer address is NOT a checksum address: ${keystoreAccount.address}`);
     process.exit(0);
   }
-  const txBody = buildTxBody(timestamp, config.developerAddr, urlKey, urlValue);
+  const txBody = buildTxBody(timestamp, keystoreAccount.address, urlKey, urlValue);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
+  const txInfo = await signAndSendTx(config.endpointUrl, txBody, keystoreAccount.private_key);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transaction failed.`);
@@ -42,9 +42,10 @@ async function sendTransaction(urlKey, urlValue) {
 }
 
 async function processArguments() {
-  if (process.argv.length !== 5) {
+  if (process.argv.length !== 6) {
     usage();
   }
+  config = require(path.resolve(__dirname, process.argv[2]));
   const urlKey = process.argv[3];
   if (!CommonUtil.isString(urlKey) || urlKey.length == 0) {
     console.log(`The URL key is NOT a valid one: ${urlKey}`);
@@ -55,13 +56,14 @@ async function processArguments() {
     console.log(`The URL value is NOT a valid whitelist item: ${urlValue}`);
     process.exit(0);
   }
-  config = require(path.resolve(__dirname, process.argv[2]));
-  await sendTransaction(urlKey, urlValue);
+  const keystoreAccount = await keystoreToAccount(process.argv[5]);
+  console.log(`\nKeystore account address: ${keystoreAccount.address}\n`);
+  await sendTransaction(urlKey, urlValue, keystoreAccount);
 }
 
 function usage() {
-  console.log("\nExample commandlines:\n  node sendAddToDevelopersUrlWhitelistTx.js config_local.js <URL key> <URL value>")
-  console.log("\nExample commandlines:\n  node sendAddToDevelopersUrlWhitelistTx.js config_local.js 0 http://localhost:8000")
+  console.log('\nUsage: node sendAddToDevelopersUrlWhitelistTx.js <Config File> <URL Key> <URL Value> <Keystore Filepath>\n');
+  console.log('Example: node sendAddToDevelopersUrlWhitelistTx.js config_local.js 0 http://localhost:8000 keystore.json\n');
   process.exit(0)
 }
 
