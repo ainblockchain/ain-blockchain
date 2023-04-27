@@ -1,4 +1,5 @@
 // A tool to register a URL to the developers URL whitelist.
+// This should be executed with developer's keystore files.
 // This can be tested with the tool scripts under tools/chatbot.
 const path = require('path');
 const CommonUtil = require('../../common/common-util');
