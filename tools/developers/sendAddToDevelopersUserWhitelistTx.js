@@ -54,7 +54,7 @@ async function processArguments() {
 
 function usage() {
   console.log('\nUsage: node sendAddToDevelopersUserWhitelistTx.js <Config File> <Developer Address> <Keystore Filepath>\n');
-  console.log('Example: node sendAddToDevelopersUserWhitelistTx.js config_local.js 0x09A0d53FDf1c36A131938eb379b98910e55EEfe1 keystore.json\n');
+  console.log('Example: node sendAddToDevelopersUserWhitelistTx.js config_local.js 0x08Aed7AF9354435c38d52143EE50ac839D20696b keystore.json\n');
   process.exit(0)
 }
 
