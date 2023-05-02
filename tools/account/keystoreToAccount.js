@@ -1,28 +1,11 @@
-const fs = require('fs');
-const ainUtil = require('@ainblockchain/ain-util');
-const prompt = require('prompt');
-
-async function keystoreToAccount(filePath) {
-  prompt.message = '';
-  prompt.delimiter = '';
-  prompt.colors = false;
-  prompt.start();
-  const input = await prompt.get([{
-    name: 'password',
-    description: 'Enter password:',
-    hidden: true,
-  }]);
-  const keystore = JSON.parse(fs.readFileSync(filePath));
-  console.log(keystore, input)
-  const account = ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, input.password));
-  console.log('\nAccount:', account, '\n');
-}
+const { keystoreToAccount } = require('../util');
 
 async function processArguments() {
   if (process.argv.length !== 3) {
     usage();
   }
-  await keystoreToAccount(process.argv[2]);
+  const account = await keystoreToAccount(process.argv[2]);
+  console.log(`\nAccount: ${JSON.stringify(account, null, 2)}\n`);
 }
 
 function usage() {

@@ -107,7 +107,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendCreateAppAndConfigTx.js config_local.js\n')
+  console.log("\nUsage: node sendCreateAppAndConfigTx.js <Config File>\n")
+  console.log("Example: node sendCreateAppAndConfigTx.js config_local.js 'Hello'\n")
   process.exit(0)
 }
 

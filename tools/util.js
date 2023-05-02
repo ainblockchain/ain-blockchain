@@ -1,8 +1,28 @@
 const _ = require('lodash');
+const fs = require('fs');
+const prompt = require('prompt');
 const axios = require('axios');
+const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
+
+async function keystoreToAccount(filePath) {
+  const keystore = JSON.parse(fs.readFileSync(filePath));
+  console.log(`\nKeystore: ${JSON.stringify(keystore, null, 2)}\n`)
+
+  prompt.message = '';
+  prompt.delimiter = '';
+  prompt.colors = false;
+  prompt.start();
+  const input = await prompt.get([{
+    name: 'password',
+    description: 'Enter password:',
+    hidden: true,
+  }]);
+
+  return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, input.password));
+}
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
@@ -67,6 +87,7 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
 }
 
 module.exports = {
+  keystoreToAccount,
   signAndSendTx,
   sendGetTxByHashRequest,
   confirmTransaction,
