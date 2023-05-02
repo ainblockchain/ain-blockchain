@@ -58,8 +58,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nUsage: node sendRemoveFromDevelopersUrlWhitelistTx.js <Config File> <URL Key> <Keystore Filepath>\n');
-  console.log('Example: node sendRemoveFromDevelopersUrlWhitelistTx.js config_local.js 0 keystore.json\n');
+  console.log('\nUsage: node sendRemoveFromDevelopersUrlWhitelistTx.js <Config File> <URL Key> <Developer Keystore Filepath>\n');
+  console.log('Example: node sendRemoveFromDevelopersUrlWhitelistTx.js config_local.js 0 keystore_developer.json\n');
   process.exit(0)
 }
 
