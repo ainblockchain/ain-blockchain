@@ -1,4 +1,4 @@
-// A tool to register a URL to the developers URL whitelist.
+// A tool to register a URL to the developers URL whitelist (i.e., REST function URL whitelist).
 // This should be executed with developer's keystore files.
 // This can be tested with the tool scripts under tools/chatbot.
 const path = require('path');
