@@ -46,7 +46,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log("\nUsage: node sendMessageTx.js <Config File>\n")
+  console.log("\nUsage: node sendMessageTx.js <Config File> [<Message>]\n")
+  console.log("Example: node sendMessageTx.js config_local.js\n")
   console.log("Example: node sendMessageTx.js config_local.js 'Hello'\n")
   process.exit(0)
 }
