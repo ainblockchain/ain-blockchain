@@ -63,8 +63,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nUsage: node sendAddToDevelopersUrlWhitelistTx.js <Config File> <URL Key> <URL Value> <Keystore Filepath>\n');
-  console.log('Example: node sendAddToDevelopersUrlWhitelistTx.js config_local.js 0 http://localhost:8000 keystore.json\n');
+  console.log('\nUsage: node sendAddToDevelopersUrlWhitelistTx.js <Config File> <URL Key> <URL Value> <Developer Keystore Filepath>\n');
+  console.log('Example: node sendAddToDevelopersUrlWhitelistTx.js config_local.js 0 http://localhost:8000 keystore_developer.json\n');
   process.exit(0)
 }
 

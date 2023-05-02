@@ -53,8 +53,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nUsage: node sendRemoveFromDevelopersUserWhitelistTx.js <Config File> <Developer Address> <Keystore Filepath>\n');
-  console.log('Example: node sendRemoveFromDevelopersUserWhitelistTx.js config_local.js 0x08Aed7AF9354435c38d52143EE50ac839D20696b keystore.json\n');
+  console.log('\nUsage: node sendRemoveFromDevelopersUserWhitelistTx.js <Config File> <Developer Address> <Blockchain Owner Keystore Filepath>\n');
+  console.log('Example: node sendRemoveFromDevelopersUserWhitelistTx.js config_local.js 0x08Aed7AF9354435c38d52143EE50ac839D20696b keystore_blockchain_owner.json\n');
   process.exit(0)
 }
 
