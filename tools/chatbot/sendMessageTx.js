@@ -24,7 +24,7 @@ async function sendTransaction(message) {
   const txBody = buildMessageTxBody(timestamp, message);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
+  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey, config.chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transaction failed.`);

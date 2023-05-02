@@ -78,7 +78,7 @@ async function sendTransaction() {
   const createAppTxBody = buildCreateAppTxBody(config.serviceOwnerAddr, timestamp);
   console.log(`createAppTxBody: ${JSON.stringify(createAppTxBody, null, 2)}`);
 
-  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey);
+  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey, config.chainId);
   console.log(`createAppTxInfo: ${JSON.stringify(createAppTxInfo, null, 2)}`);
   if (!createAppTxInfo.success) {
     console.log(`Create app transaction failed.`);
