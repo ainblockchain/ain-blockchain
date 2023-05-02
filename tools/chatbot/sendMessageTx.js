@@ -27,7 +27,7 @@ async function sendTransaction(message) {
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
-    console.log(`Message transaction failed.`);
+    console.log(`Transaction failed.`);
     process.exit(0);
   }
   await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
@@ -46,7 +46,9 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log("\nExample commandlines:\n  node sendMessageTx.js config_local.js 'Hello'")
+  console.log("\nUsage: node sendMessageTx.js <Config File> [<Message>]\n")
+  console.log("Example: node sendMessageTx.js config_local.js\n")
+  console.log("Example: node sendMessageTx.js config_local.js 'Hello'\n")
   process.exit(0)
 }
 
