@@ -15,7 +15,7 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
   }
 }
 
-async function sendTransaction(endpointUrl) {
+async function sendTransaction(endpointUrl, chainId) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
   if (!endpointUrl) {
@@ -26,7 +26,7 @@ async function sendTransaction(endpointUrl) {
       buildTransferTxBody(config.fromAddr, config.toAddr, timestamp, config.amount, timestamp);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(endpointUrl, txBody, config.fromPrivateKey);
+  const txInfo = await signAndSendTx(endpointUrl, txBody, config.fromPrivateKey, chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transfer transaction failed.`);
@@ -37,18 +37,20 @@ async function sendTransaction(endpointUrl) {
 
 async function processArguments() {
   const len = process.argv.length;
-  if (len !== 3 && len !== 4) {
+  if (len !== 4 && len !== 5) {
     usage();
   }
-  const endpointUrl = len === 4 ? process.argv[3] : null;
   config = require(path.resolve(__dirname, process.argv[2]));
-  await sendTransaction(endpointUrl);
+  const chainId = Number(process.argv[3]);
+  const endpointUrl = len === 5 ? process.argv[4] : null;
+  await sendTransaction(endpointUrl, chainId);
 }
 
 function usage() {
-  console.log('\nUsage: node sendTransferTx.js <config file name> [<endpoint url>]\n');
-  console.log('Example:  node sendTransferTx.js config_local.js ');
-  console.log('Example:  node sendTransferTx.js config_local.js http://111.222.333.44:1234\n');
+  console.log('\nUsage: node sendTransferTx.js <Config File> <Chain Id> [<Endpoint Url>]\n');
+  console.log('Example:  node sendTransferTx.js config_local.js 0');
+  console.log('Example:  node sendTransferTx.js config_local.js 0 http://111.222.333.44:1234');
+  console.log('Example:  node sendTransferTx.js config_local.js 1 https://mainnet-api.ainetwork.ai\n');
   process.exit(0)
 }
 
