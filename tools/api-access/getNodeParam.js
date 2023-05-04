@@ -3,7 +3,7 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const { BlockchainConsts } = require('../../common/constants');
-const { getAccountPrivateKey } = require('./util');
+const { getAccountPrivateKey } = require('../util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 async function sendGetNodeParamRequest(endpointUrl, privateKey, chainId, param) {
@@ -31,8 +31,8 @@ async function sendGetNodeParamRequest(endpointUrl, privateKey, chainId, param) 
   });
 }
 
-async function getNodeParam(endpointUrl, chainId, type, keystoreFilePath, param) {
-  const privateKey = await getAccountPrivateKey(type, keystoreFilePath);
+async function getNodeParam(endpointUrl, chainId, param, accountType, keystoreFilepath) {
+  const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
   const res = await sendGetNodeParamRequest(endpointUrl, privateKey, chainId, param);
   console.log('Result:', res);
 }
@@ -43,24 +43,26 @@ async function processArguments() {
   }
   const endpointUrl = process.argv[2];
   const chainId = Number(process.argv[3]);
-  const accountType = process.argv[4];
-  let keystoreFilePath = null;
-  let param = null;
-  if (accountType === 'keystore') {
-    keystoreFilePath = process.argv[5];
-    param = process.argv[6];
-  } else {
-    param = process.argv[5];
+  const param = process.argv[4];
+  const accountType = process.argv[5];
+  const keystoreFilepath = (accountType === 'keystore') ? process.argv[6] : null;
+  if (accountType === 'keystore' && !keystoreFilepath) {
+    console.error('Please specify keystore filepath.');
+    usage();
   }
-  await getNodeParam(endpointUrl, chainId, accountType, keystoreFilePath, param);
+  await getNodeParam(endpointUrl, chainId, param, accountType, keystoreFilepath);
 }
 
 function usage() {
-  console.log('\nUsage:\n  node getNodeParam.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <PARAM>\n');
-  console.log('\nExamples:');
-  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 private_key DEV_CLIENT_API_IP_WHITELIST');
-  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 mnemonic P2P_MESSAGE_TIMEOUT_MS');
-  console.log('node tools/api-access/getNodeParam.js http://localhost:8081 0 keystore /path/to/keystore/file SYNC_MODE');
+  console.log('\nUsage: node getNodeParam.js <Endpoint Url> <Chain Id> <Param> <Account Type> [<Keystore Filepath>]\n');
+  console.log('Example: node tools/api-access/getNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST private_key');
+  console.log('Example: node tools/api-access/getNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST mnemonic');
+  console.log('Example: node tools/api-access/getNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/getNodeParam.js http://localhost:8081 0 P2P_MESSAGE_TIMEOUT_MS keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/getNodeParam.js http://localhost:8081 0 SYNC_MODE keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/getNodeParam.js https://staging-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/getNodeParam.js https://testnet-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/getNodeParam.js https://mainnet-api.ainetwork.ai 1 DEV_CLIENT_API_IP_WHITELIST keystore keystore_blockchain_node.json\n');
   process.exit(0);
 }
 
