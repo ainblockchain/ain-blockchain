@@ -1,6 +1,7 @@
-const path = require('path');
-const { signAndSendTx, confirmTransaction } = require('../util');
-let config = {};
+// A tool to transfer native AIN tokens between accounts.
+const ainUtil = require('@ainblockchain/ain-util');
+const CommonUtil = require('../../common/common-util');
+const { getAccountPrivateKey, signAndSendTx, confirmTransaction } = require('../util');
 
 function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
   return {
@@ -15,18 +16,15 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
   }
 }
 
-async function sendTransaction(endpointUrl, chainId) {
+async function sendTransaction(endpointUrl, chainId, toAddr, ainAmount, account) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  if (!endpointUrl) {
-    endpointUrl = config.endpointUrl;
-  }
 
   const txBody =
-      buildTransferTxBody(config.fromAddr, config.toAddr, timestamp, config.amount, timestamp);
+      buildTransferTxBody(account.address, toAddr, timestamp, ainAmount, timestamp);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(endpointUrl, txBody, config.fromPrivateKey, chainId);
+  const txInfo = await signAndSendTx(endpointUrl, txBody, account.private_key, chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transfer transaction failed.`);
@@ -35,22 +33,46 @@ async function sendTransaction(endpointUrl, chainId) {
   await confirmTransaction(endpointUrl, timestamp, txInfo.txHash);
 }
 
+async function sendTransferTx(endpointUrl, chainId, toAddr, ainAmount, accountType, keystoreFilepath) {
+  const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
+  const account = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
+  console.log(`\nFrom-address: ${account.address}\n`);
+  await sendTransaction(endpointUrl, chainId, toAddr, ainAmount, account);
+}
+
 async function processArguments() {
-  const len = process.argv.length;
-  if (len !== 4 && len !== 5) {
+  if (process.argv.length !== 7 && process.argv.length !== 8) {
     usage();
   }
-  config = require(path.resolve(__dirname, process.argv[2]));
+  const endpointUrl = process.argv[2];
   const chainId = Number(process.argv[3]);
-  const endpointUrl = len === 5 ? process.argv[4] : null;
-  await sendTransaction(endpointUrl, chainId);
+  const toAddr = process.argv[4];
+  if (!CommonUtil.isCksumAddr(toAddr)) {
+    console.log(`The to-address is NOT a checksum address: ${toAddr}`);
+    process.exit(0);
+  }
+  const ainAmount = Number(process.argv[5]);
+  if (!CommonUtil.isNumber(ainAmount) || ainAmount <= 0) {
+    console.log(`The AIN amount is NOT a valid one: ${ainAmount}`);
+    process.exit(0);
+  }
+  const accountType = process.argv[6];
+  const keystoreFilepath = (accountType === 'keystore') ? process.argv[7] : null;
+  if (accountType === 'keystore' && !keystoreFilepath) {
+    console.error('Please specify keystore filepath.');
+    usage();
+  }
+  await sendTransferTx(endpointUrl, chainId, toAddr, ainAmount, accountType, keystoreFilepath);
 }
 
 function usage() {
-  console.log('\nUsage: node sendTransferTx.js <Config File> <Chain Id> [<Endpoint Url>]\n');
-  console.log('Example:  node sendTransferTx.js config_local.js 0');
-  console.log('Example:  node sendTransferTx.js config_local.js 0 http://111.222.333.44:1234');
-  console.log('Example:  node sendTransferTx.js config_local.js 1 https://mainnet-api.ainetwork.ai\n');
+  console.log('\nUsage: node sendTransferTx.js <Endpoint Url> <Chain Id> <To Address> <Ain Amount> <Account Type> [<Keystore Filepath>]\n');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 private_key');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 mnemonic');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://staging-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://testnet-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json\n');
   process.exit(0)
 }
 
