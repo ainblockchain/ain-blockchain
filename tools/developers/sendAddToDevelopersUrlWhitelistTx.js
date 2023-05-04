@@ -21,14 +21,14 @@ function buildTxBody(timestamp, address, urlKey, urlValue) {
   };
 }
 
-async function sendTransaction(endpointUrl, chainId, urlKey, urlValue, address, privateKey) {
+async function sendTransaction(endpointUrl, chainId, urlKey, urlValue, account) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  const txBody = buildTxBody(timestamp, address, urlKey, urlValue);
+  const txBody = buildTxBody(timestamp, account.address, urlKey, urlValue);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(endpointUrl, txBody, privateKey, chainId);
+  const txInfo = await signAndSendTx(endpointUrl, txBody, account.private_key, chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transaction failed.`);
@@ -39,9 +39,9 @@ async function sendTransaction(endpointUrl, chainId, urlKey, urlValue, address, 
 
 async function sendAddToDevelopersUrlWhitelistTx(endpointUrl, chainId, urlKey, urlValue, accountType, keystoreFilepath) {
   const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
-  const account = ainUtil.privateToAccount('0x' + privateKey);
+  const account = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
   console.log(`\nAccount address: ${account.address}\n`);
-  await sendTransaction(endpointUrl, chainId, urlKey, urlValue, account.address, privateKey);
+  await sendTransaction(endpointUrl, chainId, urlKey, urlValue, account);
 }
 
 async function processArguments() {
