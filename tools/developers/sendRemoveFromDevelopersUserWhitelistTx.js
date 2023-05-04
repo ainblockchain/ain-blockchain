@@ -1,6 +1,7 @@
 // A tool to deregister an address from the developers user whitelist.
 // This should be executed with blockchain owner's keystore files.
 // This can be tested with the tool scripts under tools/chatbot.
+const ainUtil = require('@ainblockchain/ain-util');
 const CommonUtil = require('../../common/common-util');
 const PathUtil = require('../../common/path-util');
 const { getAccountPrivateKey, signAndSendTx, confirmTransaction } = require('../util');
@@ -19,14 +20,14 @@ function buildTxBody(timestamp, address) {
   };
 }
 
-async function sendTransaction(endpointUrl, chainId, developerAddr, privateKey) {
+async function sendTransaction(endpointUrl, chainId, developerAddr, account) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
   const txBody = buildTxBody(timestamp, developerAddr);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(endpointUrl, txBody, privateKey, chainId);
+  const txInfo = await signAndSendTx(endpointUrl, txBody, account.private_key, chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
     console.log(`Transaction failed.`);
@@ -37,7 +38,9 @@ async function sendTransaction(endpointUrl, chainId, developerAddr, privateKey) 
 
 async function sendRemoveFromDevelopersUserWhitelistTx(endpointUrl, chainId, developerAddr, accountType, keystoreFilepath) {
   const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
-  await sendTransaction(endpointUrl, chainId, developerAddr, privateKey);
+  const account = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
+  console.log(`\nAccount address: ${account.address}\n`);
+  await sendTransaction(endpointUrl, chainId, developerAddr, account);
 }
 
 async function processArguments() {
