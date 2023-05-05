@@ -8,10 +8,10 @@ const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
-const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
-    '/network-interfaces/0/access-configs/0/external-ip';
-const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
-    '/network-interfaces/0/ip';
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/ip';
+const AWS_EXTERNAL_IP_URL = 'http://169.254.169.254/latest/meta-data/public-ipv4';
+const AWS_INTERNAL_IP_URL = 'http://169.254.169.254/latest/meta-data/local-ipv4';
 
 axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
 
@@ -99,6 +99,17 @@ function getIpAddress(internal = false) {
     if (NodeConfigs.HOSTING_ENV === 'gcp') {
       return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
         headers: {'Metadata-Flavor': 'Google'},
+        timeout: 3000
+      })
+      .then((res) => {
+        return res.data;
+      })
+      .catch((err) => {
+        CommonUtil.finishWithStackTrace(
+            logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+      });
+    } else if (NodeConfigs.HOSTING_ENV === 'aws') {
+      return axios.get(internal ? AWS_INTERNAL_IP_URL : AWS_EXTERNAL_IP_URL, {
         timeout: 3000
       })
       .then((res) => {
