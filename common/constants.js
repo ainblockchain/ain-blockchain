@@ -132,6 +132,18 @@ setNodeConfigs();
 
 // ** Enums **
 /**
+ * Hosting Environments.
+ *
+ * @enum {string}
+ */
+const HostingEnvs = {
+  AWS: 'aws',  // Amazon AWS
+  COMCOM: 'comcom',  // ComCom On-Premise
+  LOCAL: 'local',  // Local
+  GCP: 'gcp',  // Google Cloud Platform
+};
+
+/**
  * Types of P2P network messages.
  *
  * @enum {string}
@@ -821,6 +833,7 @@ module.exports = {
   TimerFlagEnabledBandageMap,
   BlockchainParams,
   NodeConfigs,
+  HostingEnvs,
   P2pMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,

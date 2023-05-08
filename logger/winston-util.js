@@ -5,7 +5,7 @@ const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const { NodeConfigs } = require('../common/constants');
+const { NodeConfigs, HostingEnvs } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
@@ -102,7 +102,7 @@ const getWinstonTransports = () => {
   if (NodeConfigs.CONSOLE_LOG) {
     transports.push(getWinstonConsoleTransport());
   }
-  if (NodeConfigs.HOSTING_ENV === 'gcp') {
+  if (NodeConfigs.HOSTING_ENV === HostingEnvs.GCP) {
     transports.push(new LoggingWinston);
   }
   return transports;
