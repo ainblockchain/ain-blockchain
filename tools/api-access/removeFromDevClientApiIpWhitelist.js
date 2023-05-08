@@ -55,7 +55,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nUsage: node removeFromDevClientApiIpWhitelist.js <Encpoint Url> <Chain Id> <Ip Address> <Account Type> [<Keystore Filepath>]\n');
+  console.log('\nUsage: node removeFromDevClientApiIpWhitelist.js <Endpoint Url> <Chain Id> <Ip Address> <Account Type> [<Keystore Filepath>]\n');
   console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 private_key');
   console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 mnemonic');
   console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 keystore keystore_blockchain_node.json');
