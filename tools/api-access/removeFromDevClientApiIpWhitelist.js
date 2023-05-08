@@ -3,7 +3,7 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const { BlockchainConsts } = require('../../common/constants');
-const { getAccountPrivateKey } = require('./util');
+const { getAccountPrivateKey } = require('../util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip) {
@@ -32,8 +32,8 @@ async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, priva
   });
 }
 
-async function removeFromDevClientApiIpWhitelist(endpointUrl, chainId, type, keystoreFilePath, ip) {
-  const privateKey = await getAccountPrivateKey(type, keystoreFilePath);
+async function removeFromDevClientApiIpWhitelist(endpointUrl, chainId, ip, accountType, keystoreFilepath) {
+  const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
   const res = await sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip);
   console.log('Result:', res);
 }
@@ -44,28 +44,25 @@ async function processArguments() {
   }
   const endpointUrl = process.argv[2];
   const chainId = Number(process.argv[3]);
-  const accountType = process.argv[4];
-  let keystoreFilePath = null;
-  let ip = null;
-  if (accountType === 'keystore') {
-    keystoreFilePath = process.argv[5];
-    ip = process.argv[6];
-  } else {
-    ip = process.argv[5];
-  }
-  if (!ip) {
-    console.error('Please specify an IP');
+  const ip = process.argv[4];
+  const accountType = process.argv[5];
+  const keystoreFilepath = (accountType === 'keystore') ? process.argv[6] : null;
+  if (accountType === 'keystore' && !keystoreFilepath) {
+    console.error('Please specify keystore filepath.');
     usage();
   }
-  await removeFromDevClientApiIpWhitelist(endpointUrl, chainId, accountType, keystoreFilePath, ip);
+  await removeFromDevClientApiIpWhitelist(endpointUrl, chainId, ip, accountType, keystoreFilepath);
 }
 
 function usage() {
-  console.log('\nUsage:\n  node removeFromDevClientApiIpWhitelist.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <IP_ADDRESS>\n');
-  console.log('\nExamples:');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 private_key 127.0.0.1');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 mnemonic 127.0.0.1');
-  console.log('node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 keystore /path/to/keystore/file "*"');
+  console.log('\nUsage: node removeFromDevClientApiIpWhitelist.js <Endpoint Url> <Chain Id> <Ip Address> <Account Type> [<Keystore Filepath>]\n');
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 private_key');
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 mnemonic');
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log("Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js http://localhost:8081 0 '*' keystore keystore_blockchain_node.json");
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js https://staging-api.ainetwork.ai 0 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js https://testnet-api.ainetwork.ai 0 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/removeFromDevClientApiIpWhitelist.js https://mainnet-api.ainetwork.ai 1 127.0.0.1 keystore keystore_blockchain_node.json\n');
   process.exit(0);
 }
 

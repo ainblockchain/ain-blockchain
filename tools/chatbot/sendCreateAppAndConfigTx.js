@@ -78,7 +78,7 @@ async function sendTransaction() {
   const createAppTxBody = buildCreateAppTxBody(config.serviceOwnerAddr, timestamp);
   console.log(`createAppTxBody: ${JSON.stringify(createAppTxBody, null, 2)}`);
 
-  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey);
+  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey, config.chainId);
   console.log(`createAppTxInfo: ${JSON.stringify(createAppTxInfo, null, 2)}`);
   if (!createAppTxInfo.success) {
     console.log(`Create app transaction failed.`);
@@ -108,7 +108,7 @@ async function processArguments() {
 
 function usage() {
   console.log("\nUsage: node sendCreateAppAndConfigTx.js <Config File>\n")
-  console.log("Example: node sendCreateAppAndConfigTx.js config_local.js 'Hello'\n")
+  console.log("Example: node sendCreateAppAndConfigTx.js config_local.js\n")
   process.exit(0)
 }
 
