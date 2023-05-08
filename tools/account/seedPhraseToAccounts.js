@@ -32,8 +32,8 @@ async function processArguments() {
 
 function usage() {
   console.log('\nUsage: node seedPhraseToAccount.js [<Number of Accounts>]\n');
-  console.log('Example:  node seedPhraseToAccount.js');
-  console.log('Example:  node seedPhraseToAccount.js 1');
+  console.log('Example: node seedPhraseToAccount.js');
+  console.log('Example: node seedPhraseToAccount.js 1\n');
   process.exit(0);
 }
 

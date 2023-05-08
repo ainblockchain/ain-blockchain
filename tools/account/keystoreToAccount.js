@@ -10,8 +10,7 @@ async function processArguments() {
 
 function usage() {
   console.log('\nUsage: node keystoreToAccount.js <Keystore Filepath>\n');
-  console.log('Example:  node keystoreToAccount.js /path/to/keystore');
-  console.log('Example:  node keystoreToAccount.js ../../testnet_dev_staging_keys/keystore_node_0.json');
+  console.log('Example: node keystoreToAccount.js keystore_my_account.json\n');
   process.exit(0);
 }
 
