@@ -5,6 +5,7 @@ const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
   NodeConfigs,
+  HostingEnvs,
   BlockchainEventTypes,
   FilterDeletionReasons,
 } = require('../common/constants');
@@ -23,7 +24,7 @@ class EventChannelManager {
   }
 
   async getNetworkInfo() {
-    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === 'comcom' || NodeConfigs.HOSTING_ENV === 'local');
+    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === HostingEnvs.COMCOM || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL);
     const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),

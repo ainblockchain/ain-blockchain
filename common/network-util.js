@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 
 const _ = require('lodash');
 const axios = require('axios');
-const { BlockchainConsts, NodeConfigs } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs, HostingEnvs } = require('../common/constants');
 const ip = require('ip');
 const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
@@ -96,7 +96,7 @@ function sendGetRequest(endpoint, method, params) {
 function getIpAddress(internal = false) {
   return Promise.resolve()
   .then(() => {
-    if (NodeConfigs.HOSTING_ENV === 'gcp') {
+    if (NodeConfigs.HOSTING_ENV === HostingEnvs.GCP) {
       return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
         headers: {'Metadata-Flavor': 'Google'},
         timeout: 3000
@@ -108,7 +108,7 @@ function getIpAddress(internal = false) {
         CommonUtil.finishWithStackTrace(
             logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
       });
-    } else if (NodeConfigs.HOSTING_ENV === 'aws') {
+    } else if (NodeConfigs.HOSTING_ENV === HostingEnvs.AWS) {
       return axios.get(internal ? AWS_INTERNAL_IP_URL : AWS_EXTERNAL_IP_URL, {
         timeout: 3000
       })
