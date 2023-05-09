@@ -170,6 +170,7 @@ You can use some environment variables, and these have the following options.
 -e ACCOUNT_INJECTION_OPTION={private_key|keystore|mnemonic}
 -e SYNC_MODE={fast|full|peer}
 -e STAKE=<YOUR_TARGET_STAKE>
+-e HOSTING_ENV={gcp|aws}
 ```
 You can mount a volume when you meet some wants.
 1. Want to preserve blockchain data in the docker container when changing the docker image due to an update.
