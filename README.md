@@ -176,7 +176,7 @@ You can mount a volume when you meet some wants.
 1. Want to preserve blockchain data in the docker container when changing the docker image due to an update.
 2. Want to save your keystore file in the docker container when injecting your account into the blockchain automatically.
 ```
--v <YOUR_VOLUME>:/home
+-v <YOUR_VOLUME>:/home/ain_blockchain_data
 ```
 After the node is executed, you should inject your account into the node.
 ```
@@ -187,7 +187,7 @@ node inject_node_account.js <NODE_ENDPOINT_URL> --mnemonic
 If you want to inject your account automatically, add one of these environment variables before running the node.
 ```
 -e ACCOUNT_INJECTION_OPTION=private_key -e PRIVATE_KEY=<YOUR_PRIVATE_KEY>
--e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/home/<KEYSTORE>" -e PASSWORD=<YOUR_PASSWORD>
+-e ACCOUNT_INJECTION_OPTION=keystore -e KEYSTORE_FILE_PATH="/home/ain_blockchain_data/<KEYSTORE>" -e PASSWORD=<YOUR_PASSWORD>
 -e ACCOUNT_INJECTION_OPTION=mnemonic -e MNEMONIC="your mnemonic"
 ```
 
