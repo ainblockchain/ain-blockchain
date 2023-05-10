@@ -331,6 +331,7 @@ class P2pServer {
         break;
       case HostingEnvs.COMCOM:
       case HostingEnvs.GCP:
+      case HostingEnvs.AWS:
         urls = this.buildUrls(extIp);
         break;
     }
