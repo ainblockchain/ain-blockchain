@@ -1,23 +1,17 @@
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
-    export PEER_CANDIDATE_JSON_RPC_URL="http://104.199.237.250:8080/json-rpc"
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
-    export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
+    export TRACKER_UPDATE_JSON_RPC_URL="http://35.194.172.106:8080/json-rpc"
 elif [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
-    export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
+    export TRACKER_UPDATE_JSON_RPC_URL="http://35.221.137.80:8080/json-rpc"
 elif [[ $SEASON = 'sandbox' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
-    export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.139.219:8080/json-rpc"
 elif [[ $SEASON = 'exp' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-exp
-    export PEER_CANDIDATE_JSON_RPC_URL="http://34.81.178.195:8080/json-rpc"
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 fi
