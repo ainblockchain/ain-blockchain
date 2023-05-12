@@ -1,3 +1,5 @@
+// A tool to create and configure a blockchain app for chatbots.
+// This can be used with the server code under tools/simple-chatbot-server.
 const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 
@@ -7,7 +9,7 @@ function buildCreateAppTxBody(address, timestamp) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/manage_app/chatbots/create/${timestamp}`,
+      ref: `/manage_app/${config.appName}/create/${timestamp}`,
       value: {
         admin: { [address]: true },
       }
@@ -25,7 +27,7 @@ function buildChatbotConfigTxBody(timestamp) {
       op_list: [
         {
           type: "SET_OWNER",
-          ref: "/apps/chatbots/common/message",
+          ref: `/apps/${config.appName}/common/messages`,
           value: {
             ".owner": {
               owners: {
@@ -41,7 +43,7 @@ function buildChatbotConfigTxBody(timestamp) {
         },
         {
           type: "SET_RULE",
-          ref: "/apps/chatbots/common/message/$key",
+          ref: `/apps/${config.appName}/common/messages/$key`,
           value: {
             ".rule": {
               "write": true
@@ -50,12 +52,12 @@ function buildChatbotConfigTxBody(timestamp) {
         },
         {
           type: "SET_FUNCTION",
-          ref: "/apps/chatbots/common/message/$key",
+          ref: `/apps/${config.appName}/common/messages/$key/user`,
           value: {
             ".function": {
               "liayoo-ainjs": {
                 function_type: "REST",
-                function_url: "https://events.ainetwork.ai/trigger",
+                function_url: "http://localhost:3000/trigger",
                 function_id: "liayoo-ainjs"
               }
             }
@@ -76,7 +78,7 @@ async function sendTransaction() {
   const createAppTxBody = buildCreateAppTxBody(config.serviceOwnerAddr, timestamp);
   console.log(`createAppTxBody: ${JSON.stringify(createAppTxBody, null, 2)}`);
 
-  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey);
+  const createAppTxInfo = await signAndSendTx(config.endpointUrl, createAppTxBody, config.serviceOwnerPrivateKey, config.chainId);
   console.log(`createAppTxInfo: ${JSON.stringify(createAppTxInfo, null, 2)}`);
   if (!createAppTxInfo.success) {
     console.log(`Create app transaction failed.`);
@@ -105,7 +107,8 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendCreateAppAndConfigTx.js config_local.js\n')
+  console.log("\nUsage: node sendCreateAppAndConfigTx.js <Config File>\n")
+  console.log("Example: node sendCreateAppAndConfigTx.js config_local.js\n")
   process.exit(0)
 }
 

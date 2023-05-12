@@ -1,8 +1,91 @@
 const _ = require('lodash');
+const fs = require('fs');
+const readline = require('readline');
+const prompt = require('prompt');
 const axios = require('axios');
+const ainUtil = require('@ainblockchain/ain-util');
+const FileUtil = require('../common/file-util');
 const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
+
+async function getAccountPrivateKey(type, keystoreFilePath) {
+  let privateKey = '';
+  let hide = false;
+  let secret = true;
+  const readlineInterface = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  // NOTE(liayoo): Show the prompt & hide the password
+  readlineInterface._writeToOutput = (val) => {
+    if (!hide && secret) {
+      readlineInterface.output.write(val);
+      hide = true;
+    } else if (!hide && !secret) {
+      readlineInterface.output.write(val);
+    }
+  };
+  switch (type) {
+    case 'private_key':
+      privateKey = await new Promise((resolve) => {
+        readlineInterface.question(`Enter private key: `, (privateKey) => {
+          readlineInterface.output.write('\n\r');
+          readlineInterface.close();
+          resolve(privateKey);
+        });
+      });
+      break;
+    case 'keystore':
+      if (!keystoreFilePath || !fs.existsSync(keystoreFilePath)) {
+        throw Error(`Invalid keystore file path: ${keystoreFilePath}`);
+      }
+      const password = await new Promise((resolve) => {
+        readlineInterface.question(`Enter keystore file password: `, (password) => {
+          readlineInterface.output.write('\n\r');
+          readlineInterface.close();
+          resolve(password);
+        });
+      });
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(keystoreFilePath, password);
+      privateKey = accountFromKeystore.private_key;
+      break;
+    case 'mnemonic':
+      const [mnemonic, mnemonicAccountIndex] = await new Promise((resolve) => {
+        readlineInterface.question(`Enter mnemonic: `, (mnemonic) => {
+          readlineInterface.output.write('\n\r');
+          hide = false;
+          secret = false;
+          readlineInterface.question(`Enter account index (default: 0): `, (index) => {
+            readlineInterface.output.write('\n\r');
+            readlineInterface.close();
+            resolve([mnemonic, index]);
+          });
+        });
+      });
+      const accountFromHDWallet = ainUtil.mnemonicToAccount(mnemonic, mnemonicAccountIndex || 0);
+      privateKey = accountFromHDWallet.private_key;
+      break;
+  }
+  return privateKey;
+}
+
+async function keystoreToAccount(filePath) {
+  const keystore = JSON.parse(fs.readFileSync(filePath));
+  console.log(`\nKeystore: ${JSON.stringify(keystore, null, 2)}\n`)
+
+  prompt.message = '';
+  prompt.delimiter = '';
+  prompt.colors = false;
+  prompt.start();
+  const input = await prompt.get([{
+    name: 'password',
+    description: 'Enter password:',
+    hidden: true,
+  }]);
+
+  return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, input.password));
+}
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
@@ -67,6 +150,8 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
 }
 
 module.exports = {
+  getAccountPrivateKey,
+  keystoreToAccount,
   signAndSendTx,
   sendGetTxByHashRequest,
   confirmTransaction,

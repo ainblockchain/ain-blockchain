@@ -12,6 +12,7 @@ const PushId = require('../db/push-id');
 const {
   BlockchainConsts,
   NodeConfigs,
+  HostingEnvs,
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
@@ -155,7 +156,7 @@ class Consensus {
         this.isInEpochTransition = true;
         this.node.tryFinalizeChain();
         let currentTime = Date.now();
-        if (NodeConfigs.HOSTING_ENV !== 'local' &&
+        if (NodeConfigs.HOSTING_ENV !== HostingEnvs.LOCAL &&
             (this.epoch % 10 === 0 || CommonUtil.timestampExceedsThreshold(
                 this.ntpData.syncedAt, healthThresholdEpoch * epochMs))) {
           // adjust time

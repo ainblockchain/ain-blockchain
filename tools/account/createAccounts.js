@@ -55,7 +55,7 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage: node createAccounts.js <Account Number> <Prefix String>\n')
   console.log('Example:  node createAccounts.js 1');
-  console.log('Example:  node createAccounts.js 10 AA');
+  console.log('Example:  node createAccounts.js 10 AA\n');
   process.exit(0)
 }
 

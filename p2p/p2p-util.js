@@ -12,7 +12,8 @@ const ip = require('ip');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   BlockchainConsts,
-  NodeConfigs
+  NodeConfigs,
+  HostingEnvs
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
@@ -147,7 +148,7 @@ class P2pUtil {
   }
 
   static areIdenticalUrls(url1, url2) {
-    if (NodeConfigs.HOSTING_ENV === 'local') {
+    if (NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL) {
       const comparingUrl1 = new URL(url1);
       const comapringUrl2 = new URL(url2);
       return CommonUtil.isValidPrivateUrl(comparingUrl1.hostname) &&
