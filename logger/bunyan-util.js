@@ -4,7 +4,7 @@ const RotatingFileStream = require('bunyan-rotating-file-stream');
 const bunyanFormat = require('bunyan-format');
 const path = require('path');
 const fs = require('fs');
-const { NodeConfigs } = require('../common/constants');
+const { NodeConfigs, HostingEnvs } = require('../common/constants');
 const logDir = path.join(NodeConfigs.LOGS_DIR, String(NodeConfigs.PORT));
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
@@ -60,7 +60,7 @@ const getBunyanTransports = () => {
   if (NodeConfigs.CONSOLE_LOG) {
     transports.push(getBunyanConsoleTransport());
   }
-  if (NodeConfigs.HOSTING_ENV === 'gcp') {
+  if (NodeConfigs.HOSTING_ENV === HostingEnvs.GCP) {
     transports.push(gcloudLoggingBunyan());
   }
   return transports;

@@ -1,3 +1,5 @@
+// A tool to send chatting messages to chatbots.
+// This can be used with the server code under tools/simple-chatbot-server.
 const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
@@ -6,9 +8,10 @@ function buildMessageTxBody(timestamp, message) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/apps/chatbots/common/message/${timestamp}`,
+      ref: `/apps/${config.appName}/common/messages/${timestamp}/user`,
       value: message,
     },
+    gas_price: 500,
     timestamp,
     nonce: -1
   };
@@ -21,10 +24,10 @@ async function sendTransaction(message) {
   const txBody = buildMessageTxBody(timestamp, message);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
-  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey);
+  const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey, config.chainId);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
-    console.log(`Message transaction failed.`);
+    console.log(`Transaction failed.`);
     process.exit(0);
   }
   await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
@@ -43,7 +46,9 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log("\nExample commandlines:\n  node sendMessageTx.js config_local.js 'Hello'")
+  console.log("\nUsage: node sendMessageTx.js <Config File> [<Message>]\n")
+  console.log("Example: node sendMessageTx.js config_local.js")
+  console.log("Example: node sendMessageTx.js config_local.js 'Hello'\n")
   process.exit(0)
 }
 

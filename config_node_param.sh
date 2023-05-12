@@ -8,6 +8,7 @@ function usage() {
     printf "Example: bash config_node_param.sh dev add DEV_CLIENT_API_IP_WHITELIST '*'\n"
     printf "Example: bash config_node_param.sh dev remove DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
     printf "Example: bash config_node_param.sh dev set DEV_CLIENT_API_IP_WHITELIST '*'\n"
+    printf "Example: bash config_node_param.sh dev get CORS_WHITELIST\n"
     printf "\n"
     exit
 }
@@ -80,10 +81,13 @@ printf "Enter password: "
 read -s PASSWORD
 printf "\n\n"
 if [[ $SEASON = "mainnet" ]]; then
+    CHAIN_ID="1"
     KEYSTORE_DIR="mainnet_prod_keys"
 elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+    CHAIN_ID="0"
     KEYSTORE_DIR="testnet_prod_keys"
 else
+    CHAIN_ID="0"
     KEYSTORE_DIR="testnet_dev_staging_keys"
 fi
 
@@ -97,6 +101,10 @@ else
     COMMAND_NODE_JS_FILE="getNodeParam.js"
 fi
 
+printf "CHAIN_ID=$CHAIN_ID\n"
+printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
+printf "COMMAND_NODE_JS_FILE=$COMMAND_NODE_JS_FILE\n"
+
 function config_node() {
     local node_index="$1"
     local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
@@ -104,7 +112,7 @@ function config_node() {
     printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_ip_addr) >>>\n\n"
 
     KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
-    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr 0 keystore $KEYSTORE_FILE_PATH $PARAM"
+    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr $CHAIN_ID keystore $KEYSTORE_FILE_PATH $PARAM"
     if [[ ! $COMMAND = "get" ]]; then
         CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$VALUE'"
     fi

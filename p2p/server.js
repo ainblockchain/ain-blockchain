@@ -29,6 +29,7 @@ const {
   StateLabelProperties,
   TrafficEventTypes,
   trafficStatsManager,
+  HostingEnvs,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusStates } = require('../consensus/constants');
@@ -325,11 +326,12 @@ class P2pServer {
     const extIp = this.getExternalIp();
     let urls;
     switch (NodeConfigs.HOSTING_ENV) {
-      case 'local':
+      case HostingEnvs.LOCAL:
         urls = this.buildUrls(intIp);
         break;
-      case 'comcom':
-      case 'gcp':
+      case HostingEnvs.COMCOM:
+      case HostingEnvs.GCP:
+      case HostingEnvs.AWS:
         urls = this.buildUrls(extIp);
         break;
     }

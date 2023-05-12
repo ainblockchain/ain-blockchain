@@ -1073,7 +1073,8 @@ class DB {
       logger.debug(
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
-    if (this.eh) {
+    // NOTE: Skipped when the event source is null.
+    if (this.eh && eventSource !== null) {
       this.eh.emitValueChanged(auth, transaction, localPath, prevValueCopy, valueCopy, eventSource);
     }
 

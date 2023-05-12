@@ -11,7 +11,7 @@ async function privateKeyToAccount() {
     description: 'Enter private key:',
     hidden: true,
   }]);
-  const account = ainUtil.privateToAccount('0x' + input.privateKey);
+  const account = ainUtil.privateToAccount(Buffer.from(input.privateKey, 'hex'));
   console.log('\nAccount:', account, '\n');
 }
 

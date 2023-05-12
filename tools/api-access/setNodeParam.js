@@ -3,7 +3,7 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
 const { BlockchainConsts } = require('../../common/constants');
-const { getAccountPrivateKey } = require('./util');
+const { getAccountPrivateKey } = require('../util');
 const { JSON_RPC_METHODS } = require('../../json_rpc/constants');
 
 async function sendSetNodeParamRequest(endpointUrl, privateKey, chainId, param, value) {
@@ -32,8 +32,8 @@ async function sendSetNodeParamRequest(endpointUrl, privateKey, chainId, param, 
   });
 }
 
-async function setNodeParam(endpointUrl, chainId, type, keystoreFilePath, param, value) {
-  const privateKey = await getAccountPrivateKey(type, keystoreFilePath);
+async function setNodeParam(endpointUrl, chainId, param, value, accountType, keystoreFilepath) {
+  const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
   const res = await sendSetNodeParamRequest(endpointUrl, privateKey, chainId, param, value);
   console.log('Result:', res);
 }
@@ -44,31 +44,27 @@ async function processArguments() {
   }
   const endpointUrl = process.argv[2];
   const chainId = Number(process.argv[3]);
-  const accountType = process.argv[4];
-  let keystoreFilePath = null;
-  let param = null;
-  let value = null;
-  if (accountType === 'keystore') {
-    keystoreFilePath = process.argv[5];
-    param = process.argv[6];
-    value = process.argv[7];
-  } else {
-    param = process.argv[5];
-    value = process.argv[6];
-  }
-  if (!value) {
-    console.error('Please specify a value');
+  const param = process.argv[4];
+  const value = process.argv[5];
+  const accountType = process.argv[6];
+  const keystoreFilepath = (accountType === 'keystore') ? process.argv[7] : null;
+  if (accountType === 'keystore' && !keystoreFilepath) {
+    console.error('Please specify keystore filepath.');
     usage();
   }
-  await setNodeParam(endpointUrl, chainId, accountType, keystoreFilePath, param, value);
+  await setNodeParam(endpointUrl, chainId, param, value, accountType, keystoreFilepath);
 }
 
 function usage() {
-  console.log('\nUsage:\n  node setNodeParam.js <NODE_ENDPOINT> <CHAIN_ID> <ACCOUNT_TYPE> [<KEYSTORE_FILE_PATH>] <PARAM> <VALUE>\n');
-  console.log('\nExamples:');
-  console.log('node tools/api-access/setNodeParam.js http://localhost:8081 0 private_key DEV_CLIENT_API_IP_WHITELIST "*"');
-  console.log('node tools/api-access/setNodeParam.js http://localhost:8081 0 mnemonic P2P_MESSAGE_TIMEOUT_MS 200000');
-  console.log('node tools/api-access/setNodeParam.js http://localhost:8081 0 keystore /path/to/kezystore/file SYNC_MODE peer');
+  console.log('\nUsage: node setNodeParam.js <Endpoint Url> <Chain Id> <Param> <Value> <Account Type> [<Keystore Filepath>]\n');
+  console.log('Example: node tools/api-access/setNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 private_key');
+  console.log('Example: node tools/api-access/setNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 mnemonic');
+  console.log('Example: node tools/api-access/setNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log("Example: node tools/api-access/setNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST '*' keystore keystore_blockchain_node.json");
+  console.log("Example: node tools/api-access/setNodeParam.js http://localhost:8081 0 P2P_MESSAGE_TIMEOUT_MS 200000 keystore keystore_blockchain_node.json");
+  console.log('Example: node tools/api-access/setNodeParam.js https://staging-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/setNodeParam.js https://testnet-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore_blockchain_node.json');
+  console.log('Example: node tools/api-access/setNodeParam.js https://mainnet-api.ainetwork.ai 1 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore_blockchain_node.json\n');
   process.exit(0);
 }
 
