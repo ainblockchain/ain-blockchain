@@ -105,11 +105,6 @@ printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
-if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
-    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
-    exit
-fi
-
 # Number of blockchain nodes to deploy
 NUM_NODES=5
 # Json-RPC-enabled blockchain nodes
@@ -130,6 +125,11 @@ printf "REST_FUNC_NODE_INDEX_LE=$REST_FUNC_NODE_INDEX_LE\n"
 printf "REST_FUNC_NODE_INDEX_GE=$REST_FUNC_NODE_INDEX_GE\n"
 printf "EVENT_HANDLER_NODE_INDEX_GE=$EVENT_HANDLER_NODE_INDEX_GE\n"
 printf "EVENT_HANDLER_NODE_INDEX_LE=$EVENT_HANDLER_NODE_INDEX_LE\n"
+
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
 
 # Get confirmation.
 if [[ "$SEASON" = "mainnet" ]]; then
