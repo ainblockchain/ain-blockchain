@@ -120,20 +120,18 @@ printf "\n#### [Step 1] Configure env vars ####\n\n"
 
 if [[ $SEASON = 'mainnet' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
     if [[ $NODE_INDEX -ge $PEER_WHITELIST_NODE_INDEX_GE ]] && [[ $NODE_INDEX -le $PEER_WHITELIST_NODE_INDEX_LE ]]; then
         export PEER_WHITELIST="0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A,0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8,0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f,0x003C9d091584fEC96bC3bD8423c884680BEAaf4E,0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC,0x005C99Db64845e5BF24cd152b22c932989479907,0x006C672861e9DBb09232307c17Be6554BC90687c,0x007C36bf5D0F77836eE138EEAc8df7051b43209b,0x008C287187a5626D0a25DbD67327B36AC55B998E,0x009C66DBce144003f8C4B859fFFce78F80fDD639"
     fi
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
+    export TRACKER_UPDATE_JSON_RPC_URL="http://35.194.172.106:8080/json-rpc"
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
     if [[ $NODE_INDEX -ge $PEER_WHITELIST_NODE_INDEX_GE ]] && [[ $NODE_INDEX -le $PEER_WHITELIST_NODE_INDEX_LE ]]; then
         export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
     fi
 elif [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
     if [[ $NODE_INDEX -ge $PEER_WHITELIST_NODE_INDEX_GE ]] && [[ $NODE_INDEX -le $PEER_WHITELIST_NODE_INDEX_LE ]]; then
         export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
     fi
@@ -167,45 +165,45 @@ elif [[ $SEASON = 'dev' ]]; then
         # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
         # (https://dev-api.ainetwork.ai/json-rpc) is used.
     elif [[ $SHARD_INDEX = 1 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.187.153.22:8080/json-rpc  # dev-shard-1-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.187.153.22:8080/json-rpc"  # dev-shard-1-tracker-ip
     elif [[ $SHARD_INDEX = 2 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.203.104:8080/json-rpc  # dev-shard-2-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.203.104:8080/json-rpc"  # dev-shard-2-tracker-ip
     elif [[ $SHARD_INDEX = 3 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.189.174.17:8080/json-rpc  # dev-shard-3-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.189.174.17:8080/json-rpc"  # dev-shard-3-tracker-ip
     elif [[ $SHARD_INDEX = 4 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.164.158:8080/json-rpc  # dev-shard-4-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.221.164.158:8080/json-rpc"  # dev-shard-4-tracker-ip
     elif [[ $SHARD_INDEX = 5 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.46.65:8080/json-rpc  # dev-shard-5-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.234.46.65:8080/json-rpc"  # dev-shard-5-tracker-ip
     elif [[ $SHARD_INDEX = 6 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.210.171:8080/json-rpc  # dev-shard-6-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.221.210.171:8080/json-rpc"  # dev-shard-6-tracker-ip
     elif [[ $SHARD_INDEX = 7 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.222.121:8080/json-rpc  # dev-shard-7-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.222.121:8080/json-rpc"  # dev-shard-7-tracker-ip
     elif [[ $SHARD_INDEX = 8 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.200.95:8080/json-rpc  # dev-shard-8-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.221.200.95:8080/json-rpc"  # dev-shard-8-tracker-ip
     elif [[ $SHARD_INDEX = 9 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.216.199:8080/json-rpc  # dev-shard-9-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.216.199:8080/json-rpc"  # dev-shard-9-tracker-ip
     elif [[ $SHARD_INDEX = 10 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.161.85:8080/json-rpc  # dev-shard-10-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.161.85:8080/json-rpc"  # dev-shard-10-tracker-ip
     elif [[ $SHARD_INDEX = 11 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.239.169:8080/json-rpc  # dev-shard-11-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.194.239.169:8080/json-rpc"  # dev-shard-11-tracker-ip
     elif [[ $SHARD_INDEX = 12 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.185.156.22:8080/json-rpc  # dev-shard-12-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.185.156.22:8080/json-rpc"  # dev-shard-12-tracker-ip
     elif [[ $SHARD_INDEX = 13 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.247.143:8080/json-rpc  # dev-shard-13-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.229.247.143:8080/json-rpc"  # dev-shard-13-tracker-ip
     elif [[ $SHARD_INDEX = 14 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.226.47:8080/json-rpc  # dev-shard-14-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.229.226.47:8080/json-rpc"  # dev-shard-14-tracker-ip
     elif [[ $SHARD_INDEX = 15 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.61.23:8080/json-rpc  # dev-shard-15-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.234.61.23:8080/json-rpc"  # dev-shard-15-tracker-ip
     elif [[ $SHARD_INDEX = 16 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.66.41:8080/json-rpc  # dev-shard-16-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.66.41:8080/json-rpc"  # dev-shard-16-tracker-ip
     elif [[ $SHARD_INDEX = 17 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.143.18:8080/json-rpc  # dev-shard-17-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.229.143.18:8080/json-rpc"  # dev-shard-17-tracker-ip
     elif [[ $SHARD_INDEX = 18 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.58.137:8080/json-rpc  # dev-shard-18-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.234.58.137:8080/json-rpc"  # dev-shard-18-tracker-ip
     elif [[ $SHARD_INDEX = 19 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.249.104:8080/json-rpc  # dev-shard-19-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://34.80.249.104:8080/json-rpc"  # dev-shard-19-tracker-ip
     elif [[ $SHARD_INDEX = 20 ]]; then
-        export TRACKER_UPDATE_JSON_RPC_URL=http://35.201.248.92:8080/json-rpc  # dev-shard-20-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL="http://35.201.248.92:8080/json-rpc"  # dev-shard-20-tracker-ip
     else
         printf "Invalid <Shard Index> argument: $SHARD_INDEX\n"
         exit
