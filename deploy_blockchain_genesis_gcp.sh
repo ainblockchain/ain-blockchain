@@ -105,6 +105,27 @@ printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
+# Number of blockchain nodes to deploy
+NUM_NODES=5
+# Json-RPC-enabled blockchain nodes
+JSON_RPC_NODE_INDEX_GE=0
+JSON_RPC_NODE_INDEX_LE=4
+# Rest-Function-enabled blockchain nodes
+REST_FUNC_NODE_INDEX_GE=0
+REST_FUNC_NODE_INDEX_LE=2
+# Event-Handler-enabled blockchain nodes
+EVENT_HANDLER_NODE_INDEX_GE=3
+EVENT_HANDLER_NODE_INDEX_LE=4
+
+printf "\n"
+printf "NUM_NODES=$NUM_NODES\n"
+printf "JSON_RPC_NODE_INDEX_GE=$JSON_RPC_NODE_INDEX_GE\n"
+printf "JSON_RPC_NODE_INDEX_LE=$JSON_RPC_NODE_INDEX_LE\n"
+printf "REST_FUNC_NODE_INDEX_LE=$REST_FUNC_NODE_INDEX_LE\n"
+printf "REST_FUNC_NODE_INDEX_GE=$REST_FUNC_NODE_INDEX_GE\n"
+printf "EVENT_HANDLER_NODE_INDEX_GE=$EVENT_HANDLER_NODE_INDEX_GE\n"
+printf "EVENT_HANDLER_NODE_INDEX_LE=$EVENT_HANDLER_NODE_INDEX_LE\n"
+
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
     printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
     exit
@@ -209,9 +230,6 @@ NODE_6_ZONE="us-west1-b"
 NODE_7_ZONE="asia-southeast1-b"
 NODE_8_ZONE="us-central1-a"
 NODE_9_ZONE="europe-west4-a"
-
-# Number of blockchain nodes to deploy
-NUM_NODES=10
 
 printf "###############################################################################\n"
 printf "# Deploying parent blockchain #\n"
@@ -337,18 +355,18 @@ for node_index in `seq 0 $(( $NUM_NODES - 1 ))`; do
 
     printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
 
-    if [[ $node_index -ge 5 ]]; then
+    if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
         JSON_RPC_OPTION="--json-rpc"
     else
         JSON_RPC_OPTION=""
     fi
     UPDATE_FRONT_DB_OPTION="--update-front-db"
-    if [[ $node_index -ge 5 ]] && [[ $node_index -lt 8 ]]; then
+    if [[ $node_index -ge $REST_FUNC_NODE_INDEX_GE ]] && [[ $node_index -le $REST_FUNC_NODE_INDEX_LE ]]; then
         REST_FUNC_OPTION="--rest-func"
     else
         REST_FUNC_OPTION=""
     fi
-    if [[ $node_index -ge 8 ]] && [[ $node_index -lt 10 ]]; then
+    if [[ $node_index -ge $EVENT_HANDLER_NODE_INDEX_GE ]] && [[ $node_index -le $EVENT_HANDLER_NODE_INDEX_LE ]]; then
         EVENT_HANDLER_OPTION="--event-handler"
     else
         EVENT_HANDLER_OPTION=""
