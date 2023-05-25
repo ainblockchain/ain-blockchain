@@ -100,7 +100,7 @@ printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
 # Peer-whitelisting-enabled blockchain nodes
-# Peer whitelisting is disabled now
+# Peer whitelisting is disabled now with 5 core blockchain nodes on GCP.
 #PEER_WHITELIST_NODE_INDEX_GE=0
 #PEER_WHITELIST_NODE_INDEX_LE=4
 PEER_WHITELIST_NODE_INDEX_GE=-1
