@@ -2,10 +2,10 @@
 
 if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1 4 --keystore --no-keep-code --keep-data\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 0 0 --keystore --keep-code --keep-data\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 0 0 --setup --keystore --no-keep-code --keep-data\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1  4 --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
     printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
     printf "\n"
@@ -364,27 +364,27 @@ if [[ $begin_index -lt 0 ]]; then
   begin_index=0
 fi
 if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-    for j in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-        deploy_node "$j"
+    for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+        deploy_node "$node_index"
         sleep 40
     done
 fi
 
 if [[ $NUM_SHARDS -gt 0 ]]; then
-    for i in $(seq $NUM_SHARDS); do
+    for shard_index in $(seq $NUM_SHARDS); do
         printf "###############################################################################\n"
-        printf "# Deploying shard $i blockchain #\n"
+        printf "# Deploying shard $shard_index blockchain #\n"
         printf "###############################################################################\n\n"
 
-        TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+        TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${shard_index}-tracker-taiwan"
         NODE_TARGET_ADDR_LIST=( \
-            "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
-            "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
-            "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
+            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-0-taiwan" \
+            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-1-oregon" \
+            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-2-singapore")
 
         deploy_tracker "$NUM_SHARD_NODES"
-        for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`; do
-            deploy_node "$j"
+        for node_index in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`; do
+            deploy_node "$node_index"
         done
     done
 fi
