@@ -154,23 +154,25 @@ else
     fi
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
-if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
-    # Get keystore password
-    printf "Enter password: "
-    read -s PASSWORD
-    printf "\n\n"
+if ! [[ $KILL_OPTION = '--kill-only' ]]; then
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+    if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
+        # Get keystore password
+        printf "Enter password: "
+        read -s PASSWORD
+        printf "\n\n"
 
-    if [[ "$SEASON" = "mainnet" ]]; then
-        KEYSTORE_DIR="mainnet_prod_keys"
-    elif [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
-        KEYSTORE_DIR="testnet_prod_keys"
-    else
-        KEYSTORE_DIR="testnet_dev_staging_keys"
+        if [[ "$SEASON" = "mainnet" ]]; then
+            KEYSTORE_DIR="mainnet_prod_keys"
+        elif [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+            KEYSTORE_DIR="testnet_prod_keys"
+        else
+            KEYSTORE_DIR="testnet_dev_staging_keys"
+        fi
+    elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+        IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
     fi
-elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
-    IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 function inject_account() {
@@ -314,7 +316,7 @@ if [[ $KILL_OPTION = "--skip-kill" ]]; then
     printf "\nSkipping process kill...\n"
 else
     # kill any processes still alive
-    printf "\nKilling all tracker and blockchain node jobs...\n"
+    printf "\nKilling tracker / blockchain node jobs...\n"
 
     # Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
     if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
