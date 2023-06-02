@@ -33,7 +33,7 @@ GCP_USER="runner"
 printf "GCP_USER=$GCP_USER\n"
 
 number_re='^[0-9]+$'
-if ! [[ $2 =~ $number_re ]] ; then
+if [[ ! $2 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
@@ -140,9 +140,17 @@ if [[ "$SEASON" = "mainnet" ]]; then
     printf "\n"
     printf "Do you want to proceed for $SEASON? Enter [mainnet]: "
     read CONFIRM
-    printf "\n\n"
+    printf "\n"
     if [[ ! $CONFIRM = "mainnet" ]]
     then
+        [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    fi
+elif [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+    printf "\n"
+    printf "Do you want to proceed for $SEASON? Enter [testnet]: "
+    read CONFIRM
+    printf "\n"
+    if [[ ! $CONFIRM = "testnet" ]]; then
         [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
     fi
 else
@@ -154,7 +162,7 @@ else
     fi
 fi
 
-if ! [[ $KILL_OPTION = '--kill-only' ]]; then
+if [[ ! $KILL_OPTION = '--kill-only' ]]; then
     # Read node ip addresses
     IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
     if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
