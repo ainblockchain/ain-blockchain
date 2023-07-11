@@ -2723,7 +2723,7 @@ describe("Functions", () => {
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
-            trigger_count: 0,
+            trigger_count: 1,
             fail_count: 0,
           });
         });

@@ -126,6 +126,7 @@ const FailedTxPrecheckCodeSet = new Set([
 // If they are altered and deployed, the full sync of the blockchain nodes can fail.
 const FunctionResultCode = {
   SUCCESS: 0,
+  SKIP: 20000,  // Normal skip
   FAILURE: 20001,  // Normal failure
   INTERNAL_ERROR: 20002,  // Something went wrong but don't know why
   // Transfer
