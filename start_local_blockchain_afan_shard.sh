@@ -10,7 +10,7 @@ printf "\n[[[[[ start_local_blockchain_afan_shard.sh ]]]]]\n\n"
 printf "\nStarting parent tracker..\n"
 PORT=8080 \
   P2P_PORT=5000 \
-  CONSOLE_LOG=true \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -60,7 +60,7 @@ printf "\nStarting afan child chain tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
-  CONSOLE_LOG=true \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5

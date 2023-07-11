@@ -12,7 +12,7 @@ printf "\n[[[[[ start_local_blockchain.sh ]]]]]\n\n"
 printf "\nStarting tracker..\n"
 PORT=8080 \
   P2P_PORT=5000 \
-  CONSOLE_LOG=true \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
