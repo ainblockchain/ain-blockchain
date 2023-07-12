@@ -50,5 +50,9 @@
   "update_min_gc_num_siblings_deleted": {
     "enabled_block": 1411300,
     "has_bandage": true
+  },
+  "update_min_gc_num_siblings_deleted2": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
