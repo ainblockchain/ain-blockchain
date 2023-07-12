@@ -11,7 +11,7 @@ printf "\n[[[[[ start_local_blockchain_multi_shards.sh ]]]]]\n\n"
 printf "\nStarting parent tracker..\n"
 PORT=8080 \
   P2P_PORT=5000 \
-  CONSOLE_LOG=true \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -64,6 +64,7 @@ printf "\nStarting child chain 1 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 10
@@ -131,6 +132,7 @@ printf "\nStarting child chain 2 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9010 \
   P2P_PORT=6010 \
+  CONSOLE_LOG=false \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 10

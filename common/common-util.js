@@ -551,7 +551,7 @@ class CommonUtil {
   // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
-    return code !== FunctionResultCode.SUCCESS;
+    return code !== FunctionResultCode.SUCCESS && code !== FunctionResultCode.SKIP;
   }
 
   static isAppPath(parsedPath) {
