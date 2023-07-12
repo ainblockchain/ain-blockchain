@@ -50,5 +50,9 @@
   "update_min_gc_num_siblings_deleted2": {
     "enabled_block": null,
     "has_bandage": true
+  },
+  "tweak_transfer_gc_rule": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
