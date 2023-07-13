@@ -1977,17 +1977,15 @@ class DB {
         this.executeOperation(txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
     if (isDryrun) {
       this.restoreDb();
-    } else {
+      return executionResult;
+    } else if (restoreIfFails) {
       if (CommonUtil.isFailedTx(executionResult)) {
-        if (restoreIfFails) {
-          this.restoreDb();
-        } else {
-          this.deleteBackupStateVersion();
-          return executionResult;
-        }
+        this.restoreDb();
+      } else {
+        this.deleteBackupStateVersion();
       }
     }
-    if (!skipFees && !isDryrun) {
+    if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource);
       }
