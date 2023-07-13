@@ -1,6 +1,7 @@
 const JSON_RPC_METHODS = {
   AIN_ADD_TO_WHITELIST_NODE_PARAM: 'ain_addToWhitelistNodeParam',
   AIN_CHECK_PROTOCOL_VERSION: 'ain_checkProtocolVersion',
+  AIN_DRYRUN_SIGNED_TRANSACTION: 'ain_dryrunSignedTransaction',
   AIN_EVAL_RULE: 'ain_evalRule',
   AIN_EVAL_OWNER: 'ain_evalOwner',
   AIN_GET: 'ain_get',
