@@ -1958,7 +1958,7 @@ class DB {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
     }
-    if (restoreIfFails) {
+    if (restoreIfFails || isDryrun) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
           logger,
@@ -1975,15 +1975,19 @@ class DB {
     const timestamp = txBody.timestamp;
     const executionResult =
         this.executeOperation(txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
-    if (CommonUtil.isFailedTx(executionResult)) {
-      if (restoreIfFails) {
-        this.restoreDb();
-      } else {
-        this.deleteBackupStateVersion();
-        return executionResult;
+    if (isDryrun) {
+      this.restoreDb();
+    } else {
+      if (CommonUtil.isFailedTx(executionResult)) {
+        if (restoreIfFails) {
+          this.restoreDb();
+        } else {
+          this.deleteBackupStateVersion();
+          return executionResult;
+        }
       }
     }
-    if (!skipFees) {
+    if (!skipFees && !isDryrun) {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource);
       }
