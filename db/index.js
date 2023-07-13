@@ -1948,7 +1948,9 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
+  executeTransaction(
+      tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null,
+      eventSource = null, isDryrun = false) {
     const LOG_HEADER = 'executeTransaction';
 
     const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);

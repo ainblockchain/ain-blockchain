@@ -605,7 +605,7 @@ class P2pServer {
                 newTxList.push(createdTx);
               }
               if (newTxList.length > 0) {
-                this.executeAndBroadcastTransaction({ tx_list: newTxList }, txTags);
+                this.executeAndBroadcastTransaction({ tx_list: newTxList }, false, txTags);
               }
             } else {
               const createdTx = Transaction.create(tx.tx_body, tx.signature, chainId);
@@ -618,7 +618,7 @@ class P2pServer {
                 logger.info(`[${LOG_HEADER}] Invalid signature of tx: ` +
                     `${JSON.stringify(tx, null, 2)}`);
               } else {
-                this.executeAndBroadcastTransaction(createdTx, txTags);
+                this.executeAndBroadcastTransaction(createdTx, false, txTags);
               }
             }
             break;
@@ -790,7 +790,7 @@ class P2pServer {
     socket.send(JSON.stringify(payload));
   }
 
-  executeAndBroadcastTransaction(tx, tags = []) {
+  executeAndBroadcastTransaction(tx, isDryrun = false, tags = []) {
     const LOG_HEADER = 'executeAndBroadcastTransaction';
     if (!tx) {
       return {
@@ -818,6 +818,7 @@ class P2pServer {
 
           continue;
         }
+        // NOTE(platfowner): There is no dryrun mode for batch transactions.
         const result = this.node.executeTransactionAndAddToPool(subTx);
         resultList.push({
           tx_hash: subTx.hash,
@@ -834,9 +835,9 @@ class P2pServer {
 
       return resultList;
     } else {
-      const result = this.node.executeTransactionAndAddToPool(tx);
+      const result = this.node.executeTransactionAndAddToPool(tx, isDryrun);
       logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
-      if (!CommonUtil.isFailedTx(result)) {
+      if (!isDryrun && !CommonUtil.isFailedTx(result)) {
         this.client.broadcastTransaction(tx, tags);
       }
 
