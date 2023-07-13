@@ -158,7 +158,7 @@ describe("P2p", () => {
     describe("getStateVersionStatus", () => {
       it("gets initial state version status", () => {
         const stateVersionStatus = p2pServer.getStateVersionStatus();
-        expect(stateVersionStatus.numVersions).to.equal(5);
+        expect(stateVersionStatus.numVersions).to.equal(4);
         expect(stateVersionStatus.finalVersion).to.equal('FINAL:0');
       });
     });
@@ -219,7 +219,7 @@ describe("P2p", () => {
             numApps: 1,
           },
           stateVersionStatus: {
-            numVersions: 5,
+            numVersions: 4,
             versionList: 'erased',
             finalVersion: 'FINAL:0'
           }
