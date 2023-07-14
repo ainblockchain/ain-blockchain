@@ -87,18 +87,16 @@ async function keystoreToAccount(filePath) {
   return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, input.password));
 }
 
-// FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
-function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
-  console.log('\n*** signAndSendTx():');
+function signAndExecuteTx(endpointUrl, txBody, privateKey, chainId, jsonRpcMethod) {
   const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, chainId);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
-  console.log('Sending transaction...');
+  console.log('Executing transaction...');
 
   return axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION,
+      method: jsonRpcMethod,
       params: signedTx,
       jsonrpc: '2.0',
       id: 0
@@ -113,6 +111,18 @@ function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
     console.log(`Failed to send transaction: ${err}`);
     return { txHash, signedTx, success: false, errMsg: err.message };
   });
+}
+
+function signAndDryrunTx(endpointUrl, txBody, privateKey, chainId) {
+  console.log('\n*** signAndDryrunTx():');
+  return signAndExecuteTx(
+      endpointUrl, txBody, privateKey, chainId, JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION);
+}
+
+function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
+  console.log('\n*** signAndSendTx():');
+  return signAndExecuteTx(
+      endpointUrl, txBody, privateKey, chainId, JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION);
 }
 
 async function sendGetTxByHashRequest(endpointUrl, txHash) {
@@ -152,6 +162,7 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
 module.exports = {
   getAccountPrivateKey,
   keystoreToAccount,
+  signAndDryrunTx,
   signAndSendTx,
   sendGetTxByHashRequest,
   confirmTransaction,
