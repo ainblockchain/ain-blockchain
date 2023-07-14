@@ -3,7 +3,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const CommonUtil = require('../../common/common-util');
 const {
   getAccountPrivateKey,
-  signAndDryrunTx,
+  signAndSendTxDryrun,
   signAndSendTx,
   confirmTransaction
 } = require('../util');
@@ -21,8 +21,8 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
   }
 }
 
-async function executeTransaction(endpointUrl, chainId, toAddr, ainAmount, account, isDryrun) {
-  console.log('\n*** executeTransaction():');
+async function sendTransaction(endpointUrl, chainId, toAddr, ainAmount, account, isDryrun) {
+  console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
   const txBody =
@@ -31,7 +31,7 @@ async function executeTransaction(endpointUrl, chainId, toAddr, ainAmount, accou
 
   let txInfo = null;
   if (isDryrun) {
-    txInfo = await signAndDryrunTx(endpointUrl, txBody, account.private_key, chainId);
+    txInfo = await signAndSendTxDryrun(endpointUrl, txBody, account.private_key, chainId);
   } else {
     txInfo = await signAndSendTx(endpointUrl, txBody, account.private_key, chainId);
   }
@@ -45,12 +45,12 @@ async function executeTransaction(endpointUrl, chainId, toAddr, ainAmount, accou
   }
 }
 
-async function executeTransferTx(
+async function sendTransferTx(
     endpointUrl, chainId, toAddr, ainAmount, accountType, keystoreFilepath, isDryrun) {
   const privateKey = await getAccountPrivateKey(accountType, keystoreFilepath);
   const account = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
   console.log(`\nFrom-address: ${account.address}\n`);
-  await executeTransaction(endpointUrl, chainId, toAddr, ainAmount, account, isDryrun);
+  await sendTransaction(endpointUrl, chainId, toAddr, ainAmount, account, isDryrun);
 }
 
 async function processArguments() {
@@ -86,19 +86,19 @@ async function processArguments() {
     }
   }
   const isDryrun = dryrunOption === '--dryrun';
-  await executeTransferTx(endpointUrl, chainId, toAddr, ainAmount, accountType, keystoreFilepath, isDryrun);
+  await sendTransferTx(endpointUrl, chainId, toAddr, ainAmount, accountType, keystoreFilepath, isDryrun);
 }
 
 function usage() {
-  console.log('\nUsage: node executeTransferTx.js <Endpoint Url> <Chain Id> <To Address> <Ain Amount> <Account Type> [<Keystore Filepath>] [--dryrun]\n');
-  console.log('Example: node executeTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 private_key');
-  console.log('Example: node executeTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 mnemonic');
-  console.log('Example: node executeTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
-  console.log('Example: node executeTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun');
-  console.log('Example: node executeTransferTx.js https://staging-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
-  console.log('Example: node executeTransferTx.js https://testnet-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
-  console.log('Example: node executeTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json\n');
-  console.log('Example: node executeTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun\n');
+  console.log('\nUsage: node sendTransferTx.js <Endpoint Url> <Chain Id> <To Address> <Ain Amount> <Account Type> [<Keystore Filepath>] [--dryrun]\n');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 private_key');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 mnemonic');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun');
+  console.log('Example: node sendTransferTx.js https://staging-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://testnet-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json\n');
+  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun\n');
   process.exit(0)
 }
 

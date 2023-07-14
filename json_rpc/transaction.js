@@ -124,7 +124,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    [JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION]: function(args, done) {
+    [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN]: function(args, done) {
       executeTransactionOnNode(node, p2pServer, args, done, true);
     },
 
