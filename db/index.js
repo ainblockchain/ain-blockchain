@@ -1698,8 +1698,10 @@ class DB {
     }
   }
 
-  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource) {
-    const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
+  collectFee(
+      auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun) {
+    const gasPriceUnit =
+        DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
     const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
@@ -1735,7 +1737,9 @@ class DB {
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
         CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
-    if (executionResult.gas_cost_total <= 0) return;
+    if (isDryrun || executionResult.gas_cost_total <= 0) {
+      return;
+    }
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const newOptions = {
       timestamp,
@@ -1973,24 +1977,24 @@ class DB {
     const auth = { addr: tx.address };
     const nonce = txBody.nonce;
     const timestamp = txBody.timestamp;
-    const executionResult =
-        this.executeOperation(txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
+    const executionResult = this.executeOperation(
+        txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
+    if (!skipFees) {
+      if (DevFlags.enableGasFeeCollection) {
+        this.collectFee(
+            auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
+      }
+      if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
+        this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
+    }
     if (isDryrun) {
       this.restoreDb();
-      return executionResult;
     } else if (restoreIfFails) {
       if (CommonUtil.isFailedTx(executionResult)) {
         this.restoreDb();
       } else {
         this.deleteBackupStateVersion();
-      }
-    }
-    if (!skipFees) {
-      if (DevFlags.enableGasFeeCollection) {
-        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource);
-      }
-      if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
-        this.recordReceipt(auth, tx, blockNumber, executionResult);
       }
     }
     return executionResult;
