@@ -818,8 +818,7 @@ class P2pServer {
 
           continue;
         }
-        // NOTE(platfowner): There is no dryrun mode for batch transactions.
-        const result = this.node.executeTransactionAndAddToPool(subTx);
+        const result = this.node.executeTransactionAndAddToPool(subTx, isDryrun);
         resultList.push({
           tx_hash: subTx.hash,
           result
@@ -829,7 +828,7 @@ class P2pServer {
         }
       }
       logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
-      if (txListSucceeded.length > 0) {
+      if (!isDryrun && txListSucceeded.length > 0) {
         this.client.broadcastTransaction({ tx_list: txListSucceeded }, tags);
       }
 
