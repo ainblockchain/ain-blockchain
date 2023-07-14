@@ -3216,7 +3216,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('json-rpc api: ain_dryrunSignedTransaction', () => {
+    describe('json-rpc api: ain_sendSignedTransactionDryrun', () => {
       const account = {
         address: "0x9534bC7529961E5737a3Dd317BdEeD41AC08a52D",
         private_key: "e96292ef0676287908fc3461f747f106b7b9336f183b1766f83672fbe893664d",
@@ -3330,7 +3330,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3380,7 +3380,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3437,7 +3437,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3496,7 +3496,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-          return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3556,7 +3556,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
-          return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3616,7 +3616,7 @@ describe('Blockchain Node', () => {
           };
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account2.private_key, 'hex'));
-          return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+          return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
             tx_body: txBody,
             signature,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3669,7 +3669,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
-        return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3737,7 +3737,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
-        return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
           tx_body: txBody,
           signature,
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3804,7 +3804,7 @@ describe('Blockchain Node', () => {
         };
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-        return client.request(JSON_RPC_METHODS.AIN_DRYRUN_SIGNED_TRANSACTION, {
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
           tx_body: txBody,
           signature: signature + '0', // invalid signature
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION

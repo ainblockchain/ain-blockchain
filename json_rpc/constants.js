@@ -1,7 +1,6 @@
 const JSON_RPC_METHODS = {
   AIN_ADD_TO_WHITELIST_NODE_PARAM: 'ain_addToWhitelistNodeParam',
   AIN_CHECK_PROTOCOL_VERSION: 'ain_checkProtocolVersion',
-  AIN_DRYRUN_SIGNED_TRANSACTION: 'ain_dryrunSignedTransaction',
   AIN_EVAL_RULE: 'ain_evalRule',
   AIN_EVAL_OWNER: 'ain_evalOwner',
   AIN_GET: 'ain_get',
@@ -43,6 +42,7 @@ const JSON_RPC_METHODS = {
   AIN_MATCH_OWNER: 'ain_matchOwner',
   AIN_MATCH_RULE: 'ain_matchRule',
   AIN_REMOVE_FROM_WHITELIST_NODE_PARAM: 'ain_removeFromWhitelistNodeParam',
+  AIN_SEND_SIGNED_TRANSACTION_DRYRUN: 'ain_sendSignedTransactionDryrun',
   AIN_SEND_SIGNED_TRANSACTION: 'ain_sendSignedTransaction',
   AIN_SEND_SIGNED_TRANSACTION_BATCH: 'ain_sendSignedTransactionBatch',
   AIN_SET_NODE_PARAM: 'ain_setNodeParam',
