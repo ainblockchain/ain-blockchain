@@ -3358,7 +3358,8 @@ describe('Blockchain Node', () => {
                     service: 0
                   }
                 },
-                gas_cost_total: 0
+                gas_cost_total: 0,
+                is_dryrun: true
               },
               tx_hash: CommonUtil.hashSignature(signature),
             }
@@ -3408,7 +3409,8 @@ describe('Blockchain Node', () => {
                     service: 0
                   }
                 },
-                gas_cost_total: 0
+                gas_cost_total: 0,
+                is_dryrun: true
               },
               tx_hash: CommonUtil.hashSignature(signature),
             }
@@ -3467,6 +3469,7 @@ describe('Blockchain Node', () => {
                     }
                   },
                   gas_cost_total: 0,
+                  is_dryrun: true
                 },
                 tx_hash: CommonUtil.hashSignature(signature),
               }
@@ -3526,6 +3529,7 @@ describe('Blockchain Node', () => {
                     }
                   },
                   gas_cost_total: 0,
+                  is_dryrun: true
                 },
                 tx_hash: CommonUtil.hashSignature(signature),
               }
@@ -3586,6 +3590,7 @@ describe('Blockchain Node', () => {
                     }
                   },
                   gas_cost_total: 0,
+                  is_dryrun: true
                 },
                 tx_hash: CommonUtil.hashSignature(signature),
               }
@@ -3646,6 +3651,7 @@ describe('Blockchain Node', () => {
                     }
                   },
                   gas_cost_total: 0,
+                  is_dryrun: true
                 },
                 tx_hash: CommonUtil.hashSignature(signature),
               }
@@ -3714,7 +3720,8 @@ describe('Blockchain Node', () => {
                     "service": 1278
                   }
                 },
-                "gas_cost_total": 0
+                "gas_cost_total": 0,
+                "is_dryrun": true
               },
               tx_hash: CommonUtil.hashSignature(signature),
             }
@@ -3782,7 +3789,8 @@ describe('Blockchain Node', () => {
                     "service": 1278
                   }
                 },
-                "gas_cost_total": 1.6405
+                "gas_cost_total": 1.6405,
+                "is_dryrun": true
               },
               tx_hash: CommonUtil.hashSignature(signature),
             }

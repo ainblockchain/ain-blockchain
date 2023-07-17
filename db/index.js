@@ -1979,6 +1979,9 @@ class DB {
     const timestamp = txBody.timestamp;
     const executionResult = this.executeOperation(
         txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
+    if (isDryrun && executionResult) {
+      executionResult.is_dryrun = true;  // Set is_dryrun = true
+    }
     if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(
