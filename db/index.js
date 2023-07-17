@@ -1698,8 +1698,10 @@ class DB {
     }
   }
 
-  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource) {
-    const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
+  collectFee(
+      auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun) {
+    const gasPriceUnit =
+        DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
     const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
@@ -1735,7 +1737,9 @@ class DB {
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
         CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
-    if (executionResult.gas_cost_total <= 0) return;
+    if (isDryrun || executionResult.gas_cost_total <= 0) {
+      return;
+    }
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const newOptions = {
       timestamp,
@@ -1948,7 +1952,9 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
+  executeTransaction(
+      tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null,
+      eventSource = null, isDryrun = false) {
     const LOG_HEADER = 'executeTransaction';
 
     const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
@@ -1956,7 +1962,7 @@ class DB {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
     }
-    if (restoreIfFails) {
+    if (restoreIfFails || isDryrun) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
           logger,
@@ -1971,22 +1977,27 @@ class DB {
     const auth = { addr: tx.address };
     const nonce = txBody.nonce;
     const timestamp = txBody.timestamp;
-    const executionResult =
-        this.executeOperation(txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
-    if (CommonUtil.isFailedTx(executionResult)) {
-      if (restoreIfFails) {
-        this.restoreDb();
-      } else {
-        this.deleteBackupStateVersion();
-        return executionResult;
-      }
+    const executionResult = this.executeOperation(
+        txBody.operation, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource);
+    if (isDryrun && executionResult) {
+      executionResult.is_dryrun = true;  // Set is_dryrun = true
     }
     if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
-        this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource);
+        this.collectFee(
+            auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
       }
       if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
+    }
+    if (isDryrun) {
+      this.restoreDb();
+    } else if (restoreIfFails) {
+      if (CommonUtil.isFailedTx(executionResult)) {
+        this.restoreDb();
+      } else {
+        this.deleteBackupStateVersion();
       }
     }
     return executionResult;

@@ -729,7 +729,7 @@ class BlockchainNode {
    * Executes a transaction and add it to the transaction pool if the execution was successful.
    * @param {Object} tx transaction
    */
-  executeTransactionAndAddToPool(tx) {
+  executeTransactionAndAddToPool(tx, isDryrun = false) {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
     if (DevFlags.enableRichTransactionLogging) {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
@@ -792,8 +792,10 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough free room ` +
           `(${perAccountFreePoolSize}) for account: ${executableTx.address}`);
     }
+    const eventSource = isDryrun ? null : ValueChangedEventSources.USER;
     const result = this.db.executeTransaction(
-        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp(), ValueChangedEventSources.USER);
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp(),
+        eventSource, isDryrun);
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
@@ -803,11 +805,13 @@ class BlockchainNode {
       // NOTE(liayoo): Transactions that don't pass the pre-checks will be rejected instantly and
       //               will not be included in the tx pool, as they can't be included in a block
       //               anyway, and may be used for attacks on blockchain nodes.
-      if (!CommonUtil.txPrecheckFailed(result)) {
+      if (!isDryrun && !CommonUtil.txPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
     } else {
-      this.tp.addTransaction(executableTx, true);
+      if (!isDryrun) {
+        this.tp.addTransaction(executableTx, true);
+      }
     }
 
     return result;
