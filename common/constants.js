@@ -116,7 +116,7 @@ function setNodeConfigs() {
       NodeConfigs[param] = valFromNodeParams;
     }
   }
-  const blockchainDataDirPath = path.resolve(__dirname, '../', NodeConfigs.BLOCKCHAIN_DATA_DIR);
+  const blockchainDataDirPath = path.resolve(__dirname, '..', NodeConfigs.BLOCKCHAIN_DATA_DIR);
   if (!fs.existsSync(blockchainDataDirPath)) {
     try {
       fs.mkdirSync(blockchainDataDirPath, { recursive: true });
