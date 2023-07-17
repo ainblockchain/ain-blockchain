@@ -10,7 +10,7 @@ const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const { JSON_RPC_METHODS } = require('./constants');
 
-function executeTransactionOnNode(node, p2pServer, args, done, isDryrun) {
+function sendTransactionOnNode(node, p2pServer, args, done, isDryrun) {
   const beginTime = Date.now();
   const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
   if (sizeof(args) > txBytesLimit) {
@@ -125,11 +125,11 @@ module.exports = function getTransactionApis(node, p2pServer) {
     },
 
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN]: function(args, done) {
-      executeTransactionOnNode(node, p2pServer, args, done, true);
+      sendTransactionOnNode(node, p2pServer, args, done, true);
     },
 
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION]: function(args, done) {
-      executeTransactionOnNode(node, p2pServer, args, done, false);
+      sendTransactionOnNode(node, p2pServer, args, done, false);
     },
 
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH]: function(args, done) {
