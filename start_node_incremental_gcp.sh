@@ -369,6 +369,8 @@ printf "\n#### [Step 7] Start new node server ####\n\n"
 
 export STAKE=100000
 printf "STAKE=$STAKE\n"
+export LOG_BANDAGE_INFO=true
+printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
     MAX_OLD_SPACE_SIZE_MB=11000

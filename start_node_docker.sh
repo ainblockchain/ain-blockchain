@@ -15,6 +15,8 @@ elif [[ $SEASON = 'exp' ]]; then
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 fi
+export LOG_BANDAGE_INFO=true
+printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
 
 nohup node --max-old-space-size=55000 ./client/index.js 2>error_logs.txt &
 
