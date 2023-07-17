@@ -673,7 +673,8 @@ app.get('/get_config', (req, res) => {
 /**
  * Dev Client SET APIs (available to whitelisted IPs, if ENABLE_DEV_CLIENT_SET_API == true)
  */
-
+// TODO(platfowner): Deprecate Dev Client SET APIs once the related test cases are migrated to
+// json rpc APIs.
 if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   app.post('/set_value', (req, res, next) => {
     const beginTime = Date.now();
