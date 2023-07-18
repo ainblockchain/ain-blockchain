@@ -10,6 +10,55 @@ const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const { JSON_RPC_METHODS } = require('./constants');
 
+function sendTransactionOnNode(node, p2pServer, args, done, isDryrun) {
+  const beginTime = Date.now();
+  const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
+  if (sizeof(args) > txBytesLimit) {
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+    done(null, JsonRpcUtil.addProtocolVersion({
+      result: null,
+      code: JsonRpcApiResultCode.TX_EXCEEDS_SIZE_LIMIT,
+      message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`
+    }));
+  } else if (!args.tx_body || !args.signature) {
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+    done(null, JsonRpcUtil.addProtocolVersion({
+      result: null,
+      code: JsonRpcApiResultCode.TX_MISSING_PROPERTIES,
+      message: 'Missing properties.'
+    }));
+  } else {
+    const chainId = node.getBlockchainParam('genesis/chain_id');
+    const createdTx = Transaction.create(args.tx_body, args.signature, chainId);
+    if (!createdTx) {
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({
+        result: null,
+        code: JsonRpcApiResultCode.TX_INVALID_FORMAT,
+        message: 'Invalid transaction format.'
+      }));
+    } else {
+      if (!NodeConfigs.LIGHTWEIGHT &&
+          NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
+          !Transaction.verifyTransaction(createdTx, chainId)) {
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: null,
+          code: JsonRpcApiResultCode.TX_INVALID_SIGNATURE,
+          message: 'Invalid transaction signature.'
+        }));
+      } else {
+        const result = p2pServer.executeAndBroadcastTransaction(createdTx, isDryrun);
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({ result }));
+      }
+    }
+  }
+}
+
 module.exports = function getTransactionApis(node, p2pServer) {
   return {
     [JSON_RPC_METHODS.AIN_GET_PENDING_TRANSACTIONS]: function(args, done) {
@@ -75,53 +124,12 @@ module.exports = function getTransactionApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
+    [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN]: function(args, done) {
+      sendTransactionOnNode(node, p2pServer, args, done, true);
+    },
+
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION]: function(args, done) {
-      const beginTime = Date.now();
-      const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
-      if (sizeof(args) > txBytesLimit) {
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
-        done(null, JsonRpcUtil.addProtocolVersion({
-          result: null,
-          code: JsonRpcApiResultCode.TX_EXCEEDS_SIZE_LIMIT,
-          message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`
-        }));
-      } else if (!args.tx_body || !args.signature) {
-        const latency = Date.now() - beginTime;
-        trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
-        done(null, JsonRpcUtil.addProtocolVersion({
-          result: null,
-          code: JsonRpcApiResultCode.TX_MISSING_PROPERTIES,
-          message: 'Missing properties.'
-        }));
-      } else {
-        const chainId = node.getBlockchainParam('genesis/chain_id');
-        const createdTx = Transaction.create(args.tx_body, args.signature, chainId);
-        if (!createdTx) {
-          const latency = Date.now() - beginTime;
-          trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
-          done(null, JsonRpcUtil.addProtocolVersion({
-            result: null,
-            code: JsonRpcApiResultCode.TX_INVALID_FORMAT,
-            message: 'Invalid transaction format.'
-          }));
-        } else {
-          if (!NodeConfigs.LIGHTWEIGHT &&
-              NodeConfigs.ENABLE_EARLY_TX_SIG_VERIF &&
-              !Transaction.verifyTransaction(createdTx, chainId)) {
-            done(null, JsonRpcUtil.addProtocolVersion({
-              result: null,
-              code: JsonRpcApiResultCode.TX_INVALID_SIGNATURE,
-              message: 'Invalid transaction signature.'
-            }));
-          } else {
-            const result = p2pServer.executeAndBroadcastTransaction(createdTx);
-            const latency = Date.now() - beginTime;
-            trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
-            done(null, JsonRpcUtil.addProtocolVersion({ result }));
-          }
-        }
-      }
+      sendTransactionOnNode(node, p2pServer, args, done, false);
     },
 
     [JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_BATCH]: function(args, done) {
@@ -191,7 +199,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
           }
           txList.push(createdTx);
         }
-        const result = p2pServer.executeAndBroadcastTransaction({tx_list: txList});
+        const result = p2pServer.executeAndBroadcastTransaction({ tx_list: txList });
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({ result }));
