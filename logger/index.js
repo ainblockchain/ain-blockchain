@@ -23,7 +23,6 @@ if (DevFlags.enableWinstonLogger) {
   });
 }
 
-
 global.isFinished = false;
 
 class Logger {
@@ -36,7 +35,7 @@ class Logger {
       try {
         logger.error(`[${this.prefix}] ${text}`);
       } catch (e) {
-        console.error(e);
+        console.log(e);
       }
     }
   }
@@ -56,7 +55,7 @@ class Logger {
       try {
         logger.debug(`[${this.prefix}] ${text}`);
       } catch (e) {
-        console.debug(e);
+        console.log(e);
       }
     }
   }

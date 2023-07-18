@@ -87,7 +87,7 @@ async function keystoreToAccount(filePath) {
   return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, input.password));
 }
 
-function signAndSendTx(endpointUrl, txBody, privateKey, chainId, jsonRpcMethod) {
+function signAndSendTxWithJsonRpcMethod(endpointUrl, txBody, privateKey, chainId, jsonRpcMethod) {
   const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, chainId);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
@@ -115,13 +115,13 @@ function signAndSendTx(endpointUrl, txBody, privateKey, chainId, jsonRpcMethod) 
 
 function signAndSendTxDryrun(endpointUrl, txBody, privateKey, chainId) {
   console.log('\n*** signAndSendTxDryrun():');
-  return signAndSendTx(
+  return signAndSendTxWithJsonRpcMethod(
       endpointUrl, txBody, privateKey, chainId, JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN);
 }
 
 function signAndSendTx(endpointUrl, txBody, privateKey, chainId) {
   console.log('\n*** signAndSendTx():');
-  return signAndSendTx(
+  return signAndSendTxWithJsonRpcMethod(
       endpointUrl, txBody, privateKey, chainId, JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION);
 }
 

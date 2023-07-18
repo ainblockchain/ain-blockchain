@@ -116,17 +116,18 @@ function setNodeConfigs() {
       NodeConfigs[param] = valFromNodeParams;
     }
   }
-  if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
+  const blockchainDataDirPath = path.resolve(__dirname, '..', NodeConfigs.BLOCKCHAIN_DATA_DIR);
+  if (!fs.existsSync(blockchainDataDirPath)) {
     try {
-      fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+      fs.mkdirSync(blockchainDataDirPath, { recursive: true });
     } catch (e) {
       console.log(e)
     }
   }
-  NodeConfigs.LOGS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'logs');
-  NodeConfigs.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
-  NodeConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
-  NodeConfigs.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
+  NodeConfigs.LOGS_DIR = path.resolve(blockchainDataDirPath, 'logs');
+  NodeConfigs.CHAINS_DIR = path.resolve(blockchainDataDirPath, 'chains');
+  NodeConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(blockchainDataDirPath, 'snapshots');
+  NodeConfigs.KEYS_ROOT_DIR = path.resolve(blockchainDataDirPath, 'keys');
 }
 setNodeConfigs();
 
