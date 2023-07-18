@@ -551,7 +551,7 @@ class CommonUtil {
   // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
-    return code !== FunctionResultCode.SUCCESS;
+    return code !== FunctionResultCode.SUCCESS && code !== FunctionResultCode.SKIP;
   }
 
   static isAppPath(parsedPath) {
@@ -1057,7 +1057,9 @@ class CommonUtil {
   static createTimerFlagEnabledBandageMap(timerFlags) {
     const LOG_HEADER = 'createTimerFlagEnabledBandageMap';
     const map = new Map();
-    console.log(`[${LOG_HEADER}] Registering bandage files:`);
+    if (process.env.LOG_BANDAGE_INFO) {
+      console.log(`[${LOG_HEADER}] Registering bandage files:`);
+    }
     const flagNameList = Object.keys(timerFlags);
     for (let i = 0; i < flagNameList.length; i++) {
       const flagName = flagNameList[i];
@@ -1065,7 +1067,9 @@ class CommonUtil {
       const enabledBlockNumber = CommonUtil.getEnabledBlockNumberFromTimerFlag(flag);
       if (CommonUtil.isNumber(enabledBlockNumber) && flag['has_bandage'] === true) {
         const bandageFilePath = path.resolve(__dirname, '../db/bandage-files', `${flagName}.js`);
-        console.log(`[${LOG_HEADER}] [${i}] Registering ${bandageFilePath}`);
+        if (process.env.LOG_BANDAGE_INFO) {
+          console.log(`[${LOG_HEADER}] [${i}] Registering ${bandageFilePath}`);
+        }
         if (!fs.existsSync(bandageFilePath)) {
           throw Error(`Missing bandage file: ${bandageFilePath}`);
         }
@@ -1074,7 +1078,9 @@ class CommonUtil {
         }
         map.get(enabledBlockNumber).push(flagName);
       } else {
-        console.log(`[${LOG_HEADER}] [${i}] Skipping for timer flag: ${flagName}`);
+        if (process.env.LOG_BANDAGE_INFO) {
+          console.log(`[${LOG_HEADER}] [${i}] Skipping for timer flag: ${flagName}`);
+        }
       }
     }
     return map;

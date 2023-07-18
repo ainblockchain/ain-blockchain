@@ -616,7 +616,8 @@ class P2pClient {
     }
     const socket = this.assignRandomPeerForChainSync();
     if (!socket) {
-      logger.error(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
+      // NOTE(platfowner): This often occurs in the early stages of start_local_blockchain.sh.
+      logger.info(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
