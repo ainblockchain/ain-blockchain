@@ -52,11 +52,11 @@
     "has_bandage": true
   },
   "update_min_gc_num_siblings_deleted2": {
-    "enabled_block": null,
+    "enabled_block": 2429500,
     "has_bandage": true
   },
   "tweak_transfer_gc_rule": {
-    "enabled_block": null,
+    "enabled_block": 2429500,
     "has_bandage": true
   }
 }
