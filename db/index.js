@@ -1725,7 +1725,7 @@ class DB {
     }
     let balance = this.getBalance(billedTo);
     const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
-    if (balance < gasCost) {
+    if (!isDryrun && balance < gasCost) {
       Object.assign(executionResult, {
         code: TxResultCode.FEE_BALANCE_TOO_LOW,
         message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
