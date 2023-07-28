@@ -3798,6 +3798,77 @@ describe('Blockchain Node', () => {
         });
       })
 
+      it('accepts a transfer transaction lacking gas fee', () => {
+        // NOTE: transfer all amount of the balance
+        const fromBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/accounts/${account09.address}/balance`).body.toString('utf-8')).result;
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: fromBalance,  // all amount of the balance
+          },
+          gas_price: 500, // non-zero gas price
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 0,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 2000,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 3281,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 2003
+                  },
+                  "state": {
+                    "service": 1278
+                  }
+                },
+                "gas_cost_total": 1.6405,
+                "is_dryrun": true
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
       it('rejects a transaction with an invalid signature.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         const txBody = {
@@ -4590,6 +4661,77 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "gas_cost_total": 0.1835
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      })
+
+      it('accepts a transfer transaction lacking gas fee', () => {
+        // NOTE: transfer all amount of the balance
+        const fromBalance = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/accounts/${account09.address}/balance`).body.toString('utf-8')).result;
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/transfer/${account09.address}/${account3.address}/${Date.now()}/value`,
+            value: fromBalance,  // all amount of the balance
+          },
+          gas_price: 500, // non-zero gas price
+          timestamp: Date.now(),
+          nonce: -1,  // unordered nonce
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account09.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        })
+        .then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                "bandwidth_gas_amount": 1,
+                "code": 11001,
+                "func_results": {
+                  "_transfer": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      },
+                      "1": {
+                        "path": "/accounts/0x758fd59D3f8157Ae4458f8E29E2A8317be3d5974/balance",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0
+                        }
+                      }
+                    }
+                  }
+                },
+                "gas_amount_charged": 3,
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 3
+                  },
+                  "state": {
+                    "service": 364
+                  }
+                },
+                "gas_cost_total": 0.0015,
+                "message": "Failed to collect gas fee: balance too low (0 / 0.1835)"
               },
               tx_hash: CommonUtil.hashSignature(signature),
             }
