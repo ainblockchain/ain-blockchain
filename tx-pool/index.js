@@ -211,6 +211,7 @@ class TransactionPool {
       return null;
     }
 
+    // NOTE(platfowner): this.transactions is a map.
     const addrToTxList = _.cloneDeep(this.transactions);
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
