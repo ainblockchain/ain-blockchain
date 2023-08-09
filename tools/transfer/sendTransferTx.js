@@ -97,8 +97,9 @@ function usage() {
   console.log('Example: node sendTransferTx.js http://localhost:8081 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun');
   console.log('Example: node sendTransferTx.js https://staging-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
   console.log('Example: node sendTransferTx.js https://testnet-api.ainetwork.ai 0 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
-  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json\n');
-  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun\n');
+  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json');
+  console.log('Example: node sendTransferTx.js https://mainnet-api.ainetwork.ai 1 0x08Aed7AF9354435c38d52143EE50ac839D20696b 10 keystore keystore_from_account.json --dryrun');
+  console.log('');
   process.exit(0)
 }
 
