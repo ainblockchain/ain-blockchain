@@ -96,7 +96,9 @@ class Blockchain {
     const blockPath = FileUtil.getBlockPath(this.blockchainPath,
         FileUtil.readH2nFile(this.blockchainPath, hash));
     if (!blockPath) {
-      return this.chain.find((block) => block.hash === hash);
+      const block = this.chain.find((block) => block.hash === hash);
+      // NOTE(platfowner): See https://github.com/ainblockchain/ain-blockchain/issues/1200 .
+      return block ? JSON.parse(JSON.stringify(block)) : block;
     } else {
       return Block.parse(FileUtil.readCompressedJsonSync(blockPath));
     }
@@ -115,7 +117,9 @@ class Blockchain {
     if (blockNumber === 0) return this.genesisBlock;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath, blockNumber);
     if (!blockPath || blockNumber > this.lastBlockNumber() - NodeConfigs.ON_MEMORY_CHAIN_LENGTH) {
-      return this.chain.find((block) => block.number === blockNumber);
+      const block = this.chain.find((block) => block.number === blockNumber);
+      // NOTE(platfowner): See https://github.com/ainblockchain/ain-blockchain/issues/1200 .
+      return block ? JSON.parse(JSON.stringify(block)) : block;
     } else {
       return Block.parse(FileUtil.readCompressedJsonSync(blockPath));
     }
@@ -177,7 +181,8 @@ class Blockchain {
   addBlockToChain(block) {
     const LOG_HEADER = 'addBlockToChain';
 
-    this.chain.push(block);
+    // NOTE(platfowner): See https://github.com/ainblockchain/ain-blockchain/issues/1200 .
+    this.chain.push(JSON.parse(JSON.stringify(block)));
     logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
 
     // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks

@@ -139,6 +139,30 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
     }
   ).then(function(resp) {
     return _.get(resp, 'data.result.result', null);
+  }).catch((err) => {
+    console.log(`Failed to send request: ${err}`);
+    return null;
+  });
+}
+
+async function sendGetBlockByNumberRequest(endpointUrl, blockNumber) {
+  return await axios.post(
+    `${endpointUrl}/json-rpc`,
+    {
+      method: JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER,
+      params: {
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+        number: blockNumber,
+        getFullTransactions: true,  // Get full transactions (NOT tx hashes only)
+      },
+      jsonrpc: '2.0',
+      id: 0
+    }
+  ).then(function(resp) {
+    return _.get(resp, 'data.result.result', null);
+  }).catch((err) => {
+    console.log(`Failed to send request: ${err}`);
+    return null;
   });
 }
 
@@ -165,5 +189,6 @@ module.exports = {
   signAndSendTxDryrun,
   signAndSendTx,
   sendGetTxByHashRequest,
+  sendGetBlockByNumberRequest,
   confirmTransaction,
 };
