@@ -66,7 +66,7 @@ class TransactionPool {
     this.updateTxList(address, txListAfter);
   }
 
-  addTransaction(tx, isExecutedTx = false) {
+  addTransaction(tx, execResult = null, isExecutedTx = false) {
     const LOG_HEADER = 'addTransaction';
 
     // NOTE(platfowner): A transaction needs to be converted to an executable form
@@ -87,7 +87,7 @@ class TransactionPool {
       logger.error(`[${LOG_HEADER}] Already tracked transaction: ${JSON.stringify(tx)}`);
       return false;
     }
-    this.transactionTracker.set(tx.hash, {
+    const transactionInfo = {
       state: txState,
       number: -1,
       index: this.transactions.get(tx.address).length - 1,
@@ -98,7 +98,11 @@ class TransactionPool {
       tracked_at: tx.extra.created_at,
       executed_at: tx.extra.executed_at,
       finalized_at: -1,
-    });
+    };
+    if (execResult) {
+      transactionInfo.exec_result = execResult;
+    }
+    this.transactionTracker.set(tx.hash, transactionInfo);
     this.txCountTotal++;
     if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
