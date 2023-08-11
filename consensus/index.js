@@ -17,6 +17,7 @@ const {
   PredefinedDbPaths,
   StateVersions,
   ValueChangedEventSources,
+  TransactionStates,
 } = require('../common/constants');
 const { ConsensusErrorCode } = require('../common/result-code');
 const {
@@ -726,6 +727,7 @@ class Consensus {
         level: 'error'
       });
     }
+    return txsRes;
   }
 
   static validateStateProofHash(expectedStateProofHash, block, db, node, takeSnapshot) {
@@ -774,12 +776,12 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
+    const proposalTxRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
     tempDb.destroyDb();
-    if (CommonUtil.isFailedTx(proposalTxExecRes)) {
+    if (CommonUtil.isFailedTx(proposalTxRes)) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_PROPOSAL_FAILURE,
-        message: `Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`,
+        message: `Failed to execute the proposal tx: ${JSON.stringify(proposalTxRes)}`,
         level: 'error'
       });
     }
@@ -822,6 +824,7 @@ class Consensus {
         node.bc.lastBlockNumber(), node.stateManager.getFinalVersion(), node.bp);
     const db = Consensus.getNewDbForProposal(number, baseVersion, stateVersionPrefix, node);
 
+    let txsRes = null;
     try {
       Consensus.validateBlockNumberAndHashes(block, prevBlock, node.bc.genesisBlockHash);
       Consensus.validateValidators(validators, number, baseVersion, node);
@@ -829,7 +832,7 @@ class Consensus {
       Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp, ValueChangedEventSources.BLOCK);
       Consensus.validateAndExecuteOffensesAndEvidence(
           evidence, validators, prevBlockMajority, number, timestamp, proposalTx, db, ValueChangedEventSources.BLOCK);
-      Consensus.validateAndExecuteTransactions(
+      txsRes = Consensus.validateAndExecuteTransactions(
           transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node, ValueChangedEventSources.BLOCK);
       db.applyBandagesForBlockNumber(number);
       Consensus.validateStateProofHash(state_proof_hash, block, db, node, takeSnapshot);
@@ -838,6 +841,18 @@ class Consensus {
     } catch (e) {
       db.destroyDb();
       throw e;
+    }
+    for (let i = 0; i < transactions.length; i++) {
+      const trackedAt = Date.now();
+      const txHash = transactions[i].hash;
+      const txResult = txsRes[i];
+      const txState =
+          CommonUtil.isFailedTx(txResult) ? TransactionStates.REVERTED : TransactionStates.IN_BLOCK;
+      node.tp.updateTransactionInfo(txHash, {
+        state: txState,
+        exec_result: txResult,
+        tracked_at: trackedAt,
+      });
     }
   }
 
