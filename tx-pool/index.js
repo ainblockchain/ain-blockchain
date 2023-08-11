@@ -12,7 +12,6 @@ const {
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('./transaction');
-const { isFailedTx } = require('../common/common-util');
 
 class TransactionPool {
   constructor(node) {
@@ -66,6 +65,12 @@ class TransactionPool {
     this.updateTxList(address, txListAfter);
   }
 
+  updateTransactionInfo(txHash, txInfo) {
+    const tracked = this.transactionTracker.get(txHash) || {};
+    Object.assign(tracked, txInfo);
+    this.transactionTracker.set(txHash, tracked);
+  }
+
   addTransaction(tx, execResult = null, isExecutedTx = false) {
     const LOG_HEADER = 'addTransaction';
 
@@ -81,12 +86,6 @@ class TransactionPool {
     }
     this.transactions.get(tx.address).push(tx);
     const txState = isExecutedTx ? TransactionStates.EXECUTED : TransactionStates.PENDING;
-    const tracked = this.transactionTracker.get(tx.hash);
-    if (tracked) {
-      // Should NOT happen!
-      logger.error(`[${LOG_HEADER}] Already tracked transaction: ${JSON.stringify(tx)}`);
-      return false;
-    }
     const transactionInfo = {
       state: txState,
       number: -1,
@@ -100,9 +99,9 @@ class TransactionPool {
       finalized_at: -1,
     };
     if (execResult) {
-      transactionInfo.exec_result = execResult;
+      Object.assign(transactionInfo, { exec_result: execResult });
     }
-    this.transactionTracker.set(tx.hash, transactionInfo);
+    this.updateTransactionInfo(tx.hash, transactionInfo);
     this.txCountTotal++;
     if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
@@ -548,10 +547,9 @@ class TransactionPool {
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
       const tracked = this.transactionTracker.get(voteTx.hash) || {};
-      const executedAt = _.get(tracked, 'executed_at', -1);
       const beforeState = _.get(tracked, 'state', null);
       // voting txs with ordered nonces.
-      Object.assign(tracked, {
+      this.updateTransactionInfo(voteTx.hash, {
         state: TransactionStates.FINALIZED,
         number: block.number,
         index: -1,
@@ -560,10 +558,8 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
-      this.transactionTracker.set(voteTx.hash, tracked);
 
       if (this.node.eh) {
         this.node.eh.emitTxStateChanged(voteTx, beforeState, TransactionStates.FINALIZED);
@@ -576,12 +572,11 @@ class TransactionPool {
       const txNonce = tx.tx_body.nonce;
       const txTimestamp = tx.tx_body.timestamp;
       const tracked = this.transactionTracker.get(tx.hash) || {};
-      const executedAt = _.get(tracked, 'executed_at', -1);
       const beforeState = _.get(tracked, 'state', null);
       // Update transaction tracker.
-      const txState = isFailedTx(block.receipts[i]) ? TransactionStates.REVERTED :
+      const txState = CommonUtil.isFailedTx(block.receipts[i]) ? TransactionStates.REVERTED :
           TransactionStates.FINALIZED;
-      Object.assign(tracked, {
+      this.updateTransactionInfo(tx.hash, {
         state: txState,
         number: block.number,
         index: i,
@@ -590,10 +585,8 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
-      this.transactionTracker.set(tx.hash, tracked);
       inBlockTxs.add(tx.hash);
 
       if (this.node.eh) {
