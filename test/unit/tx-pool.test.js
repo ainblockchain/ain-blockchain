@@ -64,11 +64,13 @@ describe('TransactionPool', () => {
     });
 
     it('add an executed transaction', () => {
-      node.tp.addTransaction(txToAdd, true);
+      const execResult = { code: 0 };
+      node.tp.addTransaction(txToAdd, execResult, true);
       const addedTx = node.tp.transactions.get(node.account.address).find((t) => t.hash === txToAdd.hash);
       assert.deepEqual(eraseTxCreatedAt(addedTx), eraseTxCreatedAt(txToAdd));
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
+      assert.deepEqual(txInfo.exec_result, execResult);
     });
   });
 

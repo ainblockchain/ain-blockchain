@@ -806,11 +806,11 @@ class BlockchainNode {
       //               will not be included in the tx pool, as they can't be included in a block
       //               anyway, and may be used for attacks on blockchain nodes.
       if (!isDryrun && !CommonUtil.txPrecheckFailed(result)) {
-        this.tp.addTransaction(executableTx);
+        this.tp.addTransaction(executableTx, result);
       }
     } else {
       if (!isDryrun) {
-        this.tp.addTransaction(executableTx, true);
+        this.tp.addTransaction(executableTx, result, true);
       }
     }
 
