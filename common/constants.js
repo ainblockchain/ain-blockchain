@@ -574,15 +574,17 @@ const WriteDbOperations = {
  */
 const TransactionStates = {
   FINALIZED: 'FINALIZED',
-  REVERTED: 'REVERTED', // Reverted means it's failed but included in a block
+  REVERTED: 'REVERTED',  // Failed but included in a block
   EXECUTED: 'EXECUTED',
-  FAILED: 'FAILED', // Failed means it's failed and is NOT included in a block
+  FAILED: 'FAILED',      // Failed and is NOT included in a block
+  IN_BLOCK: 'IN_BLOCK',  // Included in a block, NOT reverted.
   PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
 };
 
 function isTxInBlock(state) {
-  return state === TransactionStates.FINALIZED || state === TransactionStates.REVERTED;
+  return state === TransactionStates.FINALIZED || state === TransactionStates.IN_BLOCK
+      || state === TransactionStates.REVERTED;
 }
 
 function isEndState(state) {
