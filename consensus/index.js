@@ -844,15 +844,20 @@ class Consensus {
     }
     for (let i = 0; i < transactions.length; i++) {
       const trackedAt = Date.now();
-      const txHash = transactions[i].hash;
+      const tx = transactions[i];
       const txResult = txsRes[i];
+      const tracked = node.tp.transactionTracker.get(tx.hash) || {};
+      const beforeState = _.get(tracked, 'state', null);
       const txState =
           CommonUtil.isFailedTx(txResult) ? TransactionStates.REVERTED : TransactionStates.IN_BLOCK;
-      node.tp.updateTransactionInfo(txHash, {
+      node.tp.updateTransactionInfo(tx.hash, {
         state: txState,
         exec_result: txResult,
         tracked_at: trackedAt,
       });
+      if (node.eh) {
+        node.eh.emitTxStateChanged(tx, beforeState, txState);
+      }
     }
   }
 
