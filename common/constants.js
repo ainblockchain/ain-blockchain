@@ -577,7 +577,7 @@ const TransactionStates = {
   REVERTED: 'REVERTED',  // Failed but included in a block
   EXECUTED: 'EXECUTED',
   FAILED: 'FAILED',      // Failed and is NOT included in a block
-  IN_BLOCK: 'IN_BLOCK',  // Included in a block, NOT reverted.
+  IN_BLOCK: 'IN_BLOCK',  // Included in a block, NOT reverted nor finalized.
   PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
 };
