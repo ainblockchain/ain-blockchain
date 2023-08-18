@@ -601,7 +601,8 @@ class Consensus {
 
   static validateAndExecuteLastVotes(lastVotes, lastHash, number, blockTime, db, blockPool, eventSource) {
     if (number === 0) return;
-    if (!db.executeTransactionList(lastVotes, true, false, number, blockTime, eventSource)) {
+    const txsRes = db.executeTransactionList(lastVotes, true, false, number, blockTime, eventSource);
+    if (!txsRes) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
         message: `Failed to execute last votes`,
@@ -629,6 +630,7 @@ class Consensus {
         level: 'error'
       });
     }
+    return txsRes;
   }
 
   // Cross-check the offenses in proposalTx & the evidence in proposalBlock
@@ -776,16 +778,17 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    const proposalTxRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
+    const txRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
     tempDb.destroyDb();
-    if (CommonUtil.isFailedTx(proposalTxRes)) {
+    if (CommonUtil.isFailedTx(txRes)) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_PROPOSAL_FAILURE,
-        message: `Failed to execute the proposal tx: ${JSON.stringify(proposalTxRes)}`,
+        message: `Failed to execute the proposal tx: ${JSON.stringify(txRes)}`,
         level: 'error'
       });
     }
     node.tp.addTransaction(executableTx);
+    return txRes;
   }
 
   static addBlockToBlockPool(block, proposalTx, db, blockPool) {
@@ -799,7 +802,54 @@ class Consensus {
     blockPool.addToHashToDbMap(block.hash, db);
   }
 
-  static validateAndExecuteBlockOnDb(rawBlock, node, stateVersionPrefix, proposalTx = null, takeSnapshot = false) {
+  static updateTransactionInfoForBlock(node, voteTxs, proposalTx, transactions, voteTxsRes, proposalTxRes, txsRes) {
+    const trackedAt = Date.now();
+    for (let i = 0; i < voteTxs.length; i++) {
+      const voteTx = voteTxs[i];
+      const voteResult = voteTxsRes[i];
+      const tracked = node.tp.transactionTracker.get(voteTx.hash) || {};
+      const beforeState = _.get(tracked, 'state', null);
+      node.tp.updateTransactionInfo(voteTx.hash, {
+        state: TransactionStates.IN_BLOCK,
+        exec_result: voteResult,
+        tracked_at: trackedAt,
+      });
+      if (node.eh) {
+        node.eh.emitTxStateChanged(voteTx, beforeState, TransactionStates.IN_BLOCK);
+      }
+    }
+    // NOTE(platfowner): Genesis block has no porposal transaction.
+    if (proposalTx) {
+      const trackedProposalTx = node.tp.transactionTracker.get(proposalTx.hash) || {};
+      const beforeState = _.get(trackedProposalTx, 'state', null);
+      node.tp.updateTransactionInfo(proposalTx.hash, {
+        state: TransactionStates.IN_BLOCK,
+        exec_result: proposalTxRes,
+        tracked_at: trackedAt,
+      });
+      if (node.eh) {
+        node.eh.emitTxStateChanged(proposalTx, beforeState, TransactionStates.IN_BLOCK);
+      }
+    }
+    for (let i = 0; i < transactions.length; i++) {
+      const tx = transactions[i];
+      const txResult = txsRes[i];
+      const tracked = node.tp.transactionTracker.get(tx.hash) || {};
+      const beforeState = _.get(tracked, 'state', null);
+      const txState =
+          CommonUtil.isFailedTx(txResult) ? TransactionStates.REVERTED : TransactionStates.IN_BLOCK;
+      node.tp.updateTransactionInfo(tx.hash, {
+        state: txState,
+        exec_result: txResult,
+        tracked_at: trackedAt,
+      });
+      if (node.eh) {
+        node.eh.emitTxStateChanged(tx, beforeState, txState);
+      }
+    }
+  }
+
+  static validateAndExecuteBlockOnDb(rawBlock, node, stateVersionPrefix, proposalTx, updateTxInfo, takeSnapshot = false) {
     const block = Block.parse(rawBlock);
     if (!block) {
       throw new ConsensusError({
@@ -824,40 +874,28 @@ class Consensus {
         node.bc.lastBlockNumber(), node.stateManager.getFinalVersion(), node.bp);
     const db = Consensus.getNewDbForProposal(number, baseVersion, stateVersionPrefix, node);
 
+    let voteTxsRes = null;
+    let proposalTxRes = null;
     let txsRes = null;
     try {
       Consensus.validateBlockNumberAndHashes(block, prevBlock, node.bc.genesisBlockHash);
       Consensus.validateValidators(validators, number, baseVersion, node);
       Consensus.validateProposer(number, prevBlockLastVotesHash, epoch, validators, proposer);
-      Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp, ValueChangedEventSources.BLOCK);
+      voteTxsRes = Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp, ValueChangedEventSources.BLOCK);
       Consensus.validateAndExecuteOffensesAndEvidence(
           evidence, validators, prevBlockMajority, number, timestamp, proposalTx, db, ValueChangedEventSources.BLOCK);
       txsRes = Consensus.validateAndExecuteTransactions(
           transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node, ValueChangedEventSources.BLOCK);
       db.applyBandagesForBlockNumber(number);
       Consensus.validateStateProofHash(state_proof_hash, block, db, node, takeSnapshot);
-      Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
+      proposalTxRes = Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
       Consensus.addBlockToBlockPool(block, proposalTx, db, node.bp);
     } catch (e) {
       db.destroyDb();
       throw e;
     }
-    for (let i = 0; i < transactions.length; i++) {
-      const trackedAt = Date.now();
-      const tx = transactions[i];
-      const txResult = txsRes[i];
-      const tracked = node.tp.transactionTracker.get(tx.hash) || {};
-      const beforeState = _.get(tracked, 'state', null);
-      const txState =
-          CommonUtil.isFailedTx(txResult) ? TransactionStates.REVERTED : TransactionStates.IN_BLOCK;
-      node.tp.updateTransactionInfo(tx.hash, {
-        state: txState,
-        exec_result: txResult,
-        tracked_at: trackedAt,
-      });
-      if (node.eh) {
-        node.eh.emitTxStateChanged(tx, beforeState, txState);
-      }
+    if (updateTxInfo) {
+      Consensus.updateTransactionInfoForBlock(node, last_votes, proposalTx, transactions, voteTxsRes, proposalTxRes, txsRes);
     }
   }
 
@@ -874,7 +912,7 @@ class Consensus {
         `${proposalBlock.number} / ${proposalBlock.epoch} / ${proposalBlock.hash} / ${proposalBlock.proposer}\n` +
         `${proposalTx.hash} / ${proposalTx.address}`);
 
-    Consensus.validateAndExecuteBlockOnDb(proposalBlock, this.node, StateVersions.POOL, proposalTx);
+    Consensus.validateAndExecuteBlockOnDb(proposalBlock, this.node, StateVersions.POOL, proposalTx, true);
 
     if (proposalBlock.number > 1 && !this.node.bp.longestNotarizedChainTips.includes(proposalBlock.last_hash)) {
       throw new ConsensusError({
@@ -1164,7 +1202,7 @@ class Consensus {
       proposalTx = i < chain.length - 1 ? ConsensusUtil.filterProposalFromVotes(chain[i + 1].last_votes) : null;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
       try {
-        Consensus.validateAndExecuteBlockOnDb(block, this.node, StateVersions.SNAP, proposalTx);
+        Consensus.validateAndExecuteBlockOnDb(block, this.node, StateVersions.SNAP, proposalTx, false);
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e}`);
         return null;
