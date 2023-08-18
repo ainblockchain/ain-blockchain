@@ -100,7 +100,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
     // TODO(platfowner): Make the block execution code work.
     console.log(`\n* Executing block on db...`);
     try {
-      Consensus.validateAndExecuteBlockOnDb(block, node, 'verifyBlock', proposalTx);
+      Consensus.validateAndExecuteBlockOnDb(block, node, 'verifyBlock', proposalTx, false);
     } catch (e) {
       console.log(`Failed to validate and excute block ${block.number}: ${e}`);
       process.exit(0);

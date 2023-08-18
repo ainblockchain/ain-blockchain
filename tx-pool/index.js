@@ -12,7 +12,6 @@ const {
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('./transaction');
-const { isFailedTx } = require('../common/common-util');
 
 class TransactionPool {
   constructor(node) {
@@ -66,11 +65,20 @@ class TransactionPool {
     this.updateTxList(address, txListAfter);
   }
 
-  addTransaction(tx, isExecutedTx = false) {
+  updateTransactionInfo(txHash, txInfo) {
+    const tracked = this.transactionTracker.get(txHash) || {};
+    Object.assign(tracked, txInfo);
+    this.transactionTracker.set(txHash, tracked);
+  }
+
+  addTransaction(tx, execResult = null, isExecutedTx = false) {
+    const LOG_HEADER = 'addTransaction';
+
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being added.
     if (!Transaction.isExecutable(tx)) {
-      logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
+      // Should NOT happen!
+      logger.error(`[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`);
       return false;
     }
     if (!this.transactions.has(tx.address)) {
@@ -78,7 +86,7 @@ class TransactionPool {
     }
     this.transactions.get(tx.address).push(tx);
     const txState = isExecutedTx ? TransactionStates.EXECUTED : TransactionStates.PENDING;
-    this.transactionTracker.set(tx.hash, {
+    const transactionInfo = {
       state: txState,
       number: -1,
       index: this.transactions.get(tx.address).length - 1,
@@ -89,7 +97,11 @@ class TransactionPool {
       tracked_at: tx.extra.created_at,
       executed_at: tx.extra.executed_at,
       finalized_at: -1,
-    });
+    };
+    if (execResult) {
+      Object.assign(transactionInfo, { exec_result: execResult });
+    }
+    this.updateTransactionInfo(tx.hash, transactionInfo);
     this.txCountTotal++;
     if (Transaction.isFreeTransaction(tx)) {
       this.freeTxCountTotal++;
@@ -98,7 +110,7 @@ class TransactionPool {
     if (this.node.eh) {
       this.node.eh.emitTxStateChanged(tx, null, txState);
     }
-    logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
+    logger.debug(`[${LOG_HEADER}] ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
   }
 
@@ -526,7 +538,7 @@ class TransactionPool {
     this.updateTxPoolWithTxHashSet(consensusTxs, {}, {});
   }
 
-  cleanUpForNewBlock(block) {
+  cleanUpForFinalizedBlock(block) {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
@@ -534,11 +546,10 @@ class TransactionPool {
     const addrToTimestamp = {};
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
-      const tracked = this.transactionTracker.get(voteTx.hash);
-      const executedAt = _.get(tracked, 'executed_at', -1);
+      const tracked = this.transactionTracker.get(voteTx.hash) || {};
       const beforeState = _.get(tracked, 'state', null);
       // voting txs with ordered nonces.
-      this.transactionTracker.set(voteTx.hash, {
+      this.updateTransactionInfo(voteTx.hash, {
         state: TransactionStates.FINALIZED,
         number: block.number,
         index: -1,
@@ -547,7 +558,6 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
 
@@ -561,13 +571,12 @@ class TransactionPool {
       const tx = block.transactions[i];
       const txNonce = tx.tx_body.nonce;
       const txTimestamp = tx.tx_body.timestamp;
-      const tracked = this.transactionTracker.get(tx.hash);
-      const executedAt = _.get(tracked, 'executed_at', -1);
+      const tracked = this.transactionTracker.get(tx.hash) || {};
       const beforeState = _.get(tracked, 'state', null);
       // Update transaction tracker.
-      const txState = isFailedTx(block.receipts[i]) ? TransactionStates.REVERTED :
+      const txState = CommonUtil.isFailedTx(block.receipts[i]) ? TransactionStates.REVERTED :
           TransactionStates.FINALIZED;
-      this.transactionTracker.set(tx.hash, {
+      this.updateTransactionInfo(tx.hash, {
         state: txState,
         number: block.number,
         index: i,
@@ -576,7 +585,6 @@ class TransactionPool {
         is_executed: true,
         is_finalized: true,
         tracked_at: finalizedAt,
-        executed_at: executedAt,
         finalized_at: finalizedAt,
       });
       inBlockTxs.add(tx.hash);
