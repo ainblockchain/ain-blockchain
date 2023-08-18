@@ -1044,7 +1044,7 @@ class BlockchainNode {
         lastFinalizedBlock = blockToFinalize;
         logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
-        this.tp.cleanUpForNewBlock(blockToFinalize);
+        this.tp.cleanUpForFinalizedBlock(blockToFinalize);
         if (!CommonUtil.isEmpty(blockToFinalize.evidence)) {
           Object.values(blockToFinalize.evidence).forEach((evidenceList) => {
             evidenceList.forEach((val) => {

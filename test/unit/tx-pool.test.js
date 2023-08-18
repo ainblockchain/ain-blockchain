@@ -766,7 +766,7 @@ describe('TransactionPool', () => {
       nodes = [node2, node3, node4];
     });
 
-    it('cleanUpForNewBlock()', () => {
+    it('cleanUpForFinalizedBlock()', () => {
       const number = 1;
       const lastBlock = node.bc.genesisBlock;
       const transactions = node.tp.getValidTransactions();
@@ -789,7 +789,7 @@ describe('TransactionPool', () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
-      node.tp.cleanUpForNewBlock(block);
+      node.tp.cleanUpForFinalizedBlock(block);
       assert.deepEqual(newTransactions, Object.fromEntries(node.tp.transactions));
     });
 

@@ -538,7 +538,7 @@ class TransactionPool {
     this.updateTxPoolWithTxHashSet(consensusTxs, {}, {});
   }
 
-  cleanUpForNewBlock(block) {
+  cleanUpForFinalizedBlock(block) {
     const finalizedAt = Date.now();
     // Get in-block transaction set.
     const inBlockTxs = new Set();
