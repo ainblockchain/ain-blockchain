@@ -851,7 +851,7 @@ class BlockchainNode {
           const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
           this.bp.addToHashToDbMap(block.hash, latestDb);
         } else {
-          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true);
+          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true, true);
           if (number === 0) {
             this.bc.addBlockToChainAndWriteToDisk(block, false);
             this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
@@ -905,7 +905,7 @@ class BlockchainNode {
       const proposalTx = i < validBlocks.length - 1 ?
           ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
       try {
-        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
+        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true, true);
         this.tryFinalizeChain();
       } catch (e) {
         logger.info(`[${LOG_HEADER}] Failed to add new block (${block.number} / ${block.hash}) to chain: ${e.stack}`);
