@@ -371,12 +371,15 @@ describe('Event Handler Test', function() {
             if (eventTriggeredCnt === 0) {
               expect(txState.before).to.equal(null);
               expect(txState.after).to.equal(TransactionStates.EXECUTED);
-              eventTriggeredCnt++;
-            } else {
+            } else if (eventTriggeredCnt === 1) {
               expect(txState.before).to.equal(TransactionStates.EXECUTED);
+              expect(txState.after).to.equal(TransactionStates.IN_BLOCK);
+            } else if (eventTriggeredCnt === 2) {
+              expect(txState.before).to.equal(TransactionStates.IN_BLOCK);
               expect(txState.after).to.equal(TransactionStates.FINALIZED);
               done();
             }
+            eventTriggeredCnt++;
           }
         });
         const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
@@ -402,15 +405,17 @@ describe('Event Handler Test', function() {
             if (eventTriggeredCnt < 2) {
               expect(txState.before).to.equal(null);
               expect(txState.after).to.equal(TransactionStates.EXECUTED);
-              eventTriggeredCnt++;
-            } else {
+            } else if (eventTriggeredCnt < 4) {
               expect(txState.before).to.equal(TransactionStates.EXECUTED);
+              expect(txState.after).to.equal(TransactionStates.IN_BLOCK);
+            } else if (eventTriggeredCnt < 6) {
+              expect(txState.before).to.equal(TransactionStates.IN_BLOCK);
               expect(txState.after).to.equal(TransactionStates.FINALIZED);
-              eventTriggeredCnt++;
-              if (eventTriggeredCnt === 4) {
+              if (eventTriggeredCnt === 5) {
                 done();
               }
             }
+            eventTriggeredCnt++;
           }
         });
         const txResult = setValue(serverList[EVENT_HANDLER_NODE_INDEX], targetPath, 'change')
@@ -443,12 +448,12 @@ describe('Event Handler Test', function() {
             if (eventTriggeredCnt === 0) {
               expect(txState.before).to.equal(null);
               expect(txState.after).to.equal(TransactionStates.PENDING);
-              eventTriggeredCnt++;
-            } else {
+            } else if (eventTriggeredCnt === 1) {
               expect(txState.before).to.equal(TransactionStates.PENDING);
               expect(txState.after).to.equal(TransactionStates.REVERTED);
               done();
             }
+            eventTriggeredCnt++;
           }
         });
         registerFilter(wsClient, filterId, BlockchainEventTypes.TX_STATE_CHANGED, config);

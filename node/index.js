@@ -806,11 +806,11 @@ class BlockchainNode {
       //               will not be included in the tx pool, as they can't be included in a block
       //               anyway, and may be used for attacks on blockchain nodes.
       if (!isDryrun && !CommonUtil.txPrecheckFailed(result)) {
-        this.tp.addTransaction(executableTx);
+        this.tp.addTransaction(executableTx, result);
       }
     } else {
       if (!isDryrun) {
-        this.tp.addTransaction(executableTx, true);
+        this.tp.addTransaction(executableTx, result, true);
       }
     }
 
@@ -851,7 +851,7 @@ class BlockchainNode {
           const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
           this.bp.addToHashToDbMap(block.hash, latestDb);
         } else {
-          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true);
+          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true, true);
           if (number === 0) {
             this.bc.addBlockToChainAndWriteToDisk(block, false);
             this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
@@ -905,7 +905,7 @@ class BlockchainNode {
       const proposalTx = i < validBlocks.length - 1 ?
           ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
       try {
-        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
+        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true, true);
         this.tryFinalizeChain();
       } catch (e) {
         logger.info(`[${LOG_HEADER}] Failed to add new block (${block.number} / ${block.hash}) to chain: ${e.stack}`);
@@ -1044,7 +1044,7 @@ class BlockchainNode {
         lastFinalizedBlock = blockToFinalize;
         logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
-        this.tp.cleanUpForNewBlock(blockToFinalize);
+        this.tp.cleanUpForFinalizedBlock(blockToFinalize);
         if (!CommonUtil.isEmpty(blockToFinalize.evidence)) {
           Object.values(blockToFinalize.evidence).forEach((evidenceList) => {
             evidenceList.forEach((val) => {
