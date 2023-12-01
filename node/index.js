@@ -683,7 +683,7 @@ class BlockchainNode {
     *
     * @param {dict} operation - Database write operation to be converted to transaction
     *                                        not
-    * @return {Transaction} Instance of the transaction class
+    * @returns {Transaction} Instance of the transaction class
     */
   createTransaction(txBody) {
     const LOG_HEADER = 'createTransaction';
