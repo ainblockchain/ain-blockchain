@@ -950,7 +950,7 @@ class BlockchainNode {
     const gasPriceUnit =
         this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit, blockNumber);
     const receipts = CommonUtil.txResultsToReceipts(resList);
     return { transactions, receipts, gasAmountTotal, gasCostTotal };
   }

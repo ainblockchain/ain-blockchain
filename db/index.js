@@ -1711,7 +1711,7 @@ class DB {
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
       executionResult.gas_cost_total =
-          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit, blockNumber);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1724,7 +1724,7 @@ class DB {
       }
     }
     let balance = this.getBalance(billedTo);
-    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
+    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit, blockNumber);
     if (!isDryrun && balance < gasCost) {
       Object.assign(executionResult, {
         code: TxResultCode.FEE_BALANCE_TOO_LOW,
@@ -1736,7 +1736,7 @@ class DB {
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
-        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit, blockNumber);
     if (isDryrun || executionResult.gas_cost_total <= 0) {
       return;
     }
