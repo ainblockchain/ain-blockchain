@@ -22,8 +22,8 @@ const { JSON_RPC_METHODS } = require('./constants');
  * @param {EventHandler} eventHandler Instance of the EventHandler class.
  * @param {string} minProtocolVersion Minimum compatible protocol version.
  * @param {string} maxProtocolVersion Maximum compatible protocol version.
- * @return {dict} A closure of functions compatible with the jayson library for
- *                  servicing JSON-RPC requests.
+ * @returns {dict} A closure of functions compatible with the jayson library for
+ *                 servicing JSON-RPC requests.
  */
 module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   // Minimally required APIs
