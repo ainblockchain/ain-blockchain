@@ -122,6 +122,20 @@ class RuleUtil {
     return this.isString(str) ? str : '';
   }
 
+  countDecimals(value) {
+    const decimalExponentRegex = /^-{0,1}(\d*\.{0,1}\d*)e-(\d+)$/gm;
+
+    if (Math.floor(value) === value) {
+      return 0;
+    }
+    const valueString = value.toString();
+    const matches = decimalExponentRegex.exec(valueString);
+    if (matches) {
+      return Number(matches[2]) + this.countDecimals(Number(matches[1]));
+    }
+    return valueString.split('.')[1].length || 0; 
+  }
+
   toBool(value) {
     return this.isBool(value) ? value : value === 'true';
   }
