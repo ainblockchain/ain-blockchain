@@ -760,8 +760,9 @@ class CommonUtil {
       gasAmount = 0; // Default gas amount = 0
     }
     let cost = gasPrice * gasPriceUnit * gasAmount;
+    // NOTE(platfowner): Apply gas cost flooring up-to 6 decimals.
     if (isEnabledTimerFlag('allow_up_to_6_decimal_transfer_value_only', blockNumber)) {
-      cost = Math.floor(cost * 1000000) / 1000000;
+      cost = Math.floor(cost * 1000000) / 1000000;  // gas cost flooring
     }
     return cost;
   }
