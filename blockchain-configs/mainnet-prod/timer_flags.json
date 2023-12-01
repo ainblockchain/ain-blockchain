@@ -54,5 +54,9 @@
   "tweak_transfer_gc_rule": {
     "enabled_block": 2430100,
     "has_bandage": true
+  },
+  "allow_up_to_6_decimal_transfer_value_only": {
+    "enabled_block": null,
+    "has_bandage": true
   }
 }
