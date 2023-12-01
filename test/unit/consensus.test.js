@@ -85,7 +85,8 @@ describe("Consensus", () => {
         timestamp
       }
     );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(0);
+    // NOTE(platfowner): Set blockNumber = 2 to enable allow_up_to_6_decimal_transfer_value_only timer flag.
+    expect(node1.db.executeTransaction(voteTx, false, false, 2).code).to.equal(0);
   });
 
   it('Staked nodes without producing rights cannot propose blocks', () => {
