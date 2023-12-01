@@ -714,7 +714,7 @@ class Consensus {
     }
     const gasPriceUnit = node.getBlockchainParam('resource/gas_price_unit', number, db.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit, number);
     if (gasAmountTotal !== expectedGasAmountTotal) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_GAS_AMOUNT_TOTAL,
