@@ -401,7 +401,7 @@ function executeGenesisTxsAndGetData(genesisTxs) {
     resList.push(res);
   }
   const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(
-      genesisTxs, resList, BlockchainParams.resource.gas_price_unit);
+      genesisTxs, resList, BlockchainParams.resource.gas_price_unit, 0);
   return {
     stateProofHash: tempGenesisDb.getProofHash('/'),
     gasAmountTotal,

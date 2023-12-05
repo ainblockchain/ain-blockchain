@@ -405,13 +405,29 @@ describe('Consensus', () => {
       });
     });
 
+    it('cannot claim with an amount of more than 6 decimals', async () => {
+      const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/gas_fee/claim/${server1Addr}/0`,
+        value: {
+          amount: 0.0000001  // an amount of 7 decimals
+        }
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, claimTx.tx_hash))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+      expect(claimTx.result.code).to.equal(10104);
+      expect(claimTx.result.func_results._claimReward.code).to.equal(20001);
+      expect(claimTx.result.func_results._claimReward.op_results['0'].result.code).to.equal(12103);
+    });
+
     it('can claim unclaimed rewards', async () => {
       const unclaimed = parseOrLog(syncRequest('GET',
           server1 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed&is_final=true`).body.toString('utf-8')).result;
+      const unclaimedFloored = Math.floor(unclaimed * 1000000) / 1000000;
       const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
         ref: `/gas_fee/claim/${server1Addr}/1`,
         value: {
-          amount: unclaimed
+          amount: unclaimedFloored
         },
         timestamp: 1629377509815
       }}).body.toString('utf-8')).result;
