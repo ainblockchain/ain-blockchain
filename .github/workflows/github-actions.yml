@@ -28,6 +28,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
+      - name: node-gyp install
+        run: yarn global add node-gyp
       - name: yarn install
         run: yarn install
       - name: run unittest
