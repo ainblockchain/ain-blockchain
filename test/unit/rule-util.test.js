@@ -650,6 +650,74 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe('countDecimals', () => {
+    it('returns zero', () => {
+      expect(util.countDecimals(0)).to.equal(0);  // '0'
+      expect(util.countDecimals(1)).to.equal(0);  // '1'
+      expect(util.countDecimals(10)).to.equal(0);  // '10'
+      expect(util.countDecimals(100)).to.equal(0);  // '100'
+      expect(util.countDecimals(1000)).to.equal(0);  // '1000'
+      expect(util.countDecimals(10000)).to.equal(0);  // '10000'
+      expect(util.countDecimals(100000)).to.equal(0);  // '100000'
+      expect(util.countDecimals(1000000)).to.equal(0);  // '1000000'
+      expect(util.countDecimals(10000000)).to.equal(0);  // '10000000'
+      expect(util.countDecimals(100000000)).to.equal(0);  // '100000000'
+      expect(util.countDecimals(1000000000)).to.equal(0);  // '1000000000'
+      expect(util.countDecimals(1234567890)).to.equal(0);  // '1234567890'
+      expect(util.countDecimals(-1)).to.equal(0);  // '-1'
+      expect(util.countDecimals(-1000000000)).to.equal(0);  // '-1000000000'
+      expect(util.countDecimals(11)).to.equal(0);  // '11'
+      expect(util.countDecimals(101)).to.equal(0);  // '101'
+      expect(util.countDecimals(1001)).to.equal(0);  // '1001'
+      expect(util.countDecimals(10001)).to.equal(0);  // '10001'
+      expect(util.countDecimals(100001)).to.equal(0);  // '100001'
+      expect(util.countDecimals(1000001)).to.equal(0);  // '1000001'
+      expect(util.countDecimals(10000001)).to.equal(0);  // '10000001'
+      expect(util.countDecimals(100000001)).to.equal(0);  // '100000001'
+      expect(util.countDecimals(1000000001)).to.equal(0);  // '1000000001'
+      expect(util.countDecimals(-11)).to.equal(0);  // '-11'
+      expect(util.countDecimals(-1000000001)).to.equal(0);  // '-1000000001'
+    });
+
+    it('returns positive', () => {
+      expect(util.countDecimals(0.1)).to.equal(1);  // '0.1'
+      expect(util.countDecimals(0.01)).to.equal(2);  // '0.01'
+      expect(util.countDecimals(0.001)).to.equal(3);  // '0.001'
+      expect(util.countDecimals(0.0001)).to.equal(4);  // '0.0001'
+      expect(util.countDecimals(0.00001)).to.equal(5);  // '0.00001'
+      expect(util.countDecimals(0.000001)).to.equal(6);  // '0.000001'
+      expect(util.countDecimals(0.0000001)).to.equal(7);  // '1e-7'
+      expect(util.countDecimals(0.00000001)).to.equal(8);  // '1e-8'
+      expect(util.countDecimals(0.000000001)).to.equal(9);  // '1e-9'
+      expect(util.countDecimals(0.0000000001)).to.equal(10);  // '1e-10'
+      expect(util.countDecimals(-0.1)).to.equal(1);  // '-0.1'
+      expect(util.countDecimals(-0.0000000001)).to.equal(10);  // '-1e-10'
+      expect(util.countDecimals(1.2)).to.equal(1);  // '1.2'
+      expect(util.countDecimals(0.12)).to.equal(2);  // '0.12'
+      expect(util.countDecimals(0.012)).to.equal(3);  // '0.012'
+      expect(util.countDecimals(0.0012)).to.equal(4);  // '0.0012'
+      expect(util.countDecimals(0.00012)).to.equal(5);  // '0.00012'
+      expect(util.countDecimals(0.000012)).to.equal(6);  // '0.000012'
+      expect(util.countDecimals(0.0000012)).to.equal(7);  // '0.0000012'
+      expect(util.countDecimals(0.00000012)).to.equal(8);  // '1.2e-7'
+      expect(util.countDecimals(0.000000012)).to.equal(9);  // '1.2e-8'
+      expect(util.countDecimals(0.0000000012)).to.equal(10);  // '1.2e-9'
+      expect(util.countDecimals(-1.2)).to.equal(1);  // '-1.2'
+      expect(util.countDecimals(-0.0000000012)).to.equal(10);  // '-1.2e-9'
+      expect(util.countDecimals(1.03)).to.equal(2);  // '1.03'
+      expect(util.countDecimals(1.003)).to.equal(3);  // '1.003'
+      expect(util.countDecimals(1.0003)).to.equal(4);  // '1.0003'
+      expect(util.countDecimals(1.00003)).to.equal(5);  // '1.00003'
+      expect(util.countDecimals(1.000003)).to.equal(6);  // '1.000003'
+      expect(util.countDecimals(1.0000003)).to.equal(7);  // '1.0000003'
+      expect(util.countDecimals(1.00000003)).to.equal(8);  // '1.00000003'
+      expect(util.countDecimals(1.000000003)).to.equal(9);  // '1.000000003'
+      expect(util.countDecimals(1.0000000003)).to.equal(10);  // '1.0000000003'
+      expect(util.countDecimals(-1.03)).to.equal(2);  // '-1.03'
+      expect(util.countDecimals(-1.0000000003)).to.equal(10);  // '-1.0000000003'
+    });
+  });
+
   describe("toBool", () => {
     it("returns false", () => {
       expect(util.toBool(0)).to.equal(false);

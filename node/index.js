@@ -683,7 +683,7 @@ class BlockchainNode {
     *
     * @param {dict} operation - Database write operation to be converted to transaction
     *                                        not
-    * @return {Transaction} Instance of the transaction class
+    * @returns {Transaction} Instance of the transaction class
     */
   createTransaction(txBody) {
     const LOG_HEADER = 'createTransaction';
@@ -950,7 +950,7 @@ class BlockchainNode {
     const gasPriceUnit =
         this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit, blockNumber);
     const receipts = CommonUtil.txResultsToReceipts(resList);
     return { transactions, receipts, gasAmountTotal, gasCostTotal };
   }

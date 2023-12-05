@@ -89,7 +89,7 @@ class Blockchain {
     * the blockchain.
     *
     * @param {string} hash - hash or hash substring of block.
-    * @return {Block} Block instance corresponding to the queried block hash.
+    * @returns {Block} Block instance corresponding to the queried block hash.
     */
   getBlockByHash(hash) {
     if (!hash) return null;
@@ -108,7 +108,7 @@ class Blockchain {
     * Given a block number, returns the block that corresponds to the block number.
     *
     * @param {integer} number - block number
-    * @return {Block} Block instance corresponding to the queried block number.
+    * @returns {Block} Block instance corresponding to the queried block number.
     */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
@@ -324,7 +324,7 @@ class Blockchain {
     *
     * @param {Number} from - The lowest block number to get (included)
     * @param {Number} to - The highest block number to geet (excluded)
-    * @return {list} A list of blocks, up to CHAIN_SEGMENT_LENGTH blocks
+    * @returns {list} A list of blocks, up to CHAIN_SEGMENT_LENGTH blocks
     */
   getBlockList(from, to) {
     const blockList = [];
@@ -358,7 +358,7 @@ class Blockchain {
     * starting from the `from` block number (included).
     *
     * @param {Number} from - The highest block number to get (included)
-    * @return {list} A list of blocks, up to OLD_CHAIN_SEGMENT_LENGTH blocks
+    * @returns {list} A list of blocks, up to OLD_CHAIN_SEGMENT_LENGTH blocks
     */
   getOldBlockList(from) {
     const lastBlock = this.lastBlock();
