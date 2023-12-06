@@ -14,6 +14,7 @@ const {
   getBlockchainConfig,
   buildOwnerPermissions,
   BlockchainParams,
+  isEnabledTimerFlag,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const FileUtil = require('../../common/file-util');
@@ -400,8 +401,9 @@ function executeGenesisTxsAndGetData(genesisTxs) {
     }
     resList.push(res);
   }
+  const enableGasCostFlooring = isEnabledTimerFlag('allow_up_to_6_decimal_transfer_value_only', 0);
   const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(
-      genesisTxs, resList, BlockchainParams.resource.gas_price_unit, 0);
+      genesisTxs, resList, BlockchainParams.resource.gas_price_unit, enableGasCostFlooring);
   return {
     stateProofHash: tempGenesisDb.getProofHash('/'),
     gasAmountTotal,

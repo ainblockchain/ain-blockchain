@@ -23,6 +23,7 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
   ValueChangedEventSources,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -949,8 +950,9 @@ class BlockchainNode {
     }
     const gasPriceUnit =
         this.getBlockchainParam('resource/gas_price_unit', blockNumber, baseDb.stateVersion);
+    const enableGasCostFlooring = isEnabledTimerFlag('allow_up_to_6_decimal_transfer_value_only', blockNumber);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit, blockNumber);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit, enableGasCostFlooring);
     const receipts = CommonUtil.txResultsToReceipts(resList);
     return { transactions, receipts, gasAmountTotal, gasCostTotal };
   }

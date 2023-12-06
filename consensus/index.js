@@ -18,6 +18,7 @@ const {
   StateVersions,
   ValueChangedEventSources,
   TransactionStates,
+  isEnabledTimerFlag,
 } = require('../common/constants');
 const { ConsensusErrorCode } = require('../common/result-code');
 const {
@@ -713,8 +714,9 @@ class Consensus {
       });
     }
     const gasPriceUnit = node.getBlockchainParam('resource/gas_price_unit', number, db.stateVersion);
+    const enableGasCostFlooring = isEnabledTimerFlag('allow_up_to_6_decimal_transfer_value_only', number);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit, number);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit, enableGasCostFlooring);
     if (gasAmountTotal !== expectedGasAmountTotal) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_GAS_AMOUNT_TOTAL,
