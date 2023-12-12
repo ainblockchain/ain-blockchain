@@ -2683,13 +2683,35 @@ describe('Native Function', () => {
         expect(toAfterBalance).to.equal(toBeforeBalance);
       });
 
-      it('transfer: transfer more than account balance', async () => {
+      it('transfer: transfer with a value of 7 decimals', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferPath + '/5/value',
+          value: 0.0000001,  // a value of 7 decimals
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const toAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        expect(fromAfterBalance).to.equal(fromBeforeBalance);
+        expect(toAfterBalance).to.equal(toBeforeBalance);
+      });
+
+      it('transfer: transfer more than account balance', async () => {
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: transferPath + '/6/value',
           value: fromBeforeBalance + 1
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2710,7 +2732,7 @@ describe('Native Function', () => {
         let toBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
-          ref: transferPath + '/6/value',
+          ref: transferPath + '/7/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2739,7 +2761,7 @@ describe('Native Function', () => {
       it('transfer: transfer with same addresses', async () => {
         const transferPathSameAddrs = `/transfer/${transferFrom}/${transferFrom}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-          ref: transferPathSameAddrs + '/7/value',
+          ref: transferPathSameAddrs + '/8/value',
           value: transferAmount
         }}).body.toString('utf-8'));
         expect(body.code).to.equals(40001);
@@ -2936,7 +2958,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "message": "Write rule evaluated false: [(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && newData > 0 && util.getBalance($from, getValue) >= newData] at '/transfer/$from/$to/$key/value' for value path '/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/203/value' with path vars '{\"$key\":\"203\",\"$to\":\"staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0\",\"$from\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '33', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp '1234567890001'",
+          "message": "Write rule evaluated false: [(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && newData > 0 && util.countDecimals(newData) <= 6 && util.getBalance($from, getValue) >= newData] at '/transfer/$from/$to/$key/value' for value path '/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/203/value' with path vars '{\"$key\":\"203\",\"$to\":\"staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0\",\"$from\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '33', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp '1234567890001'",
         });
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);

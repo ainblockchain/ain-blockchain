@@ -751,22 +751,27 @@ class CommonUtil {
    * @param {Object} gasAmount gas amount
    * @returns
    */
-  static getTotalGasCost(gasPrice, gasAmount, gasPriceUnit) {
+  static getTotalGasCost(gasPrice, gasAmount, gasPriceUnit, enableGasCostFlooring = true) {
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * gasPriceUnit * gasAmount;
+    let cost = gasPrice * gasPriceUnit * gasAmount;
+    // NOTE(platfowner): Apply gas cost flooring up-to 6 decimals.
+    if (enableGasCostFlooring) {
+      cost = Math.floor(cost * 1000000) / 1000000;  // gas cost flooring
+    }
+    return cost;
   }
 
-  static getServiceGasCostTotalFromTxList(txList, resList, gasPriceUnit) {
+  static getServiceGasCostTotalFromTxList(txList, resList, gasPriceUnit, enableGasCostFlooring = true) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
       return CommonUtil.mergeNumericJsObjects(acc, {
         gasAmountTotal: cur.gas_amount_charged,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged, gasPriceUnit)
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged, gasPriceUnit, enableGasCostFlooring)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }

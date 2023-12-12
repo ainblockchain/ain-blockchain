@@ -6,8 +6,8 @@ const { getGraphData } = require('./network-topology');
  * JSON-RPC calls
  *
  * @param {list} nodes - List of all nodes from.
- * @return {dict} A closure of functions compatible with the jayson library for
- *                  servicing JSON-RPC requests.
+ * @returns {dict} A closure of functions compatible with the jayson library for
+ *                 servicing JSON-RPC requests.
  */
 module.exports = function getMethods(tracker, logger) {
   const blockchainNodes = tracker.blockchainNodes;
