@@ -56,7 +56,7 @@
     "has_bandage": true
   },
   "allow_up_to_6_decimal_transfer_value_only": {
-    "enabled_block": null,
+    "enabled_block": 3064900,
     "has_bandage": true
   }
 }
