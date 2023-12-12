@@ -1702,6 +1702,7 @@ class DB {
       auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun) {
     const gasPriceUnit =
         DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
+    const enableGasCostFlooring = isEnabledTimerFlag('allow_up_to_6_decimal_transfer_value_only', blockNumber);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
     const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
@@ -1711,7 +1712,7 @@ class DB {
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
       executionResult.gas_cost_total =
-          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit, enableGasCostFlooring);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1724,7 +1725,7 @@ class DB {
       }
     }
     let balance = this.getBalance(billedTo);
-    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
+    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit, enableGasCostFlooring);
     if (!isDryrun && balance < gasCost) {
       Object.assign(executionResult, {
         code: TxResultCode.FEE_BALANCE_TOO_LOW,
@@ -1736,7 +1737,7 @@ class DB {
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
-        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit, enableGasCostFlooring);
     if (isDryrun || executionResult.gas_cost_total <= 0) {
       return;
     }
