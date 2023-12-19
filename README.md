@@ -6,17 +6,16 @@ Official Javascript implementation of AI Network Blockchain.
 ## Install Environment (Last update at 6th of Dec 2021)
 ### OS
 
-- macOS 10.15 (macos-latest)
-- Ubuntu 20.04 (ubuntu-latest)
+- macOS 13.5 (macos-latest)
+- Ubuntu 22.04 (ubuntu-latest)
 
-### Node version
+### NodeJs version
 
-- v16.x
-- v14.x
+- v18.x
 
 ## Tracker
 
-Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ipaddress of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
+Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ip address of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
 
 NOTE: Tracker Server must be started first before starting any blockchain node instances.
 
@@ -44,22 +43,18 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
 ```
 gcloud init
 # For genesis deploy
-bash deploy_blockchain_genesis_gcp.sh {dev|staging|spring|summer} <# of Shards> [--setup]
+bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup]
+bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
 bash setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install yarn packages
-```
-source setup_tracker_gcp.sh
-```
 - Start tracker server job
 ```
 cd ain-blockchain/
-bash start_tracker_genesis_gcp.sh
+bash start_tracker_genesis_gcp.sh <GCP Username> [--keep-code|--no-keep-code]
 ```
 
 <!--
@@ -80,15 +75,15 @@ docker run --network="host" -d ainblockchain/tracker-server:latest
 ```
 -->
 
-### Client API for development and debugging
+### Client API for development and testing purposes
 
-#### Tracker health check
+#### Tracker protocol version check & health check
 
-GET http://<ip_address>:5000/
+GET http://<ip_address>:8080/
 
-#### Node status check
+#### Network status check
 
-GET http://<ip_address>:5000/peer_nodes
+GET http://<ip_address>:8080/network_status
 
 ## Node 
 
@@ -131,21 +126,17 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 DEBUG=
 ```
 gcloud init
 # For genesis deploy
-bash deploy_blockchain_genesis_gcp.sh {dev|staging|spring|summer} <# of Shards> [--setup]
+bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]
 # For incremental deploy
-bash deploy_blockchain_incremental_gcp.sh {dev|staging|spring|summer} <# of Shards> <Begin Parent Node Index> <End Parent Node Index> [--setup]
+bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
 bash setup_blockchain_ubuntu.sh
 ```
-- Copy files to a sharable folder & install yarn packages
-```
-source setup_node_gcp.sh
-```
 - Start Node server job (set shard index to 0 if you're running a root chain node)
 ```
-bash start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
+bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]
 ```
 
 ### Running with Docker
@@ -217,14 +208,35 @@ yarn run test_integration
 
 Some individual tests already definded in the package.json.
 ```
-yarn run test_chain_util
-yarn run test_state_util
-yarn run test_block_pool
-yarn run test_db
-yarn run test_node
-yarn run test_blockchain
-yarn run test_dapp
-yarn run test_sharding
+yarn run test_unit_block_pool
+yarn run test_unit_blockchain
+yarn run test_unit_common_util
+yarn run test_unit_consensus
+yarn run test_unit_db
+yarn run test_unit_event_handler
+yarn run test_unit_functions
+yarn run test_unit_object_util
+yarn run test_unit_p2p
+yarn run test_unit_p2p_util
+yarn run test_unit_radix_node
+yarn run test_unit_radix_tree
+yarn run test_unit_rule_util
+yarn run test_unit_state_manager
+yarn run test_unit_state_node
+yarn run test_unit_state_util
+yarn run test_unit_traffic_db
+yarn run test_unit_traffic_sm
+yarn run test_unit_tx
+yarn run test_unit_tx_pool
+yarn run test_integration_dapp
+yarn run test_integration_blockchain
+yarn run test_integration_consensus
+yarn run test_integration_event_handler
+yarn run test_integration_function
+yarn run test_integration_node
+yarn run test_integration_he_protocol
+yarn run test_integration_he_sharding
+yarn run test_integration_sharding
 ```
 
 The load test is also supported.
@@ -232,11 +244,15 @@ The load test is also supported.
 yarn run loadtest
 ```
 
-### Client API for development and debugging
+### Client API for development and testing purposes
+
+#### Node protocol version check
+
+GET http://<ip_address>:8080/
 
 #### Node health check
 
-GET http://<ip_address>:8080/
+GET http://<ip_address>:8080/health_check
 
 #### Fetch latest blocks in the blockchain (up to 20 blocks)
 
