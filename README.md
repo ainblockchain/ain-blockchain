@@ -19,7 +19,7 @@ Tracker server is required by new peers who wish to join the AIN network. Each p
 
 NOTE: Tracker Server must be started first before starting any blockchain node instances.
 
-### Running without Docker
+### Running Tracker without Docker
 
 #### Local
 
@@ -58,7 +58,7 @@ bash start_tracker_genesis_gcp.sh <GCP Username> [--keep-code|--no-keep-code]
 ```
 
 <!--
-### Running with Docker
+### Running Tracker with Docker
 
 - Build Docker image
 ```
@@ -75,7 +75,7 @@ docker run --network="host" -d ainblockchain/tracker-server:latest
 ```
 -->
 
-### Client API for development and testing purposes
+### Tracker Client API for development and testing purposes
 
 #### Tracker protocol version check & health check
 
@@ -85,11 +85,11 @@ GET http://<ip_address>:8080/
 
 GET http://<ip_address>:8080/network_status
 
-## Node 
+## Blockchain Node 
 
 Operates a single peer node instance of the AIN blockchain. A single blockchain node instance processes incoming transaction requests and maintains a local copy of the entire blockchain. The blockchain node first queries the tracker-server for ip addresses of other peers, and then syncs its local blockchain to the network consensus blockchain. If a node is included in the whitelist and has staked appropriate amount of AIN, it will then take part in the consensus protocol.
 
-### Running without Docker
+### Running Blockchain Node without Docker
 
 #### Local
 
@@ -139,7 +139,7 @@ bash setup_blockchain_ubuntu.sh
 bash start_node_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]
 ```
 
-### Running with Docker
+### Running Blockchain Node with Docker
 
 - Pull Docker image from [Docker Hub](https://hub.docker.com/repository/docker/ainblockchain/ain-blockchain)
 ```
@@ -198,7 +198,7 @@ cat logger/logs/8080/<log_file>
 ```
 -->
 
-### How to run tests
+### Testing How-Tos
 
 How to run unit test and integration test all around.
 ```
@@ -244,7 +244,7 @@ The load test is also supported.
 yarn run loadtest
 ```
 
-### Client API for development and testing purposes
+### Blockchain Node Client API for development and testing purposes
 
 #### Node protocol version check
 
