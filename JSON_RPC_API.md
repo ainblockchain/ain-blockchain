@@ -1,5 +1,196 @@
 # AIN Blockchain JSON-RPC API
 
+## Database API
+
+### ain_get
+
+Returns the value, write rule, owner rule, or function at the given path in the global state tree. 
+
+**Parameters**
+
+
+**Returns**
+
+The Array of data/rule/owner data/function hash at each path. The order will be preserved, and if there isn't data present at the path, `null` will be at the path's index.
+
+**Example**
+
+Request
+```
+curl -X POST --data
+'{
+  "jsonrpc":"2.0",
+  "id":1, 
+  "method":"ain_get", 
+  "params":{
+    "type": "GET"
+    "op_list": [
+      {"ref": "afan/user123/balance","type": "GET_VALUE"},
+      {"ref": "afan/$userId","type": "GET_RULE"}
+    ]
+  }
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":[1000, {".rule": {"write": "'$userId' === auth"}}]
+}
+```
+
+---
+
+## Account API
+
+### ain_getBalance
+
+Returns the balance of an account. 
+
+**Parameters**
+
+An object with a property:
+
+-   address: `String` - address of the account to get the balance of. 
+
+**Returns**
+
+`Number` - The balance. 
+
+**Example**
+
+Request
+```
+curl -X POST --data
+'{
+  "jsonrpc":"2.0",
+  "id":1, 
+  "method":"ain_getBalance",
+  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":98347
+}
+```
+
+### ain_getConsensusStakeAmount
+
+Returns the amount of AIN the account (node) is staking for participating in the consensus protocol. 
+
+**Parameters**[](#parameters-1)
+
+An object with a property:
+
+-   address: `String` - address of the account. 
+
+**Returns**
+
+`Number` - The amount at stake. 
+
+**Example**
+
+Request
+```
+curl -X POST --data
+'{
+  "jsonrpc":"2.0",
+  "id":1, 
+  "method":"ain_getConsensusStakeAmount",
+  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":1000
+}
+```
+
+### ain_getNonce
+
+Returns the nonce (= number of transactions an address has sent) of an address. 
+
+**Parameters**
+
+An object with a property:
+
+-   address: `String` - address of the account to get the transaction count of 
+
+**Returns**
+
+`Number` - The nonce. 
+
+**Example**
+
+Request
+```
+curl -X POST --data
+'{
+  "jsonrpc":"2.0",
+  "id":1, 
+  "method":"ain_getNonce",
+  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":10
+}
+```
+
+### ain_isValidator
+
+Returns whether the node is currently a validator or not. 
+
+**Parameters**
+
+An object with a property:
+
+-   address: `String` - address of the account to check if it's currently in the validator set 
+
+**Returns**
+
+`Boolean` - Whether the node is a validator or not. 
+
+**Example**
+
+Request
+```
+curl -X POST --data
+'{
+  "jsonrpc":"2.0",
+  "id":1, 
+  "method":"ain_isValidator",
+  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":true
+}
+```
+
+---
+
 ## Transaction API
 
 ### ain_getPendingTransactions
@@ -937,3 +1128,4 @@ Response
 }
 ```
 
+---
