@@ -1,5 +1,43 @@
 # AIN Blockchain JSON-RPC API
 
+## Table of Contents
+
+- [Database API](#database-api)
+	- [ain_get](#ain_get)
+- [Account API](#account-api)
+	- [ain_getBalance](#ain_getbalance)
+	- [ain_getConsensusStakeAmount](#ain_getconsensusstakeamount)
+	- [ain_getNonce](#ain_getnonce)
+	- [ain_isValidator](#ain_isvalidator)
+- [Transaction API](#transaction-api)
+	- [ain_getPendingTransactions](#ain_getpendingtransactions)
+	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
+	- [ain_getTransactionByBlockHashAndIndex](#ain_gettransactionbyblockhashandindex)
+	- [ain_getTransactionByHash](#ain_gettransactionbyhash)
+	- [ain_sendSignedTransaction](#ain_sendsignedtransaction)
+	- [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
+- [Block API](#block-api)
+	- [ain_getRecentBlock](#ain_getrecentblock)
+	- [ain_getRecentBlockNumber](#ain_getrecentblocknumber)
+	- [ain_getBlockByNumber](#ain_getblockbynumber)
+	- [ain_getBlockByHash](#ain_getblockbyhash)
+	- [ain_getBlocks](#ain_getblocks)
+	- [ain_getBlockHeaders](#ain_getblockheaders)
+	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
+	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
+	- [ain_getProposerByHash](#ain_getproposerbyhash)
+	- [ain_getProposerByNumber](#ain_getproposerbynumber)
+	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
+	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
+- [Network API](#network-api)
+	- [net_listening](#net_listening)
+	- [net_nodeInfo](#net_nodeinfo)
+	- [net_peerCount](#net_peercount)
+	- [net_syncing](#net_syncing)
+	- [net_id](#net_id)
+
+---
+
 ## Database API
 
 ### ain_get
@@ -558,7 +596,7 @@ Response
 
 ## Block API
 
-### ain_getPendingTransactions
+### ain_getRecentBlock
 
 Returns the most recent block.
 
