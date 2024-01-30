@@ -51,20 +51,34 @@ Returns the value, write rule, owner rule, or function at the given path in the 
 
 The Array of data/rule/owner data/function hash at each path. The order will be preserved, and if there isn't data present at the path, `null` will be at the path's index.
 
-**Example**
+**Examples**
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_get", 
-  "params":{
-    "type": "GET"
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_get",
+  "params": {
+    "protoVer": "1.1.3",
+    "type": "GET",
     "op_list": [
-      {"ref": "afan/user123/balance","type": "GET_VALUE"},
-      {"ref": "afan/$userId","type": "GET_RULE"}
+      {
+        "type": "GET_VALUE",
+        "ref": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
+      },
+      {
+        "type": "GET_RULE",
+        "ref": "/accounts"
+      },
+      {
+        "type": "GET_FUNCTION",
+        "ref": "/transfer"
+      },
+      {
+        "type": "GET_OWNER",
+        "ref": "/apps/consensus"
+      }
     ]
   }
 }'
@@ -72,10 +86,209 @@ curl -X POST --data
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":[1000, {".rule": {"write": "'$userId' === auth"}}]
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": [
+      {
+        "0": {
+          "value": 11000000
+        }
+      },
+      {
+        "$user_addr": {
+          "balance": {
+            ".rule": {
+              "write": "auth.fid === '_transfer'"
+            }
+          }
+        }
+      },
+      {
+        "$from": {
+          "$to": {
+            "$key": {
+              "value": {
+                ".function": {
+                  "_transfer": {
+                    "function_type": "NATIVE",
+                    "function_id": "_transfer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        ".owner": {
+          "owners": {
+            "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true
+            }
+          }
+        }
+      }
+    ],
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_get",
+  "params": {
+    "protoVer": "1.1.3",
+    "type": "GET_VALUE",
+    "ref": "/blockchain_params"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "token": {
+        "name": "AI Network",
+        "symbol": "AIN",
+        "total_supply": 700000000,
+        "bridge": {
+          "ETH": {
+            "3": {
+              "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+                "token_pool": "0x00AA7d797FB091AF6dD57ec71Abac8D2066BE298",
+                "min_checkout_per_request": 10000,
+                "max_checkout_per_request": 100000,
+                "max_checkout_per_day": 1000000,
+                "checkout_fee_rate": 0.001,
+                "token_exchange_rate": 1,
+                "token_exchange_scheme": "FIXED"
+              }
+            }
+          }
+        }
+      },
+      "consensus": {
+        "min_stake_for_proposer": 10000000,
+        "max_stake_for_proposer": 10000000,
+        "min_num_validators": 5,
+        "max_num_validators": 20,
+        "genesis_proposer_whitelist": {
+          "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
+          "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
+          "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
+          "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
+          "0x004A2550661c8a306207C9dabb279d5701fFD66e": true
+        },
+        "genesis_validator_whitelist": {
+          "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
+          "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
+          "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
+          "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
+          "0x004A2550661c8a306207C9dabb279d5701fFD66e": true,
+          "0x005A3c55EcE1A593b761D408B6E6BC778E0a638B": true,
+          "0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe": true,
+          "0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74": true,
+          "0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba": true,
+          "0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD": true
+        },
+        "genesis_validators": {
+          "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+            "stake": 10000000,
+            "proposal_right": true
+          },
+          "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": {
+            "stake": 10000000,
+            "proposal_right": true
+          },
+          "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": {
+            "stake": 10000000,
+            "proposal_right": true
+          },
+          "0x003AD6FdB06684175e7D95EcC36758B014517E4b": {
+            "stake": 10000000,
+            "proposal_right": true
+          },
+          "0x004A2550661c8a306207C9dabb279d5701fFD66e": {
+            "stake": 10000000,
+            "proposal_right": true
+          }
+        },
+        "health_threshold_epoch": 10,
+        "stake_lockup_extension": 2592000000,
+        "max_invalid_blocks_on_mem": 100
+      },
+      "genesis": {
+        "genesis_addr": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+        "genesis_timestamp": 1640995199999,
+        "num_genesis_accounts": 10,
+        "epoch_ms": 20000,
+        "chain_id": 0,
+        "network_id": 0
+      },
+      "resource": {
+        "state_tree_height_limit": 30,
+        "state_tree_bytes_limit": 5000000000,
+        "state_label_length_limit": 150,
+        "bandwidth_budget_per_block": 1000000,
+        "service_state_budget_ratio": 0.5,
+        "apps_state_budget_ratio": 0.495,
+        "free_state_budget_ratio": 0.005,
+        "max_state_tree_size_per_byte": 0.00625,
+        "state_gas_coefficient": 1,
+        "unit_write_gas_amount": 1,
+        "account_registration_gas_amount": 2000,
+        "rest_function_call_gas_amount": 100,
+        "gas_price_unit": 0.000001,
+        "service_bandwidth_budget_ratio": 0.05,
+        "apps_bandwidth_budget_ratio": 0.9495,
+        "free_bandwidth_budget_ratio": 0.0005,
+        "min_staking_for_app_tx": 0,
+        "min_balance_for_service_tx": 0,
+        "max_function_urls_per_developer": 3,
+        "default_developers_url_whitelist": {
+          "0": "https://*.ainetwork.ai",
+          "1": "https://*.ainize.ai",
+          "2": "https://*.afan.ai",
+          "3": "http://localhost:3000"
+        },
+        "tx_bytes_limit": 10000,
+        "batch_tx_list_size_limit": 50,
+        "set_op_list_size_limit": 50,
+        "min_gc_num_siblings_deleted": 10,
+        "snapshot_chunk_size": 1000000,
+        "min_gas_price": 500,
+        "app_creation_gas_amount": 2000
+      },
+      "reward": {
+        "type": "FIXED",
+        "annual_rate": 0.08
+      },
+      "sharding": {
+        "shard_owner": "",
+        "shard_reporter": "",
+        "sharding_protocol": "NONE",
+        "sharding_path": "/",
+        "parent_chain_poc": "",
+        "reporting_period": 0,
+        "max_shard_report": 100,
+        "num_shard_report_deleted": 100
+      }
+    },
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
@@ -101,12 +314,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getBalance",
-  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getBalance",
+  "params": {
+    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+  }
 }'
 ```
 
@@ -137,12 +351,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getConsensusStakeAmount",
-  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getConsensusStakeAmount",
+  "params": {
+    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+  }
 }'
 ```
 
@@ -173,12 +388,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getNonce",
-  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getNonce",
+  "params": {
+    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+  }
 }'
 ```
 
@@ -209,12 +425,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_isValidator",
-  "params":{"address":"0xc94770007dda54cF92009BFF0dE90c06F603a09f"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_isValidator",
+  "params": {
+    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+  }
 }'
 ```
 
@@ -247,14 +464,14 @@ None.
 
 Request
 ```
-curl -X POST --header 'Content-Type: application/json' --data '{
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "ain_getPendingTransactions",
   "params": {
     "protoVer": "1.0.9"
   }
-}' https://testnet-api.ainetwork.ai/json-rpc
+}'
 ```
 
 Response
@@ -302,7 +519,7 @@ An object with 2 properties:
 
 Request
 ```
-curl -X POST --header 'Content-Type: application/json' --data '{
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "ain_getTransactionByBlockNumberAndIndex",
@@ -311,7 +528,7 @@ curl -X POST --header 'Content-Type: application/json' --data '{
     "block_number": 1018739,
     "index": 1
   }
-}' https://testnet-api.ainetwork.ai/json-rpc
+}'
 ```
 
 Response
@@ -369,7 +586,7 @@ An object with 2 properties:
 
 Request
 ```
-curl -X POST --header 'Content-Type: application/json' --data '{
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "ain_getTransactionByBlockHashAndIndex",
@@ -378,7 +595,7 @@ curl -X POST --header 'Content-Type: application/json' --data '{
     "block_hash": "0x38635f8c1b3ecfaa8314698ac241341dc3ba82bc1d26e4fb5c20e21fe9ce2645",
     "index": 0
   }
-}' https://testnet-api.ainetwork.ai/json-rpc
+}'
 ```
 
 Response
@@ -455,7 +672,7 @@ An object with a property:
 
 Request
 ```
-curl -X POST --header 'Content-Type: application/json' --data '{
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "ain_getTransactionByHash",
@@ -464,7 +681,7 @@ curl -X POST --header 'Content-Type: application/json' --data '{
     "hash": "0xa38fabd1daa7d7d0488275d146bebcacd088eda0069987606a61407c680eb8d9",
     "index": 0
   }
-}' https://testnet-api.ainetwork.ai/json-rpc
+}'
 ```
 
 Response
@@ -515,7 +732,7 @@ An object with following properties:
 
 Request
 ```
-curl -X POST --header 'Content-Type: application/json' --data '{
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
   "method": "ain_sendSignedTransaction",
@@ -533,7 +750,7 @@ curl -X POST --header 'Content-Type: application/json' --data '{
        "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56..."
      }
   }
-}' https://testnet-api.ainetwork.ai/json-rpc
+}'
 ```
 
 ### ain_sendSignedTransactionBatch
@@ -554,29 +771,38 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_sendSignedTransactionBatch", 
-  "params":{"tx_list":[
-    {
-      "signature":"0xaabc9ddafffb2ae0bac4107697547d22d9383...",
-      "transaction":{
-        "nonce":120,
-        "timestamp":1566736760322,
-        "operation":{"ref":"path/","value":"value","type":"SET_VALUE"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_sendSignedTransactionBatch", 
+  "params": {
+    "tx_list": [
+      {
+        "signature": "0xaabc9ddafffb2ae0bac4107697547d22d9383...",
+        "transaction": {
+          "nonce": 120,
+          "timestamp": 1566736760322,
+          "operation": {
+            "ref": "path/",
+            "value": "value",
+            "type": "SET_VALUE"
+          }
+        }
+      },
+      {
+        "signature": "0x1ec191ef20b0e9628c4397665977cb...",
+        "transaction": {
+          "nonce": 121,
+          "timestamp": 1566736760400,
+          "operation": {
+            "ref": "path/path/",
+            "value": 100,
+            "type": "SET_VALUE"
+          }
+        }
       }
-    },
-    {
-      "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-      "transaction":{
-        "nonce":121,
-        "timestamp":1566736760400,
-        "operation":{"ref":"path/path/","value":100,"type":"SET_VALUE"}
-      }
-    }
-  ]}
+    ]
+  }
 }'
 ```
 
@@ -612,7 +838,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"ain_getRecentBlock"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getRecentBlock"
+}'
 ```
 Response
 ```
@@ -671,7 +901,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"ain_getRecentBlockNumber"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getRecentBlockNumber"
+}'
 ```
 
 Response
@@ -702,7 +936,15 @@ An object with properties:
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"ain_getBlockByNumber","params":{"number":675,"getFullTransactions":true}}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getBlockByNumber",
+  "params": {
+    "number": 675,
+    "getFullTransactions": true
+  }
+}'
 ```
 
 Response
@@ -765,13 +1007,14 @@ An object with properties:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getBlockByHash",
-  "params":{"hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-      "getFullTransactions":true}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getBlockByHash",
+  "params": {
+    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484...",
+    "getFullTransactions": true
+  }
 }'
 ```
 
@@ -835,12 +1078,14 @@ An object with properties:
 
 Request
 ```
-curl -X POST --data 
-'{
-  "jsonrpc":"2.0",
-  "id":1,
-  "method":"ain_getBlocks",
-  "params":{"from":0,"to":100}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getBlocks",
+  "params": {
+    "from": 0,
+    "to": 100
+  }
 }'
 ```
 
@@ -908,12 +1153,14 @@ An object with properties:
 
 Request
 ```
-curl -X POST --data 
-'{
-  "jsonrpc":"2.0",
-  "id":1,
-  "method":"ain_getBlockHeaders",
-  "params":{"from":0,"to":100}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getBlockHeaders",
+  "params": {
+    "from": 0,
+    "to": 100
+  }
 }'
 ```
 
@@ -960,12 +1207,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getBlockTransactionCountByNumber",
-  "params":{"number":"123"}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getBlockTransactionCountByNumber",
+  "params": {
+    "number": "123"
+  }
 }'
 ```
 
@@ -996,12 +1244,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getBlockTransactionCountByNumber",
-  "params":{"hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484..."}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getBlockTransactionCountByNumber",
+  "params": {
+    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+  }
 }'
 ```
 
@@ -1032,12 +1281,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getProposerByHash",
-  "params":{"hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484..."}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getProposerByHash",
+  "params": {
+    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+  }
 }'
 ```
 
@@ -1068,12 +1318,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1,
-  "method":"ain_getProposerByNumber",
-  "params":{"number":456}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getProposerByNumber",
+  "params": {
+    "number": 456
+  }
 }'
 ```
 
@@ -1104,12 +1355,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getValidatorsByHash",
-  "params":{"hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484..."}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getValidatorsByHash",
+  "params": {
+    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+  }
 }'
 ```
 
@@ -1144,12 +1396,13 @@ An object with a property:
 
 Request
 ```
-curl -X POST --data
-'{
-  "jsonrpc":"2.0",
-  "id":1, 
-  "method":"ain_getValidatorsByNumber",
-  "params":{"number":2143}
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getValidatorsByNumber",
+  "params": {
+    "number": 2143
+  }
 }'
 ```
 
@@ -1186,7 +1439,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"net_listening"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_listening"
+}'
 ```
 
 Response
@@ -1214,7 +1471,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"net_nodeInfo"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_nodeInfo"
+}'
 ```
 
 Response
@@ -1246,7 +1507,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"net_peerCount"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_peerCount"
+}'
 ```
 
 Response
@@ -1274,7 +1539,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"net_syncing"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_syncing"
+}'
 ```
 
 Response
@@ -1305,7 +1574,11 @@ None.
 
 Request
 ```
-curl -X POST --data '{"jsonrpc":"2.0","id":1,"method":"net_id"}'
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_id"
+}'
 ```
 
 Response
