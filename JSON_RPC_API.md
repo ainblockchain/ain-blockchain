@@ -741,7 +741,7 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "method": "ain_getStateProof",
   "params": {
     "protoVer": "1.1.3",
-    "ref": "/values/accounts/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/balance"
+    "ref": "/values/blockchain_params"
   }
 }'
 ```
@@ -753,164 +753,32 @@ Response
   "id": 1,
   "result": {
     "result": {
-      "#state_ph": "0x10f836de97cced7bcea17d012e3a4a328b7d5f9ce016c69e01eead63bb14e7f2",
+      "#state_ph": "0xdf8694f052e026a8afeea926a69591ba24cd2b5ae16a1cb51058ad5880027602",
       "#radix:6": {
         "#radix_ph": "0xb1ee79c294caa1b2cfc76f2cb5e0204927e7f7583810b0c175915914dba859d8"
       },
       "#radix:7": {
-        "#radix_ph": "0xb338802f148a20b6dda118cc2929794542eff272ee2c781c9aa8ce6138c3c381",
+        "#radix_ph": "0xadcddbecf4c4a26056c59784786f2fc0ed977829fc00c931e96b8d4e166af015",
         "#radix:2756c6573": {
           "#radix_ph": "0x92bf1f2761726c8ff84afed4384e717c83cd5250c5e2d7acce6bad31b0829eb3"
         },
         "#radix:6616c756573": {
-          "#radix_ph": "0x4029c9643c09aace2e958f578f930ea6563713dc4fc7d037b435acd73c0bee0d",
+          "#radix_ph": "0xf9996bca1a7f41d9a2ffd67ea086fe215dcc678c9861e17bb6ccb051fdfd63ad",
           "#state:values": {
-            "#state_ph": "0x1ab3c3ec336fa9790b4706a1c3edca44613a3bab2d3bb86507a05625ce93e4c8",
+            "#state_ph": "0x2f5e6dcbc67c8b47b354584084afd8230cc88df6d54df181ea80fbf2281c3140",
             "#radix:6": {
-              "#radix_ph": "0x5ead39186a85688c5c267bf57c21e8e813c2be8f27cfd8214ed0df605d60e836",
+              "#radix_ph": "0xf17f4966c6480df406af1f4305d8f71df8704089a20bc2244ff6d9009278bafe",
               "#radix:1": {
-                "#radix_ph": "0x327ac0aaa1913dd4eac6717a5be650808d02c0df3515d48876e01092b017b09d",
-                "#radix:63636f756e7473": {
-                  "#radix_ph": "0x2d8fd7d2c1650bbcd9cf8847405d3adcd66a31726fbf3d8c658230e1dcc65596",
-                  "#state:accounts": {
-                    "#state_ph": "0x389ef90cca395cfff34daaf1af6e8987494b75ad8a0fca9e0ec19c5ff9a0febf",
-                    "#radix:0": {
-                      "#radix_ph": "0x14a34c98383845ddc3736e9de2bd1966599f6c2e1ab284d6385abeff401bd6d4"
-                    },
-                    "#radix:1": {
-                      "#radix_ph": "0x00f5dc96dee4a091cbbec25cae427ead56ddd2592db2633b88680733dca4caa6"
-                    },
-                    "#radix:2": {
-                      "#radix_ph": "0x2e89ea1805894ed85b3ee1d333e356407921593b0178065a0f6d4b891859dde4"
-                    },
-                    "#radix:3": {
-                      "#radix_ph": "0xdafca44f4568ad6b86e8f6d16a4b976dc07044ac21c5f5864554c43976c0e161"
-                    },
-                    "#radix:4": {
-                      "#radix_ph": "0x7c5f33dc684e432673b1deb3e052d5af8527c6ec8b9c11354db1246287195760"
-                    },
-                    "#radix:5": {
-                      "#radix_ph": "0xb6b0149833a58d1ce778ba567e8c0a4f85290184e83317f7f055f7b0bafb9c68"
-                    },
-                    "#radix:6": {
-                      "#radix_ph": "0x3c33cc686e7fd521e81fae32c701e13bdbe6539a2ccc79f70129bb721f1cf82e"
-                    },
-                    "#radix:7": {
-                      "#radix_ph": "0x56b5e5306dbe9a372eb1d217081ef8d4b3dc101027f6019409170edfd3a4e689"
-                    },
-                    "#radix:8": {
-                      "#radix_ph": "0x61e6f316aba28f5fabf444ee65675bd7bca88ee6ea55396f39896fae52edb1ad"
-                    },
-                    "#radix:9": {
-                      "#radix_ph": "0x3656ae6b72eddf9e32c8a72727770b9e5632c28ac89cfe1f1b8df4e08b1077f0"
-                    },
-                    "#radix:a": {
-                      "#radix_ph": "0x5aa705a9892359dd62a564df75bfdd869a15b39d33cc36a801261b7b2369f856",
-                      "#radix:0": {
-                        "#radix_ph": "0x9cd19010900d9cebfa2c0944f3277386b5ee80206a1ae753af8f59610918086d"
-                      },
-                      "#radix:1": {
-                        "#radix_ph": "0x9f486ee766bb3e01c551c64d5ffc7448cec7a01c8a272cbf53f1bf0051494034"
-                      },
-                      "#radix:2": {
-                        "#radix_ph": "0x1177aa473e0414cf70c1aa74887cfafa1b689366116e5d0019a8861601d8d0c3"
-                      },
-                      "#radix:3": {
-                        "#radix_ph": "0x83258f3df41b6c09c741b79a2d367e695702985b55e7dd0a1376d61e9ac98f3e"
-                      },
-                      "#radix:4": {
-                        "#radix_ph": "0x7acd3dcd62dc7bd9c60752c06a7061fab0a6e18f54e45bf7871c9104bc4eaee6"
-                      },
-                      "#radix:5a181bf80366ae376a10fbe1dc8bf534b8cbdfb": {
-                        "#radix_ph": "0xd70a5e2fb33e720b1c25e42bf64d9184d111f6a2a5372bed556d152627191a51"
-                      },
-                      "#radix:6": {
-                        "#radix_ph": "0x7fd474d8d0552cf6c23e6b6c6b3cc4c53baabf939e3d2977e6c36570acc5cd74"
-                      },
-                      "#radix:7": {
-                        "#radix_ph": "0xbff4f0c2bf36bec6ed93ff94c2cc8889931cf2ba317aeabb74a42b0b69a31d57"
-                      },
-                      "#radix:8": {
-                        "#radix_ph": "0x851ab0e647e09c19440713056d3d7a8fe05e61806de9eb6f306ba2fc2dc74a24"
-                      },
-                      "#radix:990a29ecfb3815c893177b22051f6fe5c71ec8f": {
-                        "#radix_ph": "0xfe2b320ca54a98774eac7536d2fbd62c511f70ac73af2b523b4f1a4e24e39613"
-                      },
-                      "#radix:a": {
-                        "#radix_ph": "0x2b487ba0eb74c253544ebf06395109f854febe61ea8620b751f43851ff727d2a",
-                        "#radix:3a053e56c9fc77f69298673e69ea6d5e031442": {
-                          "#radix_ph": "0xde15c7a2e88bed3255856d9c544c749c34743f7d7273306ad13b65ccbb4f9574"
-                        },
-                        "#radix:4cf08b1d0b08bb1831f14510f984e5ea5aa74f": {
-                          "#radix_ph": "0x673899ca7db6352a28d96579afd4a21ed4ecf9eac112985c48ec6e0d2294e76d"
-                        },
-                        "#radix:7ec983d5415ebedba041ca4b5e08cf7a6d0a1d": {
-                          "#radix_ph": "0xa232d40a6240b60203f631535fa3fd7174ae719779a4e0d846ddaab08e45f857"
-                        },
-                        "#radix:9bcfed3426a5bb709d1606fb1271dadc9d8d60": {
-                          "#radix_ph": "0x673899ca7db6352a28d96579afd4a21ed4ecf9eac112985c48ec6e0d2294e76d"
-                        },
-                        "#radix:aaeedff1d2cd909465182165ccc267549554fc": {
-                          "#radix_ph": "0x84498a5b76b0e6f2ec826171e2c829856e1392c6de7a642efae1d4a990ecb0ad",
-                          "#state:0xAAAAeEDFf1d2cD909465182165ccc267549554Fc": {
-                            "#state_ph": "0x118f633ae944e43b9434d314875c57466b519e07ddd6b845a250d005a24fe6db",
-                            "#radix:6": {
-                              "#radix_ph": "0xea3ec1aaf3333a130649c66855cca3f70ca43099b1359bf84380e3eaee2efb83",
-                              "#radix:2616c616e6365": {
-                                "#radix_ph": "0xf7f54de888b15f1de6b2df4751aa0200b5a9d9a298bade55e6b5b9bb855541b7",
-                                "#state:balance": {
-                                  "#state_ph": "0x48d7d6569b6ce84dbba4d36dc6fbd8457d700cfcb7a30705dc692ba07d545662"
-                                }
-                              },
-                              "#radix:e6f6e6365": {
-                                "#radix_ph": "0x3a592cd35b802b59d3eecf39aad5ca136b013251d36a2a4af7ff054aca5f011b"
-                              }
-                            }
-                          }
-                        }
-                      },
-                      "#radix:b": {
-                        "#radix_ph": "0x363fa5c5488fac592c828defdd7b007e56eb3e538fa8280a00e2ba1dd51e1dad"
-                      },
-                      "#radix:c": {
-                        "#radix_ph": "0xc6a04610c5835fd0a3b33a71d57f4635f03566c9805b328641a401448a00c2b3"
-                      },
-                      "#radix:df98a5effc56cadb8859f2cf2e5422afe9ce787": {
-                        "#radix_ph": "0xc7b3114b7ecc3f24c84c063fd679a67a13b8963a33c6f68c6f12300d52b1d1cf"
-                      },
-                      "#radix:e": {
-                        "#radix_ph": "0xc2221b21e103d725fafb8fa5d62dde70f02f305d33e2928ae53243aa9499fdfd"
-                      },
-                      "#radix:f": {
-                        "#radix_ph": "0x0266d65bfcbed60f986b420d2ea68fd72271ec63f9b6a5f3e68c24a6c48895de"
-                      }
-                    },
-                    "#radix:b": {
-                      "#radix_ph": "0xf68a4e7e4d7f9a71c2975519f61807bcde9a0721d92c7ddbd68d4f4f7cd103c0"
-                    },
-                    "#radix:c": {
-                      "#radix_ph": "0xce878100c7c3ef6eda8e5f78f82e884741963edc9bfa370626d16da5683e2b04"
-                    },
-                    "#radix:d": {
-                      "#radix_ph": "0xbe6155bac97c220873c5790bc3633eea252b24184436d9cc0e20d2aa9aa445e8"
-                    },
-                    "#radix:e": {
-                      "#radix_ph": "0xf2365aa692679db520c761bc5616ea8e78e7d66e8e5b7fa62f5ccede3c4ad21d"
-                    },
-                    "#radix:f": {
-                      "#radix_ph": "0x5d5f1af4318fd0ce355a0c658f8d1695c0a1f00587edf9b9543887955c15fe12"
-                    }
-                  }
-                },
-                "#radix:707073": {
-                  "#radix_ph": "0x8e3709e38db2e60381f0359985a9b11da39b69c436d91fb9fed4fe7956176bfa"
-                }
+                "#radix_ph": "0x3b5f61c11f36018bcb5d320e5b98c9d5f69463d95ef1cee71503f6e19d3a1b3e"
               },
               "#radix:26c6f636b636861696e5f706172616d73": {
-                "#radix_ph": "0x0db35261beb8f805e4ced018ff3f0466b6f8536d5d190ef15d6ad7bb1a14bb0b"
+                "#radix_ph": "0x0db35261beb8f805e4ced018ff3f0466b6f8536d5d190ef15d6ad7bb1a14bb0b",
+                "#state:blockchain_params": {
+                  "#state_ph": "0x743b16391b5100908951fb9e33308c95a30570de399616a616a682d8c6d4b0b3"
+                }
               },
               "#radix:36": {
-                "#radix_ph": "0x4d38d68552a062ed3da9978081154a50e24d072da2d94e8a05bf321f243167f5"
+                "#radix_ph": "0x6a9192e77bae6f4a56eb719ad42467ad3ba0ba13ca895e1ec9b783661d6c3288"
               },
               "#radix:46576656c6f70657273": {
                 "#radix_ph": "0x6eed3986e6ce5982579a76c50ad98718dc3aa93eeae2724c9dc629264bbfb144"
@@ -1025,6 +893,72 @@ Response
         }
       }
     },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_getProofHash
+
+Returns the state proof hash of the given path in the global state tree. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
+
+**Returns**
+
+The state proof hash.
+
+**Examples**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getProofHash",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/values/blockchain_params"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": "0x743b16391b5100908951fb9e33308c95a30570de399616a616a682d8c6d4b0b3",
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getProofHash",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/rules/transfer/$from/$to/$key/value"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": "0x985a1f057d5047b1dee392127eb776571fbbe79da7ae6114f8f8f18c4f786135",
     "protoVer": "1.1.3"
   }
 }
