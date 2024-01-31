@@ -964,6 +964,113 @@ Response
 }
 ```
 
+### ain_getStateInfo
+
+Returns the state information of the given path in the global state tree. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
+
+**Returns**
+
+The state information.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getStateInfo",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/rules/transfer/$from/$to/$key/value"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "#num_children": 1,
+      "#tree_height": 2,
+      "#tree_size": 3,
+      "#tree_bytes": 1840,
+      "#tree_max_siblings": 1,
+      "#state_ph": "0x985a1f057d5047b1dee392127eb776571fbbe79da7ae6114f8f8f18c4f786135",
+      "#version": "POOL:3062598:3062599:1702353330546:0"
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_getStateUsage
+
+Returns the state usage of the given app name. 
+
+**Parameters**
+
+An object with a property:
+
+- app_name: `String` - app name
+
+**Returns**
+
+The state usage.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getStateUsage",
+  "params": {
+    "protoVer": "1.1.3",
+    "app_name": "consensus"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "usage": {
+        "tree_height": 6,
+        "tree_size": 11,
+        "tree_bytes": 2114,
+        "tree_max_siblings": 5
+      },
+      "available": {
+        "tree_height": 30,
+        "tree_bytes": 12291542508.778091,
+        "tree_size": 76822140.67986308
+      },
+      "staking": {
+        "app": 50500000,
+        "total": 10168575.540000014,
+        "unstakeable": 50500000
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
 ---
 
 ## Account API
