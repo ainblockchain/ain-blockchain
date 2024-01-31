@@ -495,6 +495,198 @@ Response
 }
 ```
 
+### ain_evalRule
+
+Evaluates the rule configs matched with the given value path in the global state tree with the given parameters. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference value path
+- value: `String|Number|Boolean|Object` - value to write
+- address: `String` - account address (optional)
+- fid: `String` - function id (optional)
+- timestamp: `Number` - timestamp in milliseconds (optional)
+
+**Returns**
+
+The rule evaluation result.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_evalRule",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/100000/value",
+    "address": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+    "value": 100,
+    "timestamp": 1706691334000
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "code": 0,
+      "matched": {
+        "write": {
+          "matchedValuePath": [
+            "transfer",
+            "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+            "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "100000",
+            "value"
+          ],
+          "matchedRulePath": [
+            "transfer",
+            "$from",
+            "$to",
+            "$key",
+            "value"
+          ],
+          "pathVars": {
+            "$key": "100000",
+            "$to": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "$from": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
+          },
+          "closestRule": {
+            "path": [
+              "transfer",
+              "$from",
+              "$to",
+              "$key",
+              "value"
+            ],
+            "config": {
+              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && newData > 0 && util.countDecimals(newData) <= 6 && util.getBalance($from, getValue) >= newData"
+            }
+          },
+          "subtreeRules": []
+        },
+        "state": {
+          "matchedValuePath": [
+            "transfer",
+            "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+            "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "100000",
+            "value"
+          ],
+          "matchedRulePath": [
+            "transfer",
+            "$from",
+            "$to",
+            "$key",
+            "value"
+          ],
+          "pathVars": {
+            "$key": "100000",
+            "$to": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "$from": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
+          },
+          "closestRule": {
+            "path": [
+              "transfer",
+              "$from",
+              "$to",
+              "$key"
+            ],
+            "config": {
+              "state": {
+                "gc_max_siblings": 10,
+                "gc_num_siblings_deleted": 10
+              }
+            }
+          }
+        }
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_evalOwner
+
+Evaluates the owner configs matched with the given value path in the global state tree with the given parameters. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference value path
+- permission: `'write_rule'|'write_function'|'write_owner'|'branch_owner'` - permission to evaluate with
+- address: `String` - account address (optional)
+- fid: `String` - function id (optional)
+
+**Returns**
+
+The owner evaluation result.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_evalOwner",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/apps/consensus",
+    "address": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+    "permission": "write_rule"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "code": 0,
+      "matched": {
+        "matchedOwnerPath": [
+          "apps",
+          "consensus"
+        ],
+        "closestOwner": {
+          "path": [
+            "apps",
+            "consensus"
+          ],
+          "config": {
+            "owners": {
+              "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true
+              }
+            }
+          }
+        },
+        "subtreeOwners": []
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
 ---
 
 ## Account API
