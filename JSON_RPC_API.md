@@ -46,10 +46,13 @@ Returns the value, write rule, owner rule, or function at the given path in the 
 
 **Parameters**
 
+An array of objects with a property:
+
+- ref: `String` - reference path
 
 **Returns**
 
-The Array of data/rule/owner data/function hash at each path. The order will be preserved, and if there isn't data present at the path, `null` will be at the path's index.
+The array of data/rule/owner data/function hash at each path. The order will be preserved, and if there isn't data present at the path, `null` will be at the path's index.
 
 **Examples**
 
@@ -286,6 +289,206 @@ Response
         "max_shard_report": 100,
         "num_shard_report_deleted": 100
       }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_matchFunction
+
+Returns the functions matched at the given value path in the global state tree. 
+
+**Parameters**
+
+An object with a property:
+
+-   ref:  `String` - reference value path
+
+**Returns**
+
+The matched functions.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_matchFunction",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/1/value"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "matched_path": {
+        "target_path": "/transfer/$from/$to/$key/value",
+        "ref_path": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/1/value",
+        "path_vars": {
+          "$key": "1",
+          "$to": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+          "$from": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
+        }
+      },
+      "matched_config": {
+        "path": "/transfer/$from/$to/$key/value",
+        "config": {
+          "_transfer": {
+            "function_type": "NATIVE",
+            "function_id": "_transfer"
+          }
+        }
+      },
+      "subtree_configs": []
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_matchRule
+
+Returns the rules matched at the given value path in the global state tree. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference value path
+
+**Returns**
+
+The matched rules.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_matchRule",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/1/value"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "write": {
+        "matched_path": {
+          "target_path": "/transfer/$from/$to/$key/value",
+          "ref_path": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/1/value",
+          "path_vars": {
+            "$key": "1",
+            "$to": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "$from": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
+          }
+        },
+        "matched_config": {
+          "path": "/transfer/$from/$to/$key/value",
+          "config": {
+            "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && newData > 0 && util.countDecimals(newData) <= 6 && util.getBalance($from, getValue) >= newData"
+          }
+        },
+        "subtree_configs": []
+      },
+      "state": {
+        "matched_path": {
+          "target_path": "/transfer/$from/$to/$key/value",
+          "ref_path": "/transfer/0xAAAAeEDFf1d2cD909465182165ccc267549554Fc/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4/1/value",
+          "path_vars": {
+            "$key": "1",
+            "$to": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+            "$from": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
+          }
+        },
+        "matched_config": {
+          "path": "/transfer/$from/$to/$key",
+          "config": {
+            "state": {
+              "gc_max_siblings": 10,
+              "gc_num_siblings_deleted": 10
+            }
+          }
+        }
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_matchOwner
+
+Returns the owners matched at the given value path in the global state tree. 
+
+**Parameters**
+
+An object with a property:
+
+- ref: `String` - reference value path
+
+**Returns**
+
+The matched owners.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_matchOwner",
+  "params": {
+    "protoVer": "1.1.3",
+    "ref": "/apps/consensus"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "matched_path": {
+        "target_path": "/apps/consensus"
+      },
+      "matched_config": {
+        "path": "/apps/consensus",
+        "config": {
+          "owners": {
+            "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true
+            }
+          }
+        }
+      },
+      "subtree_configs": []
     },
     "protoVer": "1.1.3"
   }
