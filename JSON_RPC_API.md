@@ -21,11 +21,13 @@
 	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 - [Transaction API](#transaction-api)
 	- [ain_getPendingTransactions](#ain_getpendingtransactions)
-	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
-	- [ain_getTransactionByBlockHashAndIndex](#ain_gettransactionbyblockhashandindex)
+	- [ain_getTransactionPoolSizeUtilization](#ain_gettransactionpoolsizeutilization)
 	- [ain_getTransactionByHash](#ain_gettransactionbyhash)
+	- [ain_getTransactionByBlockHashAndIndex](#ain_gettransactionbyblockhashandindex)
+	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
+	- [ain_sendSignedTransactionDryrun](#ain_sendsignedtransactiondryrun)
 	- [ain_sendSignedTransaction](#ain_sendsignedtransaction)
-	- [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
+	- [ain_sendSignedTransactionBatch]
 - [Block API](#block-api)
 	- [ain_getRecentBlock](#ain_getrecentblock)
 	- [ain_getRecentBlockNumber](#ain_getrecentblocknumber)
@@ -1313,64 +1315,7 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1,
   "method": "ain_getPendingTransactions",
   "params": {
-    "protoVer": "1.0.9"
-  }
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":[
-    {
-      "status":"PENDING",
-      "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-      "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-      "signature":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f3...",
-      "timestamp":1566736760322,
-      "nonce":-1,
-      "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56...",
-    },
-    {
-      "status":"PENDING",
-      "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-      "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-      "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-      "timestamp":1566736800358,
-      "nonce":99
-    }
-  ]
-}
-```
-
-### ain_getTransactionByBlockNumberAndIndex
-
-Returns the transaction at the {index} position within the block with the {block_number}.
-
-**Parameters**
-
-An object with 2 properties:
--   block_number: `Number` - block number
--   index: `Number` - index of the transaction within the block
-    
-**Returns**
-
-`Object` - The transaction. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "ain_getTransactionByBlockNumberAndIndex",
-  "params": {
-    "protoVer": "1.0.9",
-    "block_number": 1018739,
-    "index": 1
+    "protoVer": "1.1.3"
   }
 }'
 ```
@@ -1381,30 +1326,251 @@ Response
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "result": {json
+    "result": {
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": [
+        [
+          {
+            "tx_body": {
+              "operation": {
+                "type": "SET",
+                "op_list": [
+                  {
+                    "type": "SET_VALUE",
+                    "ref": "/consensus/number/1/propose",
+                    "value": {
+                      "number": 1,
+                      "epoch": 3293579,
+                      "validators": {
+                        "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+                          "stake": 10000000,
+                          "proposal_right": true
+                        },
+                        "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+                          "stake": 10000000,
+                          "proposal_right": true
+                        },
+                        "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
+                          "stake": 10000000,
+                          "proposal_right": true
+                        }
+                      },
+                      "total_at_stake": 30000000,
+                      "proposer": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                      "block_hash": "0x227903519aa2e8810b4f962352278a66e87ba94ce38b1ad24191298d2da5f029",
+                      "last_hash": "0x31075a91beeea98fe8030c848d40b592411f2533c77d347d7937be84eae83745",
+                      "timestamp": 1706866780852,
+                      "gas_cost_total": 0
+                    }
+                  }
+                ]
+              },
+              "nonce": -1,
+              "gas_price": 0,
+              "timestamp": 1706866780900
+            },
+            "signature": "0xd2b9af94907ee0b766eb9dace532be79b1a7ce525c3e8560cc44100fed7e8f7f35fdc552a52761fb43923cd6b320e6e02339ea96e9eaeef6df84134cb7581f9c3dff7714e3f8487eb31f838833486747fec77cc484df5d0bf9808e37c1b1b15e1b",
+            "hash": "0xd2b9af94907ee0b766eb9dace532be79b1a7ce525c3e8560cc44100fed7e8f7f",
+            "address": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+            "extra": {
+              "created_at": 1706866780973,
+              "executed_at": 1706866780973,
+              "gas": {
+                "bandwidth": {
+                  "service": 1
+                },
+                "state": {
+                  "service": 4348
+                }
+              }
+            }
+          },
+          ...
+        ]
+      ],
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": [
+        [
+          {
+            "tx_body": {
+              "operation": {
+                "type": "SET_VALUE",
+                "ref": "/consensus/number/1/0x227903519aa2e8810b4f962352278a66e87ba94ce38b1ad24191298d2da5f029/vote/0x00ADEc28B6a845a085e03591bE7550dd68673C1C",
+                "value": {
+                  "block_hash": "0x227903519aa2e8810b4f962352278a66e87ba94ce38b1ad24191298d2da5f029",
+                  "stake": 10000000,
+                  "is_against": false,
+                  "vote_nonce": 1706866780979
+                }
+              },
+              "nonce": -1,
+              "gas_price": 0,
+              "timestamp": 1706866780979
+            },
+            "signature": "0xaead9b8bb1d894facf76dfa25765d80c11beaa7da1b19b5b4f90cf6b6ba314b45790b5d2be212b5f41a556322cee7ce7540266c9ab9ba61400705e1ef3401f476f8e08bf38ab0bb47df040d594f1bbf3a61dd8697ed5acf26e2d8e726563891e1b",
+            "hash": "0xaead9b8bb1d894facf76dfa25765d80c11beaa7da1b19b5b4f90cf6b6ba314b4",
+            "address": "0x00ADEc28B6a845a085e03591bE7550dd68673C1C",
+            "extra": {
+              "created_at": 1706866780981,
+              "executed_at": 1706866780982,
+              "gas": {
+                "bandwidth": {
+                  "service": 1
+                },
+                "state": {
+                  "service": 1900
+                }
+              }
+            }
+          }
+        ]
+      ],
+      ...
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_getTransactionPoolSizeUtilization
+
+Returns the transaction pool size utilization.
+
+**Parameters**
+
+None.
+
+**Returns**
+
+`Object` - An object containing transaction pool size utilization information.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getTransactionPoolSizeUtilization",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "limit": 1000,
+      "used": 12,
+      "free_limit": 100,
+      "free_used": 12
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_getTransactionByHash
+
+Returns the transaction with the hash. 
+
+**Parameters**
+
+An object with a property:
+
+-   hash: `String` - transaction hash 
+
+**Returns**
+
+`Object` - the transaction. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getTransactionByHash",
+  "params": {
+    "protoVer": "1.1.3",
+    "hash": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc8401",
+    "index": 0
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "state": "FINALIZED",
+      "number": 3286991,
+      "index": 0,
+      "address": "0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0",
+      "timestamp": 1706843368852,
+      "is_executed": true,
+      "is_finalized": true,
+      "tracked_at": 1706843414080,
+      "executed_at": 1706843369274,
+      "finalized_at": 1706843414080,
+      "exec_result": {
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 0,
+            "app": {
+              "openai_ainize3": 101
+            }
+          },
+          "state": {
+            "service": 0,
+            "app": {
+              "openai_ainize3": 806
+            }
+          }
+        },
+        "gas_cost_total": 0,
+        "func_results": {
+          "service-trigger": {
+            "code": 0,
+            "bandwidth_gas_amount": 100
+          }
+        },
+        "code": 0,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_charged": 0
+      },
       "transaction": {
         "tx_body": {
           "operation": {
             "type": "SET_VALUE",
-            "ref": "/apps/collaborative_ai/worker_info/w2udhcx6tzbqxqf0@0xd377ab38E8C9267ce0f85613680b327069d51752/status",
+            "ref": "/apps/openai_ainize3/service/0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0/1706843368851/request",
             "value": {
-              "workerStatus": "running",
-              "currentNumberOfContainer": 0,
-              "updatedAt": 1661420944081
+              "assistantId": "asst_jU5mgKHZgw61MKP2mVev0KAA",
+              "jobType": "delete_assistant"
             }
           },
           "nonce": -1,
-          "timestamp": 1661420944081,
-          "gas_price": 0
+          "timestamp": 1706843368852,
+          "gas_price": 500
         },
-        "signature": "0x6d652a4e0b8517bb6277db4c2679ec9da4e0f2c9166359361088fa0157288b6ca2bd756e674352fd42713d5b659b240a5ace66a24fc8abdaa995ae8f1b04bbf124aa38111e495dd7aa7502acdf789d2ff18d360d59f42780ac17ac76fa1d92771b",
-        "hash": "0x6d652a4e0b8517bb6277db4c2679ec9da4e0f2c9166359361088fa0157288b6c",
-        "address": "0xd377ab38E8C9267ce0f85613680b327069d51752"
+        "signature": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc84018f207a2a0f41b2fbba4bd3a04a4a687ed43484418547ef1a70847830fa0b0b747d64f52f53776fc7d2d3e2615b011adafc56b9abb941296e1fce87330292b5151c",
+        "hash": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc8401",
+        "address": "0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0"
       },
-      "is_executed": true,
-      "is_finalized": true
+      "receipt": {
+        "code": 0,
+        "gas_amount_charged": 0,
+        "gas_cost_total": 0
+      }
     },
-    "protoVer": "1.0.9"
+    "protoVer": "1.1.3"
   }
 }
 ```
@@ -1435,8 +1601,8 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1,
   "method": "ain_getTransactionByBlockHashAndIndex",
   "params": {
-    "protoVer": "1.0.9",
-    "block_hash": "0x38635f8c1b3ecfaa8314698ac241341dc3ba82bc1d26e4fb5c20e21fe9ce2645",
+    "protoVer": "1.1.3",
+    "block_hash": "0x406f4a46cf8434c59777ee73e1834b0109950b74159100ab7920a7a53e9f50af",
     "index": 0
   }
 }'
@@ -1453,64 +1619,41 @@ Response
         "tx_body": {
           "operation": {
             "type": "SET_VALUE",
-            "ref": "/apps/collaborative_ai/worker_info/w2udhcx6tzbqxqf0@0xd377ab38E8C9267ce0f85613680b327069d51752",
+            "ref": "/apps/openai_ainize3/service/0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0/1706843368851/request",
             "value": {
-              "ethAddress": "0xbDA5747bFD65F08deb54cb465eB87D40e51B197E",
-              "containerSpec": {
-                "cpu": {
-                  "name": "Intel® Xeon®",
-                  "vcpu": 1
-                },
-                "gpu": {
-                  "name": "nvidia-tesla-t4",
-                  "memoryGB": 16,
-                  "count": 1
-                },
-                "memory": {
-                  "maxGB": 4
-                },
-                "storage": {
-                  "maxGB": 128
-                },
-                "maxNumberOfContainer": 1,
-                "hasEndpoint": true
-              },
-              "labels": {
-                "spec": "nc6",
-                "managedBy": "run-your-node"
-              },
-              "createdAt": 1661420943970
+              "assistantId": "asst_jU5mgKHZgw61MKP2mVev0KAA",
+              "jobType": "delete_assistant"
             }
           },
           "nonce": -1,
-          "timestamp": 1661420943970,
-          "gas_price": 0
+          "timestamp": 1706843368852,
+          "gas_price": 500
         },
-        "signature": "0x2c9ffeb45b3377471b8c88e07159cfe0156278338a6763f0e9437f059623997398bd5469498192da259a90e279d4c85510341d05c8ff268f62d4d1299965a503148ad4e1430ab91734764cf0ed048d8a8df4e80c64f4cd3e1a10e0358e447f6c1c",
-        "hash": "0x2c9ffeb45b3377471b8c88e07159cfe0156278338a6763f0e9437f0596239973",
-        "address": "0xd377ab38E8C9267ce0f85613680b327069d51752"
+        "signature": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc84018f207a2a0f41b2fbba4bd3a04a4a687ed43484418547ef1a70847830fa0b0b747d64f52f53776fc7d2d3e2615b011adafc56b9abb941296e1fce87330292b5151c",
+        "hash": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc8401",
+        "address": "0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0"
       },
       "is_executed": true,
       "is_finalized": true
     },
-    "protoVer": "1.0.9"
+    "protoVer": "1.1.3"
   }
 }
 ```
 
-### ain_getTransactionByHash
+### ain_getTransactionByBlockNumberAndIndex
 
-Returns the transaction with the hash. 
+Returns the transaction at the {index} position within the block with the {block_number}.
 
 **Parameters**
 
-An object with a property:
-
--   hash: `String` - transaction hash 
-
+An object with 2 properties:
+-   block_number: `Number` - block number
+-   index: `Number` - index of the transaction within the block
+    
 **Returns**
 
-`Object` - the transaction. 
+`Object` - The transaction. 
 
 **Example**
 
@@ -1519,10 +1662,10 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getTransactionByHash",
+  "method": "ain_getTransactionByBlockNumberAndIndex",
   "params": {
-    "protoVer": "1.0.9",
-    "hash": "0xa38fabd1daa7d7d0488275d146bebcacd088eda0069987606a61407c680eb8d9",
+    "protoVer": "1.1.3",
+    "block_number": 3286991,
     "index": 0
   }
 }'
@@ -1535,42 +1678,137 @@ Response
   "id": 1,
   "result": {
     "result": {
-      "state": "FINALIZED",
-      "number": 1161159,
-      "index": 0,
-      "address": "0x4db42BDE411AfC23B8F3b26EE7AE73DA28c9e470",
-      "timestamp": 1664272982427,
+      "transaction": {
+        "tx_body": {
+          "operation": {
+            "type": "SET_VALUE",
+            "ref": "/apps/openai_ainize3/service/0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0/1706843368851/request",
+            "value": {
+              "assistantId": "asst_jU5mgKHZgw61MKP2mVev0KAA",
+              "jobType": "delete_assistant"
+            }
+          },
+          "nonce": -1,
+          "timestamp": 1706843368852,
+          "gas_price": 500
+        },
+        "signature": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc84018f207a2a0f41b2fbba4bd3a04a4a687ed43484418547ef1a70847830fa0b0b747d64f52f53776fc7d2d3e2615b011adafc56b9abb941296e1fce87330292b5151c",
+        "hash": "0x5d4c7de40b158024e2c351460dcbdaea06ced92e623b22930f27ef871dbc8401",
+        "address": "0x7ed9c30C9F3A31Daa9614b90B4a710f61Bd585c0"
+      },
       "is_executed": true,
-      "is_finalized": true,
-      "tracked_at": 1664273029387,
-      "executed_at": 1664272982539,
-      "finalized_at": 1664273029387,
-      "transaction": "0xa38fabd1daa7d7d0488275d146bebcacd088eda0069987606a61407c680eb8d9",
-      "receipt": {
+      "is_finalized": true
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_sendSignedTransactionDryrun
+
+Sends a transaction body and its signature to the blockchain node as a dryrun.
+ 
+**Parameters**
+
+An object with following properties:
+
+-   tx_body: `Object`  - transaction body object
+-   signature: `String` - signature of the transaction
+
+**Returns**
+
+`Object` - the transaction hash and the execution result from the dryrun.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_sendSignedTransactionDryrun",
+  "params": {
+    "protoVer": "1.1.3",
+    "signature": "0x40a183b409b54a6d0cb7a68853a05c41af0b9fccf442b9249fde64ff62bc6e54072e60fea9b591130b7a17838db05ef8d50782ada6251064256f517bbb85ed7b09e5bbec43ab1a3724a4df4e4088b1392336d371ce6a8881f6d0e080b4304d701b",
+    "tx_body": {
+      "operation": {
+        "type": "SET_VALUE",
+        "ref": "/transfer/0xb16DF4D61Aa206096FE2E705497B91951852989F/0xEfa713E7f2C0cE5f89ae746e91DD476979967EBD/1706853750720/value",
+        "value": 10
+      },
+      "gas_price": 500,
+      "timestamp": 1706853750720,
+      "nonce": -1
+    }
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "tx_hash": "0x40a183b409b54a6d0cb7a68853a05c41af0b9fccf442b9249fde64ff62bc6e54",
+      "result": {
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 3
+          },
+          "state": {
+            "service": 364
+          }
+        },
+        "gas_cost_total": 0.1835,
+        "func_results": {
+          "_transfer": {
+            "op_results": {
+              "0": {
+                "path": "/accounts/0xb16DF4D61Aa206096FE2E705497B91951852989F/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              },
+              "1": {
+                "path": "/accounts/0xEfa713E7f2C0cE5f89ae746e91DD476979967EBD/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              }
+            },
+            "code": 0,
+            "bandwidth_gas_amount": 0
+          }
+        },
         "code": 0,
-        "gas_amount_charged": 0,
-        "gas_cost_total": 0
+        "bandwidth_gas_amount": 1,
+        "is_dryrun": true,
+        "gas_amount_charged": 367
       }
     },
-    "protoVer": "1.0.9"
+    "protoVer": "1.1.3"
   }
 }
 ```
 
 ### ain_sendSignedTransaction
 
-Sends the signature and the transaction object to the node.
+Sends a transaction body and its signature to the blockchain node.
  
 **Parameters**
 
 An object with following properties:
 
+-   tx_body: `Object`  - transaction body object
 -   signature: `String` - signature of the transaction
--   transaction: `Object`  - transaction object 
 
 **Returns**
 
-`String` - the transaction's hash.
+`Object` - the transaction hash and the execution result.
 
 **Example**
 
@@ -1581,31 +1819,81 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1,
   "method": "ain_sendSignedTransaction",
   "params": {
-    "protoVer": "1.0.9",
-    "signature": "0xdb61ef...FILL_THIS",
-    "transaction":{
-       "nonce":123,
-       "timestamp":1566736760322,
-       "operation":{
-         "ref":"/account/0x04aac78e17374fd075d1f11bfe95ef7d8e4ed812/balance",
-         "type":"SET_VALUE",
-         "value":1000
-       },
-       "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56..."
-     }
+    "protoVer": "1.1.3",
+    "signature": "0x40a183b409b54a6d0cb7a68853a05c41af0b9fccf442b9249fde64ff62bc6e54072e60fea9b591130b7a17838db05ef8d50782ada6251064256f517bbb85ed7b09e5bbec43ab1a3724a4df4e4088b1392336d371ce6a8881f6d0e080b4304d701b",
+    "tx_body": {
+      "operation": {
+        "type": "SET_VALUE",
+        "ref": "/transfer/0xb16DF4D61Aa206096FE2E705497B91951852989F/0xEfa713E7f2C0cE5f89ae746e91DD476979967EBD/1706853750720/value",
+        "value": 10
+      },
+      "gas_price": 500,
+      "timestamp": 1706853750720,
+      "nonce": -1
+    }
   }
 }'
 ```
 
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "tx_hash": "0x40a183b409b54a6d0cb7a68853a05c41af0b9fccf442b9249fde64ff62bc6e54",
+      "result": {
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 3
+          },
+          "state": {
+            "service": 364
+          }
+        },
+        "gas_cost_total": 0.1835,
+        "func_results": {
+          "_transfer": {
+            "op_results": {
+              "0": {
+                "path": "/accounts/0xb16DF4D61Aa206096FE2E705497B91951852989F/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              },
+              "1": {
+                "path": "/accounts/0xEfa713E7f2C0cE5f89ae746e91DD476979967EBD/balance",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              }
+            },
+            "code": 0,
+            "bandwidth_gas_amount": 0
+          }
+        },
+        "code": 0,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_charged": 367
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
 ### ain_sendSignedTransactionBatch
 
-Sends multiple transactions at once.
+Sends multiple transactions at once to the blockchain node.
 
 **Parameters**
 
 An object with a property:
 
--   `Array` - an array of transaction objects (with signature and transaction properties) 
+-   `Array` - an array of transaction objects (with signature and transaction body) 
 
 **Returns**
 
@@ -1620,10 +1908,11 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1, 
   "method": "ain_sendSignedTransactionBatch", 
   "params": {
+    "protoVer": "1.1.3",
     "tx_list": [
       {
         "signature": "0xaabc9ddafffb2ae0bac4107697547d22d9383...",
-        "transaction": {
+        "tx_body": {
           "nonce": 120,
           "timestamp": 1566736760322,
           "operation": {
@@ -1635,7 +1924,7 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
       },
       {
         "signature": "0x1ec191ef20b0e9628c4397665977cb...",
-        "transaction": {
+        "tx_body": {
           "nonce": 121,
           "timestamp": 1566736760400,
           "operation": {
@@ -1653,12 +1942,43 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
 Response
 ```
 { 
-  "jsonrpc":"2.0",
-  "id":1,
-  "result":[
-    "0x88df016429689c079f3b2f6ad39fa052532c56795b733da7...",
-    "0x8e4340ea3983d86e4b6c44249362f716ec9e09849ef9b6e3..."
-  ]
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": [
+      {
+        "tx_hash": "0x88df016429689c079f3b2f6ad39fa052532c56795b733da7...",
+        "result": {
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 367,
+          "gas_amount_total": {
+            ...
+          },
+          "gas_cost_total": 0.1835,
+          "func_results": {
+            ...
+          }
+        }
+      },
+      {
+        "tx_hash": "0x8e4340ea3983d86e4b6c44249362f716ec9e09849ef9b6e3...",
+        "result": {
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 367,
+          "gas_amount_total": {
+            ...
+          },
+          "gas_cost_total": 0.1835,
+          "func_results": {
+            ...
+          }
+        }
+      }
+    ],
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
