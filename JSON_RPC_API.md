@@ -14,10 +14,11 @@
 	- [ain_getStateInfo](#ain_getstateinfo)
 	- [ain_getStateUsage](#ain_getstateusage)
 - [Account API](#account-api)
+  - [ain_getAddress](#ain_getaddress)
 	- [ain_getBalance](#ain_getbalance)
-	- [ain_getConsensusStakeAmount](#ain_getconsensusstakeamount)
 	- [ain_getNonce](#ain_getnonce)
-	- [ain_isValidator](#ain_isvalidator)
+	- [ain_getTimestamp](#ain_gettimestamp)
+	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 - [Transaction API](#transaction-api)
 	- [ain_getPendingTransactions](#ain_getpendingtransactions)
 	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
@@ -1084,15 +1085,51 @@ Response
 
 ## Account API
 
+### ain_getAddress
+
+Returns the address of the blockchain node's account. 
+
+**Parameters**
+
+**Returns**
+
+`String` - The address. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getAddress",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+    "protoVer": "1.1.3"
+  }
+}
+```
+
 ### ain_getBalance
 
-Returns the balance of an account. 
+Returns the balance of the given account. 
 
 **Parameters**
 
 An object with a property:
 
--   address: `String` - address of the account to get the balance of. 
+-   address: `String` - address of the account. 
 
 **Returns**
 
@@ -1107,66 +1144,33 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1, 
   "method": "ain_getBalance",
   "params": {
-    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+    "protoVer": "1.1.3",
+    "address": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":98347
-}
-```
-
-### ain_getConsensusStakeAmount
-
-Returns the amount of AIN the account (node) is staking for participating in the consensus protocol. 
-
-**Parameters**[](#parameters-1)
-
-An object with a property:
-
--   address: `String` - address of the account. 
-
-**Returns**
-
-`Number` - The amount at stake. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+{
   "jsonrpc": "2.0",
-  "id": 1, 
-  "method": "ain_getConsensusStakeAmount",
-  "params": {
-    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+  "id": 1,
+  "result": {
+    "result": 578990573.3755,
+    "protoVer": "1.1.3"
   }
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":1000
 }
 ```
 
 ### ain_getNonce
 
-Returns the nonce (= number of transactions an address has sent) of an address. 
+Returns the nonce, number of transactions an address has sent, of the given account 
 
 **Parameters**
 
 An object with a property:
 
--   address: `String` - address of the account to get the transaction count of 
+-   address: `String` - address of the account 
 
 **Returns**
 
@@ -1181,33 +1185,37 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1, 
   "method": "ain_getNonce",
   "params": {
-    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+    "protoVer": "1.1.3",
+    "address": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":10
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 91,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
-### ain_isValidator
+### ain_getTimestamp
 
-Returns whether the node is currently a validator or not. 
+Returns the timestamp of the given account 
 
 **Parameters**
 
 An object with a property:
 
--   address: `String` - address of the account to check if it's currently in the validator set 
+-   address: `String` - address of the account 
 
 **Returns**
 
-`Boolean` - Whether the node is a validator or not. 
+`Number` - The timestamp. 
 
 **Example**
 
@@ -1216,19 +1224,67 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1, 
-  "method": "ain_isValidator",
+  "method": "ain_getTimestamp",
   "params": {
-    "address": "0xc94770007dda54cF92009BFF0dE90c06F603a09f"
+    "protoVer": "1.1.3",
+    "address": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":true
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 0,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### ain_getValidatorInfo
+
+Returns the information of the given block validator 
+
+**Parameters**
+
+An object with a property:
+
+-   address: `String` - address of the block validator's account 
+
+**Returns**
+
+`Object` - The validator's information. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getValidatorInfo",
+  "params": {
+    "protoVer": "1.1.3",
+    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "isWhitelisted": true,
+      "stake": 0
+    },
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
