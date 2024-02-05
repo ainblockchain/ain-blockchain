@@ -18,7 +18,6 @@
 	- [ain_getBalance](#ain_getbalance)
 	- [ain_getNonce](#ain_getnonce)
 	- [ain_getTimestamp](#ain_gettimestamp)
-	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 - [Transaction API](#transaction-api)
 	- [ain_getPendingTransactions](#ain_getpendingtransactions)
 	- [ain_getTransactionPoolSizeUtilization](#ain_gettransactionpoolsizeutilization)
@@ -27,20 +26,22 @@
 	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
 	- [ain_sendSignedTransactionDryrun](#ain_sendsignedtransactiondryrun)
 	- [ain_sendSignedTransaction](#ain_sendsignedtransaction)
-	- [ain_sendSignedTransactionBatch]
+	- [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
 - [Block API](#block-api)
-	- [ain_getRecentBlock](#ain_getrecentblock)
-	- [ain_getRecentBlockNumber](#ain_getrecentblocknumber)
+	- [ain_getLastBlock](#ain_getlastblock)
+	- [ain_getLastBlockNumber](#ain_getlastblocknumber)
 	- [ain_getBlockByNumber](#ain_getblockbynumber)
 	- [ain_getBlockByHash](#ain_getblockbyhash)
-	- [ain_getBlocks](#ain_getblocks)
-	- [ain_getBlockHeaders](#ain_getblockheaders)
+	- [ain_getBlockList](#ain_getblocklist)
+	- [ain_getBlockHeadersList](#ain_getblockheaderslist)
 	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
 	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
-	- [ain_getProposerByHash](#ain_getproposerbyhash)
-	- [ain_getProposerByNumber](#ain_getproposerbynumber)
+- [Consensus API](#consensus-api)
+	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
 	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
+	- [ain_getProposerByHash](#ain_getproposerbyhash)
+	- [ain_getProposerByNumber](#ain_getproposerbynumber)
 - [Network API](#network-api)
 	- [net_listening](#net_listening)
 	- [net_nodeInfo](#net_nodeinfo)
@@ -1246,50 +1247,6 @@ Response
 }
 ```
 
-### ain_getValidatorInfo
-
-Returns the information of the given block validator 
-
-**Parameters**
-
-An object with a property:
-
--   address: `String` - address of the block validator's account 
-
-**Returns**
-
-`Object` - The validator's information. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1, 
-  "method": "ain_getValidatorInfo",
-  "params": {
-    "protoVer": "1.1.3",
-    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
-  }
-}'
-```
-
-Response
-```
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "result": {
-      "isWhitelisted": true,
-      "stake": 0
-    },
-    "protoVer": "1.1.3"
-  }
-}
-```
-
 ---
 
 ## Transaction API
@@ -1986,9 +1943,9 @@ Response
 
 ## Block API
 
-### ain_getRecentBlock
+### ain_getLastBlock
 
-Returns the most recent block.
+Returns the last block.
 
 **Parameters**
 
@@ -1996,7 +1953,7 @@ None.
 
 **Returns**
 
-`Object` - The most recent block. 
+`Object` - The last block. 
 
 **Example**
 
@@ -2005,53 +1962,51 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getRecentBlock"
+  "method": "ain_getLastBlock",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":{
-    "timestamp":1564845946382,
-    "hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-    "parent_hash":"0xe670ec64341771606e55d6b4ca35a1a6b75...",
-    "number":675,
-    "proposer":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed812",
-    "validators":[
-      "0x4e65fda2159562a496f9f3522f89122a3088497a",
-      "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-      "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-    ],
-    "size":163591,
-    "transactions":[
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f3...",
-        "timestamp":1566736760322,
-        "nonce":-1,
-        "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56...",
-        "operation":{ ... }
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "last_votes": [
+        ...
+      ],
+      "evidence": {},
+      "transactions": [],
+      "receipts": [],
+      "last_hash": "0x79a17e333d600d234e0eabe103288eeb3fd01f9c0227dd66fd5ad037af07331d",
+      "last_votes_hash": "0x934f7d6b833aa268d7c67af0a75d10ab0fe916f746979b94446c802b31d93768",
+      "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+      "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "number": 3300494,
+      "epoch": 3305917,
+      "timestamp": 1707113548716,
+      "state_proof_hash": "0xfc95cc439ea82935eb739a94cdc655cee15266dc6254844d5d92585ccf320592",
+      "proposer": "0x003AD6FdB06684175e7D95EcC36758B014517E4b",
+      "validators": {
+        ...
       },
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-        "timestamp":1566736780022,
-        "nonce":99,
-        "operation":{ ... }
-      },
-      ...
-    ]
+      "gas_amount_total": 0,
+      "gas_cost_total": 0,
+      "hash": "0x1656a691b9b2007d6f16dc7127f4cdb7f461303cb240c42bc0d6b6016bd5d9f8",
+      "size": 11888
+    },
+    "protoVer": "1.1.3"
   }
 }
 ```
 
-## ain_getRecentBlockNumber
+## ain_getLastBlockNumber
 
-Returns the most recent block's block number.
+Returns the last block number.
 
 **Parameters**
 
@@ -2059,7 +2014,7 @@ None.
 
 **Returns**
 
-`Number` - The most recent block's block number. 
+`Number` - The last block number. 
 
 **Example**
 
@@ -2068,16 +2023,22 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getRecentBlockNumber"
+  "method": "ain_getLastBlockNumber",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":98347
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 3300526,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
@@ -2105,7 +2066,8 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1,
   "method": "ain_getBlockByNumber",
   "params": {
-    "number": 675,
+    "protoVer": "1.1.3",
+    "number": 3300526,
     "getFullTransactions": true
   }
 }'
@@ -2113,41 +2075,36 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":{
-    "timestamp":1564845946382,
-    "hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-    "parent_hash":"0xe670ec64341771606e55d6b4ca35a1a6b75...",
-    "number":675,
-    "proposer":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed812",
-    "validators":[
-      "0x4e65fda2159562a496f9f3522f89122a3088497a",
-      "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-      "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-    ],
-    "size":163591,
-    "transactions":[
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f3...",
-        "timestamp":1566736760322,
-        "nonce":-1,
-        "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56...",
-        "operation":{ ... }
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "last_votes": [
+        ...
+      ],
+      "evidence": {},
+      "transactions": [],
+      "receipts": [],
+      "last_hash": "0xe4ec974b210f26f66a0b005a87ea4ea8b74e507ece9ae4219a130fca19c1f15f",
+      "last_votes_hash": "0x670bd883418c7b14847dbc315a3a0b4ea23cad091667d5807005026bae7c1600",
+      "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+      "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "number": 3300526,
+      "epoch": 3305949,
+      "timestamp": 1707114196712,
+      "state_proof_hash": "0x5966358621862d6f29926921738381944e77365df449b898aaed309090a849e7",
+      "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+      "validators": {
+        ...
       },
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-        "timestamp":1566736780022,
-        "nonce":99,
-        "operation":{ ... }
-      },
-      ...
-    ]
+      "gas_amount_total": 0,
+      "gas_cost_total": 0,
+      "hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
+      "size": 11888
+    },
+    "protoVer": "1.1.3"
   }
 }
 ```
@@ -2165,7 +2122,7 @@ An object with properties:
 
 **Returns**
 
-`Object` - The block.
+`Object` - The block object.
 
 **Example**
 
@@ -2173,10 +2130,11 @@ Request
 ```
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
-  "id": 1, 
+  "id": 1,
   "method": "ain_getBlockByHash",
   "params": {
-    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484...",
+    "protoVer": "1.1.3",
+    "hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
     "getFullTransactions": true
   }
 }'
@@ -2184,46 +2142,41 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":{
-    "timestamp":1564845946382,
-    "hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-    "parent_hash":"0xe670ec64341771606e55d6b4ca35a1a6b75...",
-    "number":67526,
-    "proposer":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81",
-    "validators":[
-      "0x4e65fda2159562a496f9f3522f89122a3088497a",
-      "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-      "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-    ],
-    "size":163591,
-    "transactions":[
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f3...",
-        "timestamp":1566736760322,
-        "nonce":-1
-        "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56...",
-        "operation":{ ... }
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "last_votes": [
+        ...
+      ],
+      "evidence": {},
+      "transactions": [],
+      "receipts": [],
+      "last_hash": "0xe4ec974b210f26f66a0b005a87ea4ea8b74e507ece9ae4219a130fca19c1f15f",
+      "last_votes_hash": "0x670bd883418c7b14847dbc315a3a0b4ea23cad091667d5807005026bae7c1600",
+      "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+      "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+      "number": 3300526,
+      "epoch": 3305949,
+      "timestamp": 1707114196712,
+      "state_proof_hash": "0x5966358621862d6f29926921738381944e77365df449b898aaed309090a849e7",
+      "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+      "validators": {
+        ...
       },
-      {
-        "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-        "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-        "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-        "timestamp":1566736760400,
-        "nonce":99,
-        "operation":{ ... }
-      },
-      ...
-    ]
+      "gas_amount_total": 0,
+      "gas_cost_total": 0,
+      "hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
+      "size": 11888
+    },
+    "protoVer": "1.1.3"
   }
 }
 ```
 
-## ain_getBlocks
+## ain_getBlockList
 
 Returns a list of blocks that have a block number between "from" block number and "to" block number.
 
@@ -2245,60 +2198,79 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getBlocks",
+  "method": "ain_getBlockList",
   "params": {
-    "from": 0,
-    "to": 100
+    "protoVer": "1.1.3",
+    "from": 3300526,
+    "to": 3300528
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":
-  [
-    {
-      "timestamp":1564845946382,
-      "hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-      "parent_hash":"",
-      "number":0,
-      "proposer":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81",
-      "validators":[
-        "0x4e65fda2159562a496f9f3522f89122a3088497a",
-        "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-        "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-      ],
-      "size":163591,
-      "transactions":[
-        {
-          "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-          "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-          "signature":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f3...",
-          "timestamp":1566736760322,
-          "nonce":-1
-          "parent_tx_hash":"0x88df016429689c079f3b2f6ad39fa052532c56...",
-          "operation":{ ... }
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": [
+      {
+        "last_votes": [
+          ...
+        ],
+        "evidence": {},
+        "transactions": [],
+        "receipts": [],
+        "last_hash": "0xe4ec974b210f26f66a0b005a87ea4ea8b74e507ece9ae4219a130fca19c1f15f",
+        "last_votes_hash": "0x670bd883418c7b14847dbc315a3a0b4ea23cad091667d5807005026bae7c1600",
+        "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+        "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "number": 3300526,
+        "epoch": 3305949,
+        "timestamp": 1707114196712,
+        "state_proof_hash": "0x5966358621862d6f29926921738381944e77365df449b898aaed309090a849e7",
+        "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+        "validators": {
+          ...
         },
-        {
-          "hash":"0xe670ec64341771606e55d6b4ca35a1a6b75ee3d5145a99...",
-          "address":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-          "signature":"0x1ec191ef20b0e9628c4397665977cb...",
-          "timestamp":1566736760400,
-          "nonce":99,
-          "operation":{ ... }
+        "gas_amount_total": 0,
+        "gas_cost_total": 0,
+        "hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
+        "size": 11888
+      },
+      {
+        "last_votes": [
+          ...
+        ],
+        "evidence": {},
+        "transactions": [],
+        "receipts": [],
+        "last_hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
+        "last_votes_hash": "0x204b100233731f4b6e8cd8e260d3bb427ff8337764429f37a92262c8018de8b1",
+        "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+        "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "number": 3300527,
+        "epoch": 3305950,
+        "timestamp": 1707114216713,
+        "state_proof_hash": "0xd187d996f1106468f4dbba9f535112f7d3c30faee78bc1eb259fafa33dd9a5db",
+        "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+        "validators": {
+          ...
         },
-        ...
-      ]
-    },
-    ...
-  ]
+        "gas_amount_total": 0,
+        "gas_cost_total": 0,
+        "hash": "0xf0f5e395461d9ad197bf7b8a10722be993dd7a564af2e3e84431764eff9734ee",
+        "size": 11888
+      }
+    ],
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
-## ain_getBlockHeaders
+## ain_getBlockHeadersList
 
 Returns a list of block headers that have a block number between "from" block number and "to" block number.
 
@@ -2320,36 +2292,59 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getBlockHeaders",
+  "method": "ain_getBlockHeadersList",
   "params": {
-    "from": 0,
-    "to": 100
+    "protoVer": "1.1.3",
+    "from": 3300526,
+    "to": 3300528
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":
-  [
-    {
-      "timestamp":1564845946382,
-      "hash":"0x7a6c2a5a91ce3731310885eff761f7ee39484...",
-      "parent_hash":"",
-      "number":0,
-      "proposer":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81",
-      "validators":[
-        "0x4e65fda2159562a496f9f3522f89122a3088497a",
-        "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-        "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-      ],
-      "size":163591,
-    },
-    ...
-  ]
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": [
+      {
+        "last_hash": "0xe4ec974b210f26f66a0b005a87ea4ea8b74e507ece9ae4219a130fca19c1f15f",
+        "last_votes_hash": "0x670bd883418c7b14847dbc315a3a0b4ea23cad091667d5807005026bae7c1600",
+        "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+        "number": 3300526,
+        "epoch": 3305949,
+        "timestamp": 1707114196712,
+        "state_proof_hash": "0x5966358621862d6f29926921738381944e77365df449b898aaed309090a849e7",
+        "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+        "validators": {
+          ...
+        },
+        "gas_amount_total": 0,
+        "gas_cost_total": 0
+      },
+      {
+        "last_hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9",
+        "last_votes_hash": "0x204b100233731f4b6e8cd8e260d3bb427ff8337764429f37a92262c8018de8b1",
+        "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+        "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+        "number": 3300527,
+        "epoch": 3305950,
+        "timestamp": 1707114216713,
+        "state_proof_hash": "0xd187d996f1106468f4dbba9f535112f7d3c30faee78bc1eb259fafa33dd9a5db",
+        "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+        "validators": {
+          ...
+        },
+        "gas_amount_total": 0,
+        "gas_cost_total": 0
+      }
+    ],
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
@@ -2376,17 +2371,21 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1, 
   "method": "ain_getBlockTransactionCountByNumber",
   "params": {
-    "number": "123"
+    "protoVer": "1.1.3",
+    "number": 3300526
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":11
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 0,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
@@ -2411,35 +2410,43 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1, 
-  "method": "ain_getBlockTransactionCountByNumber",
+  "method": "ain_getBlockTransactionCountByHash",
   "params": {
-    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+    "protoVer": "1.1.3",
+    "hash": "0xfb3f0cf12c57238c509cc0abeed503cc1eb837b67840210fe8ec0bd4ce96b8d9"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":11
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 0,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
-## ain_getProposerByHash
+---
 
-Returns the proposer who produced the block with the given block hash. 
+## Consensus API
+
+### ain_getValidatorInfo
+
+Returns the information of the given block validator 
 
 **Parameters**
 
 An object with a property:
 
--   hash: `String` - block hash 
+-   address: `String` - address of the block validator's account 
 
 **Returns**
 
-`String` - The address of the proposer. 
+`Object` - The validator's information. 
 
 **Example**
 
@@ -2448,56 +2455,26 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1, 
-  "method": "ain_getProposerByHash",
+  "method": "ain_getValidatorInfo",
   "params": {
-    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+    "protoVer": "1.1.3",
+    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
-}
-```
-
-## ain_getProposerByNumber
-
-Returns the proposer who produced the block with the given block number.
-
-**Parameters**
-
-An object with a property:
-
--   number: `Number` - block number 
-
-**Returns**
-
-`String` - The proposer's address. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "ain_getProposerByNumber",
-  "params": {
-    "number": 456
+  "result": {
+    "result": {
+      "isWhitelisted": true,
+      "stake": 0
+    },
+    "protoVer": "1.1.3"
   }
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
 }
 ```
 
@@ -2580,6 +2557,80 @@ Response
     "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
     "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
   ]
+}
+```
+
+## ain_getProposerByHash
+
+Returns the proposer who produced the block with the given block hash. 
+
+**Parameters**
+
+An object with a property:
+
+-   hash: `String` - block hash 
+
+**Returns**
+
+`String` - The address of the proposer. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getProposerByHash",
+  "params": {
+    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+  }
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
+}
+```
+
+## ain_getProposerByNumber
+
+Returns the proposer who produced the block with the given block number.
+
+**Parameters**
+
+An object with a property:
+
+-   number: `Number` - block number 
+
+**Returns**
+
+`String` - The proposer's address. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "ain_getProposerByNumber",
+  "params": {
+    "number": 456
+  }
+}'
+```
+
+Response
+```
+{ 
+  "jsonrpc":"2.0", 
+  "id":1,
+  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
 }
 ```
 
