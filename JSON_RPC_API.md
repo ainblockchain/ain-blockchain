@@ -18,7 +18,6 @@
 	- [ain_getBalance](#ain_getbalance)
 	- [ain_getNonce](#ain_getnonce)
 	- [ain_getTimestamp](#ain_gettimestamp)
-	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 - [Transaction API](#transaction-api)
 	- [ain_getPendingTransactions](#ain_getpendingtransactions)
 	- [ain_getTransactionPoolSizeUtilization](#ain_gettransactionpoolsizeutilization)
@@ -27,7 +26,7 @@
 	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
 	- [ain_sendSignedTransactionDryrun](#ain_sendsignedtransactiondryrun)
 	- [ain_sendSignedTransaction](#ain_sendsignedtransaction)
-	- [ain_sendSignedTransactionBatch]
+	- [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
 - [Block API](#block-api)
 	- [ain_getRecentBlock](#ain_getrecentblock)
 	- [ain_getRecentBlockNumber](#ain_getrecentblocknumber)
@@ -37,6 +36,8 @@
 	- [ain_getBlockHeaders](#ain_getblockheaders)
 	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
 	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
+- [Consensus API](#consensus-api)
+	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 	- [ain_getProposerByHash](#ain_getproposerbyhash)
 	- [ain_getProposerByNumber](#ain_getproposerbynumber)
 	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
@@ -1246,50 +1247,6 @@ Response
 }
 ```
 
-### ain_getValidatorInfo
-
-Returns the information of the given block validator 
-
-**Parameters**
-
-An object with a property:
-
--   address: `String` - address of the block validator's account 
-
-**Returns**
-
-`Object` - The validator's information. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1, 
-  "method": "ain_getValidatorInfo",
-  "params": {
-    "protoVer": "1.1.3",
-    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
-  }
-}'
-```
-
-Response
-```
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "result": {
-      "isWhitelisted": true,
-      "stake": 0
-    },
-    "protoVer": "1.1.3"
-  }
-}
-```
-
 ---
 
 ## Transaction API
@@ -2424,6 +2381,54 @@ Response
   "jsonrpc":"2.0", 
   "id":1,
   "result":11
+}
+```
+
+---
+
+## Consensus API
+
+### ain_getValidatorInfo
+
+Returns the information of the given block validator 
+
+**Parameters**
+
+An object with a property:
+
+-   address: `String` - address of the block validator's account 
+
+**Returns**
+
+`Object` - The validator's information. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getValidatorInfo",
+  "params": {
+    "protoVer": "1.1.3",
+    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "isWhitelisted": true,
+      "stake": 0
+    },
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
