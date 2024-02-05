@@ -63,7 +63,13 @@ module.exports = function getTransactionApis(node, p2pServer) {
   return {
     [JSON_RPC_METHODS.AIN_GET_PENDING_TRANSACTIONS]: function(args, done) {
       const beginTime = Date.now();
-      const result = node.tp.transactions;
+      const result = {};
+      for (let [key, value] of node.tp.transactions.entries()) {
+        if (!result[key]) {
+          result[key] = [];
+        }
+        result[key].push(value)
+      }
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
