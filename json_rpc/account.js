@@ -40,20 +40,5 @@ module.exports = function getAccountApis(node) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
-
-    [JSON_RPC_METHODS.AIN_GET_VALIDATOR_INFO]: function(args, done) {
-      const beginTime = Date.now();
-      const addr = args.address;
-      const isWhitelisted = node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr)) || false;
-      const stake = node.db.getValue(PathUtil.getServiceAccountBalancePath(addr)) || 0;
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({
-        result: {
-          isWhitelisted,
-          stake,
-        }
-      }));
-    },
   };
 };
