@@ -12,11 +12,12 @@ module.exports = function getConsensusApis(node) {
       const beginTime = Date.now();
       const addr = args.address;
       const isWhitelisted = node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr)) || false;
-      const stake = node.db.getValue(PathUtil.getServiceAccountBalancePath(addr)) || 0;
+      const stake = node.db.getValue(PathUtil.getConsensusStakingAccountBalancePath(addr)) || 0;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({
         result: {
+          address: addr,
           isWhitelisted,
           stake,
         }
