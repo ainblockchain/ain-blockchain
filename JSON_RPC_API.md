@@ -38,10 +38,10 @@
 	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
 - [Consensus API](#consensus-api)
 	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
-	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
 	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
-	- [ain_getProposerByHash](#ain_getproposerbyhash)
+	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
 	- [ain_getProposerByNumber](#ain_getproposerbynumber)
+	- [ain_getProposerByHash](#ain_getproposerbyhash)
 - [Network API](#network-api)
 	- [net_listening](#net_listening)
 	- [net_nodeInfo](#net_nodeinfo)
@@ -1132,7 +1132,7 @@ Returns the balance of the given account.
 
 An object with a property:
 
--   address: `String` - address of the account. 
+-   address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1173,7 +1173,7 @@ Returns the nonce, number of transactions an address has sent, of the given acco
 
 An object with a property:
 
--   address: `String` - address of the account 
+-   address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1214,7 +1214,7 @@ Returns the timestamp of the given account
 
 An object with a property:
 
--   address: `String` - address of the account 
+-   address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -2436,13 +2436,13 @@ Response
 
 ### ain_getValidatorInfo
 
-Returns the information of the given block validator 
+Returns the information of the given block validator.
 
 **Parameters**
 
 An object with a property:
 
--   address: `String` - address of the block validator's account 
+-   address: `String` - address of the block validator's account, which should be a checksum address
 
 **Returns**
 
@@ -2458,7 +2458,7 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "method": "ain_getValidatorInfo",
   "params": {
     "protoVer": "1.1.3",
-    "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
+    "address": "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d"
   }
 }'
 ```
@@ -2470,8 +2470,91 @@ Response
   "id": 1,
   "result": {
     "result": {
+      "address": "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d",
       "isWhitelisted": true,
-      "stake": 0
+      "stake": 10000000
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+## ain_getValidatorsByNumber
+
+Returns the validators who validated the block.
+
+**Parameters**
+
+An object with a property:
+
+-   number: `Number` - block number 
+
+**Returns**
+
+`Array` - The list of validators. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getValidatorsByNumber",
+  "params": {
+    "protoVer": "1.1.3",
+    "number": 3313267
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x003AD6FdB06684175e7D95EcC36758B014517E4b": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x004A2550661c8a306207C9dabb279d5701fFD66e": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x005A3c55EcE1A593b761D408B6E6BC778E0a638B": {
+        "stake": 100000,
+        "proposal_right": false
+      }
     },
     "protoVer": "1.1.3"
   }
@@ -2501,99 +2584,62 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1, 
   "method": "ain_getValidatorsByHash",
   "params": {
-    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
+    "protoVer": "1.1.3",
+    "hash": "0x3e1a023e77ad5b909ce3610b2dad921c3b0a5cae33e75676470c8f75eb08860c"
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":[
-    "0x4e65fda2159562a496f9f3522f89122a3088497a",
-    "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-    "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-  ]
-}
-```
-
-## ain_getValidatorsByNumber
-
-Returns the validators who validated the block.
-
-**Parameters**
-
-An object with a property:
-
--   number: `Number` - block number 
-
-**Returns**
-
-`Array` - The list of validators. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+{
   "jsonrpc": "2.0",
-  "id": 1, 
-  "method": "ain_getValidatorsByNumber",
-  "params": {
-    "number": 2143
+  "id": 1,
+  "result": {
+    "result": {
+      "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x003AD6FdB06684175e7D95EcC36758B014517E4b": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x004A2550661c8a306207C9dabb279d5701fFD66e": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe": {
+        "stake": 100000,
+        "proposal_right": false
+      },
+      "0x005A3c55EcE1A593b761D408B6E6BC778E0a638B": {
+        "stake": 100000,
+        "proposal_right": false
+      }
+    },
+    "protoVer": "1.1.3"
   }
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":[
-    "0x4e65fda2159562a496f9f3522f89122a3088497a",
-    "0xd46e8dd67c5d32be8058bb8eb970870f07244567",
-    "0xb60e8dd61c5d32be8058bb8eb970870f07233155"
-  ]
-}
-```
-
-## ain_getProposerByHash
-
-Returns the proposer who produced the block with the given block hash. 
-
-**Parameters**
-
-An object with a property:
-
--   hash: `String` - block hash 
-
-**Returns**
-
-`String` - The address of the proposer. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1, 
-  "method": "ain_getProposerByHash",
-  "params": {
-    "hash": "0x7a6c2a5a91ce3731310885eff761f7ee39484..."
-  }
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
 }
 ```
 
@@ -2620,17 +2666,62 @@ curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: applica
   "id": 1,
   "method": "ain_getProposerByNumber",
   "params": {
-    "number": 456
+    "protoVer": "1.1.3",
+    "number": 3313267
   }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":"0x04aac78e17374fd075d1f11bfe95ef7d8e4ed81"
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d",
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+## ain_getProposerByHash
+
+Returns the proposer who produced the block with the given block hash. 
+
+**Parameters**
+
+An object with a property:
+
+-   hash: `String` - block hash 
+
+**Returns**
+
+`String` - The address of the proposer. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1, 
+  "method": "ain_getProposerByHash",
+  "params": {
+    "protoVer": "1.1.3",
+    "hash": "0x3e1a023e77ad5b909ce3610b2dad921c3b0a5cae33e75676470c8f75eb08860c"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d",
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
