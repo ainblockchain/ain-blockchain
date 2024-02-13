@@ -62,8 +62,9 @@ Returns the value, write rule, owner rule, or function at the given path in the 
 
 **Parameters**
 
-An array of objects with a property:
+An array of objects with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path
 
 **Returns**
@@ -347,9 +348,10 @@ Returns the functions matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   ref:  `String` - reference value path
+- protoVer: `String` - protocol version
+- ref:  `String` - reference value path
 
 **Returns**
 
@@ -408,8 +410,9 @@ Returns the rules matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 
 **Returns**
@@ -488,8 +491,9 @@ Returns the owners matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 
 **Returns**
@@ -547,8 +551,9 @@ Evaluates the rule configs matched with the given value path in the global state
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 - value: `String|Number|Boolean|Object` - value to write
 - address: `String` - account address (optional)
@@ -668,8 +673,9 @@ Evaluates the owner configs matched with the given value path in the global stat
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 - permission: `'write_rule'|'write_function'|'write_owner'|'branch_owner'` - permission to evaluate with
 - address: `String` - account address (optional)
@@ -739,8 +745,9 @@ Returns the state proof of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -920,8 +927,9 @@ Returns the state proof hash of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -986,8 +994,9 @@ Returns the state information of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -1035,8 +1044,9 @@ Returns the state usage of the given app name.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - app_name: `String` - app name
 
 **Returns**
@@ -1097,6 +1107,10 @@ Returns the address of the blockchain node's account.
 
 **Parameters**
 
+An object with properties:
+
+- protoVer: `String` - protocol version
+
 **Returns**
 
 `String` - The address. 
@@ -1133,9 +1147,10 @@ Returns the balance of the given account.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1174,9 +1189,10 @@ Returns the nonce, number of transactions an address has sent, of the given acco
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1215,9 +1231,10 @@ Returns the timestamp of the given account
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1260,7 +1277,9 @@ Returns currently pending transactions.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -1396,7 +1415,9 @@ Returns the transaction pool size utilization.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -1439,9 +1460,10 @@ Returns the transaction with the hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - transaction hash 
+- protoVer: `String` - protocol version
+- hash: `String` - transaction hash 
 
 **Returns**
 
@@ -1541,10 +1563,11 @@ Returns the transaction at the {index} position in the block with the {block_has
 
 **Parameters**
 
-An object with 2 properties:
+An object with properties:
 
--   block_hash: `String` - block hash
--   index: `Number` - index of the transaction within the block
+- protoVer: `String` - protocol version
+- block_hash: `String` - block hash
+- index: `Number` - index of the transaction within the block
 
 **Returns**
 
@@ -1607,9 +1630,11 @@ Returns the transaction at the {index} position within the block with the {block
 
 **Parameters**
 
-An object with 2 properties:
--   block_number: `Number` - block number
--   index: `Number` - index of the transaction within the block
+An object with properties:
+
+- protoVer: `String` - protocol version
+- block_number: `Number` - block number
+- index: `Number` - index of the transaction within the block
     
 **Returns**
 
@@ -1670,10 +1695,11 @@ Sends a transaction body and its signature to the blockchain node as a dryrun.
  
 **Parameters**
 
-An object with following properties:
+An object with properties:
 
--   tx_body: `Object`  - transaction body object
--   signature: `String` - signature of the transaction
+- protoVer: `String` - protocol version
+- tx_body: `Object`  - transaction body object
+- signature: `String` - signature of the transaction
 
 **Returns**
 
@@ -1761,10 +1787,11 @@ Sends a transaction body and its signature to the blockchain node.
  
 **Parameters**
 
-An object with following properties:
+An object with properties:
 
--   tx_body: `Object`  - transaction body object
--   signature: `String` - signature of the transaction
+- protoVer: `String` - protocol version
+- tx_body: `Object`  - transaction body object
+- signature: `String` - signature of the transaction
 
 **Returns**
 
@@ -1851,9 +1878,10 @@ Sends multiple transactions at once to the blockchain node.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   `Array` - an array of transaction objects (with signature and transaction body) 
+- protoVer: `String` - protocol version
+- `Array` - an array of transaction objects (with signature and transaction body) 
 
 **Returns**
 
@@ -1952,7 +1980,9 @@ Returns the last block.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2013,7 +2043,9 @@ Returns the last block number.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2053,8 +2085,9 @@ Returns the block with the given block number.
 
 An object with properties:
 
--   number: `Number` - the block number
--   getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
+- protoVer: `String` - protocol version
+- number: `Number` - the block number
+- getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
 
 **Returns**
 
@@ -2120,8 +2153,9 @@ Returns the block with the specified block hash.
 
 An object with properties:
 
--   hash: `String` - block hash
--   getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
+- protoVer: `String` - protocol version
+- hash: `String` - block hash
+- getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
 
 **Returns**
 
@@ -2187,8 +2221,9 @@ Returns a list of blocks that have a block number between "from" block number an
 
 An object with properties:
 
--   from: `Number` - the block number of the starting block
--   to: `Number` - the block number of the last block to get
+- protoVer: `String` - protocol version
+- from: `Number` - the block number of the starting block
+- to: `Number` - the block number of the last block to get
  
 **Returns**
 
@@ -2281,8 +2316,9 @@ Returns a list of block headers that have a block number between "from" block nu
 
 An object with properties:
 
--   from: `Number` - the block number of the starting block
--   to: `Number` - the block number of the last block to get
+- protoVer: `String` - protocol version
+- from: `Number` - the block number of the starting block
+- to: `Number` - the block number of the last block to get
  
 **Returns**
 
@@ -2357,9 +2393,10 @@ Returns the number of transactions in the block with the specified block number.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2398,9 +2435,10 @@ Returns the number of transactions in the block with the specified block hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2443,9 +2481,10 @@ Returns the information of the given block validator.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the block validator's account, which should be a checksum address
+- protoVer: `String` - protocol version
+- address: `String` - address of the block validator's account, which should be a checksum address
 
 **Returns**
 
@@ -2488,9 +2527,10 @@ Returns the validators who validated the block.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2570,9 +2610,10 @@ Returns the validators who validated the block.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2652,9 +2693,10 @@ Returns the proposer who produced the block with the given block number.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2693,9 +2735,10 @@ Returns the proposer who produced the block with the given block hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2738,7 +2781,9 @@ Returns whether the node is listening for network connections.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2776,7 +2821,9 @@ Returns the number of peers the node is connected to.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2814,7 +2861,9 @@ Returns whether the node is syncing with the network or not.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2852,7 +2901,9 @@ Returns the blockchain node's network id.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2893,7 +2944,9 @@ Returns the blockchain node's chain id.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2934,7 +2987,9 @@ Returns the blockchain node's consensus status.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -3002,7 +3057,9 @@ Returns the blockchain node's raw consensus status.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -3205,7 +3262,9 @@ Returns the blockchain node's peer candidate information.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
