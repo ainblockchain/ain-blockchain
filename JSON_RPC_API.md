@@ -36,7 +36,7 @@
 	- [ain_getBlockHeadersList](#ain_getblockheaderslist)
 	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
 	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
-- [Consensus API](#consensus-api)
+- [Blockchain Node API](#blockchain-node-api)
 	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
 	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
@@ -2435,7 +2435,7 @@ Response
 
 ---
 
-## Consensus API
+## Blockchain Node API
 
 ### ain_getValidatorInfo
 
