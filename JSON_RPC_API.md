@@ -36,7 +36,7 @@
 	- [ain_getBlockHeadersList](#ain_getblockheaderslist)
 	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
 	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
-- [Consensus API](#consensus-api)
+- [Blockchain Node API](#blockchain-node-api)
 	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
 	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
 	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
@@ -44,10 +44,13 @@
 	- [ain_getProposerByHash](#ain_getproposerbyhash)
 - [Network API](#network-api)
 	- [net_listening](#net_listening)
-	- [net_nodeInfo](#net_nodeinfo)
 	- [net_peerCount](#net_peercount)
 	- [net_syncing](#net_syncing)
-	- [net_id](#net_id)
+	- [net_getNetworkId](#net_getnetworkid)
+	- [net_getChainId](#net_getchainid)
+	- [net_consensusStatus](#net_consensusstatus)
+	- [net_rawConsensusStatus](#net_rawconsensusstatus)
+	- [p2p_getPeerCandidateInfo](#p2p_getpeercandidateinfo)
 
 ---
 
@@ -59,8 +62,9 @@ Returns the value, write rule, owner rule, or function at the given path in the 
 
 **Parameters**
 
-An array of objects with a property:
+An array of objects with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path
 
 **Returns**
@@ -344,9 +348,10 @@ Returns the functions matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   ref:  `String` - reference value path
+- protoVer: `String` - protocol version
+- ref:  `String` - reference value path
 
 **Returns**
 
@@ -405,8 +410,9 @@ Returns the rules matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 
 **Returns**
@@ -485,8 +491,9 @@ Returns the owners matched at the given value path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 
 **Returns**
@@ -544,8 +551,9 @@ Evaluates the rule configs matched with the given value path in the global state
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 - value: `String|Number|Boolean|Object` - value to write
 - address: `String` - account address (optional)
@@ -665,8 +673,9 @@ Evaluates the owner configs matched with the given value path in the global stat
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference value path
 - permission: `'write_rule'|'write_function'|'write_owner'|'branch_owner'` - permission to evaluate with
 - address: `String` - account address (optional)
@@ -736,8 +745,9 @@ Returns the state proof of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -917,8 +927,9 @@ Returns the state proof hash of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -983,8 +994,9 @@ Returns the state information of the given path in the global state tree.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - ref: `String` - reference path prefixed with data type. e.g., /values/accounts/0x..., /rules/transfer/\$from/\$to/value, /functions/transfer/\$from/\$to/\$key/value, /owners/apps/consensus.
 
 **Returns**
@@ -1032,8 +1044,9 @@ Returns the state usage of the given app name.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
+- protoVer: `String` - protocol version
 - app_name: `String` - app name
 
 **Returns**
@@ -1094,6 +1107,10 @@ Returns the address of the blockchain node's account.
 
 **Parameters**
 
+An object with properties:
+
+- protoVer: `String` - protocol version
+
 **Returns**
 
 `String` - The address. 
@@ -1130,9 +1147,10 @@ Returns the balance of the given account.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1171,9 +1189,10 @@ Returns the nonce, number of transactions an address has sent, of the given acco
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1212,9 +1231,10 @@ Returns the timestamp of the given account
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the account, which should be a checksum address 
+- protoVer: `String` - protocol version
+- address: `String` - address of the account, which should be a checksum address 
 
 **Returns**
 
@@ -1257,7 +1277,9 @@ Returns currently pending transactions.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -1393,7 +1415,9 @@ Returns the transaction pool size utilization.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -1436,9 +1460,10 @@ Returns the transaction with the hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - transaction hash 
+- protoVer: `String` - protocol version
+- hash: `String` - transaction hash 
 
 **Returns**
 
@@ -1538,10 +1563,11 @@ Returns the transaction at the {index} position in the block with the {block_has
 
 **Parameters**
 
-An object with 2 properties:
+An object with properties:
 
--   block_hash: `String` - block hash
--   index: `Number` - index of the transaction within the block
+- protoVer: `String` - protocol version
+- block_hash: `String` - block hash
+- index: `Number` - index of the transaction within the block
 
 **Returns**
 
@@ -1604,9 +1630,11 @@ Returns the transaction at the {index} position within the block with the {block
 
 **Parameters**
 
-An object with 2 properties:
--   block_number: `Number` - block number
--   index: `Number` - index of the transaction within the block
+An object with properties:
+
+- protoVer: `String` - protocol version
+- block_number: `Number` - block number
+- index: `Number` - index of the transaction within the block
     
 **Returns**
 
@@ -1667,10 +1695,11 @@ Sends a transaction body and its signature to the blockchain node as a dryrun.
  
 **Parameters**
 
-An object with following properties:
+An object with properties:
 
--   tx_body: `Object`  - transaction body object
--   signature: `String` - signature of the transaction
+- protoVer: `String` - protocol version
+- tx_body: `Object`  - transaction body object
+- signature: `String` - signature of the transaction
 
 **Returns**
 
@@ -1758,10 +1787,11 @@ Sends a transaction body and its signature to the blockchain node.
  
 **Parameters**
 
-An object with following properties:
+An object with properties:
 
--   tx_body: `Object`  - transaction body object
--   signature: `String` - signature of the transaction
+- protoVer: `String` - protocol version
+- tx_body: `Object`  - transaction body object
+- signature: `String` - signature of the transaction
 
 **Returns**
 
@@ -1848,9 +1878,10 @@ Sends multiple transactions at once to the blockchain node.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   `Array` - an array of transaction objects (with signature and transaction body) 
+- protoVer: `String` - protocol version
+- `Array` - an array of transaction objects (with signature and transaction body) 
 
 **Returns**
 
@@ -1949,7 +1980,9 @@ Returns the last block.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2010,7 +2043,9 @@ Returns the last block number.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2050,8 +2085,9 @@ Returns the block with the given block number.
 
 An object with properties:
 
--   number: `Number` - the block number
--   getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
+- protoVer: `String` - protocol version
+- number: `Number` - the block number
+- getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
 
 **Returns**
 
@@ -2117,8 +2153,9 @@ Returns the block with the specified block hash.
 
 An object with properties:
 
--   hash: `String` - block hash
--   getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
+- protoVer: `String` - protocol version
+- hash: `String` - block hash
+- getFullTransactions: `Boolean` - if true, it returns full transaction objects; if false or undefined, it returns the transaction hashes only.
 
 **Returns**
 
@@ -2184,8 +2221,9 @@ Returns a list of blocks that have a block number between "from" block number an
 
 An object with properties:
 
--   from: `Number` - the block number of the starting block
--   to: `Number` - the block number of the last block to get
+- protoVer: `String` - protocol version
+- from: `Number` - the block number of the starting block
+- to: `Number` - the block number of the last block to get
  
 **Returns**
 
@@ -2278,8 +2316,9 @@ Returns a list of block headers that have a block number between "from" block nu
 
 An object with properties:
 
--   from: `Number` - the block number of the starting block
--   to: `Number` - the block number of the last block to get
+- protoVer: `String` - protocol version
+- from: `Number` - the block number of the starting block
+- to: `Number` - the block number of the last block to get
  
 **Returns**
 
@@ -2354,9 +2393,10 @@ Returns the number of transactions in the block with the specified block number.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2395,9 +2435,10 @@ Returns the number of transactions in the block with the specified block hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2432,7 +2473,7 @@ Response
 
 ---
 
-## Consensus API
+## Blockchain Node API
 
 ### ain_getValidatorInfo
 
@@ -2440,9 +2481,10 @@ Returns the information of the given block validator.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   address: `String` - address of the block validator's account, which should be a checksum address
+- protoVer: `String` - protocol version
+- address: `String` - address of the block validator's account, which should be a checksum address
 
 **Returns**
 
@@ -2485,9 +2527,10 @@ Returns the validators who validated the block.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2567,9 +2610,10 @@ Returns the validators who validated the block.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2649,9 +2693,10 @@ Returns the proposer who produced the block with the given block number.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   number: `Number` - block number 
+- protoVer: `String` - protocol version
+- number: `Number` - block number 
 
 **Returns**
 
@@ -2690,9 +2735,10 @@ Returns the proposer who produced the block with the given block hash.
 
 **Parameters**
 
-An object with a property:
+An object with properties:
 
--   hash: `String` - block hash 
+- protoVer: `String` - protocol version
+- hash: `String` - block hash 
 
 **Returns**
 
@@ -2735,7 +2781,9 @@ Returns whether the node is listening for network connections.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2748,51 +2796,21 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "net_listening"
+  "method": "net_listening",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":true
-}
-```
-
-### net_nodeInfo
-
-Returns the node's information.
-
-**Parameters**
-
-None.
-
-**Returns**
-
-`Object` - the object containing node's information.
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "net_nodeInfo"
-}'
-```
-
-Response
-```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":{
-    "name":"comcom_node",
-    "location":"KOR",
-    "version":"1.0.0"
+  "result": {
+    "result": true,
+    "protoVer": "1.1.3"
   }
 }
 ```
@@ -2803,7 +2821,9 @@ Returns the number of peers the node is connected to.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2816,16 +2836,22 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "net_peerCount"
+  "method": "net_peerCount",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":7
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 3,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
@@ -2835,7 +2861,9 @@ Returns whether the node is syncing with the network or not.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
@@ -2848,33 +2876,41 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "net_syncing"
+  "method": "net_syncing",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":true
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": false,
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
-### net_id
+### net_getNetworkId
 
-Returns the network id.
+Returns the blockchain node's network id.
 
 **Parameters**
 
-None.
+An object with properties:
+
+- protoVer: `String` - protocol version
 
 **Returns**
 
 `Number` - the network id.
 
--   0: main network
--   1: test network
+-   0: mainnet network
+-   1: testnet network
     
 **Example**
 
@@ -2883,16 +2919,443 @@ Request
 curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "net_id"
+  "method": "net_getNetworkId",
+  "params": {
+    "protoVer": "1.1.3"
+  }
 }'
 ```
 
 Response
 ```
-{ 
-  "jsonrpc":"2.0", 
-  "id":1,
-  "result":0
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 0,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_getChainId
+
+Returns the blockchain node's chain id.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Number` - the chain id.
+
+-   0: mainnet chain
+-   1: testnet chain
+    
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_getChainId",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 0,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_consensusStatus
+
+Returns the blockchain node's consensus status.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Object` - an object containing the consensus status.
+
+- `STARTING`: consensus process starting
+- `RUNNING`: consensus process running
+- `STOPPED`: consensus process stopped
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_consensusStatus",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "health": true,
+      "state": "RUNNING",
+      "stateNumeric": 1,
+      "epoch": 3339699,
+      "isInEpochTransition": false,
+      "validators": {
+        "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+          "stake": 10000000,
+          "proposal_right": true,
+          "voting_right": true
+        },
+        ...
+      },
+      "globalTimeSyncStatus": {
+        "averageNTPDelta": 0.25,
+        "averageNTPLatency": 14,
+        "minimalNTPLatencyDelta": 13,
+        "minimalNTPLatency": 6,
+        "totalSampleCount": 4,
+        "syncedAt": 1707789022964
+      },
+      "rewards": {
+        "unclaimed": 1690211.830771636,
+        "cumulative": 1690211.830771636
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_rawConsensusStatus
+
+Returns the blockchain node's raw consensus status.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Object` - an object containing the raw consensus status.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_rawConsensusStatus",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "consensus": {
+        "epoch": 3339714,
+        "proposer": "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211",
+        "state": "RUNNING"
+      },
+      "block_pool": {
+        "hashToBlockInfo": {
+          "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c": {
+            "block": {
+              "last_votes": [
+                {
+                  "tx_body": {
+                    "operation": {
+                      "type": "SET",
+                      "op_list": [
+                        {
+                          "type": "SET_VALUE",
+                          "ref": "/consensus/number/3334275/propose",
+                          "value": {
+                            "number": 3334275,
+                            "epoch": 3339711,
+                            "validators": {
+                              "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+                                "stake": 10000000,
+                                "proposal_right": true
+                              },
+                              ...
+                            },
+                            "total_at_stake": 50500000,
+                            "proposer": "0x003AD6FdB06684175e7D95EcC36758B014517E4b",
+                            "block_hash": "0x6b148d07060f58bdd8301416f9df9b1225591297ec4eeceff9c1de19748e4a38",
+                            "last_hash": "0xc62c681c7d9015505cf2ce01c5a1251e4fb6d56b25069fbaa91d7561d99314fa",
+                            "timestamp": 1707789435127,
+                            "gas_cost_total": 0
+                          }
+                        }
+                      ]
+                    },
+                    "nonce": -1,
+                    "gas_price": 0,
+                    "timestamp": 1707789435176
+                  },
+                  "signature": "0x19f276213d95bcb4d3a6ff52a105b0bc711d9d742af568d11ddc007cd0bf2b136dbc4d77e0d2709fdf8fa3b360f4500407f2ccbfa8c83658f24cb864065332c853f2ae50b4c54c960c999ddb9efd2c71126ed91ba605270d41dffca60d0271cb1c",
+                  "hash": "0x19f276213d95bcb4d3a6ff52a105b0bc711d9d742af568d11ddc007cd0bf2b13",
+                  "address": "0x003AD6FdB06684175e7D95EcC36758B014517E4b"
+                },
+                ...
+              ],
+              "evidence": {},
+              "transactions": [],
+              "receipts": [],
+              "last_hash": "0x6b148d07060f58bdd8301416f9df9b1225591297ec4eeceff9c1de19748e4a38",
+              "last_votes_hash": "0xe9f92185d91193a9c253e9953a126bb29838bb3c18ffcbfc513633c23ed739eb",
+              "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+              "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+              "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+              "number": 3334276,
+              "epoch": 3339712,
+              "timestamp": 1707789453632,
+              "state_proof_hash": "0x4771b8960f7e3d332729f7238aafe418179daca65ddba2471aa2f2edd6dc93fb",
+              "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+              "validators": {
+                "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+                  "stake": 10000000,
+                  "proposal_right": true
+                },
+                ...
+              },
+              "gas_amount_total": 0,
+              "gas_cost_total": 0,
+              "hash": "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c",
+              "size": 11888
+            },
+            "proposal": {
+              "tx_body": {
+                "operation": {
+                  "type": "SET",
+                  "op_list": [
+                    {
+                      "type": "SET_VALUE",
+                      "ref": "/consensus/number/3334276/propose",
+                      "value": {
+                        "number": 3334276,
+                        "epoch": 3339712,
+                        "validators": {
+                          "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
+                            "stake": 10000000,
+                            "proposal_right": true
+                          },
+                          ...
+                        },
+                        "total_at_stake": 50500000,
+                        "proposer": "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+                        "block_hash": "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c",
+                        "last_hash": "0x6b148d07060f58bdd8301416f9df9b1225591297ec4eeceff9c1de19748e4a38",
+                        "timestamp": 1707789453632,
+                        "gas_cost_total": 0
+                      }
+                    }
+                  ]
+                },
+                "nonce": -1,
+                "gas_price": 0,
+                "timestamp": 1707789453675
+              },
+              "signature": "0x88cb6d7433691e59995bffa619515df098bb228a6bad46e75017a948b74166ab303e2e09e94fbe2c499cd4fb3329250f6f4390b32478750cd2e48e6468b398a76003e668a9208432f1f2b2212ad806c2ef8d1b22dd927fc3e8ba29570a000cb91c",
+              "hash": "0x88cb6d7433691e59995bffa619515df098bb228a6bad46e75017a948b74166ab",
+              "address": "0x004A2550661c8a306207C9dabb279d5701fFD66e"
+            },
+            "votes": [
+              {
+                "tx_body": {
+                  "operation": {
+                    "type": "SET_VALUE",
+                    "ref": "/consensus/number/3334276/0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c/vote/0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+                    "value": {
+                      "block_hash": "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c",
+                      "stake": 10000000,
+                      "is_against": false,
+                      "vote_nonce": 1707789453959
+                    }
+                  },
+                  "nonce": -1,
+                  "gas_price": 0,
+                  "timestamp": 1707789453959
+                },
+                "signature": "0x88d0589161197857d0ca90a004674fb39d87556d67b5065a2cae0e2720688f2dead4c555eeca90b5c64c433adcff740870644cd4b30f912efb4e7cd9ca6704d775bf08dd8ec595e235fe3663ef329f3b24b87f793427d0f5534fc4c452ea18cf1c",
+                "hash": "0x88d0589161197857d0ca90a004674fb39d87556d67b5065a2cae0e2720688f2d",
+                "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4"
+              },
+              ...
+            ],
+            "tallied": 50000000,
+            "notarized": true
+          },
+          ...
+        },
+        "hashToInvalidBlockInfo": {},
+        "hashToDb": [
+          "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c",
+          "0xf45a08f6a6859f4fe3cd712beb07d11e633adb2eccc608c0ce71601b06e08390"
+        ],
+        "hashToNextBlockSet": {
+          "0x0d595aabdf8105a2e147d92c1ad263302eea1783bebba67d5295cccb3affba3f": [
+            "0x89045524ffed88d8e04d942269a249463951627eb5ee9bdd6da4a7f8ae902f09"
+          ],
+          "0xcdc74d17d84ed8b75c5ed4a02d54c3c6011c2d7f7ce7f5b6dd9a0b82b8a4a20c": [
+            "0xf45a08f6a6859f4fe3cd712beb07d11e633adb2eccc608c0ce71601b06e08390"
+          ]
+        },
+        "epochToBlock": [
+          3339712,
+          3339713
+        ],
+        "numberToBlockSet": [
+          3334276,
+          "3334276",
+          3334277,
+          "3334277"
+        ],
+        "longestNotarizedChainTips": [
+          "0xf45a08f6a6859f4fe3cd712beb07d11e633adb2eccc608c0ce71601b06e08390"
+        ]
+      }
+    },
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### p2p_getPeerCandidateInfo
+
+Returns the blockchain node's peer candidate information.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Object` - an object containing the peer candidate information.
+
+- `STARTING`: p2p connection starting
+- `EXPANDING`: p2p connection expanding 
+- `STEADY`: p2p connection steady
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "p2p_getPeerCandidateInfo",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": {
+      "address": "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4",
+      "isAvailableForConnection": true,
+      "networkStatus": {
+        "urls": {
+          "ip": "35.221...",
+          "p2p": {
+            "url": "ws://35.221...:5000/",
+            "port": 5000
+          },
+          "clientApi": {
+            "url": "http://35.221...:8080/",
+            "port": 8080
+          },
+          "jsonRpc": {
+            "url": "http://35.221...:8080/json-rpc",
+            "port": 8080
+          }
+        },
+        "connectionStatus": {
+          "state": "STEADY",
+          "stateNumeric": 2,
+          "isConnectingToPeerCandidates": false,
+          "peerConnectionStartedAt": 1707790289596,
+          "peerConnectionElapsedTime": 155538,
+          "maxInbound": 6,
+          "targetOutBound": 3,
+          "peerConnectionsInProgress": [],
+          "peerCandidates": [
+            "http://35.221...:8080/json-rpc",
+            "http://35.199...:8080/json-rpc",
+            "http://35.223...:8080/json-rpc",
+            "http://35.240...:8080/json-rpc",
+            "http://34.90...:8080/json-rpc",
+            "http://34.80...:8080/json-rpc",
+            "http://23.88...:8080/json-rpc"
+          ],
+          "numInbound": 3,
+          "numOutbound": 3,
+          "numConnections": 6,
+          "numPeerConnectionsInProgress": 0,
+          "numPeerCandidates": 7,
+          "incomingPeers": [
+            "0xA20D01638DB479bc5a4cC90577CB7A61D2EB22FE",
+            "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+            "0x76F114dAC5593f671E965DE5912D73dBe7215D5E"
+          ],
+          "outgoingPeers": [
+            "0xA20D01638DB479bc5a4cC90577CB7A61D2EB22FE",
+            "0x004A2550661c8a306207C9dabb279d5701fFD66e",
+            "0x76F114dAC5593f671E965DE5912D73dBe7215D5E"
+          ]
+        }
+      },
+      "peerCandidateJsonRpcUrlList": {
+        "0xA20D01638DB479bc5a4cC90577CB7A61D2EB22FE": "http://23.88...:8080/json-rpc",
+        "0x004A2550661c8a306207C9dabb279d5701fFD66e": "http://34.90...:8080/json-rpc",
+        "0x76F114dAC5593f671E965DE5912D73dBe7215D5E": "http://34.80...:8080/json-rpc"
+      }
+    },
+    "protoVer": "1.1.3"
+  }
 }
 ```
 
