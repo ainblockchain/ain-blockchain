@@ -6,7 +6,7 @@ const PathUtil = require('../common/path-util');
 const JsonRpcUtil = require('./json-rpc-util');
 const { JSON_RPC_METHODS } = require('./constants');
 
-module.exports = function getConsensusApis(node) {
+module.exports = function getBlockchainNodeApis(node) {
   return {
     [JSON_RPC_METHODS.AIN_GET_VALIDATOR_INFO]: function(args, done) {
       const beginTime = Date.now();
