@@ -1805,7 +1805,7 @@ An object with properties:
     - value: `Any` - value/rule/function/owner to set
     - op_list: `Array` - array of set operations ({ type, ref, value }). Only required if the type is "SET".
   - timestamp: `Number(<Non-negative Integer>)` - timestamp when the transaction was created
-  - nonce: `-2|-1|Number(<Non-negative Integer>)` - nonce value where `-2` means _unordered_ transaction, `-1` means _ordered_ transaction (using timestamp), and `Number` means _numbered (or indexed)_ transaction (like the Ethereum Network).
+  - nonce: `-2|-1|Number(<Non-negative Integer>)` - nonce value where `-2` means _ordered_ transaction, `-1` means _unordered_ transaction (using timestamp), and `Number` means _numbered (or indexed)_ transaction (like the Ethereum Network).
   - gas_price: `Number(<Non-negative Integer>)` - gas price value in micro unit (10<sup>-6</sup>) to apply to compute the gas cost of the transaction. The gas cost computation rule is _gas_cost_ = _gas_amount_ x _gas_price_ x _10<sup>6</sup>_ where the gas amount is the basically the number of DB write operations of the transaction and gas cost is charged in AIN unit.
 - signature: `String` - signature of the transaction
 
