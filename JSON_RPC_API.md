@@ -65,7 +65,15 @@ Returns the value, write rule, owner rule, or function at the given path in the 
 An array of objects with properties:
 
 - protoVer: `String` - protocol version
-- ref: `String` - reference path
+- type: `String` - "GET_VALUE" | "GET_RULE" | "GET_FUNCTION" | "GET_OWNER" | "GET"
+- ref: `String` - reference path to get a value/rule/owner/function of. Only required if the type is not "GET".
+- op_list: `Array` - array of get operations ({ type, ref, [is_shallow, is_global, is_final, include_tree_info, include_proof, include_version] }). Only required if the type is "GET".
+- is_shallow: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the shallow result (only the keys of the children) will be returned.
+- is_global: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the given ref will be interpreted as a global path.
+- is_final: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the finalization result will be returned.
+- include_tree_info: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the result will include additional state tree information.
+- include_proof: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the result will include state proof hashes.
+- include_version: `Boolean` | `undefined` - an optional get request parameter. When specified as `true`, the result will include state versions.
 
 **Returns**
 
@@ -1698,7 +1706,7 @@ Sends a transaction body and its signature to the blockchain node as a dryrun.
 An object with properties:
 
 - protoVer: `String` - protocol version
-- tx_body: `Object`  - transaction body object
+- tx_body: `Object`  - transaction body object (see [ain_sendSignedTransaction](#ain_sendsignedtransaction) for the details)
 - signature: `String` - signature of the transaction
 
 **Returns**
@@ -1790,7 +1798,15 @@ Sends a transaction body and its signature to the blockchain node.
 An object with properties:
 
 - protoVer: `String` - protocol version
-- tx_body: `Object`  - transaction body object
+- tx_body: `Object`  - transaction body object with properties:
+  - operation: `Object` - transaction operation with properties:
+    - type: `String` - "SET_VALUE" | "SET_RULE" | "SET_FUNCTION" | "SET_OWNER" | "SET". When type = "SET", op_list is used instead of ref and value.
+    - ref: `String` - reference path to get a value/rule/owner/function of. Only required if the type is not "SET".
+    - value: `Any` - value/rule/function/owner to set
+    - op_list: `Array` - array of set operations ({ type, ref, value }). Only required if the type is "SET".
+  - timestamp: `Number(<Non-negative Integer>)` - timestamp when the transaction was created
+  - nonce: `-2|-1|Number(<Non-negative Integer>)` - nonce value where `-2` means _ordered_ transaction, `-1` means _unordered_ transaction (using timestamp), and `Number` means _numbered (or indexed)_ transaction (like the Ethereum Network).
+  - gas_price: `Number(<Non-negative Integer>)` - gas price value in micro unit (10<sup>-6</sup>) to apply to compute the gas cost of the transaction. The gas cost computation rule is _gas_cost_ = _gas_amount_ x _gas_price_ x _10<sup>6</sup>_ where the gas amount is the basically the number of DB write operations of the transaction and gas cost is charged in AIN unit.
 - signature: `String` - signature of the transaction
 
 **Returns**
@@ -1881,11 +1897,11 @@ Sends multiple transactions at once to the blockchain node.
 An object with properties:
 
 - protoVer: `String` - protocol version
-- `Array` - an array of transaction objects (with signature and transaction body) 
+- tx_list: `Array` - an array of objects with signature and transaction body (see [ain_sendSignedTransaction](#ain_sendsignedtransaction) for the details) 
 
 **Returns**
 
-`Array` - an array of transaction hashes. 
+`Array` - an array of the transaction hashes and the execution results.
 
 **Example**
 
