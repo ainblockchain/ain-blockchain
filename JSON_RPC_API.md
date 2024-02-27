@@ -1419,7 +1419,7 @@ Response
 
 ### ain_getTransactionPoolSizeUtilization
 
-Returns the transaction pool size utilization.
+Returns the transaction pool size utilization.
 
 **Parameters**
 
