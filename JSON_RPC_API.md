@@ -3,54 +3,54 @@
 ## Table of Contents
 
 - [Database API](#database-api)
-	- [ain_get](#ain_get)
-	- [ain_matchFunction](#ain_matchfunction)
-	- [ain_matchRule](#ain_matchrule)
-	- [ain_matchOwner](#ain_matchowner)
-	- [ain_evalRule](#ain_evalrule)
-	- [ain_evalOwner](#ain_evalowner)
-	- [ain_getStateProof](#ain_getstateproof)
-	- [ain_getProofHash](#ain_getproofhash)
-	- [ain_getStateInfo](#ain_getstateinfo)
-	- [ain_getStateUsage](#ain_getstateusage)
+  - [ain_get](#ain_get)
+  - [ain_matchFunction](#ain_matchfunction)
+  - [ain_matchRule](#ain_matchrule)
+  - [ain_matchOwner](#ain_matchowner)
+  - [ain_evalRule](#ain_evalrule)
+  - [ain_evalOwner](#ain_evalowner)
+  - [ain_getStateProof](#ain_getstateproof)
+  - [ain_getProofHash](#ain_getproofhash)
+  - [ain_getStateInfo](#ain_getstateinfo)
+  - [ain_getStateUsage](#ain_getstateusage)
 - [Account API](#account-api)
   - [ain_getAddress](#ain_getaddress)
-	- [ain_getBalance](#ain_getbalance)
-	- [ain_getNonce](#ain_getnonce)
-	- [ain_getTimestamp](#ain_gettimestamp)
+  - [ain_getBalance](#ain_getbalance)
+  - [ain_getNonce](#ain_getnonce)
+  - [ain_getTimestamp](#ain_gettimestamp)
 - [Transaction API](#transaction-api)
-	- [ain_getPendingTransactions](#ain_getpendingtransactions)
-	- [ain_getTransactionPoolSizeUtilization](#ain_gettransactionpoolsizeutilization)
-	- [ain_getTransactionByHash](#ain_gettransactionbyhash)
-	- [ain_getTransactionByBlockHashAndIndex](#ain_gettransactionbyblockhashandindex)
-	- [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
-	- [ain_sendSignedTransactionDryrun](#ain_sendsignedtransactiondryrun)
-	- [ain_sendSignedTransaction](#ain_sendsignedtransaction)
-	- [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
+  - [ain_getPendingTransactions](#ain_getpendingtransactions)
+  - [ain_getTransactionPoolSizeUtilization](#ain_gettransactionpoolsizeutilization)
+  - [ain_getTransactionByHash](#ain_gettransactionbyhash)
+  - [ain_getTransactionByBlockHashAndIndex](#ain_gettransactionbyblockhashandindex)
+  - [ain_getTransactionByBlockNumberAndIndex](#ain_gettransactionbyblocknumberandindex)
+  - [ain_sendSignedTransactionDryrun](#ain_sendsignedtransactiondryrun)
+  - [ain_sendSignedTransaction](#ain_sendsignedtransaction)
+  - [ain_sendSignedTransactionBatch](#ain_sendsignedtransactionbatch)
 - [Block API](#block-api)
-	- [ain_getLastBlock](#ain_getlastblock)
-	- [ain_getLastBlockNumber](#ain_getlastblocknumber)
-	- [ain_getBlockByNumber](#ain_getblockbynumber)
-	- [ain_getBlockByHash](#ain_getblockbyhash)
-	- [ain_getBlockList](#ain_getblocklist)
-	- [ain_getBlockHeadersList](#ain_getblockheaderslist)
-	- [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
-	- [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
+  - [ain_getLastBlock](#ain_getlastblock)
+  - [ain_getLastBlockNumber](#ain_getlastblocknumber)
+  - [ain_getBlockByNumber](#ain_getblockbynumber)
+  - [ain_getBlockByHash](#ain_getblockbyhash)
+  - [ain_getBlockList](#ain_getblocklist)
+  - [ain_getBlockHeadersList](#ain_getblockheaderslist)
+  - [ain_getBlockTransactionCountByNumber](#ain_getblocktransactioncountbynumber)
+  - [ain_getBlockTransactionCountByHash](#ain_getblocktransactioncountbyhash)
 - [Blockchain Node API](#blockchain-node-api)
-	- [ain_getValidatorInfo](#ain_getvalidatorinfo)
-	- [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
-	- [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
-	- [ain_getProposerByNumber](#ain_getproposerbynumber)
-	- [ain_getProposerByHash](#ain_getproposerbyhash)
+  - [ain_getValidatorInfo](#ain_getvalidatorinfo)
+  - [ain_getValidatorsByNumber](#ain_getvalidatorsbynumber)
+  - [ain_getValidatorsByHash](#ain_getvalidatorsbyhash)
+  - [ain_getProposerByNumber](#ain_getproposerbynumber)
+  - [ain_getProposerByHash](#ain_getproposerbyhash)
 - [Network API](#network-api)
-	- [net_listening](#net_listening)
-	- [net_peerCount](#net_peercount)
-	- [net_syncing](#net_syncing)
-	- [net_getNetworkId](#net_getnetworkid)
-	- [net_getChainId](#net_getchainid)
-	- [net_consensusStatus](#net_consensusstatus)
-	- [net_rawConsensusStatus](#net_rawconsensusstatus)
-	- [p2p_getPeerCandidateInfo](#p2p_getpeercandidateinfo)
+  - [net_getNetworkId](#net_getnetworkid)
+  - [net_getChainId](#net_getchainid)
+  - [net_listening](#net_listening)
+  - [net_syncing](#net_syncing)
+  - [net_peerCount](#net_peercount)
+  - [net_consensusStatus](#net_consensusstatus)
+  - [net_rawConsensusStatus](#net_rawconsensusstatus)
+  - [p2p_getPeerCandidateInfo](#p2p_getpeercandidateinfo)
 
 ---
 
@@ -2791,126 +2791,6 @@ Response
 
 ## Network API
 
-### net_listening
-
-Returns whether the node is listening for network connections.
-
-**Parameters**
-
-An object with properties:
-
-- protoVer: `String` - protocol version
-
-**Returns**
-
-`Boolean` - true is the node is listening for connections; otherwise, false. 
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "net_listening",
-  "params": {
-    "protoVer": "1.1.3"
-  }
-}'
-```
-
-Response
-```
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "result": true,
-    "protoVer": "1.1.3"
-  }
-}
-```
-
-### net_peerCount
-
-Returns the number of peers the node is connected to.
-
-**Parameters**
-
-An object with properties:
-
-- protoVer: `String` - protocol version
-
-**Returns**
-
-`Number` - number of peers.
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "net_peerCount",
-  "params": {
-    "protoVer": "1.1.3"
-  }
-}'
-```
-
-Response
-```
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "result": 3,
-    "protoVer": "1.1.3"
-  }
-}
-```
-
-### net_syncing
-
-Returns whether the node is syncing with the network or not.
-
-**Parameters**
-
-An object with properties:
-
-- protoVer: `String` - protocol version
-
-**Returns**
-
-`Boolean` - true if the node is syncing, false otherwise.
-
-**Example**
-
-Request
-```
-curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "net_syncing",
-  "params": {
-    "protoVer": "1.1.3"
-  }
-}'
-```
-
-Response
-```
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "result": false,
-    "protoVer": "1.1.3"
-  }
-}
-```
-
 ### net_getNetworkId
 
 Returns the blockchain node's network id.
@@ -2992,6 +2872,126 @@ Response
   "id": 1,
   "result": {
     "result": 0,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_listening
+
+Returns whether the node is listening for network connections.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Boolean` - true is the node is listening for connections; otherwise, false. 
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_listening",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": true,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_syncing
+
+Returns whether the node is syncing with the network or not.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Boolean` - true if the node is syncing, false otherwise.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_syncing",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": false,
+    "protoVer": "1.1.3"
+  }
+}
+```
+
+### net_peerCount
+
+Returns the number of peers the node is connected to.
+
+**Parameters**
+
+An object with properties:
+
+- protoVer: `String` - protocol version
+
+**Returns**
+
+`Number` - number of peers.
+
+**Example**
+
+Request
+```
+curl https://testnet-api.ainetwork.ai/json-rpc -X POST -H "Content-Type: application/json" -d '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "net_peerCount",
+  "params": {
+    "protoVer": "1.1.3"
+  }
+}'
+```
+
+Response
+```
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "result": 3,
     "protoVer": "1.1.3"
   }
 }
