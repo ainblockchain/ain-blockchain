@@ -8,33 +8,6 @@ const { JSON_RPC_METHODS } = require('./constants');
 
 module.exports = function getNetworkApis(node, p2pServer) {
   return {
-    [JSON_RPC_METHODS.NET_LISTENING]: function(args, done) {
-      const beginTime = Date.now();
-      const peerCount = Object.keys(p2pServer.inbound).length;
-      const result = !!peerCount;
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result }));
-    },
-
-    [JSON_RPC_METHODS.NET_PEER_COUNT]: function(args, done) {
-      const beginTime = Date.now();
-      const peerCount = Object.keys(p2pServer.inbound).length;
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result: peerCount }));
-    },
-
-    [JSON_RPC_METHODS.NET_SYNCING]: function(args, done) {
-      const beginTime = Date.now();
-      const result = (node.state === BlockchainNodeStates.CHAIN_SYNCING);
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      // TODO(liayoo): Return { starting, latest } with block numbers
-      // if the node is currently syncing.
-      done(null, JsonRpcUtil.addProtocolVersion({ result }));
-    },
-
     [JSON_RPC_METHODS.NET_GET_NETWORK_ID]: function(args, done) {
       const beginTime = Date.now();
       const result = node.getBlockchainParam('genesis/network_id');
@@ -49,6 +22,33 @@ module.exports = function getNetworkApis(node, p2pServer) {
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
+    },
+
+    [JSON_RPC_METHODS.NET_LISTENING]: function(args, done) {
+      const beginTime = Date.now();
+      const peerCount = Object.keys(p2pServer.inbound).length;
+      const result = !!peerCount;
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({ result }));
+    },
+
+    [JSON_RPC_METHODS.NET_SYNCING]: function(args, done) {
+      const beginTime = Date.now();
+      const result = (node.state === BlockchainNodeStates.CHAIN_SYNCING);
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      // TODO(liayoo): Return { starting, latest } with block numbers
+      // if the node is currently syncing.
+      done(null, JsonRpcUtil.addProtocolVersion({ result }));
+    },
+
+    [JSON_RPC_METHODS.NET_PEER_COUNT]: function(args, done) {
+      const beginTime = Date.now();
+      const peerCount = Object.keys(p2pServer.inbound).length;
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+      done(null, JsonRpcUtil.addProtocolVersion({ result: peerCount }));
     },
 
     [JSON_RPC_METHODS.NET_CONSENSUS_STATUS]: function(args, done) {
