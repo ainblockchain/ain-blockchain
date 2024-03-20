@@ -6,6 +6,7 @@ const getAccountApis = require('./account');
 const getAppApis = require('./app');
 const getAdminApis = require('./admin');
 const getBlockApis = require('./block');
+const getBlockchainNodeApis = require('./blockchain-node');
 const getDatabaseApis = require('./database');
 const getEventHandlerApis = require('./event-handler');
 const getNetworkApis = require('./network');
@@ -36,6 +37,7 @@ module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtoc
       ...getAccountApis(node),
       ...getAppApis(node),
       ...getBlockApis(node),
+      ...getBlockchainNodeApis(node),
       ...getDatabaseApis(node),
       ...getNetworkApis(node, p2pServer),
       ...getTransactionApis(node, p2pServer),
