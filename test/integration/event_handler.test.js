@@ -217,15 +217,19 @@ describe('Event Handler Test', function() {
 
     it('Wait BLOCK_FINALIZED events', function(done) {
       this.timeout(3 * epochMs);
-      wsClient.once('message', (message) => {
+      function messageHandler(message) {
         const parsedMessage = JSON.parse(message);
         const messageType = parsedMessage.type;
         const eventType = _.get(parsedMessage, 'data.type');
         if (messageType === BlockchainEventMessageTypes.EMIT_EVENT &&
             eventType === BlockchainEventTypes.BLOCK_FINALIZED) {
           done();
+          // NOTE(platfowner): Avoid test failure with "done() called multiple times".
+          wsClient.removeListener('message', messageHandler);
         }
-      });
+      }
+      // NOTE(platfowner): Use 'on' instead of 'once' due to heartbeats with custom ping-pong.
+      wsClient.on('message', messageHandler);
     });
 
     it('Deregister filter & check number of filters === 0', function(done) {
@@ -324,7 +328,8 @@ describe('Event Handler Test', function() {
         block_number: null,
       };
       registerFilter(wsClient, filterId, BlockchainEventTypes.BLOCK_FINALIZED, config);
-      wsClient.once('message', (message) => {
+      // NOTE(platfowner): Use 'on' instead of 'once' due to heartbeats with custom ping-pong.
+      wsClient.on('message', (message) => {
         const parsedMessage = JSON.parse(message);
         const messageType = parsedMessage.type;
         const eventType = _.get(parsedMessage, 'data.type');
@@ -343,7 +348,8 @@ describe('Event Handler Test', function() {
         path: targetPath,
       };
       registerFilter(wsClient, filterId, BlockchainEventTypes.VALUE_CHANGED, config);
-      wsClient.once('message', (message) => {
+      // NOTE(platfowner): Use 'on' instead of 'once' due to heartbeats with custom ping-pong.
+      wsClient.on('message', (message) => {
         const parsedMessage = JSON.parse(message);
         const messageType = parsedMessage.type;
         const eventType = _.get(parsedMessage, 'data.type');
