@@ -82,17 +82,39 @@ class EventChannelManager {
       // TODO(cshcomcom): Handle MAX connections.
 
       logger.info(`[${LOG_HEADER}] New connection (${channelId})`);
+
       webSocket.on('message', (message) => {
-        this.handleMessage(channel, message);
+        try {
+          const parsedMessage = JSON.parse(message);
+          const messageType = parsedMessage.type;
+          if (!messageType) {
+            throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_TYPE_IN_MSG,
+                `No message type in (${JSON.stringify(message)})`);
+          }
+          const messageData = parsedMessage.data;
+          if (!messageData) {
+            throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_DATA_IN_MSG,
+                `No message data in (${JSON.stringify(message)})`);
+          }
+          // NOTE(platfowner): A custom ping-pong (see https://github.com/ainblockchain/ain-js/issues/171).
+          if (messageType === BlockchainEventMessageTypes.PONG) {
+            this.handlePong(webSocket);
+          } else {
+            this.handleMessage(channel, messageType, messageData);
+          }
+        } catch (err) {
+          logger.error(`[${LOG_HEADER}] Error while process message ` +
+              `(message: ${JSON.stringify(message, null, 2)}, ` +
+              `error message: ${err.message})`);
+          this.handleEventError(channel, err);
+        }
       });
+
       webSocket.on('close', (_) => {
         this.closeChannel(channel);
       });
 
-      // Heartbeat
-      webSocket.on('pong', (_) => {
-        webSocket.isAlive = true;
-      })
+
       webSocket.isAlive = true;
     } catch (err) {
       webSocket.terminate();
@@ -222,36 +244,28 @@ class EventChannelManager {
     }
   }
 
-  handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
-    const LOG_HEADER = 'handleMessage';
-    try {
-      const parsedMessage = JSON.parse(message);
-      const messageType = parsedMessage.type;
-      if (!messageType) {
-        throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_TYPE_IN_MSG,
-            `Can't find type from message (${JSON.stringify(message)})`);
-      }
-      const messageData = parsedMessage.data;
-      if (!messageData) {
-        throw new EventHandlerError(EventHandlerErrorCode.MISSING_MESSAGE_DATA_IN_MSG,
-            `Can't find data from message (${JSON.stringify(message)})`);
-      }
-      switch (messageType) {
-        case BlockchainEventMessageTypes.REGISTER_FILTER:
-          this.handleRegisterFilterMessage(channel, messageData);
-          break;
-        case BlockchainEventMessageTypes.DEREGISTER_FILTER:
-          this.handleDeregisterFilterMessage(channel, messageData);
-          break;
-        default:
-          throw new EventHandlerError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
-              `Invalid message type (${messageType})`);
-      }
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while process message ` +
-          `(message: ${JSON.stringify(message, null, 2)}, ` +
-          `error message: ${err.message})`);
-      this.handleEventError(channel, err);
+  /**
+   * Handles a pong message.
+   */
+  handlePong(webSocket) {
+    webSocket.isAlive = true;
+  }
+
+  /**
+   * Handles a (non-pong) message from the channel.
+   */
+  // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
+  handleMessage(channel, messageType, messageData) {
+    switch (messageType) {
+      case BlockchainEventMessageTypes.REGISTER_FILTER:
+        this.handleRegisterFilterMessage(channel, messageData);
+        break;
+      case BlockchainEventMessageTypes.DEREGISTER_FILTER:
+        this.handleDeregisterFilterMessage(channel, messageData);
+        break;
+      default:
+        throw new EventHandlerError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
+            `Invalid message type (${messageType})`);
     }
   }
 
@@ -325,9 +339,14 @@ class EventChannelManager {
           return ws.terminate();
         }
         ws.isAlive = false;
-        ws.ping();
+        this.sendPing(ws);
       });
     }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS || 15000);
+  }
+
+  sendPing(webSocket) {
+    const pingMessage = this.makeMessage(BlockchainEventMessageTypes.PING, {});
+    webSocket.send(JSON.stringify(pingMessage));
   }
 
   stopHeartbeat() {

@@ -1,7 +1,7 @@
 {
   "name": "ain-blockchain",
   "description": "AI Network Blockchain",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "private": true,
   "license": "MIT",
   "author": "dev@ainetwork.ai",
@@ -99,7 +99,7 @@
     "web3-eth-accounts": "^1.6.1",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
-    "ws": "^7.4.6"
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
