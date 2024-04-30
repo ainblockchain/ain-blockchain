@@ -181,36 +181,40 @@ class Transaction {
   }
 
   static verifyTransaction(tx, chainId) {
+    const LOG_HEADER = 'verifyTransaction';
     if (!tx || !Transaction.isValidTxBody(tx.tx_body)) {
-      logger.info(`Invalid transaction body: ${JSON.stringify(tx, null, 2)}`);
+      logger.info(`[${LOG_HEADER}] Invalid transaction body: ${JSON.stringify(tx, null, 2)}`);
       return false;
     }
     // A devel method for bypassing the transaction verification.
     if (_.get(tx, 'extra.skip_verif')) {
-      logger.info('Skip verifying signature for transaction: ' + JSON.stringify(tx, null, 2));
+      logger.info(`[${LOG_HEADER}] Skip verifying signature for transaction: ` + JSON.stringify(tx, null, 2));
       return true;
     }
-    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address, chainId);
+    try {
+      return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address, chainId);
+    } catch (err) {
+      logger.info(`[${LOG_HEADER}] Signature verifycation failed with error: ${err.message}`);
+      return false;
+    }
   }
 
   static isValidTxBody(txBody) {
+    const LOG_HEADER = 'isValidTxBody';
     if (!Transaction.hasRequiredFields(txBody)) {
-      logger.info(`Transaction body has some missing fields: ${JSON.stringify(txBody, null, 2)}`);
+      logger.info(`[${LOG_HEADER}] Transaction body has some missing fields: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
     if (!Transaction.isValidNonce(txBody.nonce)) {
-      logger.info(
-          `Transaction body has invalid nonce: ${JSON.stringify(txBody, null, 2)}`);
+      logger.info(`[${LOG_HEADER}] Transaction body has invalid nonce: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
     if (!Transaction.isValidGasPrice(txBody.gas_price)) {
-      logger.info(
-          `Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
+      logger.info(`[${LOG_HEADER}] Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
     if (!Transaction.isValidBilling(txBody.billing)) {
-      logger.info(
-          `Transaction body has invalid billing: ${JSON.stringify(txBody, null, 2)}`);
+      logger.info(`[${LOG_HEADER}] Transaction body has invalid billing: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
     return Transaction.isInStandardFormat(txBody);
