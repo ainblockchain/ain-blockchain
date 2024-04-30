@@ -92,12 +92,18 @@ class P2pUtil {
     }
   }
 
-  static verifySignedMessage(message, address) {
+  static verifySignedMessage(message, address, chainId) {
+    const LOG_HEADER = 'verifySignedMessage';
     if (!P2pUtil._isValidMessage(message)) {
-      return null;
+      return false;
     } else {
-      const chainId = DB.getBlockchainParam('genesis/chain_id');
-      return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, chainId);
+      const cId = chainId !== undefined ? chainId : DB.getBlockchainParam('genesis/chain_id');
+      try {
+        return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, cId);
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] The message is not correctly signed. Discard the message!!`);
+        return false;
+      }
     }
   }
 
