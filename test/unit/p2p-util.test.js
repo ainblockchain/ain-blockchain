@@ -5,6 +5,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const { BlockchainConsts, BlockchainParams } = require('../../common/constants');
 
+// NOTE(platfowner): Run this test with AirPlay Receiver off on MacOs to avoid port number (5000) conflicts (see https://developer.apple.com/forums/thread/682332).
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';
   let webServer;
@@ -240,7 +241,8 @@ describe("P2P Util", () => {
       }
     };
     const signature = util.signMessage(body, mockPrivateKey);
-    it("returns null with wrong messages", () => {
+
+    it("returns false with wrong messages", () => {
       const wrongMessage1 = {
         data: {
           signature: signature
@@ -281,13 +283,13 @@ describe("P2P Util", () => {
           body: body
         }
       };
-      expect(util.verifySignedMessage(wrongMessage1)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage2)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage3)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage4)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage5)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage6)).to.equal(null);
-      expect(util.verifySignedMessage(wrongMessage7)).to.equal(null);
+      expect(util.verifySignedMessage(wrongMessage1)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage2)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage3)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage4)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage5)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage6)).to.equal(false);
+      expect(util.verifySignedMessage(wrongMessage7)).to.equal(false);
     });
 
     it("verifies signature correctly", () => {
@@ -300,6 +302,18 @@ describe("P2P Util", () => {
       };
       const address = util.getAddressFromMessage(mockMessage);
       expect(util.verifySignedMessage(mockMessage, address)).to.equal(true);
+    });
+
+    it("returns false with wrong chainId", () => {
+      const mockMessage = {
+        type: 'test',
+        data: {
+          body: body,
+          signature: signature
+        }
+      };
+      const address = util.getAddressFromMessage(mockMessage);
+      expect(util.verifySignedMessage(mockMessage, address, 1)).to.equal(false);  // with wrong chainId = 1
     });
   });
 
