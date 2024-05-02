@@ -61,7 +61,6 @@ function usage() {
   console.log('Example: node tools/api-access/addToWhitelistNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 mnemonic');
   console.log('Example: node tools/api-access/addToWhitelistNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore keystore_blockchain_node.json');
   console.log("Example: node tools/api-access/addToWhitelistNodeParam.js http://localhost:8081 0 DEV_CLIENT_API_IP_WHITELIST '*' keystore keystore keystore_blockchain_node.json");
-  console.log('Example: node tools/api-access/addToWhitelistNodeParam.js http://localhost:8081 0 CORS_WHITELIST https://ainetwork.ai keystore keystore keystore_blockchain_node.json');
   console.log('Example: node tools/api-access/addToWhitelistNodeParam.js https://staging-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore keystore_blockchain_node.json');
   console.log('Example: node tools/api-access/addToWhitelistNodeParam.js https://testnet-api.ainetwork.ai 0 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore keystore_blockchain_node.json');
   console.log('Example: node tools/api-access/addToWhitelistNodeParam.js https://mainnet-api.ainetwork.ai 1 DEV_CLIENT_API_IP_WHITELIST 127.0.0.1 keystore keystore keystore_blockchain_node.json\n');
