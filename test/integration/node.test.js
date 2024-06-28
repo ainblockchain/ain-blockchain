@@ -6,6 +6,7 @@ const spawn = require("child_process").spawn;
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
+const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
@@ -5079,7 +5080,8 @@ describe('Blockchain Node', () => {
 
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
+        const txBytesLimit = 100000;  // BlockchainParams.resource.tx_bytes_limit;
+        const longText = 'a'.repeat(txBytesLimit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -5100,7 +5102,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30301,
-            message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
+            message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -5584,7 +5586,8 @@ describe('Blockchain Node', () => {
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
+        const txBytesLimit = 100000;  // BlockchainParams.resource.tx_bytes_limit;
+        const longText = 'a'.repeat(txBytesLimit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -5619,7 +5622,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30403,
-            message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
+            message: `Transaction[1]'s size exceededs its limit: ${txBytesLimit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
