@@ -6,6 +6,7 @@ const spawn = require("child_process").spawn;
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
+const sizeof = require('object-sizeof');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
@@ -1663,7 +1664,30 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, "some value with unordered nonce");
       })
 
-      it('set_value with numbered nonce', async () => {
+      it('set_value with ordered nonce (-2)', async () => {
+        const request = {
+          ref: '/apps/test/test_value/some/path',
+          value: "some value with ordered nonce",
+          nonce: -2,
+          timestamp: Date.now(),
+        };
+        const body = parseOrLog(syncRequest(
+            'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 0);
+        expect(body.code).to.equal(0);
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+
+        // Confirm that the value is set properly.
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, "some value with ordered nonce");
+      })
+
+      it('set_value with numbered nonce (N)', async () => {
         const nonce = parseOrLog(
             syncRequest('GET', server1 + '/get_nonce').body.toString('utf-8')).result;
         const request = {
@@ -3322,7 +3346,7 @@ describe('Blockchain Node', () => {
           operation: {
             type: 'SET_VALUE',
             ref: `/apps/test/test_value/some/path`,
-            value: 'some other value 1'
+            value: 'some other value with unordered nonce'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -3353,7 +3377,7 @@ describe('Blockchain Node', () => {
                   },
                   state: {
                     app: {
-                      test: 28
+                      test: 66
                     },
                     service: 0
                   }
@@ -3373,7 +3397,7 @@ describe('Blockchain Node', () => {
           operation: {
             type: 'SET_VALUE',
             ref: `/apps/test/test_value/some/path`,
-            value: 'some other value 1 longer'
+            value: 'some other value with unordered nonce and non-zero gas_price'
           },
           gas_price: 500,  // non-zero gas price
           timestamp: Date.now(),
@@ -3404,7 +3428,7 @@ describe('Blockchain Node', () => {
                   },
                   state: {
                     app: {
-                      test: 42
+                      test: 112
                     },
                     service: 0
                   }
@@ -3418,7 +3442,109 @@ describe('Blockchain Node', () => {
         });
       });
 
-      it('accepts a transaction with numbered nonce', () => {
+      it('accepts a transaction with ordered nonce (-2)', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value with ordered nonce'
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -2
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                code: 0,
+                bandwidth_gas_amount: 2001,
+                gas_amount_charged: 0,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test: 2001
+                    },
+                    service: 0
+                  },
+                  state: {
+                    app: {
+                      test: 62
+                    },
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0,
+                is_dryrun: true
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      });
+
+      it('accepts a transaction with ordered nonce (-2) and non-zero gas_price', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value with ordered nonce and non-zero gas_price'
+          },
+          gas_price: 500,  // non-zero gas price
+          timestamp: Date.now(),
+          nonce: -2
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION_DRYRUN, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                code: 0,
+                bandwidth_gas_amount: 2001,
+                gas_amount_charged: 0,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test: 2001
+                    },
+                    service: 0
+                  },
+                  state: {
+                    app: {
+                      test: 108
+                    },
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0,
+                is_dryrun: true
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        });
+      });
+
+      it('accepts a transaction with numbered nonce (N)', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_GET_NONCE, {
           address: account.address,
@@ -3431,7 +3557,7 @@ describe('Blockchain Node', () => {
             operation: {
               type: 'SET_VALUE',
               ref: `/apps/test/test_value/some/path`,
-              value: 'some other value 2'
+              value: 'some other value with numbered nonce'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -3463,7 +3589,7 @@ describe('Blockchain Node', () => {
                     },
                     state: {
                       app: {
-                        test: 28
+                        test: 64
                       },
                       service: 0
                     }
@@ -3478,7 +3604,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transaction with numbered nonce and non-zero gas price', () => {
+      it('accepts a transaction with numbered nonce (N) and non-zero gas_price', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_GET_NONCE, {
           address: account.address,
@@ -3491,7 +3617,7 @@ describe('Blockchain Node', () => {
             operation: {
               type: 'SET_VALUE',
               ref: `/apps/test/test_value/some/path`,
-              value: 'some other value 2 longer'
+              value: 'some other value with numbered nonce and non-zero gas_price'
             },
             gas_price: 500,  // non-zero gas price
             timestamp: Date.now(),
@@ -3523,7 +3649,7 @@ describe('Blockchain Node', () => {
                     },
                     state: {
                       app: {
-                        test: 42
+                        test: 110
                       },
                       service: 0
                     }
@@ -4004,7 +4130,7 @@ describe('Blockchain Node', () => {
           operation: {
             type: 'SET_VALUE',
             ref: `/apps/test/test_value/some/path`,
-            value: 'some other value 1'
+            value: 'some other value with unordered nonce'
           },
           gas_price: 0,
           timestamp: Date.now(),
@@ -4035,7 +4161,7 @@ describe('Blockchain Node', () => {
                   },
                   state: {
                     app: {
-                      test: 28
+                      test: 66
                     },
                     service: 0
                   }
@@ -4054,7 +4180,7 @@ describe('Blockchain Node', () => {
           operation: {
             type: 'SET_VALUE',
             ref: `/apps/test/test_value/some/path`,
-            value: 'some other value 1 longer'
+            value: 'some other value with unordered nonce and non-zero gas_price'
           },
           gas_price: 500,  // non-zero gas price
           timestamp: Date.now(),
@@ -4085,7 +4211,7 @@ describe('Blockchain Node', () => {
                   },
                   state: {
                     app: {
-                      test: 42
+                      test: 112
                     },
                     service: 0
                   }
@@ -4098,7 +4224,107 @@ describe('Blockchain Node', () => {
         })
       })
 
-      it('accepts a transaction with numbered nonce', () => {
+      it('accepts a transaction with ordered nonce (-2)', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value with ordered nonce'
+          },
+          gas_price: 0,
+          timestamp: Date.now(),
+          nonce: -2
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                code: 0,
+                bandwidth_gas_amount: 2001,
+                gas_amount_charged: 0,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test: 2001
+                    },
+                    service: 0
+                  },
+                  state: {
+                    app: {
+                      test: 62
+                    },
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        })
+      })
+
+      it('accepts a transaction with ordered nonce (-2) and non-zero gas_price', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/apps/test/test_value/some/path`,
+            value: 'some other value with ordered nonce and non-zero gas_price'
+          },
+          gas_price: 500,  // non-zero gas price
+          timestamp: Date.now(),
+          nonce: -2
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request(JSON_RPC_METHODS.AIN_SEND_SIGNED_TRANSACTION, {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          const result = _.get(res, 'result.result', null);
+          expect(result).to.not.equal(null);
+          assert.deepEqual(res.result, {
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+            result: {
+              result: {
+                code: 0,
+                bandwidth_gas_amount: 1,
+                gas_amount_charged: 0,
+                gas_amount_total: {
+                  bandwidth: {
+                    app: {
+                      test: 1
+                    },
+                    service: 0
+                  },
+                  state: {
+                    app: {
+                      test: 108
+                    },
+                    service: 0
+                  }
+                },
+                gas_cost_total: 0
+              },
+              tx_hash: CommonUtil.hashSignature(signature),
+            }
+          });
+        })
+      })
+
+      it('accepts a transaction with numbered nonce (N)', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_GET_NONCE, {
           address: account.address,
@@ -4111,7 +4337,7 @@ describe('Blockchain Node', () => {
             operation: {
               type: 'SET_VALUE',
               ref: `/apps/test/test_value/some/path`,
-              value: 'some other value 2'
+              value: 'some other value with numbered nonce'
             },
             gas_price: 0,
             timestamp: Date.now(),
@@ -4132,18 +4358,18 @@ describe('Blockchain Node', () => {
               result: {
                 result: {
                   code: 0,
-                  bandwidth_gas_amount: 2001,
+                  bandwidth_gas_amount: 1,
                   gas_amount_charged: 0,
                   gas_amount_total: {
                     bandwidth: {
                       app: {
-                        test: 2001
+                        test: 1
                       },
                       service: 0
                     },
                     state: {
                       app: {
-                        test: 28
+                        test: 64
                       },
                       service: 0
                     }
@@ -4157,7 +4383,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('accepts a transaction with numbered nonce and non-zero gas price', () => {
+      it('accepts a transaction with numbered nonce (N) and non-zero gas_price', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request(JSON_RPC_METHODS.AIN_GET_NONCE, {
           address: account.address,
@@ -4170,7 +4396,7 @@ describe('Blockchain Node', () => {
             operation: {
               type: 'SET_VALUE',
               ref: `/apps/test/test_value/some/path`,
-              value: 'some other value 2 longer'
+              value: 'some other value with numbered nonce and non-zero gas_price'
             },
             gas_price: 500,  // non-zero gas price
             timestamp: Date.now(),
@@ -4202,7 +4428,7 @@ describe('Blockchain Node', () => {
                     },
                     state: {
                       app: {
-                        test: 42
+                        test: 110
                       },
                       service: 0
                     }
@@ -5079,7 +5305,8 @@ describe('Blockchain Node', () => {
 
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
+        const txBytesLimit = 100000;  // BlockchainParams.resource.tx_bytes_limit;
+        const longText = 'a'.repeat(txBytesLimit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -5100,7 +5327,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30301,
-            message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
+            message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           });
         })
@@ -5584,7 +5811,8 @@ describe('Blockchain Node', () => {
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
+        const txBytesLimit = 100000;  // BlockchainParams.resource.tx_bytes_limit;
+        const longText = 'a'.repeat(txBytesLimit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -5619,7 +5847,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: null,
             code: 30403,
-            message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
+            message: `Transaction[1]'s size exceededs its limit: ${txBytesLimit} bytes.`,
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           });
         })
