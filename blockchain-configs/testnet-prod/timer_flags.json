@@ -64,7 +64,7 @@
     "has_bandage": true
   },
   "update_tx_bytes_limit": {
-    "enabled_block": null,
+    "enabled_block": 3938200,
     "has_bandage": true
   }
 }
