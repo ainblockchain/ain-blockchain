@@ -58,5 +58,9 @@
   "allow_up_to_6_decimal_transfer_value_only": {
     "enabled_block": 3064900,
     "has_bandage": true
+  },
+  "update_tx_bytes_limit": {
+    "enabled_block": 3940700,
+    "has_bandage": true
   }
 }

@@ -37,7 +37,7 @@ class Middleware {
     });
   }
 
-  // TODO(platfowner): Use dynamic origin (see https://www.npmjs.com/package/cors).
+  // NOTE(platfowner): For performance reasons, we do not support dynamic origin (see https://www.npmjs.com/package/cors).
   corsLimiter() {
     return cors({ origin: NodeConfigs.CORS_WHITELIST === '*' ?
         NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST) });
