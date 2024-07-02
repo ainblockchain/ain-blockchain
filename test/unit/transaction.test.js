@@ -354,5 +354,10 @@ describe('Transaction', () => {
       txParentHash.tx_body.billing = 'app_b|0';
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
     });
+
+    it('fail to verify an invalid transaction with a wrong chainId', () => {
+      txParentHash.tx_body.billing = 'app_b|0';
+      expect(Transaction.verifyTransaction(tx, 1)).to.equal(false);  // with a wrong chainId = 1
+    });
   });
 });
