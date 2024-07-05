@@ -18,6 +18,8 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
     gas_price: 500,
     timestamp,
     nonce: -1
+//    nonce: -2
+//    nonce: 0
   }
 }
 
