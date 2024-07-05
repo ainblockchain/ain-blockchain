@@ -17,9 +17,10 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
     },
     gas_price: 500,
     timestamp,
+    // NOTE(platfowner): Nonce value can be changed manually for ordered or numbered transactions.
     nonce: -1
-//    nonce: -2
-//    nonce: 0
+    // nonce: -2
+    // nonce: N  // 0, 1, 2, ...
   }
 }
 
