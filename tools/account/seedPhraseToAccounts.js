@@ -12,7 +12,7 @@ async function seedPhraseToAccount(numAccounts) {
     hidden: true,
   }]);
   for (let i = 0; i < numAccounts; i++) {
-    const account = ainUtil.mnemonicToAccount(input.seedPhrase, i);
+    const account = ainUtil.mnemonicToAccount(input.seedPhrase, i, 'ETH');
     console.log(`\nAccount #${i}`);
     console.log(account);
   }
