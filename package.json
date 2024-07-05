@@ -56,7 +56,7 @@
     "tracker": "node ./tracker-server/index.js"
   },
   "dependencies": {
-    "@ainblockchain/ain-util": "^1.1.9",
+    "@ainblockchain/ain-util": "^1.2.1",
     "@google-cloud/logging-bunyan": "^3.2.0",
     "@google-cloud/logging-winston": "^4.0.2",
     "JSONStream": "^1.3.5",
