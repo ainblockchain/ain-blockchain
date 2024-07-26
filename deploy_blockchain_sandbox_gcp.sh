@@ -308,7 +308,7 @@ NODE_98_ZONE="us-central1-a"
 NODE_99_ZONE="europe-west4-a"
 
 # deploy files
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 # Work in progress spinner
 spin="-\|/"
@@ -380,7 +380,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
-        SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
         # printf "SETUP_BLOCKCHAIN_CMD=$SETUP_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then

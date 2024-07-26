@@ -166,8 +166,8 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
-FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
+FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_gcp.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
 NUM_SHARD_NODES=3
 
@@ -204,7 +204,7 @@ function deploy_tracker() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up tracker
         printf "\n\n[[[ Setting up tracker ]]]\n\n"
-        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
@@ -243,7 +243,7 @@ function deploy_node() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
         printf "\n\n<<< Setting up node $node_index >>>\n\n"
-        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
+        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi

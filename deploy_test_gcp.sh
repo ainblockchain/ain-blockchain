@@ -92,7 +92,7 @@ function stop_servers() {
 }
 
 # deploy files
-FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh stop_local_blockchain.sh"
+FILES_FOR_TEST="afan_client/ blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ test/ tools/ tracker-server/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh stop_local_blockchain.sh"
 
 printf "\n"
 PROJECT_ID="testnet-dev-ground"
@@ -129,7 +129,7 @@ function deploy_test() {
         # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
         if [[ $SETUP_OPTION = "--setup" ]]; then
             printf "\n >> Setting up instance [$instance_index] ($test_target_addr) >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\n"
-            gcloud compute ssh ${test_target_addr} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone ${TEST_ZONE}
+            gcloud compute ssh ${test_target_addr} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone ${TEST_ZONE}
         fi
 
         if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
