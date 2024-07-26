@@ -91,6 +91,11 @@ while [ $ARG_INDEX -le $# ]; do
   ((ARG_INDEX++))
 done
 
+if [[ $SETUP_OPTION = "--setup" ]] && [[ ! $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    printf "You cannot use --setup without --no-keep-code\n"
+    exit
+fi
+
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
