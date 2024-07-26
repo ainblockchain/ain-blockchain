@@ -2,6 +2,15 @@
 
 printf "\n[[[[[ setup_blockchain_ubuntu_onprem.sh ]]]]]\n\n"
 
+# Get keystore password
+printf "Enter keystore password: "
+read -s NODE_LOGIN_PW
+printf "\n\n"
+
+# needed for on-premise nvidia machines
+# do sudo once with a dummy command
+echo $NODE_LOGIN_PW | sudo -S ls -la
+
 printf '\n[[ Upgrading apt.. ]]\n'
 sudo apt update
 # skip prompting (see https://serverfault.com/questions/527789/how-to-automate-changed-config-files-during-apt-get-upgrade-in-ubuntu-12)

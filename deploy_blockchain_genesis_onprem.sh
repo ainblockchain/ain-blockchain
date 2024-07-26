@@ -275,7 +275,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
         done
     fi
 fi
