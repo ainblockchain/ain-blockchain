@@ -339,28 +339,28 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
     exit
 fi
 
-#printf "\nStarting blockchain servers...\n\n"
-#if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-#    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
-#else
-#    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
-#fi
-#if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-#    # restart after removing chains, snapshots, and log files (but keep the keys)
-#    CHAINS_DIR=/home/ain_blockchain_data/chains
-#    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-#    LOGS_DIR=/home/ain_blockchain_data/logs
+printf "\nStarting blockchain servers...\n\n"
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
+else
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+fi
+if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+    # restart after removing chains, snapshots, and log files (but keep the keys)
+    CHAINS_DIR=/home/ain_blockchain_data/chains
+    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
+    LOGS_DIR=/home/ain_blockchain_data/logs
 #    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
-#    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
-#else
-#    # restart with existing chains, snapshots, and log files
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
+else
+    # restart with existing chains, snapshots, and log files
 #    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
-#    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
-#fi
-#printf "\n"
+    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_gcp.sh"
+fi
+printf "\n"
 #printf "START_TRACKER_CMD_BASE=$START_TRACKER_CMD_BASE\n"
-#printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
-#
+printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
+
 ## Tracker server is started with PARENT_NODE_INDEX_BEGIN = -1
 #if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
 #    printf "\n* >> Starting parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
@@ -372,129 +372,52 @@ fi
 #    printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 #    eval $START_TRACKER_CMD
 #fi
-#
-#begin_index=$PARENT_NODE_INDEX_BEGIN
-#if [[ $begin_index -lt 0 ]]; then
-#    begin_index=0
-#fi
-#if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-#    for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-#        NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-#        NODE_ZONE=NODE_${node_index}_ZONE
-#
-#        printf "\n* >> Starting parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-#
-#        if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
-#            JSON_RPC_OPTION="--json-rpc"
-#        else
-#            JSON_RPC_OPTION=""
-#        fi
-#        UPDATE_FRONT_DB_OPTION="--update-front-db"
-#        if [[ $node_index -ge $REST_FUNC_NODE_INDEX_GE ]] && [[ $node_index -le $REST_FUNC_NODE_INDEX_LE ]]; then
-#            REST_FUNC_OPTION="--rest-func"
-#        else
-#            REST_FUNC_OPTION=""
-#        fi
-#        if [[ $node_index -ge $EVENT_HANDLER_NODE_INDEX_GE ]] && [[ $node_index -le $EVENT_HANDLER_NODE_INDEX_LE ]]; then
-#            EVENT_HANDLER_OPTION="--event-handler"
-#        else
-#            EVENT_HANDLER_OPTION=""
-#        fi
-#
-#        printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-#        printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
-#        printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
-#        printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
-#        printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
-#        printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
-#        printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
-#        printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
-#        printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
-#
-#        printf "\n"
-#        START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-#        printf "START_NODE_CMD=$START_NODE_CMD\n"
-#        eval $START_NODE_CMD
-#        sleep 5
-#        inject_account "$node_index"
-#    done
-#fi
-#
-#
-#if [[ $NUM_SHARDS -gt 0 ]]; then
-#    for shard_index in $(seq $NUM_SHARDS); do
-#        printf "###############################################################################\n"
-#        printf "# Deploying shard $shard_index blockchain #\n"
-#        printf "###############################################################################\n\n"
-#
-#
-#        # generate genesis config files in ./blockchain/shard_$shard_index
-#        if [[ $SETUP_OPTION = "--setup" ]]; then
-#            node ./tools/generateShardGenesisFiles.js $SEASON 10 $shard_index
-#        fi
-#
-#        SHARD_TRACKER_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${shard_index}-tracker-taiwan"
-#        SHARD_NODE_0_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${shard_index}-node-0-taiwan"
-#        SHARD_NODE_1_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${shard_index}-node-1-oregon"
-#        SHARD_NODE_2_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${shard_index}-node-2-singapore"
-#
-#        # deploy files to GCP instances
-#        if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-#            printf "\n* >> Deploying files to shard_$shard_index tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
-#            gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-#            printf "\n* >> Deploying files to shard_$shard_index node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_0_ZONE
-#            gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-#            printf "\n* >> Deploying files to shard_$shard_index node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_1_ZONE
-#            gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-#            printf "\n* >> Deploying files to shard_$shard_index node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $NODE_2_ZONE
-#            gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
-#        fi
-#
-#        # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-#        if [[ $SETUP_OPTION = "--setup" ]]; then
-#            printf "\n* >> Setting up shard_$shard_index tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
-#            printf "\n* >> Setting up  shard_$shard_index node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone $NODE_0_ZONE
-#            printf "\n* >> Setting up  shard_$shard_index node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone $NODE_1_ZONE
-#            printf "\n* >> Setting up  shard_$shard_index node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone $NODE_2_ZONE
-#        fi
-#
-#        # install node modules on GCP instances
-#        if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-#            printf "\n* >> Installing node modules for shard_$shard_index tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $TRACKER_ZONE
-#            printf "\n* >> Installing node modules for shard_$shard_index node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_0_ZONE
-#            printf "\n* >> Installing node modules for shard_$shard_index node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_1_ZONE
-#            printf "\n* >> Installing node modules for shard_$shard_index node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ./ain-blockchain; yarn install --ignore-engines" --project $PROJECT_ID --zone $NODE_2_ZONE
-#        fi
-#
-#        # ssh into each instance, install packages and start up the server
-#        printf "\n* >> Starting shard_$shard_index tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#        START_TRACKER_CMD="gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $ONPREM_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
-#        printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
-#        eval $START_TRACKER_CMD
-#        printf "\n* >> Starting shard_$shard_index node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-#        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $ONPREM_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
-#        printf "START_NODE_CMD=$START_NODE_CMD\n"
-#        eval $START_NODE_CMD
-#        printf "\n* >> Starting shard_$shard_index node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-#        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $ONPREM_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
-#        printf "START_NODE_CMD=$START_NODE_CMD\n"
-#        eval $START_NODE_CMD
-#        printf "\n* >> Starting shard_$shard_index node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-#        START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $ONPREM_USER $i 0 $KEEP_CODE_OPTION $KEEP_DATA_OPTION $CHOWN_DATA_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
-#        printf "START_NODE_CMD=$START_NODE_CMD\n"
-#        eval $START_NODE_CMD
-#    done
-#fi
-#
+
+begin_index=$PARENT_NODE_INDEX_BEGIN
+if [[ $begin_index -lt 0 ]]; then
+    begin_index=0
+fi
+if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+    for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+        NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+        NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
+        printf "\n"
+        printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
+
+        printf "\n* >> Starting parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+
+        if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
+            JSON_RPC_OPTION="--json-rpc"
+        else
+            JSON_RPC_OPTION=""
+        fi
+        UPDATE_FRONT_DB_OPTION="--update-front-db"
+        if [[ $node_index -ge $REST_FUNC_NODE_INDEX_GE ]] && [[ $node_index -le $REST_FUNC_NODE_INDEX_LE ]]; then
+            REST_FUNC_OPTION="--rest-func"
+        else
+            REST_FUNC_OPTION=""
+        fi
+        if [[ $node_index -ge $EVENT_HANDLER_NODE_INDEX_GE ]] && [[ $node_index -le $EVENT_HANDLER_NODE_INDEX_LE ]]; then
+            EVENT_HANDLER_OPTION="--event-handler"
+        else
+            EVENT_HANDLER_OPTION=""
+        fi
+
+        printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+        printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+        printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
+        printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
+        printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
+        printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+        printf "UPDATE_FRONT_DB_OPTION=$UPDATE_FRONT_DB_OPTION\n"
+        printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+        printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
+
+        printf "\n"
+        START_NODE_CMD="ssh ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
+        printf "START_NODE_CMD=$START_NODE_CMD\n"
+        eval "sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ${START_NODE_CMD}"
+        sleep 5
+        inject_account "$node_index"
+    done
+fi
