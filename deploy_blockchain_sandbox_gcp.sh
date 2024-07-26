@@ -90,17 +90,17 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+# Read node urls
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
 
 function inject_account() {
     local node_index="$1"
-    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+    local node_url=${NODE_URL_LIST[${node_index}]}
     local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
     printf "\n* >> Injecting an account for node $node_index ********************\n\n"
-    printf "node_ip_addr='$node_ip_addr'\n"
+    printf "node_url='$node_url'\n"
     PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
-    echo $PRIVATE_KEY | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    echo $PRIVATE_KEY | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
 }
 
 # GCP node address

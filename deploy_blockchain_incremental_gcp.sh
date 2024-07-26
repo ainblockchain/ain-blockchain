@@ -148,12 +148,12 @@ else
     fi
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+# Read node urls
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
 if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
-    printf "Enter password: "
-    read -s PASSWORD
+    printf "Enter keystore password: "
+    read -s KEYSTORE_PW
     printf "\n\n"
     if [[ $SEASON = "mainnet" ]]; then
         KEYSTORE_DIR="mainnet_prod_keys"
@@ -286,37 +286,37 @@ function deploy_node() {
     # 4. Inject node account
     sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
-        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        local node_url=${NODE_URL_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
-        printf "node_ip_addr='$node_ip_addr'\n"
+        printf "node_url='$node_url'\n"
 
         KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
         {
             echo $KEYSTORE_FILE_PATH
             sleep 1
-            echo $PASSWORD
-        } | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+            echo $KEYSTORE_PW
+        } | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
-        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        local node_url=${NODE_URL_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
-        printf "node_ip_addr='$node_ip_addr'\n"
+        printf "node_url='$node_url'\n"
 
         {
             echo $MNEMONIC
             sleep 1
             echo 0
-        } | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        } | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     else
-        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        local node_url=${NODE_URL_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
-        printf "node_ip_addr='$node_ip_addr'\n"
+        printf "node_url='$node_url'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
             GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
         fi
         PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
-        echo $PRIVATE_KEY | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        echo $PRIVATE_KEY | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     fi
 
     # 5. Wait until node is synced
