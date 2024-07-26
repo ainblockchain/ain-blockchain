@@ -164,7 +164,10 @@ fi
 
 if [[ ! $KILL_OPTION = '--kill-only' ]]; then
     # Read node urls
-    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_onprem.txt
+    # Read node ip addresses and passwords
+    IFS=$'\n' read -d '' -r -a NODE_IP_LIST < ./ip_addresses/${SEASON}_onprem_ip.txt
+    IFS=$'\n' read -d '' -r -a NODE_PW_LIST < ./ip_addresses/${SEASON}_onprem_pw.txt
     if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
         # Get keystore password
         printf "Enter keystore password: "
@@ -221,59 +224,38 @@ function inject_account() {
 #FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
-#TRACKER_TARGET_ADDR="${ONPREM_USER}@${SEASON}-tracker-taiwan"
-NODE_0_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-0-taiwan"
-NODE_1_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-1-oregon"
-NODE_2_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-2-singapore"
-NODE_3_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-3-iowa"
-NODE_4_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-4-netherlands"
-NODE_5_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-5-taiwan"
-NODE_6_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-6-oregon"
-NODE_7_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-7-singapore"
-NODE_8_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-8-iowa"
-NODE_9_TARGET_ADDR="${ONPREM_USER}@${SEASON}-node-9-netherlands"
+printf "###############################################################################\n"
+printf "# Deploying parent blockchain #\n"
+printf "###############################################################################\n\n"
 
-#TRACKER_ZONE="asia-east1-b"
-NODE_0_ZONE="asia-east1-b"
-NODE_1_ZONE="us-west1-b"
-NODE_2_ZONE="asia-southeast1-b"
-NODE_3_ZONE="us-central1-a"
-NODE_4_ZONE="europe-west4-a"
-NODE_5_ZONE="asia-east1-b"
-NODE_6_ZONE="us-west1-b"
-NODE_7_ZONE="asia-southeast1-b"
-NODE_8_ZONE="us-central1-a"
-NODE_9_ZONE="europe-west4-a"
-
-#printf "###############################################################################\n"
-#printf "# Deploying parent blockchain #\n"
-#printf "###############################################################################\n\n"
-#
-## deploy files to GCP instances
-#if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+# deploy files to GCP instances
+if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 #    # Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
 #        printf "\n* >> Deploying files for parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
 #        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
 #        gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone $TRACKER_ZONE
 #    fi
-#
-#    begin_index=$PARENT_NODE_INDEX_BEGIN
-#    if [[ $begin_index -lt 0 ]]; then
-#      begin_index=0
-#    fi
-#    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-#        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-#            NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-#            NODE_ZONE=NODE_${node_index}_ZONE
-#
-#            printf "\n* >> Deploying files for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone ${!NODE_ZONE}
-#            gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ain-blockchain/ --project $PROJECT_ID --zone ${!NODE_ZONE}
-#        done
-#    fi
-#fi
-#
+
+    begin_index=$PARENT_NODE_INDEX_BEGIN
+    if [[ $begin_index -lt 0 ]]; then
+      begin_index=0
+    fi
+    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
+            printf "\n"
+            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
+            printf "NODE_LOGIN_PW=${NODE_LOGIN_PW}\n"
+
+            printf "\n* >> Deploying files for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -rv $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
+            #sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "ls -la"
+        done
+    fi
+fi
+
 ## ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 #if [[ $SETUP_OPTION = "--setup" ]]; then
 #    # Tracker server is set up with PARENT_NODE_INDEX_BEGIN = -1
