@@ -247,38 +247,38 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
-            printf "NODE_LOGIN_PW=${NODE_LOGIN_PW}\n"
 
-            printf "\n* >> Deploying files for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
             sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -rv $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
-            #sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "ls -la"
         done
     fi
 fi
 
-## ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-#if [[ $SETUP_OPTION = "--setup" ]]; then
+# ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
+if [[ $SETUP_OPTION = "--setup" ]]; then
 #    # Tracker server is set up with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
 #        printf "\n* >> Setting up parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
 #        gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 #    fi
-#
-#    begin_index=$PARENT_NODE_INDEX_BEGIN
-#    if [[ $begin_index -lt 0 ]]; then
-#      begin_index=0
-#    fi
-#    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-#        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-#            NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-#            NODE_ZONE=NODE_${node_index}_ZONE
-#
-#            printf "\n* >> Setting up parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh" --project $PROJECT_ID --zone ${!NODE_ZONE}
-#        done
-#    fi
-#fi
-#
+
+    begin_index=$PARENT_NODE_INDEX_BEGIN
+    if [[ $begin_index -lt 0 ]]; then
+      begin_index=0
+    fi
+    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
+            printf "\n"
+            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
+
+            printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
+        done
+    fi
+fi
+
 ## install node modules on GCP instances
 #if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 #    # Tracker server is installed with PARENT_NODE_INDEX_BEGIN = -1
