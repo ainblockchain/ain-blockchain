@@ -7,6 +7,15 @@ if [[ $# -lt 4 ]] || [[ $# -gt 13 ]]; then
     printf "\n"
     return 1
 fi
+
+# needed for on-premise nvidia machines
+# Get node login password
+printf "Enter node login password: "
+read -s NODE_LOGIN_PW
+printf "\n\n"
+# do sudo once with a dummy command
+echo $NODE_LOGIN_PW | sudo -S ls -la
+
 printf "\n[[[[[ start_node_genesis_onprem.sh ]]]]]\n\n"
 
 function parse_options() {
