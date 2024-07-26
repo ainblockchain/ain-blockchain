@@ -7,6 +7,10 @@ sudo apt update
 # skip prompting (see https://serverfault.com/questions/527789/how-to-automate-changed-config-files-during-apt-get-upgrade-in-ubuntu-12)
 sudo apt-get --yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
 
+# needed for on-premise nvidia machines
+printf '\n[ apt --fix-broken install ]\n'
+sudo apt -y --fix-broken install
+
 printf '\n[[ Uninstalling NodeJS.. ]]\n'
 sudo apt-get -y purge nodejs
 sudo apt-get -y autoremove
