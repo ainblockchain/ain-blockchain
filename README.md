@@ -53,7 +53,7 @@ bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-bash setup_blockchain_ubuntu.sh
+bash setup_blockchain_ubuntu_gcp.sh
 ```
 - Start tracker server job
 ```
@@ -136,7 +136,7 @@ bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer
 ```
 - Set up Ubuntu machine (if it's on a new VM)
 ```
-bash setup_blockchain_ubuntu.sh
+bash setup_blockchain_ubuntu_gcp.sh
 ```
 - Start Node server job (set shard index to 0 if you're running a root chain node)
 ```

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-printf "\n[[[[[ setup_blockchain_ubuntu.sh ]]]]]\n\n"
+printf "\n[[[[[ setup_blockchain_ubuntu_gcp.sh ]]]]]\n\n"
 
 printf '\n[[ Upgrading apt.. ]]\n'
 sudo apt update

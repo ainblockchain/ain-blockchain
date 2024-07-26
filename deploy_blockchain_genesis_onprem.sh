@@ -221,8 +221,8 @@ function inject_account() {
 }
 
 # deploy files
-#FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
+#FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_gcp.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
 printf "###############################################################################\n"
 printf "# Deploying parent blockchain #\n"
@@ -261,7 +261,7 @@ fi
 #    # Tracker server is set up with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
 #        printf "\n* >> Setting up parent tracker (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#        gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; . setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
+#        gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 #    fi
 #
 #    begin_index=$PARENT_NODE_INDEX_BEGIN
@@ -274,7 +274,7 @@ fi
 #            NODE_ZONE=NODE_${node_index}_ZONE
 #
 #            printf "\n* >> Setting up parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone ${!NODE_ZONE}
+#            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone ${!NODE_ZONE}
 #        done
 #    fi
 #fi
@@ -468,13 +468,13 @@ fi
 #        # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 #        if [[ $SETUP_OPTION = "--setup" ]]; then
 #            printf "\n* >> Setting up shard_$shard_index tracker (${SHARD_TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
+#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 #            printf "\n* >> Setting up  shard_$shard_index node 0 (${SHARD_NODE_0_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_0_ZONE
+#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone $NODE_0_ZONE
 #            printf "\n* >> Setting up  shard_$shard_index node 1 (${SHARD_NODE_1_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_1_ZONE
+#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone $NODE_1_ZONE
 #            printf "\n* >> Setting up  shard_$shard_index node 2 (${SHARD_NODE_2_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_2_ZONE
+#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu_gcp.sh" --project $PROJECT_ID --zone $NODE_2_ZONE
 #        fi
 #
 #        # install node modules on GCP instances
