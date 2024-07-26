@@ -2,12 +2,11 @@
 
 printf "\n[[[[[ setup_blockchain_ubuntu_onprem.sh ]]]]]\n\n"
 
-# Get keystore password
-printf "Enter keystore password: "
+# needed for on-premise nvidia machines
+# Get node login password
+printf "Enter node login password: "
 read -s NODE_LOGIN_PW
 printf "\n\n"
-
-# needed for on-premise nvidia machines
 # do sudo once with a dummy command
 echo $NODE_LOGIN_PW | sudo -S ls -la
 
