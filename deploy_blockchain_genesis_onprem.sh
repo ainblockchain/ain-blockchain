@@ -162,12 +162,13 @@ else
     fi
 fi
 
+# Read node ip addresses and passwords
+IFS=$'\n' read -d '' -r -a NODE_IP_LIST < ./ip_addresses/${SEASON}_onprem_ip.txt
+IFS=$'\n' read -d '' -r -a NODE_PW_LIST < ./ip_addresses/${SEASON}_onprem_pw.txt
+
 if [[ ! $KILL_OPTION = '--kill-only' ]]; then
     # Read node urls
     IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_onprem.txt
-    # Read node ip addresses and passwords
-    IFS=$'\n' read -d '' -r -a NODE_IP_LIST < ./ip_addresses/${SEASON}_onprem_ip.txt
-    IFS=$'\n' read -d '' -r -a NODE_PW_LIST < ./ip_addresses/${SEASON}_onprem_pw.txt
     if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
         # Get keystore password
         printf "Enter keystore password: "
@@ -298,60 +299,46 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
-            printf "\n* >> Installing node modules for parent node $node_index (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
             sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
         done
     fi
 fi
 
-#if [[ $KILL_OPTION = "--skip-kill" ]]; then
-#    printf "\nSkipping process kill...\n"
-#else
-#    # kill any processes still alive
-#    printf "\nKilling tracker / blockchain node jobs...\n"
-#
+if [[ $KILL_OPTION = "--skip-kill" ]]; then
+    printf "\nSkipping process kill...\n"
+else
+    # kill any processes still alive
+    printf "\nKilling tracker / blockchain node jobs...\n"
+
 #    # Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
 #        printf "\n* >> Killing tracker job (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
 #        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
 #    fi
-#
-#    begin_index=$PARENT_NODE_INDEX_BEGIN
-#    if [[ $begin_index -lt 0 ]]; then
-#      begin_index=0
-#    fi
-#    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-#        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-#            NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-#            NODE_ZONE=NODE_${node_index}_ZONE
-#
-#            printf "\n* >> Killing node $node_index job (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-#            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo killall node" --project $PROJECT_ID --zone ${!NODE_ZONE}
-#        done
-#    fi
-#
-#    if [[ $NUM_SHARDS -gt 0 ]]; then
-#        for i in $(seq $NUM_SHARDS); do
-#            printf "shard #$i\n"
-#
-#            SHARD_TRACKER_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-#            SHARD_NODE_0_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${i}-node-0-taiwan"
-#            SHARD_NODE_1_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${i}-node-1-oregon"
-#            SHARD_NODE_2_TARGET_ADDR="${ONPREM_USER}@${SEASON}-shard-${i}-node-2-singapore"
-#
-#            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-#            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-#            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-#            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-#        done
-#    fi
-#fi
-#
-## If --kill-only, do not proceed any further
-#if [[ $KILL_OPTION = "--kill-only" ]]; then
-#    exit
-#fi
-#
+
+    begin_index=$PARENT_NODE_INDEX_BEGIN
+    if [[ $begin_index -lt 0 ]]; then
+      begin_index=0
+    fi
+    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
+            printf "\n"
+            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
+
+            printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo killall node"
+        done
+    fi
+fi
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_OPTION = "--kill-only" ]]; then
+    exit
+fi
+
 #printf "\nStarting blockchain servers...\n\n"
 #if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 #    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
