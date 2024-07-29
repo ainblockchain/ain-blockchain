@@ -74,6 +74,12 @@ while [ $ARG_INDEX -le $# ]; do
   parse_options "${!ARG_INDEX}"
   ((ARG_INDEX++))
 done
+
+if [[ $SETUP_OPTION = "--setup" ]] && [[ ! $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+    printf "You cannot use --setup without --no-keep-code\n"
+    exit
+fi
+
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
@@ -90,17 +96,17 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+# Read node urls
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
 
 function inject_account() {
     local node_index="$1"
-    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+    local node_url=${NODE_URL_LIST[${node_index}]}
     local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
     printf "\n* >> Injecting an account for node $node_index ********************\n\n"
-    printf "node_ip_addr='$node_ip_addr'\n"
+    printf "node_url='$node_url'\n"
     PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
-    echo $PRIVATE_KEY | node inject_node_account.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    echo $PRIVATE_KEY | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
 }
 
 # GCP node address
@@ -308,7 +314,7 @@ NODE_98_ZONE="us-central1-a"
 NODE_99_ZONE="europe-west4-a"
 
 # deploy files
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 # Work in progress spinner
 spin="-\|/"
@@ -380,7 +386,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
 
-        SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
         # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
         # printf "SETUP_BLOCKCHAIN_CMD=$SETUP_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then
