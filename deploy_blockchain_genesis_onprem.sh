@@ -281,7 +281,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
         done
     fi
 fi
@@ -306,7 +306,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
         done
     fi
 fi
@@ -335,7 +335,7 @@ else
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo killall node"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo killall node"
         done
     fi
 fi
@@ -420,7 +420,7 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
         printf "\n"
-        START_NODE_CMD="ssh ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
+        START_NODE_CMD="ssh -v ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
         printf "START_NODE_CMD=$START_NODE_CMD\n"
         eval "echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ${START_NODE_CMD}"
         sleep 5
