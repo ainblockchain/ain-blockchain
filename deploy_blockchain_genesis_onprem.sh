@@ -250,7 +250,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     fi
     if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
@@ -275,7 +275,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     fi
     if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
@@ -300,7 +300,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     fi
     if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
@@ -329,7 +329,7 @@ else
     fi
     if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+            NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
             printf "\n"
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
@@ -385,7 +385,7 @@ if [[ $begin_index -lt 0 ]]; then
 fi
 if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
     for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-        NODE_TARGET_ADDR="nvidia@${NODE_IP_LIST[${node_index}]}"
+        NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
         NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
         printf "\n"
         printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
