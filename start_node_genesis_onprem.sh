@@ -324,6 +324,9 @@ printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
 # uncomment and set value when necessary
 #export TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER=124440  # summer
 #printf "TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER=$TIMER_FLAG_EARLY_APPLIED_BLOCK_NUMBER\n"
+# on-premise nodes run with "comcom" hosting env
+export HOSTING_ENV="comcom"
+printf "HOSTING_ENV=$HOSTING_ENV\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
     MAX_OLD_SPACE_SIZE_MB=11000
