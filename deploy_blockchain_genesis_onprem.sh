@@ -351,18 +351,9 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-    # restart after removing chains, snapshots, and log files (but keep the keys)
-    CHAINS_DIR=/home/ain_blockchain_data/chains
-    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    LOGS_DIR=/home/ain_blockchain_data/logs
-#    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_onprem.sh"
-else
-    # restart with existing chains, snapshots, and log files
-#    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_onprem.sh"
-fi
+
+#START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
+START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_onprem.sh"
 printf "\n"
 #printf "START_TRACKER_CMD_BASE=$START_TRACKER_CMD_BASE\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
@@ -389,6 +380,15 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
         printf "\n"
         printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
+
+        if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+            printf "\n* >> Removing old data for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+
+            CHAINS_DIR=/home/ain_blockchain_data/chains
+            SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
+            LOGS_DIR=/home/ain_blockchain_data/logs
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR"
+        fi
 
         printf "\n* >> Starting parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
