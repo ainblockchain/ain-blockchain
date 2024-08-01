@@ -335,7 +335,7 @@ else
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo killall node"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S killall node"
         done
     fi
 fi
