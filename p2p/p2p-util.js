@@ -178,6 +178,12 @@ class P2pUtil {
     return CommonUtil.isValidIpV4(ipAddress) || CommonUtil.isValidIpV6(ipAddress);
   }
 
+  // NOTE(platfowner): Need whitelisting due to the internal networking config of comcom hosting env.
+  static isWhitelistedIpAddress(ipAddress) {
+    const whitelistedIpAddressRegex = /192.168.\d+.2/gm;
+    return CommonUtil.isString(ipAddress) ? whitelistedIpAddressRegex.test(ipAddress) : false;
+  }
+
   /**
    * Returns true if the socket ip address is the same as the given p2p url ip address,
    * false otherwise.
@@ -187,9 +193,10 @@ class P2pUtil {
   static checkIpAddressFromPeerInfo(ipAddressFromSocket, ipAddressFromPeerInfo) {
     if (!P2pUtil.isValidIpAddress(ipAddressFromSocket) ||
         !P2pUtil.isValidIpAddress(ipAddressFromPeerInfo)) {
-        return false;
+      return false;
     } else {
-      return ip.isEqual(ipAddressFromSocket, ipAddressFromPeerInfo);
+      return ip.isEqual(ipAddressFromSocket, ipAddressFromPeerInfo)
+          || P2pUtil.isWhitelistedIpAddress(ipAddressFromSocket);
     }
   }
 
