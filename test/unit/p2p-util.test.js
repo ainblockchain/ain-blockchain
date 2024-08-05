@@ -376,12 +376,58 @@ describe("P2P Util", () => {
       expect(util.isValidIpAddress(url5)).to.be.false;
     });
 
-    it("returns true if valid ip address is set", () => {
+    it("returns true if valid ip address is given", () => {
       const ipV4 = '172.20.10.2';
       const ipV6 = '::ffff:172.20.10.2';
 
       expect(util.isValidIpAddress(ipV4)).to.be.true;
       expect(util.isValidIpAddress(ipV6)).to.be.true;
+    });
+  });
+
+  describe("isWhitelistedIpAddress", () => {
+    it("returns false if invalid ipAddress is given", () => {
+      const stringValue = 'stringValue';
+      const numberValue = 123456789;
+      const booleanValue = true;
+      const nullValue = null;
+      const undefinedValue = undefined;
+      const arrayValue = [];
+      const objectValue = {};
+      const url1 = 'ainetwork.ai';
+      const url2 = 'https://*.ainetwork.ai';
+      const url3 = 'http://172.16.0.36:8080';
+      const url4 = 'http://172.16.0.36';
+      const url5 = 'http://172.16.0.36:8080/json-rpc';
+      const ipAddr1 = '172.16.0.36';
+      const ipAddr2 = '::ffff:172.16.0.36';
+
+      expect(util.isWhitelistedIpAddress(stringValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(numberValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(booleanValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(nullValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(undefinedValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(arrayValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(objectValue)).to.be.false;
+      expect(util.isWhitelistedIpAddress(url1)).to.be.false;
+      expect(util.isWhitelistedIpAddress(url2)).to.be.false;
+      expect(util.isWhitelistedIpAddress(url3)).to.be.false;
+      expect(util.isWhitelistedIpAddress(url4)).to.be.false;
+      expect(util.isWhitelistedIpAddress(url5)).to.be.false;
+      expect(util.isWhitelistedIpAddress(ipAddr1)).to.be.false;
+      expect(util.isWhitelistedIpAddress(ipAddr2)).to.be.false;
+    });
+
+    it("returns true if whitelisted ip address is given", () => {
+      const ipV4Addr1 = '192.168.92.2';
+      const ipV4Addr2 = '192.168.93.2';
+      const ipV6Addr1 = '::ffff:192.168.92.2';
+      const ipV6Addr2 = '::ffff:192.168.93.2';
+
+      expect(util.isWhitelistedIpAddress(ipV4Addr1)).to.be.true;
+      expect(util.isWhitelistedIpAddress(ipV4Addr2)).to.be.true;
+      expect(util.isWhitelistedIpAddress(ipV6Addr1)).to.be.true;
+      expect(util.isWhitelistedIpAddress(ipV6Addr2)).to.be.true;
     });
   });
 
@@ -405,6 +451,20 @@ describe("P2P Util", () => {
       const ipV6 = '::ffff:172.20.10.2';
 
       expect(util.checkIpAddressFromPeerInfo(ipV4, ipV6)).to.be.true;
+    });
+
+    it("returns true for whitelisted ip addresses", () => {
+      const ip1 = '::ffff:192.168.92.2';
+      const ip2 = '101.202.37.2';
+
+      expect(util.checkIpAddressFromPeerInfo(ip1, ip2)).to.be.true;
+    });
+
+    it("returns false for non-whitelisted ip addresses", () => {
+      const ip1 = '::ffff:101.202.37.2';
+      const ip2 = '192.168.92.2';
+
+      expect(util.checkIpAddressFromPeerInfo(ip1, ip2)).to.be.false;
     });
   });
 
