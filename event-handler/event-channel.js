@@ -3,6 +3,11 @@ class EventChannel {
     this.id = id;
     this.webSocket = webSocket;
     this.eventFilterIds = new Set();
+    this.lastMessagingTimeMs = Date.now();
+  }
+
+  setLastMessagingTimeMs(timeMs) {
+    this.lastMessagingTimeMs = timeMs;
   }
 
   getFilterIdsSize() {
@@ -25,6 +30,7 @@ class EventChannel {
     return {
       id: this.id,
       eventFilterIds: [...this.eventFilterIds],
+      lastMessagingTimeMs: this.lastMessagingTimeMs,
     };
   }
 }
