@@ -26,6 +26,8 @@ class MockWebSockect {
 }
 
 describe('EventHandler Test', () => {
+  let ipAddrInternal = null;
+  let ipAddrExternal = null;
   let eventHandler = null;
   let node = null;
   const origianlfilterDeletionTimeout = NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS;
@@ -35,6 +37,9 @@ describe('EventHandler Test', () => {
     // NOTE(ehgmsdk20): Reduce EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS for faster test
     NodeConfigs.EVENT_HANDLER_FILTER_DELETION_TIMEOUT_MS = 10000;
     node = new BlockchainNode();
+    ipAddrInternal = await getIpAddress(true);
+    ipAddrExternal = await getIpAddress(false);
+    node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     eventHandler = node.eh;
   });
 
@@ -370,11 +375,10 @@ describe('EventHandler Test', () => {
     })
 
     it('getNetworkInfo', async () => {
-      const intIp = await getIpAddress(true);
-      const intUrl = new URL(`ws://${intIp}:${NodeConfigs.EVENT_HANDLER_PORT}`);
+      const eventHandlerUrl = new URL(`ws://${ipAddrInternal}:${NodeConfigs.EVENT_HANDLER_PORT}`);
       const networkInfo = eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
-        url: intUrl.toString(),
+        url: eventHandlerUrl.toString(),
         maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
         numEventChannels: 0,
         maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
