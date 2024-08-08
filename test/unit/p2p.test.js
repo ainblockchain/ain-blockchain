@@ -222,6 +222,13 @@ describe("P2p", () => {
             numVersions: 4,
             versionList: 'erased',
             finalVersion: 'FINAL:0'
+          },
+          eventHandlerStatus: {
+            isEnabled: false,
+            maxNumEventChannels: 10,
+            maxNumEventFilters: 20,
+            numEventChannels: 0,
+            numEventFilters: 0,
           }
         });
       });
