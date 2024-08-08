@@ -375,7 +375,7 @@ describe('EventHandler Test', () => {
     })
 
     it('getNetworkInfo', async () => {
-      const eventHandlerUrl = new URL(`ws://${ipAddrInternal}:${NodeConfigs.EVENT_HANDLER_PORT}`);
+      const eventHandlerUrl = new URL(`ws://${ipAddrExternal}:${NodeConfigs.EVENT_HANDLER_PORT}`);
       const networkInfo = eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
         url: eventHandlerUrl.toString(),

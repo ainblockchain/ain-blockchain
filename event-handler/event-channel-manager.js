@@ -24,7 +24,7 @@ class EventChannelManager {
   }
 
   getNetworkInfo() {
-    const ipAddr = (NodeConfigs.HOSTING_ENV === HostingEnvs.COMCOM || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL) ? this.node.ipAddrInternal : this.node.ipAddrExternal;
+    const ipAddr = this.node.ipAddrExternal;
     const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),
