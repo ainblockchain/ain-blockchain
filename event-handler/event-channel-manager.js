@@ -67,12 +67,14 @@ class EventChannelManager {
     const LOG_HEADER = 'handleConnection';
     try {
       if (this.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+        webSocket.terminate();
         throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_SIZE_LIMIT,
             `The number of event channels exceeds its limit ` +
             `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
       }
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
+        webSocket.terminate();
         throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
             `Channel ID ${channelId} is already in use`);
       }
