@@ -1,7 +1,6 @@
 const logger = new (require('../logger'))('EVENT_CHANNEL_MANAGER');
 const EventChannel = require('./event-channel');
 const ws = require('ws');
-const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
   NodeConfigs,
@@ -351,11 +350,12 @@ class EventChannelManager {
   }
 
   startIdleCheck() {
+    const LOG_HEADER = 'startIdleCheck';
     this.idleCheckInterval = setInterval(() => {
       for (const channel of Object.values(this.channels)) {
         const idleTimeMs = Date.now() - channel.lastMessagingTimeMs;
         if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
-          logger.info(`[${LOG_HEADER}] Closing idle channel: `, channel.toObject());
+          logger.info(`[${LOG_HEADER}] Closing idle channel: ${JSON.stringify(channel.toObject())}`);
           channel.webSocket.terminate();
           this.closeChannel(channel);
         }
