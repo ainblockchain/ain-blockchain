@@ -9,9 +9,7 @@ const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
-const {
-  NodeConfigs,
-} = require('../common/constants');
+const { NodeConfigs } = require('../common/constants');
 
 class EventHandler {
   constructor(node) {
@@ -26,6 +24,26 @@ class EventHandler {
       this.eventTypeToEventFilterIds[eventType] = new Set();
     }
     this.run();
+  }
+
+  getEventHandlerStatus() {
+    return {
+      isEnabled: true,
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: this.eventChannelManager.getNumEventChannels(),
+      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+      numEventFilters: this.getNumEventFilters(),
+    };
+  }
+
+  static getDefaultEventHandlerStatus() {
+    return {
+      isEnabled: false,
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: 0,
+      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+      numEventFilters: 0,
+    };
   }
 
   run() {

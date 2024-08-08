@@ -197,6 +197,7 @@ class P2pServer {
       nonce: this.node.getNonce(),
       dbStatus: this.getDbStatus(),
       stateVersionStatus: this.getStateVersionStatus(),
+      eventHandlerStatus: this.node.getEventHandlerStatus(),
     };
   }
 
