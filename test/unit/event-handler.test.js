@@ -372,14 +372,13 @@ describe('EventHandler Test', () => {
     it('getNetworkInfo', async () => {
       const intIp = await getIpAddress(true);
       const intUrl = new URL(`ws://${intIp}:${NodeConfigs.EVENT_HANDLER_PORT}`);
-      const networkInfo = await eventChannelManager.getNetworkInfo();
+      const networkInfo = eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
+        url: intUrl.toString(),
         maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
         numEventChannels: 0,
         maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
         numEventFilters: 0,
-        url: intUrl.toString(),
-        port: NodeConfigs.EVENT_HANDLER_PORT,
       });
     });
   });
