@@ -143,10 +143,16 @@ function getIpAddress(internal = false) {
   });
 }
 
+// NOTE(minsulee2): This builds the URL using a client socket in the server side.
+function buildRemoteUrlFromSocket(socket) {
+  return `${socket._socket.remoteAddress}:${socket._socket.remotePort}`;
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
   sendGetRequest,
-  getIpAddress
+  getIpAddress,
+  buildRemoteUrlFromSocket,
 };

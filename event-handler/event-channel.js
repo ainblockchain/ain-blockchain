@@ -1,7 +1,10 @@
+const { buildRemoteUrlFromSocket } = require('../common/network-util');
+
 class EventChannel {
   constructor(id, webSocket) {
     this.id = id;
     this.webSocket = webSocket;
+    this.remoteUrl = buildRemoteUrlFromSocket(webSocket);
     this.eventFilterIds = new Set();
     this.lastMessagingTimeMs = Date.now();
   }
@@ -29,8 +32,10 @@ class EventChannel {
   toObject() {
     return {
       id: this.id,
+      remoteUrl: this.remoteUrl,
       eventFilterIds: [...this.eventFilterIds],
       lastMessagingTimeMs: this.lastMessagingTimeMs,
+      idleTimeMs: Date.now() - this.lastMessagingTimeMs,
     };
   }
 }
