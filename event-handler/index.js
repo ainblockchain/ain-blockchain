@@ -29,20 +29,24 @@ class EventHandler {
   getEventHandlerStatus() {
     return {
       isEnabled: true,
-      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
-      numEventChannels: this.eventChannelManager.getNumEventChannels(),
-      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
-      numEventFilters: this.getNumEventFilters(),
+      networkInfo: this.eventChannelManager.getNetworkInfo(),
+      filterInfo: this.getFilterInfo(),
+      channelInfo: this.eventChannelManager.getChannelInfo(),
     };
   }
 
   static getDefaultEventHandlerStatus() {
     return {
       isEnabled: false,
-      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
-      numEventChannels: 0,
-      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
-      numEventFilters: 0,
+      networkInfo: {
+        url: "",
+        maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+        numEventChannels: 0,
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
+      },
+      filterInfo: {},
+      channelInfo: {},
     };
   }
 
