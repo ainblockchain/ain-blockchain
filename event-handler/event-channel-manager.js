@@ -21,6 +21,7 @@ class EventChannelManager {
     this.channels = {}; // [channelId]: Channel
     this.filterIdToChannelId = {}; // [globalFilterId]: channelId
     this.heartbeatInterval = null;
+    this.idleCheckInterval = null;
   }
 
   getNetworkInfo() {
@@ -32,6 +33,7 @@ class EventChannelManager {
       numEventChannels: this.getNumEventChannels(),
       maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
       numEventFilters: this.node.eh.getNumEventFilters(),
+      channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
     }
   }
 
@@ -61,6 +63,7 @@ class EventChannelManager {
       this.handleConnection(ws);
     });
     this.startHeartbeat(this.wsServer);
+    this.startIdleCheck();
   }
 
   handleConnection(webSocket) {
@@ -101,6 +104,7 @@ class EventChannelManager {
           if (messageType === BlockchainEventMessageTypes.PONG) {
             this.handlePong(webSocket);
           } else {
+            channel.setLastMessagingTimeMs(Date.now());
             this.handleMessage(channel, messageType, messageData);
           }
         } catch (err) {
@@ -310,6 +314,7 @@ class EventChannelManager {
   close() {
     const LOG_HEADER = 'close';
     this.stopHeartbeat();
+    this.stopIdleCheck();
     this.wsServer.close(() => {
       logger.info(`[${LOG_HEADER}] Closed event channel manager's socket`);
     });
@@ -342,7 +347,20 @@ class EventChannelManager {
         ws.isAlive = false;
         this.sendPing(ws);
       });
-    }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS || 15000);
+    }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS);
+  }
+
+  startIdleCheck() {
+    this.idleCheckInterval = setInterval(() => {
+      for (const channel of Object.values(this.channels)) {
+        const idleTimeMs = Date.now() - channel.lastMessagingTimeMs;
+        if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
+          logger.info(`[${LOG_HEADER}] Closing idle channel: `, channel.toObject());
+          channel.webSocket.terminate();
+          this.closeChannel(channel);
+        }
+      }
+    }, NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_CHECK_INTERVAL_MS);
   }
 
   sendPing(webSocket) {
@@ -352,6 +370,10 @@ class EventChannelManager {
 
   stopHeartbeat() {
     clearInterval(this.heartbeatInterval);
+  }
+
+  stopIdleCheck() {
+    clearInterval(this.idleCheckInterval);
   }
 }
 
