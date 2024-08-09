@@ -232,9 +232,18 @@ describe("P2p", () => {
               maxNumEventFilters: 20,
               numEventFilters: 0,
             },
-            filterInfo: {
+            channelStatus: {
+              maxNumEventChannels: 10,
+              numEventChannels: 0,
+              channelIdleTimeLimitSecs: 600,
+              maxChannelIdleTimeMs: 0,
+              maxChannelLifeTimeMs: 0,
+              channelInfo: {},
             },
-            channelInfo: {
+            filterStatus: {
+              maxNumEventFilters: 20,
+              numEventFilters: 0,
+              filterInfo: {},
             },
           }
         });

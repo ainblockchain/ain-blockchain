@@ -32,12 +32,43 @@ class EventChannelManager {
       numEventChannels: this.getNumEventChannels(),
       maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
       numEventFilters: this.node.eh.getNumEventFilters(),
+    }
+  }
+
+  getChannelStatus() {
+    const channelStats = this.getChannelStats();
+    return {
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: this.getNumEventChannels(),
       channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
+      maxChannelLifeTimeMs: channelStats.maxLifeTimeMs,
+      maxChannelIdleTimeMs: channelStats.maxIdleTimeMs,
+      channelInfo: this.getChannelInfo(),
     }
   }
 
   getNumEventChannels() {
     return Object.keys(this.channels).length;
+  }
+
+  getChannelStats() {
+    let maxLifeTimeMs = 0;
+    let maxIdleTimeMs = 0;
+    for (const channel of Object.values(this.channels)) {
+      const lifeTimeMs = channel.getLifeTimeMs();
+      const idleTimeMs = channel.getIdleTimeMs();
+      if (lifeTimeMs > maxLifeTimeMs) {
+        maxLifeTimeMs = lifeTimeMs;
+      }
+      if (idleTimeMs > maxIdleTimeMs) {
+        maxIdleTimeMs = idleTimeMs;
+      }
+    }
+
+    return {
+      maxLifeTimeMs: maxLifeTimeMs,
+      maxIdleTimeMs: maxIdleTimeMs,
+    }
   }
 
   getChannelInfo() {
@@ -353,7 +384,7 @@ class EventChannelManager {
     const LOG_HEADER = 'startIdleCheck';
     this.idleCheckInterval = setInterval(() => {
       for (const channel of Object.values(this.channels)) {
-        const idleTimeMs = Date.now() - channel.lastMessagingTimeMs;
+        const idleTimeMs = channel.getIdleTimeMs();
         if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
           logger.info(`[${LOG_HEADER}] Closing idle channel: ${JSON.stringify(channel.toObject())}`);
           channel.webSocket.terminate();

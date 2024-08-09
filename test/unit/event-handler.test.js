@@ -383,7 +383,6 @@ describe('EventHandler Test', () => {
         numEventChannels: 0,
         maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
         numEventFilters: 0,
-        channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
       });
     });
   });

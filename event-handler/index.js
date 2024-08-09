@@ -30,8 +30,8 @@ class EventHandler {
     return {
       isEnabled: true,
       networkInfo: this.eventChannelManager.getNetworkInfo(),
-      filterInfo: this.getFilterInfo(),
-      channelInfo: this.eventChannelManager.getChannelInfo(),
+      channelStatus: this.eventChannelManager.getChannelStatus(),
+      filterStatus: this.getFilterStatus(),
     };
   }
 
@@ -45,8 +45,19 @@ class EventHandler {
         maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
         numEventFilters: 0,
       },
-      filterInfo: {},
-      channelInfo: {},
+      channelStatus: {
+        maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+        numEventChannels: 0,
+        channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
+        maxChannelLifeTimeMs: 0,
+        maxChannelIdleTimeMs: 0,
+        channelInfo: {},
+      },
+      filterStatus: {
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
+        filterInfo: {},
+      },
     };
   }
 
@@ -64,6 +75,14 @@ class EventHandler {
       return false;
     }
     return true;
+  }
+
+  getFilterStatus() {
+    return {
+      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+      numEventFilters: this.getNumEventFilters(),
+      filterInfo: this.getFilterInfo(),
+    };
   }
 
   getNumEventFilters() {

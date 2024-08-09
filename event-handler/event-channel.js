@@ -6,7 +6,9 @@ class EventChannel {
     this.webSocket = webSocket;
     this.remoteUrl = buildRemoteUrlFromSocket(webSocket);
     this.eventFilterIds = new Set();
-    this.lastMessagingTimeMs = Date.now();
+    const curTimeMs = Date.now();
+    this.creationTimeMs = curTimeMs;
+    this.lastMessagingTimeMs = curTimeMs;
   }
 
   setLastMessagingTimeMs(timeMs) {
@@ -29,13 +31,22 @@ class EventChannel {
     return this.eventFilterIds.delete(filterId);
   }
 
+  getLifeTimeMs() {
+    return Date.now() - this.creationTimeMs;
+  }
+
+  getIdleTimeMs() {
+    return Date.now() - this.lastMessagingTimeMs;
+  }
+
   toObject() {
     return {
       id: this.id,
       remoteUrl: this.remoteUrl,
       eventFilterIds: [...this.eventFilterIds],
       lastMessagingTimeMs: this.lastMessagingTimeMs,
-      idleTimeMs: Date.now() - this.lastMessagingTimeMs,
+      lifeTimeMs: this.getLifeTimeMs(),
+      idleTimeMs: this.getIdleTimeMs(),
     };
   }
 }
