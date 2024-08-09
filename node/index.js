@@ -77,6 +77,10 @@ class BlockchainNode {
     }
   }
 
+  getEventHandlerStatus() {
+    return this.eh ? this.eh.getEventHandlerStatus() : EventHandler.getDefaultEventHandlerStatus();
+  }
+
   setAccount(account) {
     this.account = account;
     this.bootstrapAccount = null;

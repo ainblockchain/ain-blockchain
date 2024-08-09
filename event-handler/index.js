@@ -9,9 +9,7 @@ const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
-const {
-  NodeConfigs,
-} = require('../common/constants');
+const { NodeConfigs } = require('../common/constants');
 
 class EventHandler {
   constructor(node) {
@@ -28,6 +26,41 @@ class EventHandler {
     this.run();
   }
 
+  getEventHandlerStatus() {
+    return {
+      isEnabled: true,
+      networkInfo: this.eventChannelManager.getNetworkInfo(),
+      channelStatus: this.eventChannelManager.getChannelStatus(),
+      filterStatus: this.getFilterStatus(),
+    };
+  }
+
+  static getDefaultEventHandlerStatus() {
+    return {
+      isEnabled: false,
+      networkInfo: {
+        url: "",
+        maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+        numEventChannels: 0,
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
+      },
+      channelStatus: {
+        maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+        numEventChannels: 0,
+        channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
+        maxChannelLifeTimeMs: 0,
+        maxChannelIdleTimeMs: 0,
+        channelInfo: {},
+      },
+      filterStatus: {
+        maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+        numEventFilters: 0,
+        filterInfo: {},
+      },
+    };
+  }
+
   run() {
     const LOG_HEADER = 'run';
     this.eventChannelManager.startListening();
@@ -42,6 +75,14 @@ class EventHandler {
       return false;
     }
     return true;
+  }
+
+  getFilterStatus() {
+    return {
+      maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
+      numEventFilters: this.getNumEventFilters(),
+      filterInfo: this.getFilterInfo(),
+    };
   }
 
   getNumEventFilters() {

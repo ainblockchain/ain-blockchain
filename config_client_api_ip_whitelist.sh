@@ -64,12 +64,12 @@ else
     fi
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+# Read node urls
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
 
 # Get keystore password
-printf "Enter password: "
-read -s PASSWORD
+printf "Enter keystore password: "
+read -s KEYSTORE_PW
 printf "\n\n"
 if [[ $SEASON = "mainnet" ]]; then
     CHAIN_ID="1"
@@ -96,19 +96,19 @@ printf "COMMAND_NODE_JS_FILE=$COMMAND_NODE_JS_FILE\n"
 
 function config_node() {
     local node_index="$1"
-    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+    local node_url=${NODE_URL_LIST[${node_index}]}
 
-    printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_ip_addr) >>>\n\n"
+    printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_url) >>>\n\n"
 
     KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
-    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_ip_addr $CHAIN_ID keystore $KEYSTORE_FILE_PATH"
+    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID keystore $KEYSTORE_FILE_PATH"
     if [[ ! $COMMAND = "get" ]]; then
         CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$IP_ADDR'"
     fi
 
     printf "\n"
     printf "CONFIG_NODE_CMD=$CONFIG_NODE_CMD\n\n"
-    eval "echo $PASSWORD | $CONFIG_NODE_CMD"
+    eval "echo $KEYSTORE_PW | $CONFIG_NODE_CMD"
 }
 
 for j in `seq $(( 0 )) $(( 9 ))`; do
