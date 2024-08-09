@@ -12,6 +12,7 @@ const sizeof = require('object-sizeof');
 const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
+const { buildRemoteUrlFromSocket } = require('../common/network-util');
 const {
   DevFlags,
   BlockchainConsts,
@@ -88,7 +89,7 @@ class P2pServer {
       }
     });
     this.wsServer.on('connection', (socket) => {
-      const url = this.buildRemoteUrlFromSocket(socket);
+      const url = buildRemoteUrlFromSocket(socket);
       P2pUtil.addPeerConnection(this.peerConnectionsInProgress, url);
       if (Object.keys(this.inbound).length + this.peerConnectionsInProgress.size <=
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION) {
@@ -104,11 +105,6 @@ class P2pServer {
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
-  }
-
-  // NOTE(minsulee2): This builds the URL using a client socket in the server side.
-  buildRemoteUrlFromSocket(socket) {
-    return `${socket._socket.remoteAddress}:${socket._socket.remotePort}`;
   }
 
   getNodeAddress() {
@@ -197,6 +193,7 @@ class P2pServer {
       nonce: this.node.getNonce(),
       dbStatus: this.getDbStatus(),
       stateVersionStatus: this.getStateVersionStatus(),
+      eventHandlerStatus: this.node.getEventHandlerStatus(),
     };
   }
 
@@ -720,7 +717,7 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const url = this.buildRemoteUrlFromSocket(socket);
+      const url = buildRemoteUrlFromSocket(socket);
       P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
       const address = P2pUtil.getAddressFromSocket(this.inbound, socket);
       P2pUtil.closeSocketSafe(this.inbound, socket);

@@ -1,7 +1,6 @@
 const logger = new (require('../logger'))('EVENT_CHANNEL_MANAGER');
 const EventChannel = require('./event-channel');
 const ws = require('ws');
-const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
   NodeConfigs,
@@ -21,14 +20,14 @@ class EventChannelManager {
     this.channels = {}; // [channelId]: Channel
     this.filterIdToChannelId = {}; // [globalFilterId]: channelId
     this.heartbeatInterval = null;
+    this.idleCheckInterval = null;
   }
 
-  async getNetworkInfo() {
-    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === HostingEnvs.COMCOM || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL);
+  getNetworkInfo() {
+    const ipAddr = this.node.ipAddrExternal;
     const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),
-      port: NodeConfigs.EVENT_HANDLER_PORT,
       maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
       numEventChannels: this.getNumEventChannels(),
       maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,
@@ -36,8 +35,40 @@ class EventChannelManager {
     }
   }
 
+  getChannelStatus() {
+    const channelStats = this.getChannelStats();
+    return {
+      maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
+      numEventChannels: this.getNumEventChannels(),
+      channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
+      maxChannelLifeTimeMs: channelStats.maxLifeTimeMs,
+      maxChannelIdleTimeMs: channelStats.maxIdleTimeMs,
+      channelInfo: this.getChannelInfo(),
+    }
+  }
+
   getNumEventChannels() {
     return Object.keys(this.channels).length;
+  }
+
+  getChannelStats() {
+    let maxLifeTimeMs = 0;
+    let maxIdleTimeMs = 0;
+    for (const channel of Object.values(this.channels)) {
+      const lifeTimeMs = channel.getLifeTimeMs();
+      const idleTimeMs = channel.getIdleTimeMs();
+      if (lifeTimeMs > maxLifeTimeMs) {
+        maxLifeTimeMs = lifeTimeMs;
+      }
+      if (idleTimeMs > maxIdleTimeMs) {
+        maxIdleTimeMs = idleTimeMs;
+      }
+    }
+
+    return {
+      maxLifeTimeMs: maxLifeTimeMs,
+      maxIdleTimeMs: maxIdleTimeMs,
+    }
   }
 
   getChannelInfo() {
@@ -62,18 +93,21 @@ class EventChannelManager {
       this.handleConnection(ws);
     });
     this.startHeartbeat(this.wsServer);
+    this.startIdleCheck();
   }
 
   handleConnection(webSocket) {
     const LOG_HEADER = 'handleConnection';
     try {
       if (this.getNumEventChannels() >= NodeConfigs.MAX_NUM_EVENT_CHANNELS) {
+        webSocket.terminate();
         throw new EventHandlerError(EventHandlerErrorCode.EVENT_CHANNEL_EXCEEDS_SIZE_LIMIT,
             `The number of event channels exceeds its limit ` +
             `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
       }
       const channelId = Date.now(); // NOTE: Only used in blockchain
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
+        webSocket.terminate();
         throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
             `Channel ID ${channelId} is already in use`);
       }
@@ -100,6 +134,7 @@ class EventChannelManager {
           if (messageType === BlockchainEventMessageTypes.PONG) {
             this.handlePong(webSocket);
           } else {
+            channel.setLastMessagingTimeMs(Date.now());
             this.handleMessage(channel, messageType, messageData);
           }
         } catch (err) {
@@ -309,6 +344,7 @@ class EventChannelManager {
   close() {
     const LOG_HEADER = 'close';
     this.stopHeartbeat();
+    this.stopIdleCheck();
     this.wsServer.close(() => {
       logger.info(`[${LOG_HEADER}] Closed event channel manager's socket`);
     });
@@ -317,7 +353,7 @@ class EventChannelManager {
   closeChannel(channel) {
     const LOG_HEADER = 'closeChannel';
     try {
-      logger.info(`[${LOG_HEADER}] Close channel ${channel.id}`);
+      logger.info(`[${LOG_HEADER}] Closing channel ${channel.id}`);
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
@@ -327,7 +363,7 @@ class EventChannelManager {
       }
       delete this.channels[channel.id];
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while close channel (channelId: ${channel.id}, ` +
+      logger.error(`[${LOG_HEADER}] Error while closing channel (channelId: ${channel.id}, ` +
           `message:${err.message})`);
     }
   }
@@ -341,7 +377,25 @@ class EventChannelManager {
         ws.isAlive = false;
         this.sendPing(ws);
       });
-    }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS || 15000);
+    }, NodeConfigs.EVENT_HANDLER_HEARTBEAT_INTERVAL_MS);
+  }
+
+  startIdleCheck() {
+    const LOG_HEADER = 'startIdleCheck';
+    this.idleCheckInterval = setInterval(() => {
+      for (const channel of Object.values(this.channels)) {
+        const idleTimeMs = channel.getIdleTimeMs();
+        if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
+          logger.info(`[${LOG_HEADER}] Closing long-idle channel: ${JSON.stringify(channel.toObject())}`);
+          this.closeChannel(channel);
+        }
+        const lifeTimeMs = channel.getLifeTimeMs();
+        if (lifeTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_LIFE_TIME_LIMIT_SECS * 1000) {
+          logger.info(`[${LOG_HEADER}] Closing long-life channel: ${JSON.stringify(channel.toObject())}`);
+          this.closeChannel(channel);
+        }
+      }
+    }, NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_CHECK_INTERVAL_MS);
   }
 
   sendPing(webSocket) {
@@ -351,6 +405,10 @@ class EventChannelManager {
 
   stopHeartbeat() {
     clearInterval(this.heartbeatInterval);
+  }
+
+  stopIdleCheck() {
+    clearInterval(this.idleCheckInterval);
   }
 }
 

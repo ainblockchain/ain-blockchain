@@ -1,11 +1,23 @@
 #!/bin/bash
 
-printf "\n[[[[[ setup_blockchain_ubuntu.sh ]]]]]\n\n"
+printf "\n[[[[[ setup_blockchain_ubuntu_onprem.sh ]]]]]\n\n"
+
+# needed for on-premise nvidia machines
+# Get node login password
+printf "Enter node login password: "
+read -s NODE_LOGIN_PW
+printf "\n\n"
+# do sudo once with a dummy command
+echo $NODE_LOGIN_PW | sudo -S ls -la
 
 printf '\n[[ Upgrading apt.. ]]\n'
 sudo apt update
 # skip prompting (see https://serverfault.com/questions/527789/how-to-automate-changed-config-files-during-apt-get-upgrade-in-ubuntu-12)
 sudo apt-get --yes -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+
+# needed for on-premise nvidia machines
+printf '\n[ apt --fix-broken install ]\n'
+sudo apt -y --fix-broken install
 
 printf '\n[[ Uninstalling NodeJS.. ]]\n'
 sudo apt-get -y purge nodejs

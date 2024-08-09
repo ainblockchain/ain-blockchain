@@ -61,7 +61,7 @@ async function injectAccount(endpointUrl, accountInjectionOption) {
       })
       properties.push({
         name: 'password',
-        description: 'Enter password:',
+        description: 'Enter keystore password:',
         hidden: true
       })
       break;
