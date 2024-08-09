@@ -353,7 +353,7 @@ class EventChannelManager {
   closeChannel(channel) {
     const LOG_HEADER = 'closeChannel';
     try {
-      logger.info(`[${LOG_HEADER}] Close channel ${channel.id}`);
+      logger.info(`[${LOG_HEADER}] Closing channel ${channel.id}`);
       channel.webSocket.terminate();
       const filterIds = channel.getAllFilterIds();
       for (const filterId of filterIds) {
@@ -363,7 +363,7 @@ class EventChannelManager {
       }
       delete this.channels[channel.id];
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while close channel (channelId: ${channel.id}, ` +
+      logger.error(`[${LOG_HEADER}] Error while closing channel (channelId: ${channel.id}, ` +
           `message:${err.message})`);
     }
   }
@@ -387,13 +387,11 @@ class EventChannelManager {
         const idleTimeMs = channel.getIdleTimeMs();
         if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
           logger.info(`[${LOG_HEADER}] Closing long-idle channel: ${JSON.stringify(channel.toObject())}`);
-          channel.webSocket.terminate();
           this.closeChannel(channel);
         }
         const lifeTimeMs = channel.getLifeTimeMs();
         if (lifeTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_LIFE_TIME_LIMIT_SECS * 1000) {
           logger.info(`[${LOG_HEADER}] Closing long-life channel: ${JSON.stringify(channel.toObject())}`);
-          channel.webSocket.terminate();
           this.closeChannel(channel);
         }
       }
