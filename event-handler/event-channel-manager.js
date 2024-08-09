@@ -23,12 +23,11 @@ class EventChannelManager {
     this.heartbeatInterval = null;
   }
 
-  async getNetworkInfo() {
-    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === HostingEnvs.COMCOM || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL);
+  getNetworkInfo() {
+    const ipAddr = (NodeConfigs.HOSTING_ENV === HostingEnvs.COMCOM || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL) ? this.node.ipAddrInternal : this.node.ipAddrExternal;
     const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),
-      port: NodeConfigs.EVENT_HANDLER_PORT,
       maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
       numEventChannels: this.getNumEventChannels(),
       maxNumEventFilters: NodeConfigs.MAX_NUM_EVENT_FILTERS,

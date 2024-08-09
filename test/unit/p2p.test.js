@@ -225,10 +225,17 @@ describe("P2p", () => {
           },
           eventHandlerStatus: {
             isEnabled: false,
-            maxNumEventChannels: 10,
-            maxNumEventFilters: 20,
-            numEventChannels: 0,
-            numEventFilters: 0,
+            networkInfo: {
+              url: "",
+              maxNumEventChannels: 10,
+              numEventChannels: 0,
+              maxNumEventFilters: 20,
+              numEventFilters: 0,
+            },
+            filterInfo: {
+            },
+            channelInfo: {
+            },
           }
         });
       });
