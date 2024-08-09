@@ -386,7 +386,13 @@ class EventChannelManager {
       for (const channel of Object.values(this.channels)) {
         const idleTimeMs = channel.getIdleTimeMs();
         if (idleTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS * 1000) {
-          logger.info(`[${LOG_HEADER}] Closing idle channel: ${JSON.stringify(channel.toObject())}`);
+          logger.info(`[${LOG_HEADER}] Closing long-idle channel: ${JSON.stringify(channel.toObject())}`);
+          channel.webSocket.terminate();
+          this.closeChannel(channel);
+        }
+        const lifeTimeMs = channel.getLifeTimeMs();
+        if (lifeTimeMs > NodeConfigs.EVENT_HANDLER_CHANNEL_LIFE_TIME_LIMIT_SECS * 1000) {
+          logger.info(`[${LOG_HEADER}] Closing long-life channel: ${JSON.stringify(channel.toObject())}`);
           channel.webSocket.terminate();
           this.closeChannel(channel);
         }
