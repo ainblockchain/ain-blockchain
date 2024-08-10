@@ -40,6 +40,7 @@ class EventChannelManager {
     return {
       maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
       numEventChannels: this.getNumEventChannels(),
+      channelLifeTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_LIFE_TIME_LIMIT_SECS,
       channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
       maxChannelLifeTimeMs: channelStats.maxLifeTimeMs,
       maxChannelIdleTimeMs: channelStats.maxIdleTimeMs,
