@@ -677,6 +677,7 @@ const BlockchainEventTypes = {
 };
 
 const BlockchainEventMessageTypes = {
+  SET_CUSTOM_CLIENT_ID: 'SET_CUSTOM_CLIENT_ID',
   REGISTER_FILTER: 'REGISTER_FILTER',
   DEREGISTER_FILTER: 'DEREGISTER_FILTER',
   EMIT_EVENT: 'EMIT_EVENT',
