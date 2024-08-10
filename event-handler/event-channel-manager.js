@@ -8,6 +8,7 @@ const {
   BlockchainEventTypes,
   FilterDeletionReasons,
 } = require('../common/constants');
+const CommonUtil = require('../common/common-util');
 const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 const BlockchainEvent = require('./blockchain-event');
@@ -158,6 +159,18 @@ class EventChannelManager {
     }
   }
 
+  handleSetCustomClientId(channel, messageData) {
+    const LOG_HEADER = 'handleSetCustomClientId';
+    const customClientId = messageData.customClientId;
+    if (!CommonUtil.isString(customClientId)) {
+      throw new EventHandlerError(EventHandlerErrorCode.INVALID_CUSTOM_CLIENT_ID,
+          `Invalid custom client id: ${customClientId}`);
+    }
+    const normalized = customClientId.slice(0, NodeConfigs.EVENT_HANDLER_MAX_CUSTOM_CLIENT_ID_LENGTH);
+    logger.info(`[${LOG_HEADER}] Setting custom client id: ${normalized} for channel: ${channel.id}`);
+    channel.setCustomClientId(normalized);
+  }
+
   handleRegisterFilterMessage(channel, messageData) {
     const LOG_HEADER = 'handleRegisterFilterMessage';
     const clientFilterId = messageData.id;
@@ -293,6 +306,9 @@ class EventChannelManager {
   // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION.
   handleMessage(channel, messageType, messageData) {
     switch (messageType) {
+      case BlockchainEventMessageTypes.SET_CUSTOM_CLIENT_ID:
+        this.handleSetCustomClientId(channel, messageData);
+        break;
       case BlockchainEventMessageTypes.REGISTER_FILTER:
         this.handleRegisterFilterMessage(channel, messageData);
         break;
@@ -301,7 +317,7 @@ class EventChannelManager {
         break;
       default:
         throw new EventHandlerError(EventHandlerErrorCode.INVALID_MESSAGE_TYPE,
-            `Invalid message type (${messageType})`);
+            `Invalid message type: ${messageType}`);
     }
   }
 
