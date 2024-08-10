@@ -235,6 +235,7 @@ describe("P2p", () => {
             channelStatus: {
               maxNumEventChannels: 20,
               numEventChannels: 0,
+              channelLifeTimeLimitSecs: 3600,
               channelIdleTimeLimitSecs: 600,
               maxChannelIdleTimeMs: 0,
               maxChannelLifeTimeMs: 0,

@@ -44,6 +44,7 @@ class EventChannel {
       id: this.id,
       remoteUrl: this.remoteUrl,
       eventFilterIds: [...this.eventFilterIds],
+      creationTimeMs: this.creationTimeMs,
       lastMessagingTimeMs: this.lastMessagingTimeMs,
       lifeTimeMs: this.getLifeTimeMs(),
       idleTimeMs: this.getIdleTimeMs(),
