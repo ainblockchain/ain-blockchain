@@ -48,6 +48,7 @@ class EventHandler {
       channelStatus: {
         maxNumEventChannels: NodeConfigs.MAX_NUM_EVENT_CHANNELS,
         numEventChannels: 0,
+        channelLifeTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_LIFE_TIME_LIMIT_SECS,
         channelIdleTimeLimitSecs: NodeConfigs.EVENT_HANDLER_CHANNEL_IDLE_TIME_LIMIT_SECS,
         maxChannelLifeTimeMs: 0,
         maxChannelIdleTimeMs: 0,
