@@ -5,10 +5,15 @@ class EventChannel {
     this.id = id;
     this.webSocket = webSocket;
     this.remoteUrl = buildRemoteUrlFromSocket(webSocket);
+    this.customClientId = '';
     this.eventFilterIds = new Set();
     const curTimeMs = Date.now();
     this.creationTimeMs = curTimeMs;
     this.lastMessagingTimeMs = curTimeMs;
+  }
+
+  setCustomClientId(customClientId) {
+    this.customClientId = customClientId;
   }
 
   setLastMessagingTimeMs(timeMs) {
@@ -43,7 +48,9 @@ class EventChannel {
     return {
       id: this.id,
       remoteUrl: this.remoteUrl,
+      customClientId: this.customClientId,
       eventFilterIds: [...this.eventFilterIds],
+      creationTimeMs: this.creationTimeMs,
       lastMessagingTimeMs: this.lastMessagingTimeMs,
       lifeTimeMs: this.getLifeTimeMs(),
       idleTimeMs: this.getIdleTimeMs(),
