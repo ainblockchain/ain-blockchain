@@ -305,12 +305,12 @@ class EventHandler {
     const eventFilter = this.eventFilters[eventFilterId];
     if (!eventFilter) {
       throw new EventHandlerError(EventHandlerErrorCode.NO_MATCHED_FILTERS,
-          `Can't find filter by filter id`, eventFilterId);
+          `Can't find filter by filter id (eventFilterId: ${eventFilterId})`);
     }
     delete this.eventFilters[eventFilterId];
     if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
       throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_TYPE_TO_FILTER_IDS,
-          `Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`);
+          `Can't delete filter Id from eventTypeToEventFilterIds (eventFilterId: ${eventFilterId})`);
     }
     if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
       this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);

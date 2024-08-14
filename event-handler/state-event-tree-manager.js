@@ -103,7 +103,7 @@ class StateEventTreeManager {
     if (!parsedPath) {
       throw new EventHandlerError(
         EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_TO_PARSED_PATH,
-        `Can't find parsedPath from filterIdToParsedPath (${filterId})`
+        `Can't find parsedPath from filterIdToParsedPath (filterId: ${filterId})`
       );
     }
     delete this.filterIdToParsedPath[filterId];
