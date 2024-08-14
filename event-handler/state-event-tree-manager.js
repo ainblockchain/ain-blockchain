@@ -87,24 +87,24 @@ class StateEventTreeManager {
   }
 
   deleteFilterIdFromEventNode(eventNode, filterId) {
+    const LOG_HEADER = 'deleteFilterIdFromEventNode';
     if (!eventNode || !eventNode.filterIdSet) {
-      throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_SET,
-          `Can't find filterIdSet (eventNode: ${JSON.stringify(eventNode)})`);
+      logger.error(`[${LOG_HEADER}] Can't find filterIdSet (eventNode: ${JSON.stringify(eventNode)})`);
+      return;
     }
     if (!eventNode.filterIdSet.delete(filterId)) {
-      throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_SET,
-          `Can't delete filter id (${filterId}) from filterIdSet ` +
+      logger.error(`[${LOG_HEADER}] Can't delete filter id (${filterId}) from filterIdSet ` +
           `(${JSON.stringify(eventNode.filterIdSet.values())})`);
+      return;
     }
   }
 
   deregisterEventFilterId(filterId) {
+    const LOG_HEADER = 'deregisterEventFilterId';
     const parsedPath = this.filterIdToParsedPath[filterId];
     if (!parsedPath) {
-      throw new EventHandlerError(
-        EventHandlerErrorCode.MISSING_FILTER_ID_IN_FILTER_ID_TO_PARSED_PATH,
-        `Can't find parsedPath from filterIdToParsedPath (${filterId})`
-      );
+      logger.error(`[${LOG_HEADER}] Can't find parsedPath from filterIdToParsedPath (filterId: ${filterId})`);
+      return;
     }
     delete this.filterIdToParsedPath[filterId];
 

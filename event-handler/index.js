@@ -191,6 +191,9 @@ class EventHandler {
       if (isEndState(afterState)) {
         const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
         const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
+        if (!clientFilterId) {
+          continue;
+        }
         this.eventChannelManager.deregisterFilterAndEmitEvent(
           channel, clientFilterId, FilterDeletionReasons.END_STATE_REACHED
         );
@@ -213,6 +216,9 @@ class EventHandler {
     this.eventFilterIdToTimeoutCallback.set(eventFilterId, setTimeout(() => {
       const channel = this.eventChannelManager.getChannelByEventFilterId(eventFilterId);
       const clientFilterId = this.getClientFilterIdFromGlobalFilterId(eventFilterId);
+      if (!clientFilterId) {
+        return;
+      }
       this.eventChannelManager.deregisterFilterAndEmitEvent(
         channel, clientFilterId, FilterDeletionReasons.FILTER_TIMEOUT
       );
@@ -220,10 +226,11 @@ class EventHandler {
   }
 
   getClientFilterIdFromGlobalFilterId(globalFilterId) {
+    const LOG_HEADER = 'getClientFilterIdFromGlobalFilterId';
     const clientFilterId = globalFilterId.split(':')[1];
     if (!clientFilterId) {
-      throw new EventHandlerError(EventHandlerErrorCode.PARSING_GLOBAL_FILTER_ID_FAILURE,
-          `Can't get client filter ID from global filter ID (globalFilterId: ${globalFilterId})`);
+      logger.error(`[${LOG_HEADER}] Can't get client filter ID from global filter ID (globalFilterId: ${globalFilterId})`);
+      return null;
     }
     return clientFilterId;
   }
@@ -304,13 +311,13 @@ class EventHandler {
     const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
     const eventFilter = this.eventFilters[eventFilterId];
     if (!eventFilter) {
-      throw new EventHandlerError(EventHandlerErrorCode.NO_MATCHED_FILTERS,
-          `Can't find filter by filter id`, eventFilterId);
+      logger.error(`[${LOG_HEADER}] Can't find filter by filter id (eventFilterId: ${eventFilterId})`);
+      return null;
     }
     delete this.eventFilters[eventFilterId];
     if (!this.eventTypeToEventFilterIds[eventFilter.type].delete(eventFilterId)) {
-      throw new EventHandlerError(EventHandlerErrorCode.MISSING_FILTER_ID_IN_TYPE_TO_FILTER_IDS,
-          `Can't delete filter Id from eventTypeToEventFilterIds (${eventFilterId})`);
+      logger.error(`[${LOG_HEADER}] Can't delete filter Id from eventTypeToEventFilterIds (eventFilterId: ${eventFilterId})`);
+      return null;
     }
     if (eventFilter.type === BlockchainEventTypes.VALUE_CHANGED) {
       this.stateEventTreeManager.deregisterEventFilterId(eventFilterId);
