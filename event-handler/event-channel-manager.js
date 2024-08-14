@@ -236,25 +236,15 @@ class EventChannelManager {
 
   deregisterFilter(channel, clientFilterId) {
     const filter = this.node.eh.deregisterEventFilter(clientFilterId, channel.id);
+    if (!filter) {
+      return;
+    }
     channel.deleteEventFilterId(filter.id);
     delete this.filterIdToChannelId[filter.id];
   }
 
   deregisterFilterAndEmitEvent(channel, clientFilterId, filterDeletionReason) {
-    const LOG_HEADER = 'deregisterFilterAndEmitEvent';
-    try {
-      this.deregisterFilter(channel, clientFilterId);
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Can't deregister event filter ` +
-        `(clientFilterId: ${clientFilterId}, channelId: ${channel.id}, ` +
-        `err: ${err.message} at ${err.stack})`);
-      throw new EventHandlerError(
-        EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER,
-        `Failed to deregister filter with filter ID: ${clientFilterId} ` +
-          `due to error: ${err.message}`,
-        clientFilterId
-      );
-    }
+    this.deregisterFilter(channel, clientFilterId);
     const blockchainEvent = new BlockchainEvent(
       BlockchainEventTypes.FILTER_DELETED,
       {
@@ -344,6 +334,9 @@ class EventChannelManager {
     // TODO(ehgmsdk20): reuse same object for memory
     const eventObj = event.toObject();
     const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    if (!clientFilterId) {
+      return;
+    }
     Object.assign(eventObj, { filter_id: clientFilterId });
     this.transmitEventObj(channel, eventObj);
   }
@@ -369,20 +362,18 @@ class EventChannelManager {
 
   closeChannel(channel) {
     const LOG_HEADER = 'closeChannel';
-    try {
-      logger.info(`[${LOG_HEADER}] Closing channel ${channel.id}`);
-      channel.webSocket.terminate();
-      const filterIds = channel.getAllFilterIds();
-      for (const filterId of filterIds) {
-        const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(filterId);
-        // NOTE(ehgmsdk20): Do not emit filter_deleted event because the channel is already closed.
-        this.deregisterFilter(channel, clientFilterId);
+    logger.info(`[${LOG_HEADER}] Closing channel ${channel.id}`);
+    channel.webSocket.terminate();
+    const filterIds = channel.getAllFilterIds();
+    for (const filterId of filterIds) {
+      const clientFilterId = this.node.eh.getClientFilterIdFromGlobalFilterId(filterId);
+      if (!clientFilterId) {
+        continue;
       }
-      delete this.channels[channel.id];
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while closing channel (channelId: ${channel.id}, ` +
-          `message:${err.message})`);
+      // NOTE(ehgmsdk20): Do not emit filter_deleted event because the channel is already closed.
+      this.deregisterFilter(channel, clientFilterId);
     }
+    delete this.channels[channel.id];
   }
 
   startHeartbeat(wsServer) {
