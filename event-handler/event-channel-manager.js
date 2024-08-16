@@ -13,6 +13,8 @@ const EventHandlerError = require('./event-handler-error');
 const { EventHandlerErrorCode } = require('../common/result-code');
 const BlockchainEvent = require('./blockchain-event');
 
+const CHANNEL_ID_RANDOM_NUMBER_RANGE = 1000;
+
 class EventChannelManager {
   constructor(node) {
     this.node = node;
@@ -107,7 +109,9 @@ class EventChannelManager {
             `The number of event channels exceeds its limit ` +
             `(${NodeConfigs.MAX_NUM_EVENT_CHANNELS})`);
       }
-      const channelId = Date.now(); // NOTE: Only used in blockchain
+      // NOTE: Only used in blockchain
+      const channelId
+          = String(Date.now() + Math.floor(Math.random() * CHANNEL_ID_RANDOM_NUMBER_RANGE));
       if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic.
         webSocket.terminate();
         throw new EventHandlerError(EventHandlerErrorCode.DUPLICATED_CHANNEL_ID,
