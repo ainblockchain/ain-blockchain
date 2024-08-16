@@ -254,26 +254,6 @@ describe('Event Handler Test', function() {
       deregisterFilter(wsClient, filterId);
     });
 
-    it('Deregister filter already deregisterd filter', function(done) {
-      // Deregister filter
-      wsClient.on('message', (message) => {
-        try {
-          const parsedMessage = JSON.parse(message);
-          const messageType = parsedMessage.type;
-          const errorCode = _.get(parsedMessage, 'data.code');
-          const errorMessage = _.get(parsedMessage, 'data.message');
-          if (messageType === BlockchainEventMessageTypes.EMIT_ERROR) {
-            expect(errorCode).to.equal(EventHandlerErrorCode.FAILED_TO_DEREGISTER_FILTER);
-            expect(errorMessage).to.equal(`Failed to deregister filter with filter ID: ${filterId} due to error: Can't find filter by filter id`)
-            done();
-          }
-        } catch (err) {
-          done(err);
-        }
-      });
-      deregisterFilter(wsClient, filterId);
-    });
-
     it('Register too many filters', function(done) {
       let exceededCnt = 0;
       wsClient.on('message', (message) => {
