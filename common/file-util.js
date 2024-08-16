@@ -257,7 +257,7 @@ class FileUtil {
           });
       });
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
       return false;
     }
   }
@@ -288,7 +288,7 @@ class FileUtil {
           });
       });
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
       return null;
     }
   }
@@ -299,7 +299,7 @@ class FileUtil {
       const zippedFs = fs.readFileSync(filePath);
       return FileUtil.buildObjectFromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
       return null;
     }
   }
@@ -314,7 +314,7 @@ class FileUtil {
       const zippedFs = fs.readFileSync(filePath);
       return JSON.parse(zlib.gunzipSync(zippedFs).toString());
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
       return null;
     }
   }
@@ -325,7 +325,7 @@ class FileUtil {
       const fileStr = fs.readFileSync(filePath);
       return JSON.parse(fileStr);
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
       return null;
     }
   }
@@ -399,7 +399,7 @@ class FileUtil {
     try {
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${h2nPath}: ${err}`);
+      logger.error(`[${LOG_HEADER}] Error while reading ${h2nPath}: ${err.stack}`);
       return -1;
     }
   }
