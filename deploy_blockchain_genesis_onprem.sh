@@ -256,7 +256,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -rv $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -rv $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/${SEASON}-ain-blockchain/
         done
     fi
 fi
@@ -281,7 +281,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./${SEASON}-ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
         done
     fi
 fi
@@ -306,7 +306,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./${SEASON}-ain-blockchain; yarn install --ignore-engines"
         done
     fi
 fi
@@ -347,9 +347,9 @@ fi
 
 printf "\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-    GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
+    GO_TO_PROJECT_ROOT_CMD="cd ./${SEASON}-ain-blockchain"
 else
-    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/${SEASON}-ain-blockchain* -maxdepth 0 -type d)"
 fi
 
 #START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
@@ -384,9 +384,9 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
             printf "\n* >> Removing old data for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
-            CHAINS_DIR=/home/ain_blockchain_data/chains
-            SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-            LOGS_DIR=/home/ain_blockchain_data/logs
+            CHAINS_DIR=/home/${SEASON}_ain_blockchain_data/chains
+            SNAPSHOTS_DIR=/home/${SEASON}_ain_blockchain_data/snapshots
+            LOGS_DIR=/home/${SEASON}_ain_blockchain_data/logs
             echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR"
         fi
 
