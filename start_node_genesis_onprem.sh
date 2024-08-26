@@ -174,12 +174,12 @@ fi
 
 printf '\n'
 printf 'Killing old jobs..\n'
-sudo killall node
+sudo killall 'client/ain-blockchain-${SEASON}-index.js'
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
     sudo rm -rf /home/${SEASON}-ain-blockchain*
-    CODE_CMD="cd ~; sudo mv ${SEASON}-ain-blockchain /home; sudo chmod -R 777 /home/${SEASON}-ain-blockchain; sudo chown -R $GCP_USER:$GCP_USER /home/${SEASON}-ain-blockchain; cd /home/${SEASON}-ain-blockchain"
+    CODE_CMD="cd ~; sudo mv ${SEASON}-ain-blockchain /home; sudo chmod -R 777 /home/${SEASON}-ain-blockchain; sudo chown -R $GCP_USER:$GCP_USER /home/${SEASON}-ain-blockchain; cd /home/${SEASON}-ain-blockchain; mv client/index.js client/ain-blockchain-${SEASON}-index.js"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 else
@@ -338,7 +338,7 @@ else
 fi
 
 printf "\nStarting up Blockchain Node server..\n\n"
-START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
+START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/ain-blockchain-${SEASON}-index.js >/dev/null 2>error_logs.txt &"
 printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
