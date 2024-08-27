@@ -15,19 +15,11 @@ printf "\n[[[[[ deploy_blockchain_genesis_onprem.sh ]]]]]\n\n"
 
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'mainnet' ]]; then
-        PROJECT_ID="mainnet-prod-ground"
-    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
-        PROJECT_ID="testnet-prod-ground"
-    else
-        PROJECT_ID="testnet-$1-ground"
-    fi
 else
     printf "Invalid project/season argument: $1\n"
     exit
 fi
 printf "SEASON=$SEASON\n"
-printf "PROJECT_ID=$PROJECT_ID\n"
 
 ONPREM_USER="nvidia"
 printf "ONPREM_USER=$ONPREM_USER\n"
