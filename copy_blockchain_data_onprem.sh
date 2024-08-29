@@ -81,21 +81,21 @@ function download_data() {
 
     # 1. Create tgz file for node
     printf "\n\n<<< Creating tgz file for node $node_index >>>\n\n"
-    TGZ_CMD="ssh -v $node_target_addr 'cd /home/${SEASON}_ain_blockchain_data; tar cvf - chains snapshots | gzip -c > ~/${SEASON}_ain_blockchain_data.tar.gz'"
+    TGZ_CMD="ssh -v $node_target_addr 'sudo -S ls -la; cd /home/${SEASON}/ain_blockchain_data; tar cvf - chains snapshots | gzip -c > ~/ain_blockchain_data.tar.gz'"
     printf "TGZ_CMD=$TGZ_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${TGZ_CMD}"
 
     # 2. Copy tgz file from node
     printf "\n\n<<< Copying tgz file from node $node_index >>>\n\n"
-    SCP_CMD="scp -rv $node_target_addr:~/${SEASON}_ain_blockchain_data.tar.gz ."
+    SCP_CMD="scp -rv $node_target_addr:~/ain_blockchain_data.tar.gz ."
     printf "SCP_CMD=$SCP_CMD\n\n"
     eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${SCP_CMD}"
 
     # 3. Clean up tgz file for node
     printf "\n\n<<< Cleaning up tgz file for node $node_index >>>\n\n"
-    CLEANUP_CMD="ssh -v $node_target_addr 'rm ~/${SEASON}_ain_blockchain_data.tar.gz'"
+    CLEANUP_CMD="ssh -v $node_target_addr 'rm ~/ain_blockchain_data.tar.gz'"
     printf "CLEANUP_CMD=$CLEANUP_CMD\n\n"
-    eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${CLEANUP_CMD}"
+    eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${CLEANUP_CMD}"
 }
 
 function upload_data() {
@@ -109,21 +109,21 @@ function upload_data() {
 
     # 1. Copy tgz file to node
     printf "\n\n<<< Copying tgz file to node $node_index >>>\n\n"
-    SCP_CMD="scp -rv ./${SEASON}_ain_blockchain_data.tar.gz $node_target_addr:~"
+    SCP_CMD="scp -rv ./ain_blockchain_data.tar.gz $node_target_addr:~"
     printf "SCP_CMD=$SCP_CMD\n\n"
     eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${SCP_CMD}"
 
     # 2. Extract tgz file for node
     printf "\n\n<<< Extracting tgz file for node $node_index >>>\n\n"
-    TGZ_CMD="ssh -v $node_target_addr 'cd /home; sudo mkdir -p ${SEASON}_ain_blockchain_data; sudo chown runner:runner ${SEASON}_ain_blockchain_data; sudo chmod 777 ${SEASON}_ain_blockchain_data; cd ${SEASON}_ain_blockchain_data; gzip -dc ~/${SEASON}_ain_blockchain_data.tar.gz | tar xvf -'"
+    TGZ_CMD="ssh -v $node_target_addr 'sudo -S ls -la; cd /home; sudo mkdir -p ${SEASON}/ain_blockchain_data; sudo chown $ONPREM_USER:$ONPREM_USER ${SEASON} ${SEASON}/ain_blockchain_data; sudo chmod 777 ${SEASON} ${SEASON}/ain_blockchain_data; cd ${SEASON}/ain_blockchain_data; gzip -dc ~/ain_blockchain_data.tar.gz | tar xvf -'"
     printf "TGZ_CMD=$TGZ_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${TGZ_CMD}"
 
     # 3. Clean up tgz file for node
     printf "\n\n<<< Cleaning up tgz file for node $node_index >>>\n\n"
-    CLEANUP_CMD="ssh -v $node_target_addr 'rm ~/${SEASON}_ain_blockchain_data.tar.gz'"
+    CLEANUP_CMD="ssh -v $node_target_addr 'rm ~/ain_blockchain_data.tar.gz'"
     printf "CLEANUP_CMD=$CLEANUP_CMD\n\n"
-    eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${CLEANUP_CMD}"
+    eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${CLEANUP_CMD}"
 }
 
 if [[ "$COMMAND" = 'upload' ]]; then
