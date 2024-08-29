@@ -58,7 +58,7 @@ function parse_options() {
 
 # Parse options.
 SEASON="$1"
-GCP_USER="$2"
+ONPREM_USER="$2"
 
 number_re='^[0-9]+$'
 if ! [[ $3 =~ $number_re ]] ; then
@@ -95,7 +95,7 @@ while [ $ARG_INDEX -le $# ]; do
 done
 
 printf "SEASON=$SEASON\n"
-printf "GCP_USER=$GCP_USER\n"
+printf "ONPREM_USER=$ONPREM_USER\n"
 printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 printf "\n"
@@ -178,35 +178,35 @@ sudo killall "client/${SEASON}-ain-blockchain-index.js"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
-    sudo rm -rf /home/${SEASON}-ain-blockchain*
+    sudo rm -rf /home/${SEASON}/ain-blockchain*
     # NOTE(platfowner): Add $SEASON to the node job name to be selectively killed in restarts.
-    CODE_CMD="cd ~; sudo mv ${SEASON}-ain-blockchain /home; sudo chmod -R 777 /home/${SEASON}-ain-blockchain; sudo chown -R $GCP_USER:$GCP_USER /home/${SEASON}-ain-blockchain; cd /home/${SEASON}-ain-blockchain; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
+    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ./ain-blockchain /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}/ain-blockchain; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain-blockchain; cd /home/${SEASON}/ain-blockchain; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
-    OLD_DIR_PATH=$(find /home/${SEASON}-ain-blockchain* -maxdepth 0 -type d)
+    OLD_DIR_PATH=$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
-    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $OLD_DIR_PATH"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 fi
 if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     printf '\n'
     printf 'Setting up new data directory..\n'
-    sudo rm -rf /home/${SEASON}_ain_blockchain_data/chains
-    sudo rm -rf /home/${SEASON}_ain_blockchain_data/snapshots
-    sudo rm -rf /home/${SEASON}_ain_blockchain_data/logs
-    DATA_CMD="sudo mkdir -p /home/${SEASON}_ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}_ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/${SEASON}_ain_blockchain_data"
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/chains
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/snapshots
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/logs
+    DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}/ain_blockchain_data; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf 'Reusing existing data directory..\n'
     if [[ $CHOWN_DATA_OPTION = "--no-chown-data" ]]; then
-        DATA_CMD="sudo mkdir -p /home/${SEASON}_ain_blockchain_data; sudo chmod 777 /home/${SEASON}_ain_blockchain_data; sudo chown $GCP_USER:$GCP_USER /home/${SEASON}_ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod 777 /home/${SEASON}/ain_blockchain_data; sudo chown $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     else
-        DATA_CMD="sudo mkdir -p /home/${SEASON}_ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}_ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/${SEASON}_ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}/ain_blockchain_data; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
@@ -329,7 +329,7 @@ printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
 export HOSTING_ENV="comcom"
 printf "HOSTING_ENV=$HOSTING_ENV\n"
 # on-premise nodes run with a blockchain data directory prefixed by ${SEASON}_
-export BLOCKCHAIN_DATA_DIR="/home/${SEASON}_ain_blockchain_data"
+export BLOCKCHAIN_DATA_DIR="/home/${SEASON}/ain_blockchain_data"
 printf "BLOCKCHAIN_DATA_DIR=$BLOCKCHAIN_DATA_DIR\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
