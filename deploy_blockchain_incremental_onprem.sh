@@ -1,17 +1,17 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1  4 --keystore --no-keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0  0  0 --keystore --keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
+    printf "Usage: bash deploy_blockchain_incremental_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0 -1  4 --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --keystore --keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
     printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
     printf "\n"
     exit
 fi
-printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
+printf "\n[[[[[ deploy_blockchain_incremental_onprem.sh ]]]]]\n\n"
 
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
@@ -171,8 +171,8 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
-FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_gcp.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
+FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
 NUM_SHARD_NODES=3
 
@@ -209,7 +209,7 @@ function deploy_tracker() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up tracker
         printf "\n\n[[[ Setting up tracker ]]]\n\n"
-        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
@@ -248,7 +248,7 @@ function deploy_node() {
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
         printf "\n\n<<< Setting up node $node_index >>>\n\n"
-        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $node_zone"
+        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
@@ -361,11 +361,11 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
     LOGS_DIR=/home/ain_blockchain_data/logs
     START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
 else
     # restart with existing chains, snapshots, and log files
     START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
+    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
 fi
 
 # Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
