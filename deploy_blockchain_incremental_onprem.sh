@@ -6,7 +6,7 @@ if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
     printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
-    printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
+    #printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
     printf "\n"
     exit
@@ -171,7 +171,7 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
-FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+#FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
 
 NUM_SHARD_NODES=3
@@ -190,40 +190,40 @@ NODE_ZONE_LIST=(
     "europe-west4-a" \
 )
 
-function deploy_tracker() {
-    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
-
-    printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
-    printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
-
-    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        # 1. Copy files for tracker
-        printf "\n\n[[[ Copying files for tracker ]]]\n\n"
-        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone $TRACKER_ZONE"
-        printf "SCP_CMD=$SCP_CMD\n\n"
-        eval $SCP_CMD
-    fi
-
-    # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-    if [[ $SETUP_OPTION = "--setup" ]]; then
-        # 2. Set up tracker
-        printf "\n\n[[[ Setting up tracker ]]]\n\n"
-        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
-        printf "SETUP_CMD=$SETUP_CMD\n\n"
-        eval $SETUP_CMD
-    fi
-
-    # 3. Start tracker
-    printf "\n\n[[[ Starting tracker ]]]\n\n"
-
-    printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
-
-    printf "\n"
-    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
-    printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
-    eval $START_TRACKER_CMD
-}
+#function deploy_tracker() {
+#    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
+#
+#    printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
+#    printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
+#
+#    if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
+#        # 1. Copy files for tracker
+#        printf "\n\n[[[ Copying files for tracker ]]]\n\n"
+#        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
+#        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone $TRACKER_ZONE"
+#        printf "SCP_CMD=$SCP_CMD\n\n"
+#        eval $SCP_CMD
+#    fi
+#
+#    # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
+#    if [[ $SETUP_OPTION = "--setup" ]]; then
+#        # 2. Set up tracker
+#        printf "\n\n[[[ Setting up tracker ]]]\n\n"
+#        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+#        printf "SETUP_CMD=$SETUP_CMD\n\n"
+#        eval $SETUP_CMD
+#    fi
+#
+#    # 3. Start tracker
+#    printf "\n\n[[[ Starting tracker ]]]\n\n"
+#
+#    printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+#
+#    printf "\n"
+#    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+#    printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
+#    eval $START_TRACKER_CMD
+#}
 
 function deploy_node() {
     local node_index="$1"
@@ -360,18 +360,18 @@ if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
     LOGS_DIR=/home/ain_blockchain_data/logs
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+    #START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
     START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
 else
     # restart with existing chains, snapshots, and log files
-    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+    #START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
     START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
 fi
 
-# Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
-if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
-    deploy_tracker
-fi
+## Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
+#if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
+#    deploy_tracker
+#fi
 begin_index=$PARENT_NODE_INDEX_BEGIN
 if [[ $begin_index -lt 0 ]]; then
   begin_index=0
@@ -380,24 +380,5 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
     for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
         deploy_node "$node_index"
         sleep 40
-    done
-fi
-
-if [[ $NUM_SHARDS -gt 0 ]]; then
-    for shard_index in $(seq $NUM_SHARDS); do
-        printf "###############################################################################\n"
-        printf "# Deploying shard $shard_index blockchain #\n"
-        printf "###############################################################################\n\n"
-
-        TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${shard_index}-tracker-taiwan"
-        NODE_TARGET_ADDR_LIST=( \
-            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-0-taiwan" \
-            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-1-oregon" \
-            "${GCP_USER}@${SEASON}-shard-${shard_index}-node-2-singapore")
-
-        deploy_tracker "$NUM_SHARD_NODES"
-        for node_index in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`; do
-            deploy_node "$node_index"
-        done
     done
 fi

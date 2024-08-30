@@ -6,7 +6,7 @@ if [[ $# -lt 4 ]] || [[ $# -gt 10 ]]; then
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
-    printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
+    #printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
     printf "\n"
     exit
