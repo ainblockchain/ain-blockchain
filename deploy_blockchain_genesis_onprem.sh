@@ -29,8 +29,6 @@ if [[ ! $2 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
-NUM_SHARDS=$2
-printf "NUM_SHARDS=$NUM_SHARDS\n"
 PARENT_NODE_INDEX_BEGIN=$3
 printf "PARENT_NODE_INDEX_BEGIN=$PARENT_NODE_INDEX_BEGIN\n"
 PARENT_NODE_INDEX_END=$4
@@ -327,7 +325,7 @@ else
             printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S killall node"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S pkill -f client/${SEASON}-ain-blockchain-index.js"
         done
     fi
 fi

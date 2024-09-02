@@ -163,9 +163,6 @@ else
     export ENABLE_EVENT_HANDLER=false
 fi
 
-printf '\n'
-printf 'Killing old jobs..\n'
-sudo killall node
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
