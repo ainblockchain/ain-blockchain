@@ -244,9 +244,9 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
             printf "\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-
             printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n"
 
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh $NODE_TARGET_ADDR "sudo -S rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain; chmod -R 777 ~/ain-blockchain"
             sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -r $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
         done
     fi
