@@ -15,30 +15,20 @@ printf "\n[[[[[ deploy_blockchain_incremental_onprem.sh ]]]]]\n\n"
 
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'mainnet' ]]; then
-        PROJECT_ID="mainnet-prod-ground"
-    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
-        PROJECT_ID="testnet-prod-ground"
-    else
-        PROJECT_ID="testnet-$1-ground"
-    fi
 else
     printf "Invalid <Project/Season> argument: $1\n"
     exit
 fi
 printf "SEASON=$SEASON\n"
-printf "PROJECT_ID=$PROJECT_ID\n"
 
-GCP_USER="runner"
-printf "GCP_USER=$GCP_USER\n"
+ONPREM_USER="nvidia"
+printf "ONPREM_USER=$ONPREM_USER\n"
 
 number_re='^[0-9]+$'
 if [[ ! $2 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
-NUM_SHARDS=$2
-printf "NUM_SHARDS=$NUM_SHARDS\n"
 PARENT_NODE_INDEX_BEGIN=$3
 printf "PARENT_NODE_INDEX_BEGIN=$PARENT_NODE_INDEX_BEGIN\n"
 PARENT_NODE_INDEX_END=$4
@@ -153,42 +143,32 @@ else
     fi
 fi
 
-# Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
-if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
-    # Get keystore password
-    printf "Enter keystore password: "
-    read -s KEYSTORE_PW
-    printf "\n\n"
-    if [[ $SEASON = "mainnet" ]]; then
-        KEYSTORE_DIR="mainnet_prod_keys"
-    elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
-        KEYSTORE_DIR="testnet_prod_keys"
-    else
-        KEYSTORE_DIR="testnet_dev_staging_keys"
+# Read node ip addresses and passwords
+IFS=$'\n' read -d '' -r -a NODE_IP_LIST < ./ip_addresses/${SEASON}_onprem_ip.txt
+IFS=$'\n' read -d '' -r -a NODE_PW_LIST < ./ip_addresses/${SEASON}_onprem_pw.txt
+
+if [[ ! $KILL_OPTION = '--kill-only' ]]; then
+    # Read node urls
+    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_onprem.txt
+    if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+        # Get keystore password
+        printf "Enter keystore password: "
+        read -s KEYSTORE_PW
+        printf "\n\n"
+        if [[ $SEASON = "mainnet" ]]; then
+            KEYSTORE_DIR="mainnet_prod_keys"
+        elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+            KEYSTORE_DIR="testnet_prod_keys"
+        else
+            KEYSTORE_DIR="testnet_dev_staging_keys"
+        fi
+    elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
+        IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
     fi
-elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
-    IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 #FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
-
-NUM_SHARD_NODES=3
-
-TRACKER_ZONE="asia-east1-b"
-NODE_ZONE_LIST=(
-    "asia-east1-b" \
-    "us-west1-b" \
-    "asia-southeast1-b" \
-    "us-central1-a" \
-    "europe-west4-a" \
-    "asia-east1-b" \
-    "us-west1-b" \
-    "asia-southeast1-b" \
-    "us-central1-a" \
-    "europe-west4-a" \
-)
 
 #function deploy_tracker() {
 #    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
@@ -220,41 +200,53 @@ NODE_ZONE_LIST=(
 #    printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 #
 #    printf "\n"
-#    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $GCP_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+#    START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $ONPREM_USER $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
 #    printf "START_TRACKER_CMD=$START_TRACKER_CMD\n\n"
 #    eval $START_TRACKER_CMD
 #}
 
 function deploy_node() {
     local node_index="$1"
-    local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
-    local node_zone=${NODE_ZONE_LIST[${node_index}]}
+    local node_target_addr="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
+    local node_login_pw="${NODE_PW_LIST[${node_index}]}"
 
     printf "\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
 
-    printf "node_target_addr='$node_target_addr'\n"
-    printf "node_zone='$node_zone'\n"
-
+    # 1. Copy files for node (if necessary)
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        # 1. Copy files for node
-        printf "\n\n<<< Copying files for node $node_index >>>\n\n"
-        gcloud compute ssh $node_target_addr --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $node_zone
-        SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain --project $PROJECT_ID --zone $node_zone"
+        printf "\n<<< Copying files for node $node_index ($node_target_addr) >>>\n\n"
+        printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n\n"
+
+        echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ssh $node_target_addr "sudo -S rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain; chmod -R 777 ~/ain-blockchain"
+        SCP_CMD="scp -r $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain"
         printf "SCP_CMD=$SCP_CMD\n\n"
-        eval $SCP_CMD
+        eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${SCP_CMD}"
     fi
 
+    # 2. Set up node (if necessary)
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
-        # 2. Set up node
-        printf "\n\n<<< Setting up node $node_index >>>\n\n"
-        SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh' --project $PROJECT_ID --zone $node_zone"
+        printf "\n<<< Setting up node $node_index ($node_target_addr) >>>\n\n"
+
+        SETUP_CMD="ssh $node_target_addr 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh'"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
-        eval $SETUP_CMD
+        eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${SETUP_CMD}"
     fi
 
-    # 3. Start node
-    printf "\n\n<<< Starting node $node_index >>>\n\n"
+    # 3. Remove old data (if necessary)
+    if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
+        printf "\n<<< Removing old data from node $node_index ($node_target_addr) >>>\n\n"
+
+        # Remove chains, snapshots, and log files (but keep the keys)
+        CHAINS_DIR=/home/${SEASON}/ain_blockchain_data/chains
+        SNAPSHOTS_DIR=/home/${SEASON}/ain_blockchain_data/snapshots
+        LOGS_DIR=/home/${SEASON}/ain_blockchain_data/logs
+        RM_CMD="ssh $node_target_addr 'sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR'"
+        eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${RM_CMD}"
+    fi
+
+    # 4. Start node
+    printf "\n<<< Starting node $node_index ($node_target_addr) >>>\n\n"
 
     if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
         JSON_RPC_OPTION="--json-rpc"
@@ -284,11 +276,11 @@ function deploy_node() {
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_NODE_CMD="ssh $node_target_addr '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
     printf "START_NODE_CMD=$START_NODE_CMD\n\n"
-    eval $START_NODE_CMD
+    eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${START_NODE_CMD}"
 
-    # 4. Inject node account
+    # 5. Inject node account
     sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_url=${NODE_URL_LIST[${node_index}]}
@@ -316,6 +308,7 @@ function deploy_node() {
         local node_url=${NODE_URL_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
+
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
             GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
@@ -324,49 +317,27 @@ function deploy_node() {
         echo $PRIVATE_KEY | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     fi
 
-    # 5. Wait until node is synced
-    printf "\n\n<<< Waiting until node $node_index is synced >>>\n\n"
-    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
+    # 6. Wait until node is synced
+    printf "\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
+
+    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh'"
     printf "WAIT_CMD=$WAIT_CMD\n\n"
-    eval $WAIT_CMD
+    eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }
 
 printf "###############################################################################\n"
 printf "# Deploying parent blockchain #\n"
 printf "###############################################################################\n\n"
 
-TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
-NODE_TARGET_ADDR_LIST=(
-    "${GCP_USER}@${SEASON}-node-0-taiwan" \
-    "${GCP_USER}@${SEASON}-node-1-oregon" \
-    "${GCP_USER}@${SEASON}-node-2-singapore" \
-    "${GCP_USER}@${SEASON}-node-3-iowa" \
-    "${GCP_USER}@${SEASON}-node-4-netherlands" \
-    "${GCP_USER}@${SEASON}-node-5-taiwan" \
-    "${GCP_USER}@${SEASON}-node-6-oregon" \
-    "${GCP_USER}@${SEASON}-node-7-singapore" \
-    "${GCP_USER}@${SEASON}-node-8-iowa" \
-    "${GCP_USER}@${SEASON}-node-9-netherlands" \
-)
-
 printf "\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
-    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
+    GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-    # restart after removing chains, snapshots, and log files (but keep the keys)
-    CHAINS_DIR=/home/ain_blockchain_data/chains
-    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    LOGS_DIR=/home/ain_blockchain_data/logs
-    #START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
-else
-    # restart with existing chains, snapshots, and log files
-    #START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
-fi
+
+#START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_onprem.sh"
 
 ## Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
 #if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
