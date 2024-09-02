@@ -242,11 +242,12 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
-            printf "\n"
-            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -rv $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
+
+            printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n"
+
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -r $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
         done
     fi
 fi
@@ -267,11 +268,10 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
-            printf "\n"
-            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
+
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
         done
     fi
 fi
@@ -292,11 +292,10 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
-            printf "\n"
-            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
+
+            sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
         done
     fi
 fi
@@ -321,11 +320,10 @@ else
         for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
-            printf "\n"
-            printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
             printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S pkill -f client/${SEASON}-ain-blockchain-index.js"
+
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo -S pkill -f client/${SEASON}-ain-blockchain-index.js"
         done
     fi
 fi
@@ -368,8 +366,6 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
     for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
         NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
         NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
-        printf "\n"
-        printf "NODE_TARGET_ADDR=${NODE_TARGET_ADDR}\n"
 
         if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
             printf "\n* >> Removing old data for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
@@ -377,7 +373,7 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
             CHAINS_DIR=/home/${SEASON}/ain_blockchain_data/chains
             SNAPSHOTS_DIR=/home/${SEASON}/ain_blockchain_data/snapshots
             LOGS_DIR=/home/${SEASON}/ain_blockchain_data/logs
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh -v ${NODE_TARGET_ADDR} "sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR"
+            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR"
         fi
 
         printf "\n* >> Starting parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
@@ -410,7 +406,7 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
         printf "\n"
-        START_NODE_CMD="ssh -v ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
+        START_NODE_CMD="ssh ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
         printf "START_NODE_CMD=$START_NODE_CMD\n"
         eval "echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ${START_NODE_CMD}"
         sleep 5
