@@ -66,3 +66,7 @@ sudo apt install -y jq
 
 printf 'jq --version\n'
 jq --version
+
+printf '\n[[ Installing killall.. ]]\n'
+sudo apt update
+sudo apt install -y psmisc
