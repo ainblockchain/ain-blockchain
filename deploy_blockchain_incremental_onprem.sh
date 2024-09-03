@@ -210,11 +210,11 @@ function deploy_node() {
     local node_target_addr="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
     local node_login_pw="${NODE_PW_LIST[${node_index}]}"
 
-    printf "\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
+    printf "\n\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
 
     # 1. Copy files for node (if necessary)
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        printf "\n<<< Copying files for node $node_index ($node_target_addr) >>>\n\n"
+        printf "\n\n<<< Copying files for node $node_index ($node_target_addr) >>>\n\n"
 
         echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ssh $node_target_addr "sudo -S rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain; chmod -R 777 ~/ain-blockchain"
         SCP_CMD="scp -r $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain"
@@ -228,7 +228,7 @@ function deploy_node() {
         printf "\n\n<<< Setting up node $node_index ($node_target_addr) >>>\n\n"
 
         SETUP_CMD="ssh $node_target_addr 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh'"
-        printf "\nSETUP_CMD=$SETUP_CMD\n\n"
+        printf "\n\nSETUP_CMD=$SETUP_CMD\n\n"
         eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${SETUP_CMD}"
     fi
 
@@ -262,9 +262,8 @@ function deploy_node() {
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
-    printf "\n"
     START_NODE_CMD="ssh $node_target_addr '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
-    printf "\nSTART_NODE_CMD=$START_NODE_CMD\n\n"
+    printf "\n\nSTART_NODE_CMD=$START_NODE_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${START_NODE_CMD}"
 
     # 4. Inject node account
@@ -308,7 +307,7 @@ function deploy_node() {
     printf "\n\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
 
     WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh'"
-    printf "\nWAIT_CMD=$WAIT_CMD\n\n"
+    printf "\n\nWAIT_CMD=$WAIT_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }
 
