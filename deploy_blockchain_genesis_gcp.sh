@@ -446,9 +446,8 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
         printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
-        printf "\n"
         START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-        printf "START_NODE_CMD=$START_NODE_CMD\n"
+        printf "\nSTART_NODE_CMD=$START_NODE_CMD\n"
         eval $START_NODE_CMD
         sleep 5
         inject_account "$node_index"

@@ -243,8 +243,8 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
-            printf "\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
-            printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n"
+            printf "\n\n* >> Deploying files for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n\n"
 
             echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh $NODE_TARGET_ADDR "sudo -S rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain; chmod -R 777 ~/ain-blockchain"
             sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) scp -r $FILES_FOR_NODE ${NODE_TARGET_ADDR}:~/ain-blockchain/
@@ -269,7 +269,7 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
-            printf "\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "\n\n* >> Setting up parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
             echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh"
         done
@@ -293,7 +293,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
             NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
             NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
-            printf "\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "\n\n* >> Installing node modules for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
             sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "cd ./ain-blockchain; yarn install --ignore-engines"
         done
@@ -301,10 +301,10 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 fi
 
 if [[ $KILL_OPTION = "--skip-kill" ]]; then
-    printf "\nSkipping process kill...\n"
+    printf "\n\nSkipping process kill...\n"
 else
     # kill any processes still alive
-    printf "\nKilling tracker / blockchain node jobs...\n"
+    printf "\n\nKilling tracker / blockchain node jobs...\n"
 
 #    # Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
@@ -333,7 +333,7 @@ if [[ $KILL_OPTION = "--kill-only" ]]; then
     exit
 fi
 
-printf "\nStarting blockchain servers...\n\n"
+printf "\n\nStarting blockchain servers...\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     GO_TO_PROJECT_ROOT_CMD="cd ./ain-blockchain"
 else
@@ -368,7 +368,7 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
         if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-            printf "\n* >> Removing old data for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+            printf "\n\n* >> Removing old data for parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
             CHAINS_DIR=/home/${SEASON}/ain_blockchain_data/chains
             SNAPSHOTS_DIR=/home/${SEASON}/ain_blockchain_data/snapshots
@@ -376,7 +376,7 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
             echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR"
         fi
 
-        printf "\n* >> Starting parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+        printf "\n\n* >> Starting parent node $node_index (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
         if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
             JSON_RPC_OPTION="--json-rpc"
@@ -405,9 +405,8 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
         printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
-        printf "\n"
         START_NODE_CMD="ssh ${NODE_TARGET_ADDR} '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
-        printf "START_NODE_CMD=$START_NODE_CMD\n"
+        printf "\nSTART_NODE_CMD=$START_NODE_CMD\n"
         eval "echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ${START_NODE_CMD}"
         sleep 5
         inject_account "$node_index"
