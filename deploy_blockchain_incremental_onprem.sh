@@ -215,38 +215,25 @@ function deploy_node() {
     # 1. Copy files for node (if necessary)
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
         printf "\n<<< Copying files for node $node_index ($node_target_addr) >>>\n\n"
-        printf "FILES_FOR_NODE=${FILES_FOR_NODE}\n\n"
 
         echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ssh $node_target_addr "sudo -S rm -rf ~/ain-blockchain; mkdir ~/ain-blockchain; chmod -R 777 ~/ain-blockchain"
         SCP_CMD="scp -r $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain"
-        printf "SCP_CMD=$SCP_CMD\n\n"
+        printf "\n\nSCP_CMD=$SCP_CMD\n\n"
         eval "sshpass -f <(printf '%s\n' ${node_login_pw}) ${SCP_CMD}"
     fi
 
     # 2. Set up node (if necessary)
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
-        printf "\n<<< Setting up node $node_index ($node_target_addr) >>>\n\n"
+        printf "\n\n<<< Setting up node $node_index ($node_target_addr) >>>\n\n"
 
         SETUP_CMD="ssh $node_target_addr 'cd ./ain-blockchain; . setup_blockchain_ubuntu_onprem.sh'"
-        printf "SETUP_CMD=$SETUP_CMD\n\n"
+        printf "\nSETUP_CMD=$SETUP_CMD\n\n"
         eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${SETUP_CMD}"
     fi
 
-    # 3. Remove old data (if necessary)
-    if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-        printf "\n<<< Removing old data from node $node_index ($node_target_addr) >>>\n\n"
-
-        # Remove chains, snapshots, and log files (but keep the keys)
-        CHAINS_DIR=/home/${SEASON}/ain_blockchain_data/chains
-        SNAPSHOTS_DIR=/home/${SEASON}/ain_blockchain_data/snapshots
-        LOGS_DIR=/home/${SEASON}/ain_blockchain_data/logs
-        RM_CMD="ssh $node_target_addr 'sudo -S rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR'"
-        eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${RM_CMD}"
-    fi
-
-    # 4. Start node
-    printf "\n<<< Starting node $node_index ($node_target_addr) >>>\n\n"
+    # 3. Start node
+    printf "\n\n<<< Starting node $node_index ($node_target_addr) >>>\n\n"
 
     if [[ $node_index -ge $JSON_RPC_NODE_INDEX_GE ]] && [[ $node_index -le $JSON_RPC_NODE_INDEX_LE ]]; then
         JSON_RPC_OPTION="--json-rpc"
@@ -277,14 +264,14 @@ function deploy_node() {
 
     printf "\n"
     START_NODE_CMD="ssh $node_target_addr '$START_NODE_CMD_BASE $SEASON $ONPREM_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION'"
-    printf "START_NODE_CMD=$START_NODE_CMD\n\n"
+    printf "\nSTART_NODE_CMD=$START_NODE_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${START_NODE_CMD}"
 
-    # 5. Inject node account
+    # 4. Inject node account
     sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_url=${NODE_URL_LIST[${node_index}]}
-        printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
 
         KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
@@ -296,7 +283,7 @@ function deploy_node() {
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_url=${NODE_URL_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
 
         {
@@ -306,7 +293,7 @@ function deploy_node() {
         } | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     else
         local node_url=${NODE_URL_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
 
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
@@ -317,11 +304,11 @@ function deploy_node() {
         echo $PRIVATE_KEY | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     fi
 
-    # 6. Wait until node is synced
-    printf "\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
+    # 5. Wait until node is synced
+    printf "\n\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
 
     WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh'"
-    printf "WAIT_CMD=$WAIT_CMD\n\n"
+    printf "\nWAIT_CMD=$WAIT_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }
 
