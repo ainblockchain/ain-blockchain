@@ -314,7 +314,7 @@ NODE_98_ZONE="us-central1-a"
 NODE_99_ZONE="europe-west4-a"
 
 # deploy files
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync.sh"
 
 # Work in progress spinner
 spin="-\|/"

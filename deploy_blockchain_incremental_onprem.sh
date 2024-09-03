@@ -168,7 +168,7 @@ if [[ ! $KILL_OPTION = '--kill-only' ]]; then
 fi
 
 #FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync.sh stop_local_blockchain.sh"
 
 #function deploy_tracker() {
 #    printf "\n* >> Deploying files for tracker ********************************************************\n\n"
@@ -307,7 +307,7 @@ function deploy_node() {
     # 5. Wait until node is synced
     printf "\n\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
 
-    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh'"
+    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh'"
     printf "\nWAIT_CMD=$WAIT_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }

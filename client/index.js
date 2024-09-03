@@ -97,7 +97,7 @@ app.get('/metrics', async (req, res, next) => {
     .end();
 });
 
-// Used in wait_until_node_sync_gcp.sh
+// Used in wait_until_node_sync.sh
 app.get('/last_block_number', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.bc.lastBlockNumber();
