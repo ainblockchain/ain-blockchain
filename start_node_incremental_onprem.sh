@@ -310,18 +310,17 @@ printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Setting up new working directory..\n'
-    # NOTE(platfowner): Add $SEASON to the node job name to be selectively killed in restarts.
-    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $NEW_DIR_PATH; cd $NEW_DIR_PATH; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
-    printf "\nCODE_CMD=$CODE_CMD\n"
-    eval $CODE_CMD
-
-    printf '\n'
     printf 'Installing node modules..\n'
-    cd $NEW_DIR_PATH
     INSTALL_CMD="yarn install --ignore-engines"
     printf "\nINSTALL_CMD=$INSTALL_CMD\n"
     eval $INSTALL_CMD
+
+    printf '\n'
+    printf 'Setting up new working directory..\n'
+    # NOTE(platfowner): Add $SEASON to the node job name to be selectively killed in restarts.
+    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ain-blockchain $NEW_DIR_PATH; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $NEW_DIR_PATH; cd $NEW_DIR_PATH; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
@@ -381,6 +380,12 @@ export STAKE=100000
 printf "STAKE=$STAKE\n"
 export LOG_BANDAGE_INFO=true
 printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
+# on-premise nodes run with "comcom" hosting env
+export HOSTING_ENV="comcom"
+printf "HOSTING_ENV=$HOSTING_ENV\n"
+# on-premise nodes run with a blockchain data directory prefixed by ${SEASON}_
+export BLOCKCHAIN_DATA_DIR="/home/${SEASON}/ain_blockchain_data"
+printf "BLOCKCHAIN_DATA_DIR=$BLOCKCHAIN_DATA_DIR\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
     MAX_OLD_SPACE_SIZE_MB=11000

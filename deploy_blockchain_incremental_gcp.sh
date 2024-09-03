@@ -355,18 +355,8 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
 else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d)"
 fi
-if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
-    # restart after removing chains, snapshots, and log files (but keep the keys)
-    CHAINS_DIR=/home/ain_blockchain_data/chains
-    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    LOGS_DIR=/home/ain_blockchain_data/logs
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
-else
-    # restart with existing chains, snapshots, and log files
-    START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
-fi
+START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
+START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
 
 # Tracker server is deployed with PARENT_NODE_INDEX_BEGIN = -1
 if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
