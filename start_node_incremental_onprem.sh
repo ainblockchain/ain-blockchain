@@ -1,12 +1,21 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 13 ]]; then
-    printf "Usage: bash start_node_incremental_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]\n"
-    printf "Example: bash start_node_incremental_onprem.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "\n"
     exit
 fi
-printf "\n[[[[[ start_node_incremental_onprem.sh ]]]]]\n\n"
+
+# needed for on-premise nvidia machines
+# Get node login password
+printf "Enter node login password: "
+read -s NODE_LOGIN_PW
+printf "\n\n"
+# do sudo once with a dummy command
+echo $NODE_LOGIN_PW | sudo -S ls -la
+
+printf "\n[[[[[ start_node_incremental_gcp.sh ]]]]]\n\n"
 
 function parse_options() {
     local option="$1"
@@ -48,7 +57,7 @@ function parse_options() {
 
 # Parse options.
 SEASON="$1"
-GCP_USER="$2"
+ONPREM_USER="$2"
 
 number_re='^[0-9]+$'
 if ! [[ $3 =~ $number_re ]] ; then
@@ -84,7 +93,7 @@ while [ $ARG_INDEX -le $# ]; do
 done
 
 printf "SEASON=$SEASON\n"
-printf "GCP_USER=$GCP_USER\n"
+printf "ONPREM_USER=$ONPREM_USER\n"
 printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 printf "\n"
@@ -287,35 +296,35 @@ fi
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
 
-OLD_DIR_PATH=$(find /home/ain-blockchain* -maxdepth 0 -type d)
+OLD_DIR_PATH=$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d)
 printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
 
 date=$(date '+%Y-%m-%dT%H-%M')
 printf "date=$date\n"
 NEW_DIR_NAME="ain-blockchain-$date"
 printf "NEW_DIR_NAME=$NEW_DIR_NAME\n"
-NEW_DIR_PATH="/home/$NEW_DIR_NAME"
+NEW_DIR_PATH="/home/${SEASON}/$NEW_DIR_NAME"
 printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
 if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
-    printf 'Setting up new working directory..\n'
-    CODE_CMD="cd ~; sudo mv ain-blockchain $NEW_DIR_NAME; sudo mv $NEW_DIR_NAME /home; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $NEW_DIR_PATH"
-    printf "\nCODE_CMD=$CODE_CMD\n"
-    eval $CODE_CMD
-
-    printf '\n'
     printf 'Installing node modules..\n'
-    cd $NEW_DIR_PATH
     INSTALL_CMD="yarn install --ignore-engines"
     printf "\nINSTALL_CMD=$INSTALL_CMD\n"
     eval $INSTALL_CMD
+
+    printf '\n'
+    printf 'Setting up new working directory..\n'
+    # NOTE(platfowner): Add $SEASON to the node job name to be selectively killed in restarts.
+    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ain-blockchain $NEW_DIR_PATH; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $NEW_DIR_PATH; cd $NEW_DIR_PATH; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
+    printf "\nCODE_CMD=$CODE_CMD\n"
+    eval $CODE_CMD
 else
     printf '\n'
     printf 'Reusing existing working directory..\n'
-    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $GCP_USER:$GCP_USER $OLD_DIR_PATH"
+    CODE_CMD="sudo chmod -R 777 $OLD_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $OLD_DIR_PATH"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 fi
@@ -323,7 +332,7 @@ fi
 # 4. Kill old node server
 printf "\n#### [Step 4] Kill old node server ####\n\n"
 
-KILL_CMD="sudo killall node"
+KILL_CMD="sudo pkill -f client/${SEASON}-ain-blockchain-index.js"
 printf "KILL_CMD=$KILL_CMD\n\n"
 eval $KILL_CMD
 sleep 10
@@ -333,19 +342,19 @@ printf "\n#### [Step 5] Set up data directory ####\n\n"
 if [[ $KEEP_DATA_OPTION = "--no-keep-data" ]]; then
     printf '\n'
     printf 'Setting up new data directory..\n'
-    sudo rm -rf /home/ain_blockchain_data/chains
-    sudo rm -rf /home/ain_blockchain_data/snapshots
-    sudo rm -rf /home/ain_blockchain_data/logs
-    DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/chains
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/snapshots
+    sudo rm -rf /home/${SEASON}/ain_blockchain_data/logs
+    DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}/ain_blockchain_data; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
 else
     printf '\n'
     printf 'Reusing existing data directory..\n'
     if [[ $CHOWN_DATA_OPTION = "--no-chown-data" ]]; then
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod 777 /home/ain_blockchain_data; sudo chown $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod 777 /home/${SEASON}/ain_blockchain_data; sudo chown $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     else
-        DATA_CMD="sudo mkdir -p /home/ain_blockchain_data; sudo chmod -R 777 /home/ain_blockchain_data; sudo chown -R $GCP_USER:$GCP_USER /home/ain_blockchain_data"
+        DATA_CMD="sudo mkdir -p /home/${SEASON}/ain_blockchain_data; sudo chmod -R 777 /home/${SEASON}/ain_blockchain_data; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}/ain_blockchain_data"
     fi
     printf "\nDATA_CMD=$DATA_CMD\n"
     eval $DATA_CMD
@@ -371,6 +380,12 @@ export STAKE=100000
 printf "STAKE=$STAKE\n"
 export LOG_BANDAGE_INFO=true
 printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"
+# on-premise nodes run with "comcom" hosting env
+export HOSTING_ENV="comcom"
+printf "HOSTING_ENV=$HOSTING_ENV\n"
+# on-premise nodes run with a blockchain data directory prefixed by ${SEASON}_
+export BLOCKCHAIN_DATA_DIR="/home/${SEASON}/ain_blockchain_data"
+printf "BLOCKCHAIN_DATA_DIR=$BLOCKCHAIN_DATA_DIR\n"
 
 if [[ "$SEASON" = "sandbox" ]]; then
     MAX_OLD_SPACE_SIZE_MB=11000
@@ -378,11 +393,11 @@ else
     MAX_OLD_SPACE_SIZE_MB=55000
 fi
 
-START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
+START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/${SEASON}-ain-blockchain-index.js >/dev/null 2>error_logs.txt &"
 printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
-# NOTE(platfowner): deploy_blockchain_incremental_onprem.sh waits until the new server gets healthy.
+# NOTE(platfowner): deploy_blockchain_incremental_gcp.sh waits until the new server gets healthy.
 
 printf "\n* << Node server [$SEASON $SHARD_INDEX $NODE_INDEX] successfully deployed! ***************************************\n\n"

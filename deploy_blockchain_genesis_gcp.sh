@@ -225,7 +225,7 @@ function inject_account() {
 
 # deploy files
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_gcp.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh stop_local_blockchain.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync.sh stop_local_blockchain.sh"
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -446,9 +446,8 @@ if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -g
         printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
         printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
-        printf "\n"
         START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-        printf "START_NODE_CMD=$START_NODE_CMD\n"
+        printf "\nSTART_NODE_CMD=$START_NODE_CMD\n"
         eval $START_NODE_CMD
         sleep 5
         inject_account "$node_index"
