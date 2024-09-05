@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 4 ]] || [[ $# -gt 11 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]\n"
+if [[ $# -lt 4 ]] || [[ $# -gt 12 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1  4 --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
@@ -71,6 +71,10 @@ function parse_options() {
         CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--no-chown-data' ]]; then
         CHOWN_DATA_OPTION="$option"
+    elif [[ $option = '--kill-job' ]]; then
+        KILL_OPTION="$option"
+    elif [[ $option = '--kill-only' ]]; then
+        KILL_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -84,6 +88,7 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 CHOWN_DATA_OPTION="--no-chown-data"
+KILL_OPTION="--kill-job"
 
 ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
@@ -102,6 +107,7 @@ printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "SYNC_MODE_OPTION=$SYNC_MODE_OPTION\n"
 printf "CHOWN_DATA_OPTION=$CHOWN_DATA_OPTION\n"
+printf "KILL_OPTION=$KILL_OPTION\n"
 
 # Json-RPC-enabled blockchain nodes
 JSON_RPC_NODE_INDEX_GE=0
@@ -153,22 +159,24 @@ else
     fi
 fi
 
-# Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
-if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
-    # Get keystore password
-    printf "Enter keystore password: "
-    read -s KEYSTORE_PW
-    printf "\n\n"
-    if [[ $SEASON = "mainnet" ]]; then
-        KEYSTORE_DIR="mainnet_prod_keys"
-    elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
-        KEYSTORE_DIR="testnet_prod_keys"
-    else
-        KEYSTORE_DIR="testnet_dev_staging_keys"
+if [[ ! $KILL_OPTION = '--kill-only' ]]; then
+    # Read node urls
+    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+    if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+        # Get keystore password
+        printf "Enter keystore password: "
+        read -s KEYSTORE_PW
+        printf "\n\n"
+        if [[ $SEASON = "mainnet" ]]; then
+            KEYSTORE_DIR="mainnet_prod_keys"
+        elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+            KEYSTORE_DIR="testnet_prod_keys"
+        else
+            KEYSTORE_DIR="testnet_dev_staging_keys"
+        fi
+    elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
+        IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
     fi
-elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
-    IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_gcp.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
@@ -196,8 +204,19 @@ function deploy_tracker() {
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
 
+    # 0. Kill jobs for tracker (if necessary)
+    if [[ $KILL_OPTION = "--kill-only" ]]; then
+        printf "\n\n<<< Killing tracker job (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
+
+        KILL_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'sudo killall node' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        printf "KILL_CMD=$KILL_CMD\n\n"
+        eval $KILL_CMD
+
+        return 0
+    fi
+
+    # 1. Copy files for tracker (if necessary)
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        # 1. Copy files for tracker
         printf "\n\n[[[ Copying files for tracker ]]]\n\n"
         gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $TRACKER_ZONE
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ain-blockchain --project $PROJECT_ID --zone $TRACKER_ZONE"
@@ -205,9 +224,9 @@ function deploy_tracker() {
         eval $SCP_CMD
     fi
 
+    # 2. Set up tracker (if necessary)
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
-        # 2. Set up tracker
         printf "\n\n[[[ Setting up tracker ]]]\n\n"
         SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
@@ -230,13 +249,21 @@ function deploy_node() {
     local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
     local node_zone=${NODE_ZONE_LIST[${node_index}]}
 
-    printf "\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
+    printf "\n\n* >> Deploying files for node $node_index ($node_target_addr) *********************************************************\n\n"
 
-    printf "node_target_addr='$node_target_addr'\n"
-    printf "node_zone='$node_zone'\n"
+    # 0. Kill jobs for node (if necessary)
+    if [[ $KILL_OPTION = "--kill-only" ]]; then
+        printf "\n\n<<< Killing node $node_index job (${node_target_addr}) *********************************************************\n\n"
 
+        KILL_CMD="gcloud compute ssh $node_target_addr --command 'sudo killall node' --project $PROJECT_ID --zone $node_zone"
+        printf "\n\nKILL_CMD=$KILL_CMD\n\n"
+        eval $KILL_CMD
+
+        return 0
+    fi
+
+    # 1. Copy files for node (if necessary)
     if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
-        # 1. Copy files for node
         printf "\n\n<<< Copying files for node $node_index >>>\n\n"
         gcloud compute ssh $node_target_addr --command "sudo rm -rf ~/ain-blockchain; sudo mkdir ~/ain-blockchain; sudo chmod -R 777 ~/ain-blockchain" --project $PROJECT_ID --zone $node_zone
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ain-blockchain --project $PROJECT_ID --zone $node_zone"
@@ -244,9 +271,9 @@ function deploy_node() {
         eval $SCP_CMD
     fi
 
+    # 2. Set up node (if necessary)
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
-        # 2. Set up node
         printf "\n\n<<< Setting up node $node_index >>>\n\n"
         SETUP_CMD="gcloud compute ssh $node_target_addr --command 'cd ./ain-blockchain; . setup_blockchain_ubuntu_gcp.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
@@ -283,16 +310,15 @@ function deploy_node() {
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
     printf "EVENT_HANDLER_OPTION=$EVENT_HANDLER_OPTION\n"
 
-    printf "\n"
     START_NODE_CMD="gcloud compute ssh $node_target_addr --command '$START_NODE_CMD_BASE $SEASON $GCP_USER 0 $node_index $KEEP_CODE_OPTION $KEEP_DATA_OPTION $SYNC_MODE_OPTION $CHOWN_DATA_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $UPDATE_FRONT_DB_OPTION $REST_FUNC_OPTION $EVENT_HANDLER_OPTION' --project $PROJECT_ID --zone $node_zone"
-    printf "START_NODE_CMD=$START_NODE_CMD\n\n"
+    printf "\n\nSTART_NODE_CMD=$START_NODE_CMD\n\n"
     eval $START_NODE_CMD
 
     # 4. Inject node account
     sleep 5
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_url=${NODE_URL_LIST[${node_index}]}
-        printf "\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Initializing account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
 
         KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
@@ -304,7 +330,7 @@ function deploy_node() {
     elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_url=${NODE_URL_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
 
         {
@@ -314,7 +340,7 @@ function deploy_node() {
         } | node inject_node_account.js $node_url $ACCOUNT_INJECTION_OPTION
     else
         local node_url=${NODE_URL_LIST[${node_index}]}
-        printf "\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
+        printf "\n\n* >> Injecting an account for node $node_index ($node_target_addr) ********************\n\n"
         printf "node_url='$node_url'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
@@ -369,7 +395,9 @@ fi
 if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
     for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
         deploy_node "$node_index"
-        sleep 40
+        if [[ ! $KILL_OPTION = "--kill-only" ]]; then
+            sleep 40
+        fi
     done
 fi
 
