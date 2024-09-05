@@ -47,7 +47,7 @@ You can override default port numbering system by setting `PORT` and `P2P_PORT` 
 ```
 gcloud init
 # For genesis deploy
-bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]
+bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]
 # For incremental deploy
 bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]
 ```
@@ -130,7 +130,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 DEBUG=
 ```
 gcloud init
 # For genesis deploy
-bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]
+bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]
 # For incremental deploy
 bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data]
 ```
