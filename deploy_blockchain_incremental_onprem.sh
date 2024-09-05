@@ -91,6 +91,11 @@ if [[ $SETUP_OPTION = "--setup" ]] && [[ ! $KEEP_CODE_OPTION = "--no-keep-code" 
     exit
 fi
 
+if [[ $PARENT_NODE_INDEX_BEGIN -lt 0 ]]; then
+    printf "Please use deploy_blockchain_incremental_gcp.sh instead for the tracker job.\n"
+    exit
+fi
+
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
