@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 10 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 -1  4 --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
@@ -72,17 +72,9 @@ function parse_options() {
         CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--no-chown-data' ]]; then
         CHOWN_DATA_OPTION="$option"
-    elif [[ $option = '--kill-only' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-job' ]]; then
         KILL_OPTION="$option"
-    elif [[ $option = '--skip-kill' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-only' ]]; then
         KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
@@ -97,7 +89,7 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 CHOWN_DATA_OPTION="--no-chown-data"
-KILL_OPTION=""
+KILL_OPTION="--kill-job"
 
 ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
@@ -326,47 +318,43 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     fi
 fi
 
-if [[ $KILL_OPTION = "--skip-kill" ]]; then
-    printf "\nSkipping process kill...\n"
-else
-    # kill any processes still alive
-    printf "\nKilling tracker / blockchain node jobs...\n"
+# kill any processes still alive
+printf "\nKilling tracker / blockchain node jobs...\n"
 
-    # Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
-    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
-        printf "\n* >> Killing tracker job (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
-        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-    fi
+# Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
+if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
+    printf "\n* >> Killing tracker job (${TRACKER_TARGET_ADDR}) *********************************************************\n\n"
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+fi
 
-    begin_index=$PARENT_NODE_INDEX_BEGIN
-    if [[ $begin_index -lt 0 ]]; then
-      begin_index=0
-    fi
-    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
-            NODE_ZONE=NODE_${node_index}_ZONE
+begin_index=$PARENT_NODE_INDEX_BEGIN
+if [[ $begin_index -lt 0 ]]; then
+    begin_index=0
+fi
+if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+    for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+        NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+        NODE_ZONE=NODE_${node_index}_ZONE
 
-            printf "\n* >> Killing node $node_index job (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
-            gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo killall node" --project $PROJECT_ID --zone ${!NODE_ZONE}
-        done
-    fi
+        printf "\n* >> Killing node $node_index job (${!NODE_TARGET_ADDR}) *********************************************************\n\n"
+        gcloud compute ssh ${!NODE_TARGET_ADDR} --command "sudo killall node" --project $PROJECT_ID --zone ${!NODE_ZONE}
+    done
+fi
 
-    if [[ $NUM_SHARDS -gt 0 ]]; then
-        for i in $(seq $NUM_SHARDS); do
-            printf "shard #$i\n"
+if [[ $NUM_SHARDS -gt 0 ]]; then
+    for i in $(seq $NUM_SHARDS); do
+        printf "shard #$i\n"
 
-            SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-            SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
-            SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
-            SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
+        SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+        SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
+        SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
+        SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-        done
-    fi
+        gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+        gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
+        gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
+        gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
+    done
 fi
 
 # If --kill-only, do not proceed any further
