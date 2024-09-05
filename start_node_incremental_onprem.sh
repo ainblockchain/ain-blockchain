@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 13 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
+    printf "Usage: bash start_node_incremental_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]\n"
+    printf "Example: bash start_node_incremental_onprem.sh spring gcp_user 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "\n"
     exit
 fi
@@ -15,7 +15,7 @@ printf "\n\n"
 # do sudo once with a dummy command
 echo $NODE_LOGIN_PW | sudo -S ls -la
 
-printf "\n[[[[[ start_node_incremental_gcp.sh ]]]]]\n\n"
+printf "\n[[[[[ start_node_incremental_onprem.sh ]]]]]\n\n"
 
 function parse_options() {
     local option="$1"
@@ -398,6 +398,6 @@ printf "\nSTART_CMD=$START_CMD\n"
 printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
-# NOTE(platfowner): deploy_blockchain_incremental_gcp.sh waits until the new server gets healthy.
+# NOTE(platfowner): deploy_blockchain_incremental_onprem.sh waits until the new server gets healthy.
 
 printf "\n* << Node server [$SEASON $SHARD_INDEX $NODE_INDEX] successfully deployed! ***************************************\n\n"
