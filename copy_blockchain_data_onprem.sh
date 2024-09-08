@@ -115,7 +115,7 @@ function upload_data() {
 
     # 2. Extract tgz file for node
     printf "\n\n<<< Extracting tgz file for node $node_index >>>\n\n"
-    TGZ_CMD="ssh $node_target_addr 'sudo -S ls -la; cd /home; sudo mkdir -p ${SEASON}/ain_blockchain_data; sudo chown $ONPREM_USER:$ONPREM_USER ${SEASON} ${SEASON}/ain_blockchain_data; sudo chmod 777 ${SEASON} ${SEASON}/ain_blockchain_data; cd ${SEASON}/ain_blockchain_data; gzip -dc ~/ain_blockchain_data.tar.gz | tar xvf -'"
+    TGZ_CMD="ssh $node_target_addr 'sudo -S ls -la; cd /home; sudo mkdir -p ${SEASON}/ain_blockchain_data; sudo chown $ONPREM_USER:$ONPREM_USER ${SEASON} ${SEASON}/ain_blockchain_data; sudo chmod 777 ${SEASON} ${SEASON}/ain_blockchain_data; cd ${SEASON}/ain_blockchain_data; sudo rm -rf chains snapshots; gzip -dc ~/ain_blockchain_data.tar.gz | tar xvf -'"
     printf "TGZ_CMD=$TGZ_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${TGZ_CMD}"
 

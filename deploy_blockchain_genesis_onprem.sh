@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 10 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_genesis_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0 -1  4 --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0  0  0 --keystore --keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
@@ -62,17 +62,9 @@ function parse_options() {
         CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--no-chown-data' ]]; then
         CHOWN_DATA_OPTION="$option"
-    elif [[ $option = '--kill-only' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-job' ]]; then
         KILL_OPTION="$option"
-    elif [[ $option = '--skip-kill' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-only' ]]; then
         KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
@@ -87,7 +79,7 @@ KEEP_CODE_OPTION="--keep-code"
 KEEP_DATA_OPTION="--keep-data"
 SYNC_MODE_OPTION="--fast-sync"
 CHOWN_DATA_OPTION="--no-chown-data"
-KILL_OPTION=""
+KILL_OPTION="--kill-job"
 
 ARG_INDEX=5
 while [ $ARG_INDEX -le $# ]; do
@@ -97,6 +89,11 @@ done
 
 if [[ $SETUP_OPTION = "--setup" ]] && [[ ! $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf "You cannot use --setup without --no-keep-code\n"
+    exit
+fi
+
+if [[ $PARENT_NODE_INDEX_BEGIN -lt 0 ]]; then
+    printf "Please use deploy_blockchain_incremental_gcp.sh instead for the tracker job.\n"
     exit
 fi
 
@@ -218,7 +215,7 @@ function inject_account() {
 }
 
 # deploy files
-#FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+#FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu_onprem.sh start_tracker_genesis_onprem.sh start_tracker_incremental_onprem.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_onprem.sh start_node_genesis_onprem.sh start_node_incremental_onprem.sh wait_until_node_sync.sh stop_local_blockchain.sh"
 
 printf "###############################################################################\n"
@@ -300,11 +297,8 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     fi
 fi
 
-if [[ $KILL_OPTION = "--skip-kill" ]]; then
-    printf "\n\nSkipping process kill...\n"
-else
-    # kill any processes still alive
-    printf "\n\nKilling tracker / blockchain node jobs...\n"
+# kill any processes still alive
+printf "\n\nKilling tracker / blockchain node jobs...\n"
 
 #    # Tracker server is killed with PARENT_NODE_INDEX_BEGIN = -1
 #    if [[ $PARENT_NODE_INDEX_BEGIN = -1 ]]; then
@@ -312,20 +306,19 @@ else
 #        gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
 #    fi
 
-    begin_index=$PARENT_NODE_INDEX_BEGIN
-    if [[ $begin_index -lt 0 ]]; then
-      begin_index=0
-    fi
-    if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
-        for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
-            NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
-            NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
+begin_index=$PARENT_NODE_INDEX_BEGIN
+if [[ $begin_index -lt 0 ]]; then
+    begin_index=0
+fi
+if [[ $begin_index -le $PARENT_NODE_INDEX_END ]] && [[ $PARENT_NODE_INDEX_END -ge 0 ]]; then
+    for node_index in `seq $(( $begin_index )) $(( $PARENT_NODE_INDEX_END ))`; do
+        NODE_TARGET_ADDR="${ONPREM_USER}@${NODE_IP_LIST[${node_index}]}"
+        NODE_LOGIN_PW="${NODE_PW_LIST[${node_index}]}"
 
-            printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
+        printf "\n* >> Killing node $node_index job (${NODE_TARGET_ADDR}) *********************************************************\n\n"
 
-            echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo -S pkill -f client/${SEASON}-ain-blockchain-index.js"
-        done
-    fi
+        echo ${NODE_LOGIN_PW} | sshpass -f <(printf '%s\n' ${NODE_LOGIN_PW}) ssh ${NODE_TARGET_ADDR} "sudo -S pkill -f client/${SEASON}-ain-blockchain-index.js"
+    done
 fi
 
 # If --kill-only, do not proceed any further
@@ -340,7 +333,7 @@ else
     GO_TO_PROJECT_ROOT_CMD="cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d)"
 fi
 
-#START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_gcp.sh"
+#START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_genesis_onprem.sh"
 START_NODE_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_node_genesis_onprem.sh"
 printf "\n"
 #printf "START_TRACKER_CMD_BASE=$START_TRACKER_CMD_BASE\n"
