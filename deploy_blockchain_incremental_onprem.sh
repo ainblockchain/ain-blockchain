@@ -1,11 +1,11 @@
 #!/bin/bash
 
 if [[ $# -lt 4 ]] || [[ $# -gt 12 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
-    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0 -1  4 --keystore --no-keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --keystore --keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0 -1 -1 --setup --keystore --no-keep-code\n"
-    printf "Example: bash deploy_blockchain_incremental_onprem.sh dev 0  0  0 --setup --keystore --no-keep-code\n"
+    printf "Usage: bash deploy_blockchain_incremental_onprem.sh [staging|spring|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh staging 0 -1  4 --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh staging 0  0  0 --keystore --keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh staging 0 -1 -1 --setup --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_incremental_onprem.sh staging 0  0  0 --setup --keystore --no-keep-code\n"
     #printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
     printf "\n"
@@ -13,7 +13,7 @@ if [[ $# -lt 4 ]] || [[ $# -gt 12 ]]; then
 fi
 printf "\n[[[[[ deploy_blockchain_incremental_onprem.sh ]]]]]\n\n"
 
-if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+if [[ "$1" = 'staging' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
     printf "Invalid <Project/Season> argument: $1\n"
