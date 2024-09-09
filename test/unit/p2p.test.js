@@ -227,13 +227,13 @@ describe("P2p", () => {
             isEnabled: false,
             networkInfo: {
               url: "",
-              maxNumEventChannels: 20,
+              maxNumEventChannels: 30,
               numEventChannels: 0,
               maxNumEventFilters: 40,
               numEventFilters: 0,
             },
             channelStatus: {
-              maxNumEventChannels: 20,
+              maxNumEventChannels: 30,
               numEventChannels: 0,
               channelLifeTimeLimitSecs: 3600,
               channelIdleTimeLimitSecs: 600,
