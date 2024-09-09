@@ -3,6 +3,7 @@
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
 if [[ $# -lt 4 ]] || [[ $# -gt 13 ]]; then
     printf "Usage: bash start_node_genesis_onprem.sh [staging|spring|mainnet] <GCP Username> <Shard Index> <Node Index> [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--json-rpc] [--update-front-db] [--rest-func] [--event-handler]\n"
+    printf "Example: bash start_node_genesis_onprem.sh staging nvidia 0 4 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "Example: bash start_node_genesis_onprem.sh staging nvidia 0 0 --keystore --no-keep-code --full-sync --no-chown-data\n"
     printf "\n"
     return 1

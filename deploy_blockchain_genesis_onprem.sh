@@ -2,9 +2,9 @@
 
 if [[ $# -lt 4 ]] || [[ $# -gt 10 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_onprem.sh [staging|spring|mainnet] <# of Shards> <Parent Node Index Begin> <Parent Node Index End> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--full-sync|--fast-sync] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
-    printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0 -1  4 --keystore --no-keep-code\n"
+    printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0  0  4 --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0  0  0 --keystore --keep-code\n"
-    printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0 -1 -1 --setup --keystore --no-keep-code\n"
+    #printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0 -1 -1 --setup --keystore --no-keep-code\n"
     printf "Example: bash deploy_blockchain_genesis_onprem.sh staging 0  0  0 --setup --keystore --no-keep-code\n"
     #printf "Note: <Parent Node Index Begin> = -1 is for tracker\n"
     printf "Note: <Parent Node Index End> is inclusive\n"
