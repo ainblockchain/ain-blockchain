@@ -2,7 +2,8 @@
 
 function usage() {
     printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload]\n"
-    printf "Example: bash copy_blockchain_data_gcp.sh spring 5 download\n"
+    printf "Example: bash copy_blockchain_data_gcp.sh spring 0 download\n"
+    printf "Example: bash copy_blockchain_data_gcp.sh spring 1 upload\n"
     printf "\n"
     exit
 }

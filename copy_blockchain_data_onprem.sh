@@ -2,7 +2,8 @@
 
 function usage() {
     printf "Usage: bash copy_blockchain_data_onprem.sh [staging|spring|mainnet] <Node Index> [download|upload]\n"
-    printf "Example: bash copy_blockchain_data_onprem.sh staging 5 download\n"
+    printf "Example: bash copy_blockchain_data_onprem.sh staging 0 download\n"
+    printf "Example: bash copy_blockchain_data_onprem.sh staging 1 upload\n"
     printf "\n"
     exit
 }
