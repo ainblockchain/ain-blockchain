@@ -1,8 +1,9 @@
 #!/bin/bash
 
 function usage() {
-    printf "Usage: bash copy_blockchain_data_onprem.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload]\n"
-    printf "Example: bash copy_blockchain_data_onprem.sh spring 5 download\n"
+    printf "Usage: bash copy_blockchain_data_onprem.sh [staging|spring|mainnet] <Node Index> [download|upload]\n"
+    printf "Example: bash copy_blockchain_data_onprem.sh staging 0 download\n"
+    printf "Example: bash copy_blockchain_data_onprem.sh staging 1 upload\n"
     printf "\n"
     exit
 }
@@ -11,7 +12,7 @@ if [[ $# -lt 3 ]] || [[ $# -gt 3 ]]; then
     usage
 fi
 
-if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+if [[ "$1" = 'staging' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
     printf "Invalid <Project/Season> argument: $1\n"
