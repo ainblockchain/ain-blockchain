@@ -352,7 +352,7 @@ function deploy_node() {
 
     # 5. Wait until node is synced
     printf "\n\n<<< Waiting until node $node_index is synced >>>\n\n"
-    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh' --project $PROJECT_ID --zone $node_zone"
+    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh $node_url' --project $PROJECT_ID --zone $node_zone"
     printf "WAIT_CMD=$WAIT_CMD\n\n"
     eval $WAIT_CMD
 }
