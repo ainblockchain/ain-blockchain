@@ -29,8 +29,16 @@ if [[ ! $2 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
+if [[ $3 -lt 0 ]] || [[ $3 -gt 4 ]]; then
+    printf "Invalid <Parent Node Index Begin> argument: $3\n"
+    exit
+fi
 PARENT_NODE_INDEX_BEGIN=$3
 printf "PARENT_NODE_INDEX_BEGIN=$PARENT_NODE_INDEX_BEGIN\n"
+if [[ $4 -lt 0 ]] || [[ $4 -gt 4 ]]; then
+    printf "Invalid <Parent Node Index End> argument: $4\n"
+    exit
+fi
 PARENT_NODE_INDEX_END=$4
 printf "PARENT_NODE_INDEX_END=$PARENT_NODE_INDEX_END\n"
 printf "\n"
