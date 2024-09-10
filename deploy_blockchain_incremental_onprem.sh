@@ -339,7 +339,7 @@ function deploy_node() {
     # 5. Wait until node is synced
     printf "\n\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
 
-    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh'"
+    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh $node_url'"
     printf "\n\nWAIT_CMD=$WAIT_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }
