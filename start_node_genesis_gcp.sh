@@ -48,7 +48,12 @@ function parse_options() {
 }
 
 # Parse options.
-SEASON="$1"
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
+    SEASON="$1"
+else
+    printf "Invalid project/season argument: $1\n"
+    exit
+fi
 GCP_USER="$2"
 
 number_re='^[0-9]+$'
