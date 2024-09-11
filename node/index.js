@@ -361,43 +361,49 @@ class BlockchainNode {
   startNode(isFirstNode) {
     const LOG_HEADER = 'startNode';
 
-    // 1. Initialize DB (with the latest snapshot, if it exists)
-    logger.info(
-        `[${LOG_HEADER}] Initializing DB with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
-    const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, true, this.bootstrapSnapshotBlockNumber,
-        this.stateManager);
-    startingDb.initDb(this.bootstrapSnapshot);
+    try {
+      // 1. Initialize DB (with the latest snapshot, if it exists)
+      logger.info(
+          `[${LOG_HEADER}] Initializing DB with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
+      const startingDb = DB.create(
+          StateVersions.EMPTY, StateVersions.START, this.bc, true, this.bootstrapSnapshotBlockNumber,
+          this.stateManager);
+      startingDb.initDb(this.bootstrapSnapshot);
 
-    // 2. Initialize the blockchain, starting from `bootstrapSnapshotBlockNumber`.
-    logger.info(
-        `[${LOG_HEADER}] Initializing blockchain with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
-    const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
-    const wasBlockDirEmpty = this.bc.initBlockchain(
-        isFirstNode, this.bootstrapSnapshot, this.snapshotDir, snapshotChunkSize);
+      // 2. Initialize the blockchain, starting from `bootstrapSnapshotBlockNumber`.
+      logger.info(
+          `[${LOG_HEADER}] Initializing blockchain with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
+      const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+      const wasBlockDirEmpty = this.bc.initBlockchain(
+          isFirstNode, this.bootstrapSnapshot, this.snapshotDir, snapshotChunkSize);
 
-    // 3. Execute the chain on the DB and finalize it.
-    logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
-    const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
-    if (!wasBlockDirEmpty || isGenesisStart || NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
-      if (!this.loadAndExecuteChainOnDb(
-          this.bootstrapSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
-        return false;
+      // 3. Execute the chain on the DB and finalize it.
+      logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
+      const isGenesisStart = (isFirstNode && wasBlockDirEmpty);
+      if (!wasBlockDirEmpty || isGenesisStart || NodeConfigs.SYNC_MODE === SyncModeOptions.PEER) {
+        if (!this.loadAndExecuteChainOnDb(
+            this.bootstrapSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
+          return false;
+        }
       }
+
+      // 4. Execute transactions from the pool.
+      logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
+      this.db.executeTransactionList(
+          this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
+          this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
+
+      // 5. Node status changed: READY_TO_START -> CHAIN_SYNCING.
+      this.state = BlockchainNodeStates.CHAIN_SYNCING;
+      logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
+
+      // 6. Reset bootstrap snapshot.
+      this.resetBootstrapSnapshot();
+    } catch (err) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to start node with error: ${err} (${err.stack})`);
+      return false;
     }
-
-    // 4. Execute transactions from the pool.
-    logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
-    this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
-        this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
-
-    // 5. Node status changed: READY_TO_START -> CHAIN_SYNCING.
-    this.state = BlockchainNodeStates.CHAIN_SYNCING;
-    logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
-
-    // 6. Reset bootstrap snapshot.
-    this.resetBootstrapSnapshot();
 
     return true;
   }
