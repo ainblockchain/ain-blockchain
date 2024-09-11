@@ -29,8 +29,16 @@ if [[ ! $2 =~ $number_re ]] ; then
     printf "Invalid <# of Shards> argument: $2\n"
     exit
 fi
+if [[ $3 -lt 0 ]] || [[ $3 -gt 4 ]]; then
+    printf "Invalid <Parent Node Index Begin> argument: $3\n"
+    exit
+fi
 PARENT_NODE_INDEX_BEGIN=$3
 printf "PARENT_NODE_INDEX_BEGIN=$PARENT_NODE_INDEX_BEGIN\n"
+if [[ $4 -lt 0 ]] || [[ $4 -gt 4 ]]; then
+    printf "Invalid <Parent Node Index End> argument: $4\n"
+    exit
+fi
 PARENT_NODE_INDEX_END=$4
 printf "PARENT_NODE_INDEX_END=$PARENT_NODE_INDEX_END\n"
 printf "\n"
@@ -339,7 +347,7 @@ function deploy_node() {
     # 5. Wait until node is synced
     printf "\n\n<<< Waiting until node $node_index ($node_target_addr) is synced >>>\n\n"
 
-    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh'"
+    WAIT_CMD="ssh $node_target_addr 'cd \$(find /home/${SEASON}/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync.sh $node_url'"
     printf "\n\nWAIT_CMD=$WAIT_CMD\n\n"
     eval "echo ${node_login_pw} | sshpass -f <(printf '%s\n' ${node_login_pw}) ${WAIT_CMD}"
 }
