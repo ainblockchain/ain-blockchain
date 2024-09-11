@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 2 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--chown-data|--no-chown-data] [--kill-only|--skip-kill]\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <# start node> <# end node> [--setup] [--keep-code|--no-keep-code] [--keep-data|--no-keep-data] [--chown-data|--no-chown-data] [--kill-job|--kill-only]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh 10 99 --setup --no-chown-data\n"
     printf "\n"
     exit
@@ -44,17 +44,9 @@ function parse_options() {
         CHOWN_DATA_OPTION="$option"
     elif [[ $option = '--no-chown-data' ]]; then
         CHOWN_DATA_OPTION="$option"
-    elif [[ $option = '--kill-only' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-job' ]]; then
         KILL_OPTION="$option"
-    elif [[ $option = '--skip-kill' ]]; then
-        if [[ "$KILL_OPTION" ]]; then
-            printf "You cannot use both --skip-kill and --kill-only\n"
-            exit
-        fi
+    elif [[ $option = '--kill-only' ]]; then
         KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
@@ -67,7 +59,7 @@ SETUP_OPTION=""
 KEEP_CODE_OPTION="--no-keep-code"
 KEEP_DATA_OPTION="--no-keep-data"
 CHOWN_DATA_OPTION="--no-chown-data"
-KILL_OPTION=""
+KILL_OPTION="--kill-job"
 
 ARG_INDEX=3
 while [ $ARG_INDEX -le $# ]; do
@@ -314,7 +306,7 @@ NODE_98_ZONE="us-central1-a"
 NODE_99_ZONE="europe-west4-a"
 
 # deploy files
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu_gcp.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync.sh"
 
 # Work in progress spinner
 spin="-\|/"
@@ -326,29 +318,25 @@ spinner() {
     sleep .1
 }
 
-if [[ $KILL_OPTION = "--skip-kill" ]]; then
-    printf "\nSkipping process kill...\n"
-else
-    # kill any processes still alive
-    printf "\nKilling all blockchain nodes...\n"
-    index=$START_NODE_IDX
-    while [ $index -le $END_NODE_IDX ]; do
-        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
-        NODE_ZONE=NODE_${index}_ZONE
+# kill any processes still alive
+printf "\nKilling all blockchain nodes...\n"
+index=$START_NODE_IDX
+while [ $index -le $END_NODE_IDX ]; do
+    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+    NODE_ZONE=NODE_${index}_ZONE
 
-        KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-        # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-        # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
-        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-            eval $KILL_NODE_CMD &> /dev/null &
-        else
-            eval $KILL_NODE_CMD &> /dev/null
-        fi
-        ((index++))
-        spinner
-    done
-    printf "Kill all processes done.\n\n";
-fi
+    KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+    # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+    if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+        eval $KILL_NODE_CMD &> /dev/null &
+    else
+        eval $KILL_NODE_CMD &> /dev/null
+    fi
+    ((index++))
+    spinner
+done
+printf "Kill all processes done.\n\n";
 
 # If --kill-only, do not proceed any further
 if [[ $KILL_OPTION = "--kill-only" ]]; then

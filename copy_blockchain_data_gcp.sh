@@ -2,7 +2,8 @@
 
 function usage() {
     printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload]\n"
-    printf "Example: bash copy_blockchain_data_gcp.sh spring 5 download\n"
+    printf "Example: bash copy_blockchain_data_gcp.sh spring 0 download\n"
+    printf "Example: bash copy_blockchain_data_gcp.sh spring 1 upload\n"
     printf "\n"
     exit
 }
@@ -146,7 +147,7 @@ function upload_data() {
 
     # 2. Extract tgz file for node
     printf "\n\n<<< Extracting tgz file for node $node_index >>>\n\n"
-    TGZ_CMD="gcloud compute ssh $node_target_addr --command 'cd /home; sudo mkdir -p ain_blockchain_data; sudo chown runner:runner ain_blockchain_data; sudo chmod 777 ain_blockchain_data; cd ain_blockchain_data; gzip -dc ~/ain_blockchain_data.tar.gz | tar xvf -' --project $PROJECT_ID --zone $node_zone"
+    TGZ_CMD="gcloud compute ssh $node_target_addr --command 'cd /home; sudo mkdir -p ain_blockchain_data; sudo chown $GCP_USER:$GCP_USER ain_blockchain_data; sudo chmod 777 ain_blockchain_data; cd ain_blockchain_data; sudo rm -rf chains snapshots; gzip -dc ~/ain_blockchain_data.tar.gz | tar xvf -' --project $PROJECT_ID --zone $node_zone"
     printf "TGZ_CMD=$TGZ_CMD\n\n"
     eval $TGZ_CMD
 
