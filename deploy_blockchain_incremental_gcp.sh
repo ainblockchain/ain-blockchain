@@ -161,7 +161,7 @@ fi
 
 if [[ ! $KILL_OPTION = '--kill-only' ]]; then
     # Read node urls
-    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_gcp.txt
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         # Get keystore password
         printf "Enter keystore password: "
