@@ -16,7 +16,7 @@ printf "\n[[[[[ deploy_blockchain_genesis_onprem.sh ]]]]]\n\n"
 if [[ "$1" = 'staging' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid project/season argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 printf "SEASON=$SEASON\n"

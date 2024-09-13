@@ -89,7 +89,7 @@ then
 fi
 
 # Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_gcp.txt
 
 function inject_account() {
     local node_index="$1"

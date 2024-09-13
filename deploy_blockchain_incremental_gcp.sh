@@ -23,7 +23,7 @@ if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ 
         PROJECT_ID="testnet-$1-ground"
     fi
 else
-    printf "Invalid <Project/Season> argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 printf "SEASON=$SEASON\n"
@@ -161,7 +161,7 @@ fi
 
 if [[ ! $KILL_OPTION = '--kill-only' ]]; then
     # Read node urls
-    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+    IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_gcp.txt
     if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         # Get keystore password
         printf "Enter keystore password: "

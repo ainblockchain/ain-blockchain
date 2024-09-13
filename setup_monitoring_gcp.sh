@@ -9,7 +9,7 @@ fi
 printf "\n[[[[[ setup_monitoring_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]] && [[ "$1" != 'sandbox' ]] && [[ "$1" != 'exp' ]] && [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'mainnet' ]]; then
-    printf "Invalid season argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 
