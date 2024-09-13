@@ -50,7 +50,7 @@ function parse_options() {
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid project/season argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 GCP_USER="$2"
@@ -224,7 +224,7 @@ elif [[ $SEASON = 'dev' ]]; then
 EOF
     fi
 else
-    printf "Invalid <Project/Season> argument: $SEASON\n"
+    printf "Invalid <Season> argument: $SEASON\n"
     exit
 fi
 
@@ -235,7 +235,7 @@ printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION != "--private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
-    printf 'Invalid account injection option\n'
+    printf 'Invalid <Account Injection> option\n'
     return 1
 fi
 
@@ -285,7 +285,7 @@ fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
-    printf 'Invalid account injection option\n'
+    printf 'Invalid <Account Injection> option\n'
     exit
 fi
 
