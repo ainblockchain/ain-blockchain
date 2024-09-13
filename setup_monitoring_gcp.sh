@@ -1,23 +1,34 @@
 #!/bin/bash
 
-if [[ "$#" -lt 2 ]]; then
-    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username>\n"
-    printf "Example: bash setup_monitoring_gcp.sh dev gcp_user\n"
+function usage() {
+    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <GCP Username> [gcp|onprem]\n"
+    printf "Example: bash setup_monitoring_gcp.sh staging gcp_user gcp\n"
+    printf "Example: bash setup_monitoring_gcp.sh staging gcp_user onprem\n"
     printf "\n"
     exit
+}
+
+if [[ $# -lt 3 ]] || [[ $# -gt 3 ]]; then
+    usage
 fi
+
 printf "\n[[[[[ setup_monitoring_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]] && [[ "$1" != 'sandbox' ]] && [[ "$1" != 'exp' ]] && [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'mainnet' ]]; then
     printf "Invalid <Season> argument: $1\n"
     exit
 fi
+if [[ "$3" != 'gcp' ]] && [[ "$3" != 'onprem' ]]; then
+    printf "Invalid blockchain hosting argument: $3\n"
+    exit
+fi
 
 SEASON="$1"
 GCP_USER="$2"
-
+BLOCKCHAIN_HOSTING="$3"
 printf "SEASON=$SEASON\n"
 printf "GCP_USER=$GCP_USER\n"
+printf "BLOCKCHAIN_HOSTING=$BLOCKCHAIN_HOSTING\n"
 printf "\n"
 
 printf 'Killing old jobs..\n'
@@ -47,6 +58,6 @@ mv prometheus*/ prometheus
 
 
 printf 'Copying Prometheus yml file..\n'
-PROMETHEUS_CONFIG_FILE="prometheus-${SEASON}.yml"
+PROMETHEUS_CONFIG_FILE="prometheus-${SEASON}-${BLOCKCHAIN_HOSTING}.yml"
 printf "PROMETHEUS_CONFIG_FILE=${PROMETHEUS_CONFIG_FILE}\n"
 cp -f monitoring/${PROMETHEUS_CONFIG_FILE} prometheus/prometheus.yml
