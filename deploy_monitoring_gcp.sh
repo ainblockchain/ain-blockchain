@@ -1,12 +1,19 @@
 #!/bin/bash
 
-if [[ "$#" -lt 1 ]]; then
-    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [--setup]\n"
-    printf "Example: bash deploy_monitoring_gcp.sh dev --setup\n"
-    printf "Example: bash deploy_monitoring_gcp.sh dev\n"
+function usage() {
+    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [gcp|onprem} [--setup]\n"
+    printf "Example: bash deploy_monitoring_gcp.sh staging gcp \n"
+    printf "Example: bash deploy_monitoring_gcp.sh staging gcp --setup\n"
+    printf "Example: bash deploy_monitoring_gcp.sh staging onprem \n"
+    printf "Example: bash deploy_monitoring_gcp.sh staging onprem --setup\n"
     printf "\n"
     exit
+}
+
+if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
+    usage
 fi
+
 printf "\n[[[[[ deploy_monitoring_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
@@ -25,11 +32,19 @@ fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
+if [[ "$2" = 'gcp' ]] || [[ "$2" = 'onprem' ]]; then
+    BLOCKCHAIN_HOSTING="$2"
+else
+    printf "Invalid blockchain hosting argument: $2\n"
+    exit
+fi
+printf "BLOCKCHAIN_HOSTING=$BLOCKCHAIN_HOSTING\n"
+
+OPTIONS="$3"
+printf "OPTIONS=$OPTIONS\n"
+
 GCP_USER="runner"
 printf "GCP_USER=$GCP_USER\n"
-
-OPTIONS="$2"
-printf "OPTIONS=$OPTIONS\n"
 
 # Get confirmation.
 printf "\n"
@@ -62,4 +77,4 @@ fi
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running monitoring #\n############################\n\n"
-gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_gcp.sh $SEASON $GCP_USER && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE
+gcloud compute ssh $MONITORING_TARGET_ADDR --command "cd ./ain-blockchain; . setup_monitoring_gcp.sh $SEASON $GCP_USER $BLOCKCHAIN_HOSTING && . start_monitoring_gcp.sh" --project $PROJECT_ID --zone $MONITORING_ZONE
