@@ -74,7 +74,7 @@ else
 fi
 
 # Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_gcp.txt
 
 # Get keystore password
 printf "Enter keystore password: "
