@@ -2,18 +2,18 @@
 
 function usage() {
     printf "\n"
-    printf "Usage: bash config_node_param.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [get|add|remove] <Param> [<Value>]\n"
-    printf "Example: bash config_node_param.sh dev get DEV_CLIENT_API_IP_WHITELIST\n"
-    printf "Example: bash config_node_param.sh dev add DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
-    printf "Example: bash config_node_param.sh dev add DEV_CLIENT_API_IP_WHITELIST '*'\n"
-    printf "Example: bash config_node_param.sh dev remove DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
-    printf "Example: bash config_node_param.sh dev set DEV_CLIENT_API_IP_WHITELIST '*'\n"
-    printf "Example: bash config_node_param.sh dev get CORS_WHITELIST\n"
+    printf "Usage: bash config_node_param.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [gcp|onprem] [get|add|remove] <Param> [<Value>]\n"
+    printf "Example: bash config_node_param.sh staging onprem get DEV_CLIENT_API_IP_WHITELIST\n"
+    printf "Example: bash config_node_param.sh staging onprem add DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
+    printf "Example: bash config_node_param.sh staging onprem add DEV_CLIENT_API_IP_WHITELIST '*'\n"
+    printf "Example: bash config_node_param.sh staging onprem remove DEV_CLIENT_API_IP_WHITELIST 32.190.239.181\n"
+    printf "Example: bash config_node_param.sh staging onprem set DEV_CLIENT_API_IP_WHITELIST '*'\n"
+    printf "Example: bash config_node_param.sh staging onprem get CORS_WHITELIST\n"
     printf "\n"
     exit
 }
 
-if [[ $# -lt 3 ]] || [[ $# -gt 4 ]]; then
+if [[ $# -lt 4 ]] || [[ $# -gt 5 ]]; then
     usage
 fi
 printf "\n[[[[[ config_node_param.sh ]]]]]\n\n"
@@ -21,23 +21,32 @@ printf "\n[[[[[ config_node_param.sh ]]]]]\n\n"
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid <Project/Season> argument: $1\n"
+    printf "\nInvalid <Season> argument: $1\n"
     usage
 fi
 printf "SEASON=$SEASON\n"
 
-if [[ "$2" = 'get' ]]; then
-    COMMAND="$2"
-    PARAM="$3"
-    VALUE="$4"
+if [[ "$2" = 'gcp' ]] || [[ "$2" = 'onprem' ]]; then
+    BLOCKCHAIN_HOSTING="$2"
+else
+    printf "\nInvalid <Blockchain Hosting> argument: $2\n"
+    usage
+fi
+printf "BLOCKCHAIN_HOSTING=$BLOCKCHAIN_HOSTING\n"
+
+COMMAND="$3"
+PARAM="$4"
+VALUE=""
+if [[ $# = 5 ]]; then
+    VALUE="$5"
+fi
+
+if [[ "$COMMAND" = 'get' ]]; then
     if [[ ! "$VALUE" = "" ]]; then
-        printf "\nInvalid argument: $VALUE\n"
+        printf "\nInvalid <Value> argument: $VALUE\n"
         usage
     fi
-elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]] || [[ "$2" = 'set' ]]; then
-    COMMAND="$2"
-    PARAM="$3"
-    VALUE="$4"
+elif [[ "$COMMAND" = 'add' ]] || [[ "$COMMAND" = 'remove' ]] || [[ "$COMMAND" = 'set' ]]; then
     if [[ "$PARAM" = "" ]]; then
         printf "\nInvalid <Param> argument: $PARAM\n"
         usage
@@ -47,7 +56,7 @@ elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]] || [[ "$2" = 'set' ]]; then
         usage
     fi
 else
-    printf "Invalid <Command> argument: $2\n"
+    printf "\nInvalid <Command> argument: $COMMAND\n"
     usage
 fi
 printf "COMMAND=$COMMAND\n"
@@ -74,7 +83,7 @@ else
 fi
 
 # Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_gcp.txt
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_${BLOCKCHAIN_HOSTING}.txt
 
 # Get keystore password
 printf "Enter keystore password: "
@@ -109,12 +118,13 @@ function config_node() {
     local node_index="$1"
     local node_url=${NODE_URL_LIST[${node_index}]}
 
-    printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_url) >>>\n\n"
+    printf "\n\n<<< Configuring node params of node $node_index ($node_url) >>>\n\n"
 
     KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
-    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID keystore $KEYSTORE_FILE_PATH $PARAM"
-    if [[ ! $COMMAND = "get" ]]; then
-        CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$VALUE'"
+    if [[ $COMMAND = "get" ]]; then
+        CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID $PARAM $VALUE keystore $KEYSTORE_FILE_PATH"
+    else
+        CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID $PARAM $VALUE keystore $KEYSTORE_FILE_PATH"
     fi
 
     printf "\n"
@@ -122,6 +132,6 @@ function config_node() {
     eval "echo $KEYSTORE_PW | $CONFIG_NODE_CMD"
 }
 
-for j in `seq $(( 0 )) $(( 9 ))`; do
+for j in `seq $(( 0 )) $(( 4 ))`; do
     config_node "$j"
 done
