@@ -23,7 +23,7 @@ if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ 
         PROJECT_ID="testnet-$1-ground"
     fi
 else
-    printf "Invalid <Project/Season> argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 printf "SEASON=$SEASON\n"
