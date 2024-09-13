@@ -247,7 +247,7 @@ if [[ $KEEP_CODE_OPTION = "--no-keep-code" ]]; then
     printf '\n'
     printf 'Setting up new working directory..\n'
     # NOTE(platfowner): Add $SEASON to the node job name to be selectively killed in restarts.
-    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod -R 777 /home/${SEASON}; sudo chown -R $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ain-blockchain $NEW_DIR_PATH; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $NEW_DIR_PATH; cd $NEW_DIR_PATH; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
+    CODE_CMD="sudo mkdir -p /home/${SEASON}; sudo chmod 777 /home/${SEASON}; sudo chown $ONPREM_USER:$ONPREM_USER /home/${SEASON}; cd ~; sudo mv ain-blockchain $NEW_DIR_PATH; sudo chmod -R 777 $NEW_DIR_PATH; sudo chown -R $ONPREM_USER:$ONPREM_USER $NEW_DIR_PATH; cd $NEW_DIR_PATH; mv client/index.js client/${SEASON}-ain-blockchain-index.js"
     printf "\nCODE_CMD=$CODE_CMD\n"
     eval $CODE_CMD
 else
