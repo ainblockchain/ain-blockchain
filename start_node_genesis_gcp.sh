@@ -51,7 +51,7 @@ function parse_options() {
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid project/season argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 GCP_USER="$2"
@@ -119,7 +119,7 @@ printf "PEER_WHITELIST_NODE_INDEX_LE=$PEER_WHITELIST_NODE_INDEX_LE\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION != "--private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
-    printf 'Invalid account injection option\n'
+    printf 'Invalid <Account Injection> option\n'
     return 1
 fi
 
@@ -293,14 +293,14 @@ elif [[ $SEASON = 'dev' ]]; then
     elif [[ $SHARD_INDEX = 20 ]]; then
         export TRACKER_UPDATE_JSON_RPC_URL="http://35.201.248.92:8080/json-rpc"  # dev-shard-20-tracker-ip
     else
-        printf "Invalid shard ID argument: $SHARD_INDEX\n"
+        printf "Invalid <Shard ID> argument: $SHARD_INDEX\n"
         return 1
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
         export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
     fi
 else
-    printf "Invalid season argument: $SEASON\n"
+    printf "Invalid <Season> argument: $SEASON\n"
     return 1
 fi
 

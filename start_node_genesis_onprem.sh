@@ -61,7 +61,7 @@ function parse_options() {
 if [[ "$1" = 'staging' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid project/season argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 ONPREM_USER="$2"
@@ -129,7 +129,7 @@ printf "PEER_WHITELIST_NODE_INDEX_LE=$PEER_WHITELIST_NODE_INDEX_LE\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION != "--private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
-    printf 'Invalid account injection option\n'
+    printf 'Invalid <Account Injection> option\n'
     return 1
 fi
 
@@ -240,7 +240,7 @@ elif [[ $SEASON = 'staging' ]]; then
         export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
     fi
 else
-    printf "Invalid season argument: $SEASON\n"
+    printf "Invalid <Season> argument: $SEASON\n"
     return 1
 fi
 
