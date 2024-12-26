@@ -4,11 +4,11 @@ const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
-function buildMessageTxBody(timestamp, message) {
+function buildMessageTxBody(address, timestamp, message) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/apps/${config.appName}/common/messages/${timestamp}/user`,
+      ref: `/apps/${config.appName}/messages/${address}/${timestamp}/user`,
       value: message,
     },
     gas_price: 500,
@@ -17,11 +17,11 @@ function buildMessageTxBody(timestamp, message) {
   };
 }
 
-async function sendTransaction(message) {
+async function sendTransaction(config, message) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
 
-  const txBody = buildMessageTxBody(timestamp, message);
+  const txBody = buildMessageTxBody(config.userAddr, timestamp, message);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.serviceOwnerPrivateKey, config.chainId);
@@ -42,7 +42,7 @@ async function processArguments() {
     message = process.argv[3];
   }
   config = require(path.resolve(__dirname, process.argv[2]));
-  await sendTransaction(message);
+  await sendTransaction(config, message);
 }
 
 function usage() {
