@@ -1678,7 +1678,8 @@ class DB {
           return {
             code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
             message: `Exceeded state budget limit for free tier ` +
-                `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
+                `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget}).\n` +
+                `For more information see https://docs.ainetwork.ai/ain-blockchain/staking`
           };
         }
         // else, we allow apps without stakes
@@ -1688,7 +1689,8 @@ class DB {
           return {
             code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
             message: `Exceeded state budget limit for app ${appName} ` +
-                `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget})`
+                `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget}).\n` +
+                `For more information see https://docs.ainetwork.ai/ain-blockchain/staking`
           };
         }
       }
