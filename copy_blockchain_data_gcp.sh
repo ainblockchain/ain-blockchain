@@ -1,14 +1,14 @@
 #!/bin/bash
 
 function usage() {
-    printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload]\n"
+    printf "Usage: bash copy_blockchain_data_gcp.sh [dev|staging|sandbox|exp|spring|summer|mainnet] <Node Index> [download|upload] [<Old Port Number> <New Port Number>]\n"
     printf "Example: bash copy_blockchain_data_gcp.sh spring 0 download\n"
-    printf "Example: bash copy_blockchain_data_gcp.sh spring 1 upload\n"
+    printf "Example: bash copy_blockchain_data_gcp.sh spring 1 upload 8079 8080\n"
     printf "\n"
     exit
 }
 
-if [[ $# -lt 3 ]] || [[ $# -gt 3 ]]; then
+if [[ $# != 3 ]] && [[ $# != 5 ]]; then
     usage
 fi
 
@@ -22,7 +22,7 @@ if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ 
         PROJECT_ID="testnet-$1-ground"
     fi
 else
-    printf "Invalid <Project/Season> argument: $1\n"
+    printf "Invalid <Season> argument: $1\n"
     exit
 fi
 printf "\n"
@@ -55,6 +55,28 @@ else
     usage
 fi
 printf "COMMAND=$COMMAND\n"
+
+if [[ "$COMMAND" = 'download' ]]; then
+    if [[ $# != 3 ]]; then
+        printf "\n"
+        printf "<Old Port Number> and <New Port Number> can be used only with 'upload' command.\n"
+        printf "\n"
+        usage
+    fi
+    OLD_PORT=""
+    NEW_PORT=""
+else
+    if [[ $# != 5 ]]; then
+        printf "\n"
+        printf "<Old Port Number> and <New Port Number> should be specified with 'upload' command.\n"
+        printf "\n"
+        usage
+    fi
+    OLD_PORT="$4"
+    NEW_PORT="$5"
+fi
+printf "OLD_PORT=$OLD_PORT\n"
+printf "NEW_PORT=$NEW_PORT\n"
 
 # Get confirmation.
 if [[ "$SEASON" = "mainnet" ]]; then
@@ -151,7 +173,13 @@ function upload_data() {
     printf "TGZ_CMD=$TGZ_CMD\n\n"
     eval $TGZ_CMD
 
-    # 3. Clean up tgz file for node
+    # 3. Change port number directory
+    printf "\n\n<<< Changing port number directory for node $node_index >>>\n\n"
+    MV_CMD="gcloud compute ssh $node_target_addr --command 'mv /home/ain_blockchain_data/chains/${OLD_PORT} /home/ain_blockchain_data/chains/${NEW_PORT}; mv /home/ain_blockchain_data/snapshots/${OLD_PORT} /home/ain_blockchain_data/snapshots/${NEW_PORT}' --project $PROJECT_ID --zone $node_zone"
+    printf "MV_CMD=$MV_CMD\n\n"
+    eval $MV_CMD
+
+    # 4. Clean up tgz file for node
     printf "\n\n<<< Cleaning up tgz file for node $node_index >>>\n\n"
     CLEANUP_CMD="gcloud compute ssh $node_target_addr --command 'rm ~/ain_blockchain_data.tar.gz' --project $PROJECT_ID --zone $node_zone"
     printf "CLEANUP_CMD=$CLEANUP_CMD\n\n"

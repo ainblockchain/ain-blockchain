@@ -2,16 +2,16 @@
 
 function usage() {
     printf "\n"
-    printf "Usage: bash config_client_api_ip_whitelist.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [get|add|remove] [<IP Address>]\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev get\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev add 32.190.239.181\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev add '*'\n"
-    printf "Example: bash config_client_api_ip_whitelist.sh dev remove 32.190.239.181\n"
+    printf "Usage: bash config_client_api_ip_whitelist.sh [dev|staging|sandbox|exp|spring|summer|mainnet] [gcp|onprem] [get|add|remove] [<IP Address>]\n"
+    printf "Example: bash config_client_api_ip_whitelist.sh staging onprem get\n"
+    printf "Example: bash config_client_api_ip_whitelist.sh staging onprem add 32.190.239.181\n"
+    printf "Example: bash config_client_api_ip_whitelist.sh staging onprem add '*'\n"
+    printf "Example: bash config_client_api_ip_whitelist.sh staging onprem remove 32.190.239.181\n"
     printf "\n"
     exit
 }
 
-if [[ $# -lt 2 ]] || [[ $# -gt 3 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 4 ]]; then
     usage
 fi
 printf "\n[[[[[ config_client_api_ip_whitelist.sh ]]]]]\n\n"
@@ -19,27 +19,37 @@ printf "\n[[[[[ config_client_api_ip_whitelist.sh ]]]]]\n\n"
 if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'exp' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
 else
-    printf "Invalid <Project/Season> argument: $1\n"
+    printf "\nInvalid <Season> argument: $1\n"
     usage
 fi
 printf "SEASON=$SEASON\n"
 
-if [[ "$2" = 'get' ]]; then
-    COMMAND="$2"
-    IP_ADDR="$3"
+if [[ "$2" = 'gcp' ]] || [[ "$2" = 'onprem' ]]; then
+    BLOCKCHAIN_HOSTING="$2"
+else
+    printf "\nInvalid <Blockchain Hosting> argument: $2\n"
+    usage
+fi
+printf "BLOCKCHAIN_HOSTING=$BLOCKCHAIN_HOSTING\n"
+
+COMMAND="$3"
+IP_ADDR=""
+if [[ $# = 4 ]]; then
+    IP_ADDR="$4"
+fi
+
+if [[ "$COMMAND" = 'get' ]]; then
     if [[ ! "$IP_ADDR" = "" ]]; then
-        printf "\nInvalid argument: $IP_ADDR\n"
+        printf "\nInvalid <IP Address> argument: $IP_ADDR\n"
         usage
     fi
-elif [[ "$2" = 'add' ]] || [[ "$2" = 'remove' ]]; then
-    COMMAND="$2"
-    IP_ADDR="$3"
+elif [[ "$COMMAND" = 'add' ]] || [[ "$COMMAND" = 'remove' ]]; then
     if [[ "$IP_ADDR" = "" ]]; then
         printf "\nInvalid <IP Address> argument: $IP_ADDR\n"
         usage
     fi
 else
-    printf "Invalid <Command> argument: $2\n"
+    printf "\nInvalid <Command> argument: $COMMAND\n"
     usage
 fi
 printf "COMMAND=$COMMAND\n"
@@ -65,7 +75,7 @@ else
 fi
 
 # Read node urls
-IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/$SEASON.txt
+IFS=$'\n' read -d '' -r -a NODE_URL_LIST < ./ip_addresses/${SEASON}_${BLOCKCHAIN_HOSTING}.txt
 
 # Get keystore password
 printf "Enter keystore password: "
@@ -101,9 +111,10 @@ function config_node() {
     printf "\n\n<<< Configuring ip whitelist of node $node_index ($node_url) >>>\n\n"
 
     KEYSTORE_FILE_PATH="$KEYSTORE_DIR/keystore_node_$node_index.json"
-    CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID keystore $KEYSTORE_FILE_PATH"
-    if [[ ! $COMMAND = "get" ]]; then
-        CONFIG_NODE_CMD="$CONFIG_NODE_CMD '$IP_ADDR'"
+    if [[ $COMMAND = "get" ]]; then
+        CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID keystore $KEYSTORE_FILE_PATH"
+    else
+        CONFIG_NODE_CMD="node tools/api-access/$COMMAND_NODE_JS_FILE $node_url $CHAIN_ID $IP_ADDR keystore $KEYSTORE_FILE_PATH"
     fi
 
     printf "\n"
@@ -111,6 +122,6 @@ function config_node() {
     eval "echo $KEYSTORE_PW | $CONFIG_NODE_CMD"
 }
 
-for j in `seq $(( 0 )) $(( 9 ))`; do
+for j in `seq $(( 0 )) $(( 4 ))`; do
     config_node "$j"
 done

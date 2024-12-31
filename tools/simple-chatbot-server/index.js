@@ -42,8 +42,8 @@ app.post('/trigger', async (req, res) => {
   const ref = _.get(tx, 'tx_body.operation.ref');
   const parsedRef = CommonUtil.parsePath(ref);
   const userVal = _.get(tx, 'tx_body.operation.value');
-  if (parsedRef.length !== 6 || parsedRef[0] !== 'apps' || parsedRef[1] !== APP_NAME ||
-      parsedRef[3] !== 'messages' || parsedRef[5] !== 'user') {
+    if (parsedRef.length !== 6 || parsedRef[0] !== 'apps' ||
+      parsedRef[2] !== 'messages' || parsedRef[5] !== 'user') {
     console.log(`Not supported path pattern: ${ref}`);
     return;
   }
