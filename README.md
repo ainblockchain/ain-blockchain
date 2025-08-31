@@ -10,7 +10,7 @@ For accessing AIN Blockchain nodes, see [JSON_RPC_API.md](./JSON_RPC_API.md).
 ## Install Environment (Last update at 6th of Dec 2021)
 ### OS
 
-- macOS 13.5 (macos-latest)
+- MacOS 13.5 (macos-latest)
 - Ubuntu 22.04 (ubuntu-latest)
 
 ### NodeJs version
