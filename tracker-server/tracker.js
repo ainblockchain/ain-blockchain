@@ -1,7 +1,7 @@
 const logger = new (require('../logger'))('TRACKER_SERVER');
 const geoip = require('geoip-lite');
 const _ = require('lodash');
-const disk = require('diskusage');
+const fs = require('fs');
 const os = require('os');
 const v8 = require('v8');
 const {
@@ -133,12 +133,13 @@ class Tracker {
 
   getDiskUsage() {
     try {
-      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const free = _.get(diskUsage, 'free', 0);
-      const total = _.get(diskUsage, 'total', 0);
+      const stats = fs.statfsSync(DISK_USAGE_PATH);
+      const total = stats.bsize * stats.blocks;
+      const free = stats.bsize * stats.bfree;
+      const available = stats.bsize * stats.bavail;
       const usage = total - free;
       const usagePercent = total ? usage / total * 100 : 0;
-      return Object.assign({}, diskUsage, { usage, usagePercent });
+      return { available, free, total, usage, usagePercent };
     } catch (err) {
       logger.error(`Error: ${err} ${err.stack}`);
       return {};
