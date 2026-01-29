@@ -2,7 +2,7 @@
 const logger = new (require('../logger'))('P2P_SERVER');
 
 const Websocket = require('ws');
-const disk = require('diskusage');
+const fs = require('fs');
 const os = require('os');
 const v8 = require('v8');
 const _ = require('lodash');
@@ -237,12 +237,13 @@ class P2pServer {
 
   getDiskUsage() {
     try {
-      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const free = _.get(diskUsage, 'free', 0);
-      const total = _.get(diskUsage, 'total', 0);
+      const stats = fs.statfsSync(DISK_USAGE_PATH);
+      const total = stats.bsize * stats.blocks;
+      const free = stats.bsize * stats.bfree;
+      const available = stats.bsize * stats.bavail;
       const usage = total - free;
       const usagePercent = total ? usage / total * 100 : 0;
-      return Object.assign({}, diskUsage, { usage, usagePercent });
+      return { available, free, total, usage, usagePercent };
     } catch (err) {
       logger.error(`Error: ${err} ${err.stack}`);
       return {};
