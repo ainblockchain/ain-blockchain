@@ -9,6 +9,11 @@ blocks1.txt
 blocks2.txt
 shard-configs
 *_on_prem.sh
+testnet_dev_staging_keys
+testnet_prod_keys
+mainnet_prod_keys
+snapshots
+ip_addresses
 
 # XXX: .dockerignore
 .git
@@ -171,5 +176,7 @@ dist/
 # Temporary folders
 tmp/
 temp/
+*.tar.gz
+*_keystore_app_creation_service_pool.json
 
 # End of https://www.gitignore.io/api/node,code,linux,macos

@@ -10,7 +10,7 @@
     "url": "https://github.com/ainblockchain/ain-blockchain"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "client": "UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 DEBUG=true node ./client/index.js",
@@ -59,7 +59,6 @@
     "@ainblockchain/ain-util": "^1.3.0",
     "@google-cloud/logging-bunyan": "^3.2.0",
     "@google-cloud/logging-winston": "^4.0.2",
-    "JSONStream": "^1.3.5",
     "ajv": "^6.12.3",
     "axios": "^0.21.2",
     "bluebird": "^3.5.3",
@@ -81,19 +80,20 @@
     "jayson": "^3.1.1",
     "json-diff": "^0.5.4",
     "json-stream-stringify": "^2.0.4",
+    "JSONStream": "^1.3.5",
     "lodash": "^4.17.21",
     "match-url-wildcard": "^0.0.4",
     "moment": "^2.29.4",
     "natural-orderby": "^2.0.3",
     "node-cron": "^2.0.3",
-    "ntpsync": "^0.2.3",
+    "ntp-time": "^2.1.0",
     "object-sizeof": "^1.5.1",
     "prompt": "^1.3.0",
     "readline": "^1.3.0",
     "request": "^2.88.0",
     "rimraf": "^2.6.3",
     "seedrandom": "^2.4.4",
-    "semver": "^6.3.0",
+    "semver": "^6.3.1",
     "shuffle-seed": "^1.1.6",
     "util": "^0.11.1",
     "web3-eth-accounts": "^1.6.1",

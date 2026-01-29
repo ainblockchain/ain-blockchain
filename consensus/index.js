@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('CONSENSUS');
 
 const seedrandom = require('seedrandom');
 const _ = require('lodash');
-const ntpsync = require('ntpsync');
+const NTP = require('ntp-time').Client;
 const semver = require('semver');
 const Blockchain = require('../blockchain');
 const { Block } = require('../blockchain/block');
@@ -126,6 +126,7 @@ class Consensus {
     this.startingTime = genesisBlock.timestamp;
     const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
+    this.ntpClient = new NTP();
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
@@ -163,15 +164,22 @@ class Consensus {
                 this.ntpData.syncedAt, healthThresholdEpoch * epochMs))) {
           // adjust time
           try {
-            const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
-            logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
-            if (Math.abs(iNTPData.minimalNTPLatencyDelta) < 10000) {
+            const iNTPData = await this.ntpClient.syncTime();
+            logger.debug(`(Local Time - NTP Time) Delta = ${-iNTPData.t * 1000} ms`);
+            if (Math.abs(iNTPData.t * 1000) < 10000) {
               // Ignore if the value is too big/small.
-              this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-              this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+              // ntp-time의 t는 초 단위이고 부호가 반대이므로 -t * 1000으로 변환
+              this.timeAdjustment = -iNTPData.t * 1000;
+              this.ntpData = {
+                minimalNTPLatencyDelta: -iNTPData.t * 1000, // 호환성 유지
+                roundtripDelay: iNTPData.d * 1000,
+                time: iNTPData.time,
+                ...iNTPData,
+                syncedAt: Date.now()
+              };
             }
           } catch (err) {
-            logger.error(`ntpsync error: ${err} ${err.stack}`);
+            logger.error(`ntp-time error: ${err} ${err.stack}`);
           }
         }
         currentTime -= this.timeAdjustment;
