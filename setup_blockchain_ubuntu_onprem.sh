@@ -26,7 +26,7 @@ sudo apt-get -y autoremove
 printf '\n[[ Installing NodeJS.. ]]\n'
 sudo apt update
 sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates
-curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 # skip prompting for daemon restart (see https://askubuntu.com/questions/1367139/apt-get-upgrade-auto-restart-services)
 sudo NEEDRESTART_MODE=a apt -y install nodejs
 
