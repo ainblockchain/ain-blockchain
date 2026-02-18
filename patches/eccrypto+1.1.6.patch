@@ -1,0 +1,49 @@
+diff --git a/node_modules/eccrypto/index.js b/node_modules/eccrypto/index.js
+index a63218b..cdbd67c 100644
+--- a/node_modules/eccrypto/index.js
++++ b/node_modules/eccrypto/index.js
+@@ -14,8 +14,24 @@ var promise = typeof Promise === "undefined" ?
+ var crypto = require("crypto");
+ // try to use secp256k1, fallback to browser implementation
+ try {
+-  var secp256k1 = require("secp256k1");
+-  var ecdh = require("./build/Release/ecdh");
++  var _secp256k1 = require("secp256k1");
++  // Wrap secp256k1 v4 to return Buffer (v3 compat) and use built-in ecdh
++  var secp256k1 = {
++    ecdsaSign: function(msg, key) {
++      var r = _secp256k1.ecdsaSign(msg, key);
++      return { signature: Buffer.from(r.signature), recid: r.recid };
++    },
++    ecdsaVerify: function(sig, msg, pub) { return _secp256k1.ecdsaVerify(sig, msg, pub); },
++    publicKeyCreate: function(key, compressed) { return Buffer.from(_secp256k1.publicKeyCreate(key, compressed)); },
++    publicKeyConvert: function(key, compressed) { return Buffer.from(_secp256k1.publicKeyConvert(key, compressed)); },
++    signatureExport: function(sig) { return Buffer.from(_secp256k1.signatureExport(sig)); },
++    signatureImport: function(sig) { return Buffer.from(_secp256k1.signatureImport(sig)); },
++  };
++  var ecdh = {
++    derive: function(privateKey, publicKey) {
++      return Buffer.from(_secp256k1.ecdh(publicKey, privateKey));
++    }
++  };
+ } catch (e) {
+   if (process.env.ECCRYPTO_NO_FALLBACK) {
+     throw e;
+@@ -141,7 +157,7 @@ exports.sign = function(privateKey, msg) {
+     assert(msg.length > 0, "Message should not be empty");
+     assert(msg.length <= 32, "Message is too long");
+     msg = pad32(msg);
+-    var sig = secp256k1.sign(msg, privateKey).signature;
++    var sig = secp256k1.ecdsaSign(msg, privateKey).signature;
+     resolve(secp256k1.signatureExport(sig));
+   });
+ };
+@@ -160,7 +176,7 @@ exports.verify = function(publicKey, msg, sig) {
+     assert(msg.length <= 32, "Message is too long");
+     msg = pad32(msg);
+     sig = secp256k1.signatureImport(sig);
+-    if (secp256k1.verify(msg, sig, publicKey)) {
++    if (secp256k1.ecdsaVerify(sig, msg, publicKey)) {
+      resolve(null);
+     } else {
+      reject(new Error("Bad signature"));
