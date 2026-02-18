@@ -192,9 +192,36 @@ class Transaction {
       return true;
     }
     try {
+      const sigBuffer = ainUtil.toBuffer(tx.signature);
+      if (CommonUtil.isP256Signature(sigBuffer)) {
+        // P256 verification path
+        const hash = sigBuffer.slice(0, 32);
+        // Verify the hash matches the tx body
+        const expectedHash = ainUtil.hashTransaction(tx.tx_body);
+        if (!hash.equals(expectedHash)) {
+          logger.info(`[${LOG_HEADER}] P256 hash mismatch`);
+          return false;
+        }
+        // Verify the ECDSA signature
+        if (!CommonUtil.p256VerifySignature(hash, sigBuffer)) {
+          logger.info(`[${LOG_HEADER}] P256 signature verification failed`);
+          return false;
+        }
+        // Verify the address matches
+        const compressedPubKey = sigBuffer.slice(32, 65);
+        const EC = require('elliptic').ec;
+        const p256ec = new EC('p256');
+        const pubKey = p256ec.keyFromPublic(compressedPubKey);
+        const pubUncompressed = Buffer.from(pubKey.getPublic().encode('hex', false), 'hex');
+        const pubRaw = pubUncompressed.slice(1);
+        const derivedAddr = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+            ainUtil.keccak(pubRaw).slice(-20)));
+        return ainUtil.areSameAddresses(tx.address, derivedAddr);
+      }
+      // secp256k1 verification (existing path)
       return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address, chainId);
     } catch (err) {
-      logger.info(`[${LOG_HEADER}] Signature verifycation failed with error: ${err.message}`);
+      logger.info(`[${LOG_HEADER}] Signature verification failed with error: ${err.message}`);
       return false;
     }
   }
