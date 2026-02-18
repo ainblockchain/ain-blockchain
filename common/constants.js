@@ -487,6 +487,8 @@ const NativeFunctionIds = {
   TRANSFER: '_transfer',
   UNSTAKE: '_unstake',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  SYNC_KNOWLEDGE_TOPIC: '_syncKnowledgeTopic',
+  SYNC_KNOWLEDGE_EXPLORATION: '_syncKnowledgeExploration',
 };
 
 function isNativeFunctionId(fid) {
