@@ -13,6 +13,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "client": "UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 DEBUG=true node ./client/index.js",
     "deploy_test": "bash deploy_test_gcp.sh $USER all",
     "cat_log_test": "bash deploy_test_gcp.sh $USER all --cat-log",
@@ -55,12 +56,18 @@
     "test_unit_tx_pool": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/tx-pool.test.js",
     "tracker": "node ./tracker-server/index.js"
   },
+  "overrides": {
+    "secp256k1": "^4.0.3"
+  },
+  "resolutions": {
+    "secp256k1": "^4.0.3"
+  },
   "dependencies": {
-    "@ainblockchain/ain-util": "^1.3.0",
-    "@google-cloud/logging-bunyan": "^3.2.0",
-    "@google-cloud/logging-winston": "^4.0.2",
+    "@ainblockchain/ain-util": "^1.2.1",
+    "@google-cloud/logging-bunyan": "^5.1.0",
+    "@google-cloud/logging-winston": "^6.0.1",
     "ajv": "^6.12.3",
-    "axios": "^0.21.2",
+    "axios": "^1.13.5",
     "bluebird": "^3.5.3",
     "bunyan": "^1.8.15",
     "bunyan-format": "^0.2.1",
@@ -68,7 +75,7 @@
     "cors": "^2.8.5",
     "escape-string-regexp": "^2.0.0",
     "espree": "^9.0.0",
-    "express": "^4.17.1",
+    "express": "^4.20.0",
     "express-rate-limit": "^5.5.1",
     "ext-ip": "^0.3.9",
     "fast-json-stable-stringify": "^2.0.0",
@@ -95,10 +102,13 @@
     "semver": "^6.3.1",
     "shuffle-seed": "^1.1.6",
     "util": "^0.11.1",
-    "web3-eth-accounts": "^1.6.1",
+    "web3-eth-accounts": "^1.3.4",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
     "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "neo4j-driver": "^5.0.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
@@ -116,6 +126,7 @@
     "mocha": "^8.2.1",
     "nock": "^13.3.0",
     "node-jq": "^2.0.0",
+    "patch-package": "^8.0.1",
     "semistandard": "^16.0.1",
     "shelljs": "^0.8.5",
     "sync-request": "^6.1.0"

@@ -1,0 +1,58 @@
+diff --git a/node_modules/@ainblockchain/ain-util/dist/index.js b/node_modules/@ainblockchain/ain-util/dist/index.js
+index 3d7b90c..45fcddf 100644
+--- a/node_modules/@ainblockchain/ain-util/dist/index.js
++++ b/node_modules/@ainblockchain/ain-util/dist/index.js
+@@ -28,7 +28,23 @@ const rlp = __importStar(require("rlp"));
+ const varuint_bitcoin_1 = require("varuint-bitcoin");
+ const assert_1 = __importDefault(require("assert"));
+ const createKeccakHash = require('keccak');
+-const secp256k1 = require('secp256k1');
++const _secp256k1 = require('secp256k1');
++// Wrap secp256k1 v4 to return Buffer instead of Uint8Array (v3 compat)
++const secp256k1 = {
++    ecdsaSign: (msg, key) => {
++        const r = _secp256k1.ecdsaSign(msg, key);
++        return { signature: Buffer.from(r.signature), recid: r.recid };
++    },
++    ecdsaVerify: (sig, msg, pub) => _secp256k1.ecdsaVerify(sig, msg, pub),
++    ecdsaRecover: (sig, recid, msg) => Buffer.from(_secp256k1.ecdsaRecover(sig, recid, msg)),
++    publicKeyCreate: (key, compressed) => Buffer.from(_secp256k1.publicKeyCreate(key, compressed)),
++    publicKeyConvert: (key, compressed) => Buffer.from(_secp256k1.publicKeyConvert(key, compressed)),
++    publicKeyVerify: (key) => _secp256k1.publicKeyVerify(key),
++    privateKeyVerify: (key) => _secp256k1.privateKeyVerify(key),
++    signatureExport: (sig) => Buffer.from(_secp256k1.signatureExport(sig)),
++    signatureImport: (sig) => Buffer.from(_secp256k1.signatureImport(sig)),
++    ecdh: (pub, key) => Buffer.from(_secp256k1.ecdh(pub, key)),
++};
+ const HDkey = require('hdkey');
+ const bip39_1 = require("bip39");
+ const eccrypto_1 = require("eccrypto");
+@@ -127,7 +143,7 @@ exports.ecRecoverPub = function (msgHash, r, s, v, chainId) {
+     if (!isValidSigRecovery(recovery)) {
+         throw new Error('[ain-util] ecRecoverPub: Invalid signature v value');
+     }
+-    const senderPubKey = secp256k1.recover(msgHash, signature, recovery);
++    const senderPubKey = secp256k1.ecdsaRecover(signature, recovery, msgHash);
+     return secp256k1.publicKeyConvert(senderPubKey, false);
+ };
+ /**
+@@ -169,7 +185,7 @@ exports.ecVerifySig = function (data, signature, address, chainId) {
+     }
+     const sig = exports.ecSplitSig(sigBuffer.slice(lenHash, len));
+     const pub = exports.ecRecoverPub(hashedData, sig.r, sig.s, sig.v, chainId);
+-    if (!secp256k1.verify(hashedData, sigBuffer.slice(lenHash, len - 1), exports.toBuffer(pub))) {
++    if (!secp256k1.ecdsaVerify(sigBuffer.slice(lenHash, len - 1), hashedData, exports.toBuffer(pub))) {
+         return false;
+     }
+     const addr = exports.bufferToHex(exports.pubToAddress(pub.slice(1)));
+@@ -740,8 +756,8 @@ function calculateSigRecovery(v, chainId) {
+  * Returns the ECDSA signature of a message hash.
+  */
+ function ecSignHash(msgHash, privateKey, chainId) {
+-    const sig = secp256k1.sign(msgHash, privateKey);
+-    const recovery = sig.recovery;
++    const sig = secp256k1.ecdsaSign(msgHash, privateKey);
++    const recovery = sig.recid;
+     const ret = {
+         r: sig.signature.slice(0, 32),
+         s: sig.signature.slice(32, 64),

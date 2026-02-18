@@ -56,6 +56,15 @@ const JSON_RPC_METHODS = {
   NET_RAW_CONSENSUS_STATUS: 'net_rawConsensusStatus',
   NET_SYNCING: 'net_syncing',
   P2P_GET_PEER_CANDIDATE_INFO: 'p2p_getPeerCandidateInfo',
+  AIN_KNOWLEDGE_GET_TOPIC_STATS: 'ain_knowledge_getTopicStats',
+  AIN_KNOWLEDGE_GET_FRONTIER_MAP: 'ain_knowledge_getFrontierMap',
+  AIN_KNOWLEDGE_GET_LINEAGE: 'ain_knowledge_getLineage',
+  AIN_KNOWLEDGE_GET_DESCENDANTS: 'ain_knowledge_getDescendants',
+  AIN_KNOWLEDGE_GET_SHORTEST_PATH: 'ain_knowledge_getShortestPath',
+  AIN_KNOWLEDGE_GET_EXPLORERS: 'ain_knowledge_getExplorers',
+  AIN_KNOWLEDGE_LIST_TOPICS: 'ain_knowledge_listTopics',
+  AIN_KNOWLEDGE_LIST_SUBTOPICS: 'ain_knowledge_listSubtopics',
+  AIN_KNOWLEDGE_GET_GRAPH_STATS: 'ain_knowledge_getGraphStats',
 }
 
 const JSON_RPC_SET_METHOD_SET = new Set([

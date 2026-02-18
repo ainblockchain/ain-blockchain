@@ -76,6 +76,10 @@ class Functions {
         func: this._transfer.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.SYNC_KNOWLEDGE_TOPIC]: {
+        func: this._syncKnowledgeTopic.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.SYNC_KNOWLEDGE_EXPLORATION]: {
+        func: this._syncKnowledgeExploration.bind(this), ownerOnly: false, extraGasAmount: 0 },
     };
     this.callStack = [];
   }
@@ -1603,6 +1607,83 @@ class Functions {
     if (decPendingResultCode !== true) {
       return this.returnFuncResult(context, decPendingResultCode);
     }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Knowledge graph sync functions
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Native function triggered when a topic's .info is written.
+   * Fire-and-forget: sync is async, not consensus-critical.
+   */
+  _syncKnowledgeTopic(value, context) {
+    if (value === null) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    if (!this.db.knowledgeGraphIndex || !this.db.knowledgeGraphIndex.isEnabled()) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+
+    // Extract topic path from valuePath.
+    // The function is attached to /apps/knowledge/topics, so valuePath might be like:
+    // ['apps', 'knowledge', 'topics', 'ai', 'transformers', '.info']
+    const valuePath = context.valuePath;
+    const topicsIdx = valuePath.indexOf('topics');
+    if (topicsIdx < 0) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+
+    // Everything between 'topics' and '.info' is the topic path
+    let endIdx = valuePath.length;
+    if (valuePath[valuePath.length - 1] === '.info') {
+      endIdx = valuePath.length - 1;
+    }
+    const topicSegments = valuePath.slice(topicsIdx + 1, endIdx);
+    if (topicSegments.length === 0) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const topicPath = topicSegments.join('/');
+
+    // Fire-and-forget
+    this.db.knowledgeGraphIndex.syncTopic(topicPath, value).catch(function(err) {
+      logger.error(`Knowledge graph syncTopic error: ${err.message}`);
+    });
+
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  /**
+   * Native function triggered when an exploration entry is written.
+   * Fire-and-forget: sync is async, not consensus-critical.
+   */
+  _syncKnowledgeExploration(value, context) {
+    if (value === null) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    if (!this.db.knowledgeGraphIndex || !this.db.knowledgeGraphIndex.isEnabled()) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+
+    // Extract params from context.
+    // The function is attached to /apps/knowledge/explorations/$addr/$topic_key/$entry_id
+    const params = context.params || {};
+    const addr = params.addr;
+    const topicKey = params.topic_key;
+    const entryId = params.entry_id;
+
+    if (!addr || !topicKey || !entryId) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+
+    const topicPath = topicKey.replace(/\|/g, '/');
+
+    // Fire-and-forget
+    this.db.knowledgeGraphIndex.syncExploration(addr, topicPath, entryId, value).catch(function(err) {
+      logger.error(`Knowledge graph syncExploration error: ${err.message}`);
+    });
+
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 

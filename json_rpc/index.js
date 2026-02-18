@@ -12,6 +12,7 @@ const getEventHandlerApis = require('./event-handler');
 const getNetworkApis = require('./network');
 const getTransactionApis = require('./transaction');
 const getVersionApis = require('./version');
+const getKnowledgeApis = require('./knowledge');
 const { JSON_RPC_METHODS } = require('./constants');
 
 /**
@@ -49,6 +50,9 @@ module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtoc
   }
   if (node.eh !== null) {
     Object.assign(apis, getEventHandlerApis(node.eh));
+  }
+  if (node.knowledgeGraphIndex) {
+    Object.assign(apis, getKnowledgeApis(node));
   }
 
   return apis;
