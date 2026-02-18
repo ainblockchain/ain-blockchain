@@ -6,6 +6,8 @@ const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const ip = require('ip');
+const EC = require('elliptic').ec;
+const p256 = new EC('p256');
 const {
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
@@ -50,8 +52,23 @@ class CommonUtil {
     };
   }
 
+  /**
+   * Checks if a signature buffer is a P256 signature.
+   * P256 signatures are 129 bytes: {hash(32)}{compressedPubKey(33)}{r(32)}{s(32)}
+   */
+  static isP256Signature(sigBuffer) {
+    if (sigBuffer.length !== 129) return false;
+    const prefixByte = sigBuffer[32];
+    return prefixByte === 0x02 || prefixByte === 0x03;
+  }
+
   static hashSignature(sig) {
     const sigBuffer = ainUtil.toBuffer(sig);
+    if (CommonUtil.isP256Signature(sigBuffer)) {
+      // P256: first 32 bytes are the hash
+      return '0x' + sigBuffer.slice(0, 32).toString('hex');
+    }
+    // secp256k1: everything before the last 65 bytes is the hash
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
     return '0x' + hashedData.toString('hex');
@@ -59,23 +76,54 @@ class CommonUtil {
 
   /**
    * Gets address from hash and signature.
+   * Supports both secp256k1 and P256 signature formats.
    */
   static getAddressFromSignature(logger, hash, signature, chainId) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
       const sigBuffer = ainUtil.toBuffer(signature);
-      const len = sigBuffer.length;
-      const lenHash = len - 65;
-      const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
-      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v, chainId);
-      address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
-          ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+
+      if (CommonUtil.isP256Signature(sigBuffer)) {
+        // P256: {hash(32)}{compressedPubKey(33)}{r(32)}{s(32)}
+        const compressedPubKey = sigBuffer.slice(32, 65);
+        const pubKey = p256.keyFromPublic(compressedPubKey);
+        const pubUncompressed = Buffer.from(pubKey.getPublic().encode('hex', false), 'hex');
+        const pubRaw = pubUncompressed.slice(1); // 64 bytes (remove 04 prefix)
+        address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+            ainUtil.keccak(pubRaw).slice(-20)));
+      } else {
+        // secp256k1: existing path
+        const len = sigBuffer.length;
+        const lenHash = len - 65;
+        const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
+        const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v, chainId);
+        address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
+            ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
+      }
     } catch (err) {
       logger.error(
           `[${LOG_HEADER}] Failed to extract address with error: ${err} ${err.stack}.`);
     }
     return address;
+  }
+
+  /**
+   * Verifies a P256 signature.
+   * @param {Buffer} hash The message hash (32 bytes)
+   * @param {Buffer} sigBuffer The full signature buffer (129 bytes)
+   * @returns {boolean}
+   */
+  static p256VerifySignature(hash, sigBuffer) {
+    try {
+      const compressedPubKey = sigBuffer.slice(32, 65);
+      const r = sigBuffer.slice(65, 97);
+      const s = sigBuffer.slice(97, 129);
+      const pubKey = p256.keyFromPublic(compressedPubKey);
+      return pubKey.verify(hash, { r: r, s: s });
+    } catch (err) {
+      return false;
+    }
   }
 
   static isBool(value) {

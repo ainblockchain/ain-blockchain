@@ -1,5 +1,6 @@
 # XXX: Project Related
 ain_blockchain_data
+.ain_pids
 logs
 log1.txt
 log2.txt

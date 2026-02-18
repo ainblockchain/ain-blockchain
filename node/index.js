@@ -39,6 +39,7 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
 const EventHandler = require('../event-handler');
+const KnowledgeGraphIndex = require('../db/knowledge-graph-index');
 
 class BlockchainNode {
   constructor(account = null) {
@@ -70,6 +71,25 @@ class BlockchainNode {
     this.requestedSnapshotBlockNumber = -1;
     this.requestedSnapshotNumChunks = 0;
     this.state = BlockchainNodeStates.STARTING;
+    this.knowledgeGraphIndex = null;
+    if (NodeConfigs.ENABLE_KNOWLEDGE_GRAPH_INDEX === true) {
+      const kgi = new KnowledgeGraphIndex(
+        NodeConfigs.KNOWLEDGE_GRAPH_BACKEND || 'memory',
+        {
+          uri: NodeConfigs.KNOWLEDGE_NEO4J_URI,
+          username: NodeConfigs.KNOWLEDGE_NEO4J_USERNAME,
+          password: NodeConfigs.KNOWLEDGE_NEO4J_PASSWORD,
+        }
+      );
+      this.knowledgeGraphIndex = kgi;
+      kgi.initialize().then(() => {
+        this.db.knowledgeGraphIndex = kgi;
+        logger.info('Knowledge Graph Index attached to DB.');
+      }).catch((err) => {
+        logger.error(`Knowledge Graph Index failed to initialize: ${err.message}`);
+        this.knowledgeGraphIndex = null;
+      });
+    }
     logger.info(`Now node in STARTING state!`);
 
     if (account === null) {

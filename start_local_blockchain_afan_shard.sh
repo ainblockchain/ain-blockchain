@@ -5,6 +5,12 @@
 
 printf "\n[[[[[ start_local_blockchain_afan_shard.sh ]]]]]\n\n"
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PID_FILE="$SCRIPT_DIR/.ain_pids"
+
+# Clear old PID file
+> "$PID_FILE"
+
 # PARENT CHAIN **
 # parent tracker
 printf "\nStarting parent tracker..\n"
@@ -12,7 +18,8 @@ PORT=8080 \
   P2P_PORT=5000 \
   CONSOLE_LOG=false \
   node ./tracker-server/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 # parent node 0
 printf "\nStarting parent node 0..\n"
@@ -26,7 +33,8 @@ UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289be
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 # parent node 1
 printf "\nStarting parent node 1..\n"
@@ -40,7 +48,8 @@ UNSAFE_PRIVATE_KEY=921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 # parent node 2
 printf "\nStarting parent node 2..\n"
@@ -54,7 +63,8 @@ UNSAFE_PRIVATE_KEY=41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 15
 
 # AFAN CHILD CHAIN **
@@ -65,7 +75,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   P2P_PORT=6000 \
   CONSOLE_LOG=false \
   node ./tracker-server/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 # afan child chain node 0
 printf "\nStarting afan child chain node 0..\n"
@@ -80,7 +91,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 
 while :
@@ -107,7 +119,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 5
 # afan child chain node 2
 printf "\nStarting afan child chain node 2..\n"
@@ -122,5 +135,8 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ENABLE_GAS_FEE_WORKAROUND=true \
   ENABLE_EXPRESS_RATE_LIMIT=false \
   node ./client/index.js &
-printf "\nDone\n\n"
+echo $! >> "$PID_FILE"
+printf "Done (pid: $!)\n\n"
 sleep 15
+
+printf "PIDs saved to $PID_FILE\n"

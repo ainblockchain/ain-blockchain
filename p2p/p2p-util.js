@@ -74,7 +74,12 @@ class P2pUtil {
       logger.error('The private key is not correctly set on the buffer to sign a message.');
       return null;
     }
-    if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
+    try {
+      if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
+        logger.error('The private key is not optional but mandatory or worng private key is typed.');
+        return null;
+      }
+    } catch {
       logger.error('The private key is not optional but mandatory or worng private key is typed.');
       return null;
     }
