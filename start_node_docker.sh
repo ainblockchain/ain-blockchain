@@ -14,6 +14,10 @@ elif [[ $SEASON = 'exp' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-exp
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
+elif [[ $SEASON = 'standalone' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
+    export ENABLE_STATUS_REPORT_TO_TRACKER=false
+    export TARGET_NUM_OUTBOUND_CONNECTION=0
 fi
 export LOG_BANDAGE_INFO=true
 printf "LOG_BANDAGE_INFO=$LOG_BANDAGE_INFO\n"

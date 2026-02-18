@@ -1,8 +1,7 @@
-FROM node:18.16
+FROM node:20
 WORKDIR /app/ain-blockchain
-COPY . /app/ain-blockchain
+COPY package.json yarn.lock ./
 RUN yarn install
+COPY . .
 EXPOSE 8080 5000
-ARG SEASON
-ENV SEASON=$SEASON
-ENTRYPOINT bash ./start_node_docker.sh
+ENTRYPOINT ["bash", "./start_node_docker.sh"]
