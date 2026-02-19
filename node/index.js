@@ -40,6 +40,7 @@ const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
 const EventHandler = require('../event-handler');
 const KnowledgeGraphIndex = require('../db/knowledge-graph-index');
+const LlmEngine = require('../db/llm-engine');
 
 class BlockchainNode {
   constructor(account = null) {
@@ -88,6 +89,13 @@ class BlockchainNode {
       }).catch((err) => {
         logger.error(`Knowledge Graph Index failed to initialize: ${err.message}`);
         this.knowledgeGraphIndex = null;
+      });
+    }
+    this.llmEngine = null;
+    if (NodeConfigs.ENABLE_LLM === true) {
+      this.llmEngine = new LlmEngine({
+        providerUrl: NodeConfigs.LLM_PROVIDER_URL || 'http://localhost:8000',
+        model: NodeConfigs.LLM_MODEL || 'Qwen/Qwen3-32B-AWQ',
       });
     }
     logger.info(`Now node in STARTING state!`);

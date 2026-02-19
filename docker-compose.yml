@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.12.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - huggingface-cache:/root/.cache/huggingface
+    command:
+      - "--model"
+      - "Qwen/Qwen3-32B-AWQ"
+      - "--max-model-len"
+      - "32768"
+      - "--gpu-memory-utilization"
+      - "0.90"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/randomstring
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "randomstring", "RETURN 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ain-node:
+    build: .
+    depends_on:
+      vllm:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      SEASON: dev
+      ENABLE_KNOWLEDGE_GRAPH_INDEX: "true"
+      KNOWLEDGE_GRAPH_BACKEND: neo4j
+      KNOWLEDGE_NEO4J_URI: bolt://neo4j:7687
+      KNOWLEDGE_NEO4J_USERNAME: neo4j
+      KNOWLEDGE_NEO4J_PASSWORD: randomstring
+      ENABLE_LLM: "true"
+      LLM_PROVIDER_URL: http://vllm:8000
+      LLM_MODEL: Qwen/Qwen3-32B-AWQ
+    ports:
+      - "8081:8080"
+      - "5100:5100"
+
+volumes:
+  huggingface-cache:
+  neo4j-data:
