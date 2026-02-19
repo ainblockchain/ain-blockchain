@@ -4,7 +4,7 @@ const axios = require('axios');
 
 const EXPLORE_SYSTEM_PROMPT = `You are a knowledge exploration expert. Given a topic path and context about existing explorations, generate a new exploration that extends the frontier of understanding.
 
-Return ONLY valid JSON with these keys:
+Return ONLY valid JSON (no markdown, no commentary, no thinking) with these keys:
 - title: a concise title for this exploration
 - content: detailed content (500-1500 words) covering the topic in depth
 - summary: a 1-2 sentence summary
@@ -13,7 +13,7 @@ Return ONLY valid JSON with these keys:
 
 const COURSE_SYSTEM_PROMPT = `You are a course designer. Given a topic path and a list of explorations, design a structured course with progressive stages.
 
-Each stage should build on previous ones. Return ONLY valid JSON with key "stages", where each stage has:
+Each stage should build on previous ones. Return ONLY valid JSON (no markdown, no commentary, no thinking) with key "stages", where each stage has:
 - title: stage title
 - content: lesson content (300-800 words)
 - exercise: one quiz-style exercise (multiple choice, fill-in-blank, or short answer)`;
@@ -21,6 +21,84 @@ Each stage should build on previous ones. Return ONLY valid JSON with key "stage
 const ANALYZE_SYSTEM_PROMPT = `You are a knowledge analyst. Given a question and context from a knowledge graph, provide a thorough analysis that synthesizes information from the provided context nodes.
 
 Be concise but comprehensive. Cite specific concepts from the context when relevant.`;
+
+/**
+ * Strip Qwen3-style <think>...</think> reasoning blocks from LLM output.
+ * Handles complete blocks, unclosed blocks (from max_tokens truncation),
+ * and multiple blocks. Returns the remaining content trimmed.
+ */
+function stripThinkTags(content) {
+  if (!content) return content;
+  // Remove complete <think>...</think> blocks (multiline)
+  let stripped = content.replace(/<think>[\s\S]*?<\/think>/g, '');
+  // Remove unclosed <think> block (truncated output)
+  stripped = stripped.replace(/<think>[\s\S]*/g, '');
+  return stripped.trim();
+}
+
+/**
+ * Extract and parse JSON from LLM output, handling:
+ * 1. <think> tags (Qwen3 reasoning mode)
+ * 2. Markdown ```json code blocks
+ * 3. Bare JSON with surrounding text
+ * @param {string} raw Raw LLM output
+ * @returns {object} Parsed JSON object
+ * @throws {Error} If no valid JSON can be extracted
+ */
+function extractJson(raw) {
+  const content = stripThinkTags(raw);
+
+  // 1. Try direct parse
+  try {
+    return JSON.parse(content);
+  } catch (_) { /* continue */ }
+
+  // 2. Try markdown code block
+  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    try {
+      return JSON.parse(codeBlockMatch[1].trim());
+    } catch (_) { /* continue */ }
+  }
+
+  // 3. Try finding the outermost { ... } or [ ... ]
+  const firstBrace = content.indexOf('{');
+  const firstBracket = content.indexOf('[');
+  let start = -1;
+  let openChar = '{';
+  let closeChar = '}';
+  if (firstBrace >= 0 && (firstBracket < 0 || firstBrace <= firstBracket)) {
+    start = firstBrace;
+  } else if (firstBracket >= 0) {
+    start = firstBracket;
+    openChar = '[';
+    closeChar = ']';
+  }
+  if (start >= 0) {
+    // Walk forward to find the matching close bracket
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = start; i < content.length; i++) {
+      const ch = content[i];
+      if (escape) { escape = false; continue; }
+      if (ch === '\\' && inString) { escape = true; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === openChar) depth++;
+      if (ch === closeChar) {
+        depth--;
+        if (depth === 0) {
+          try {
+            return JSON.parse(content.substring(start, i + 1));
+          } catch (_) { break; }
+        }
+      }
+    }
+  }
+
+  throw new Error('No valid JSON found in LLM response');
+}
 
 /**
  * LLM inference engine that calls a vLLM-compatible OpenAI API.
@@ -102,13 +180,8 @@ class LlmEngine {
     });
 
     try {
-      return JSON.parse(result.content);
+      return extractJson(result.content);
     } catch (parseErr) {
-      // Try extracting JSON from markdown code block
-      const jsonMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[1].trim());
-      }
       logger.error(`Failed to parse explore response: ${result.content.substring(0, 200)}`);
       throw new Error('Failed to parse LLM explore response as JSON');
     }
@@ -136,12 +209,8 @@ class LlmEngine {
     });
 
     try {
-      return JSON.parse(result.content);
+      return extractJson(result.content);
     } catch (parseErr) {
-      const jsonMatch = result.content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[1].trim());
-      }
       logger.error(`Failed to parse course response: ${result.content.substring(0, 200)}`);
       throw new Error('Failed to parse LLM course response as JSON');
     }
@@ -168,8 +237,10 @@ class LlmEngine {
       temperature: 0.5,
     });
 
-    return result.content;
+    return stripThinkTags(result.content);
   }
 }
 
 module.exports = LlmEngine;
+module.exports.stripThinkTags = stripThinkTags;
+module.exports.extractJson = extractJson;
