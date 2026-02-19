@@ -4,7 +4,7 @@ const assert = chai.assert;
 // We'll mock axios.post by replacing the module-level reference
 // LlmEngine uses axios internally, so we intercept at the axios level.
 const axios = require('axios');
-const { stripThinkTags, extractJson } = require('../../db/llm-engine');
+const { stripThinkTags, extractThinking, extractJson } = require('../../db/llm-engine');
 
 describe('LlmEngine', () => {
   let engine;
@@ -86,6 +86,42 @@ describe('LlmEngine', () => {
     it('should trim whitespace after stripping', () => {
       const input = '  <think>thinking</think>  \n  result  \n  ';
       assert.equal(stripThinkTags(input), 'result');
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // extractThinking
+  // ---------------------------------------------------------------------------
+
+  describe('extractThinking', () => {
+    it('should return null when no think tags present', () => {
+      assert.isNull(extractThinking('Just plain text'));
+    });
+
+    it('should return null for empty/null input', () => {
+      assert.isNull(extractThinking(null));
+      assert.isNull(extractThinking(''));
+    });
+
+    it('should extract single think block', () => {
+      const result = extractThinking('<think>I need to analyze this carefully.</think>\n\nThe answer is 42.');
+      assert.equal(result, 'I need to analyze this carefully.');
+    });
+
+    it('should extract multiple think blocks and join with double newline', () => {
+      const result = extractThinking('<think>First thought</think>\nSome text\n<think>Second thought</think>\nMore text');
+      assert.equal(result, 'First thought\n\nSecond thought');
+    });
+
+    it('should handle multiline think content', () => {
+      const result = extractThinking('<think>\nStep 1: Read the question\nStep 2: Think about it\nStep 3: Answer\n</think>\nFinal answer.');
+      assert.include(result, 'Step 1: Read the question');
+      assert.include(result, 'Step 3: Answer');
+    });
+
+    it('should return null for unclosed think tag (no content captured)', () => {
+      // Only closed <think>...</think> blocks are captured
+      assert.isNull(extractThinking('<think>Still thinking...'));
     });
   });
 
@@ -394,6 +430,22 @@ describe('LlmEngine', () => {
       const result = await engine.explore({ topicPath: 'ai/transformers' });
       assert.equal(result.title, 'Qwen3 Exploration');
       assert.equal(result.depth, 2);
+      assert.isString(result.thinking);
+      assert.include(result.thinking, 'I need to generate a JSON exploration about transformers');
+    });
+
+    it('should set thinking to null when no think tags in explore response', async () => {
+      const exploration = { title: 'No Think', content: 'c', summary: 's', depth: 1, tags: 't' };
+      mockPost({
+        data: {
+          choices: [{ message: { content: JSON.stringify(exploration) } }],
+          usage: {},
+        },
+      });
+
+      const result = await engine.explore({ topicPath: 'test' });
+      assert.equal(result.title, 'No Think');
+      assert.isNull(result.thinking);
     });
 
     it('should parse JSON from think tags + markdown code block', async () => {
@@ -556,6 +608,8 @@ describe('LlmEngine', () => {
       const result = await engine.generateCourse({ topicPath: 'ai/transformers', explorations: [] });
       assert.equal(result.stages.length, 1);
       assert.equal(result.stages[0].title, 'S1');
+      assert.isString(result.thinking);
+      assert.include(result.thinking, 'design a course with progressive stages');
     });
 
     it('should throw on unparseable response', async () => {
@@ -596,8 +650,10 @@ describe('LlmEngine', () => {
         ],
       });
 
-      assert.isString(result);
-      assert.include(result, 'Attention mechanisms specialize');
+      assert.isObject(result);
+      assert.isString(result.content);
+      assert.include(result.content, 'Attention mechanisms specialize');
+      assert.isNull(result.thinking);
     });
 
     it('should format context nodes in user message', async () => {
@@ -669,9 +725,12 @@ describe('LlmEngine', () => {
         contextNodes: [{ title: 'Transformers', topic_path: 'ai', depth: 1, summary: 'Attention' }],
       });
 
-      assert.notInclude(result, '<think>');
-      assert.notInclude(result, '</think>');
-      assert.include(result, 'The key innovation is self-attention.');
+      assert.isObject(result);
+      assert.notInclude(result.content, '<think>');
+      assert.notInclude(result.content, '</think>');
+      assert.include(result.content, 'The key innovation is self-attention.');
+      assert.isString(result.thinking);
+      assert.include(result.thinking, 'Let me analyze the context');
     });
 
     it('should handle empty context nodes', async () => {
@@ -683,7 +742,9 @@ describe('LlmEngine', () => {
       });
 
       const result = await engine.analyze({ question: 'q', contextNodes: [] });
-      assert.equal(result, 'No context available');
+      assert.isObject(result);
+      assert.equal(result.content, 'No context available');
+      assert.isNull(result.thinking);
     });
   });
 });
