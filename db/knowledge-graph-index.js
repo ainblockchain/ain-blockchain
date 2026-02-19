@@ -32,6 +32,7 @@ class KnowledgeGraphIndex {
       }
       await this.backend.initialize();
       this._enabled = true;
+      this._syncSuppressed = true; // Suppress incremental syncs until rebuild completes.
       logger.info(`Knowledge Graph Index initialized with ${this.backendType} backend.`);
     } catch (err) {
       this._enabled = false;
@@ -54,7 +55,7 @@ class KnowledgeGraphIndex {
    * @param {object} topicInfo { title, description, created_at, created_by }
    */
   async syncTopic(topicPath, topicInfo) {
-    if (!this._enabled || !this.backend) return;
+    if (!this._enabled || !this.backend || this._syncSuppressed) return;
 
     const topicProps = {
       path: topicPath,
@@ -86,7 +87,7 @@ class KnowledgeGraphIndex {
    * @param {object} exploration Exploration data from on-chain
    */
   async syncExploration(address, topicPath, entryId, exploration) {
-    if (!this._enabled || !this.backend) return;
+    if (!this._enabled || !this.backend || this._syncSuppressed) return;
 
     // Merge User node (idempotent)
     await this.backend.mergeNode('User', address, { address });
@@ -298,6 +299,212 @@ class KnowledgeGraphIndex {
   }
 
   // ---------------------------------------------------------------------------
+  // Block / Transaction sync & query
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Sync a finalized block (with transactions) into the graph index.
+   * Creates Block + Transaction nodes and CONTAINS_TX edges.
+   */
+  async syncFinalizedBlock(block) {
+    if (!this._enabled || !this.backend) return;
+    if (!block || !block.transactions || block.transactions.length === 0) return;
+
+    try {
+      const blockId = `block:${block.number}`;
+      await this.backend.mergeNode('Block', blockId, {
+        number: block.number,
+        hash: block.hash,
+        epoch: block.epoch,
+        timestamp: block.timestamp,
+        proposer: block.proposer,
+        tx_count: block.transactions.length,
+      });
+
+      for (let i = 0; i < block.transactions.length; i++) {
+        const tx = block.transactions[i];
+        const txId = tx.hash;
+        await this.backend.mergeNode('Transaction', txId, {
+          hash: tx.hash,
+          block_number: block.number,
+          index: i,
+          address: tx.address,
+          timestamp: tx.tx_body ? tx.tx_body.timestamp : block.timestamp,
+          transaction_json: JSON.stringify(tx),
+          receipt_json: block.receipts && block.receipts[i] ? JSON.stringify(block.receipts[i]) : null,
+        });
+        await this.backend.mergeEdge({
+          type: 'CONTAINS_TX',
+          from: blockId,
+          to: txId,
+        });
+      }
+    } catch (err) {
+      logger.error(`[syncFinalizedBlock] Failed to sync block ${block.number}: ${err.message}`);
+    }
+  }
+
+  /**
+   * Get recent blocks that contain transactions, ordered by block number DESC.
+   */
+  async getRecentBlocksWithTransactions(count) {
+    if (!this._enabled || !this.backend) return [];
+
+    try {
+      const blockNodes = await this.backend.findNodesOrdered('Block', 'number', 'DESC', count);
+      const results = [];
+      for (let i = 0; i < blockNodes.length; i++) {
+        const b = blockNodes[i].properties;
+        const txNodes = await this.backend.getChildren('Block', blockNodes[i].id, 'CONTAINS_TX', 'Transaction');
+        // Sort transactions by index ASC
+        txNodes.sort(function(a, c) { return a.properties.index - c.properties.index; });
+        const transactions = [];
+        const receipts = [];
+        for (let j = 0; j < txNodes.length; j++) {
+          const txProps = txNodes[j].properties;
+          transactions.push(txProps.transaction_json ? JSON.parse(txProps.transaction_json) : null);
+          receipts.push(txProps.receipt_json ? JSON.parse(txProps.receipt_json) : null);
+        }
+        results.push({
+          number: b.number,
+          hash: b.hash,
+          epoch: b.epoch,
+          timestamp: b.timestamp,
+          proposer: b.proposer,
+          tx_count: b.tx_count,
+          transactions,
+          receipts,
+        });
+      }
+      return results;
+    } catch (err) {
+      logger.error(`[getRecentBlocksWithTransactions] Failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get recent transactions ordered by block_number DESC, index DESC.
+   */
+  async getRecentTransactions(count) {
+    if (!this._enabled || !this.backend) return [];
+
+    try {
+      const txNodes = await this.backend.findNodesOrdered('Transaction', 'block_number', 'DESC', count);
+      const results = [];
+      for (let i = 0; i < txNodes.length; i++) {
+        const p = txNodes[i].properties;
+        results.push({
+          block_number: p.block_number,
+          block_timestamp: p.timestamp,
+          index: p.index,
+          transaction: p.transaction_json ? JSON.parse(p.transaction_json) : null,
+          receipt: p.receipt_json ? JSON.parse(p.receipt_json) : null,
+        });
+      }
+      return results;
+    } catch (err) {
+      logger.error(`[getRecentTransactions] Failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Get a transaction by its hash from the graph index.
+   */
+  async getTransactionByHash(hash) {
+    if (!this._enabled || !this.backend) return null;
+
+    try {
+      const node = await this.backend.getNode('Transaction', hash);
+      if (!node) return null;
+      const p = node.properties;
+      return {
+        state: 'FINALIZED',
+        number: p.block_number,
+        index: p.index,
+        address: p.address,
+        timestamp: p.timestamp,
+        is_executed: true,
+        is_finalized: true,
+        transaction: p.transaction_json ? JSON.parse(p.transaction_json) : null,
+        receipt: p.receipt_json ? JSON.parse(p.receipt_json) : null,
+      };
+    } catch (err) {
+      logger.error(`[getTransactionByHash] Failed: ${err.message}`);
+      return null;
+    }
+  }
+
+  /**
+   * Get the maximum indexed block number from the graph.
+   */
+  async getLatestIndexedBlockNumber() {
+    if (!this._enabled || !this.backend) return -1;
+
+    try {
+      const maxNum = await this.backend.getMaxProperty('Block', 'number');
+      return maxNum !== null ? maxNum : -1;
+    } catch (err) {
+      logger.error(`[getLatestIndexedBlockNumber] Failed: ${err.message}`);
+      return -1;
+    }
+  }
+
+  /**
+   * Check integrity and rebuild block index only for missing blocks.
+   * @param {object} bc The Blockchain instance
+   */
+  async checkAndRebuildBlockIndex(bc) {
+    if (!this._enabled || !this.backend) return;
+
+    const chainTip = bc.lastBlockNumber();
+    const indexedMax = await this.getLatestIndexedBlockNumber();
+    logger.info(
+      `[checkAndRebuildBlockIndex] Chain tip: ${chainTip}, Neo4j max block: ${indexedMax}`);
+
+    if (indexedMax >= chainTip) {
+      logger.info('[checkAndRebuildBlockIndex] Block index is up to date, no rebuild needed.');
+      return;
+    }
+
+    const startBlock = indexedMax + 1;
+    let syncedCount = 0;
+    for (let num = startBlock; num <= chainTip; num++) {
+      const block = bc.getBlockByNumber(num);
+      if (block && block.transactions && block.transactions.length > 0) {
+        await this.syncFinalizedBlock(block);
+        syncedCount++;
+      }
+    }
+    logger.info(
+      `[checkAndRebuildBlockIndex] Synced ${syncedCount} blocks from ${startBlock} to ${chainTip}.`);
+  }
+
+  /**
+   * Get recent explorations ordered by created_at DESC.
+   */
+  async getRecentKnowledge(count) {
+    if (!this._enabled || !this.backend) return [];
+
+    try {
+      const expNodes = await this.backend.findNodesOrdered('Exploration', 'created_at', 'DESC', count);
+      const results = [];
+      for (let i = 0; i < expNodes.length; i++) {
+        const exp = KnowledgeGraphIndex._nodeToExploration(expNodes[i]);
+        // Fetch the user who created this exploration
+        const createdEdges = await this.backend.getEdges(expNodes[i].id, 'CREATED', 'in');
+        exp.created_by = createdEdges.length > 0 ? createdEdges[0].from : null;
+        results.push(exp);
+      }
+      return results;
+    } catch (err) {
+      logger.error(`[getRecentKnowledge] Failed: ${err.message}`);
+      return [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Rebuild (called on snapshot restore / cold start)
   // ---------------------------------------------------------------------------
 
@@ -311,10 +518,13 @@ class KnowledgeGraphIndex {
 
     logger.info('Rebuilding knowledge graph index from state...');
 
-    // Clear existing graph data
-    if (typeof this.backend.clearAll === 'function') {
-      await this.backend.clearAll();
-    }
+    // Clear only knowledge-related nodes (preserve Block/Transaction data)
+    await this.backend.clearNodesByLabel('Topic');
+    await this.backend.clearNodesByLabel('User');
+    await this.backend.clearNodesByLabel('Exploration');
+
+    // Temporarily allow syncs during rebuild
+    this._syncSuppressed = false;
 
     // Rebuild topics
     const topicsData = db.getValue('/apps/knowledge/topics');
@@ -347,6 +557,7 @@ class KnowledgeGraphIndex {
 
     const stats = await this.getGraphStats();
     logger.info(`Knowledge graph index rebuilt: ${stats.node_count} nodes, ${stats.edge_count} edges.`);
+    // Syncs now remain enabled for live blocks.
   }
 
   /**

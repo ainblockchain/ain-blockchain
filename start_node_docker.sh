@@ -15,7 +15,7 @@ elif [[ $SEASON = 'exp' ]]; then
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
 elif [[ $SEASON = 'standalone' ]]; then
-    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node
     export ENABLE_STATUS_REPORT_TO_TRACKER=false
     export TARGET_NUM_OUTBOUND_CONNECTION=0
 fi
@@ -33,8 +33,12 @@ else
 fi
 
 if [[ -z "$ACCOUNT_INJECTION_OPTION" ]]; then
-    printf "You must provide a ACCOUNT_INJECTION_OPTION\n"
-    exit
+    if [[ -n "$UNSAFE_PRIVATE_KEY" ]]; then
+        printf 'Using UNSAFE_PRIVATE_KEY for account (no injection needed).\n'
+    else
+        printf "You must provide a ACCOUNT_INJECTION_OPTION or UNSAFE_PRIVATE_KEY\n"
+        exit
+    fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "private_key" ]]; then
     if [[ -z "$PRIVATE_KEY" ]]; then
         printf 'You should manually inject your account into this node.\n'

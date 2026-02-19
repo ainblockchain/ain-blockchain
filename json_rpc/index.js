@@ -13,6 +13,7 @@ const getNetworkApis = require('./network');
 const getTransactionApis = require('./transaction');
 const getVersionApis = require('./version');
 const getKnowledgeApis = require('./knowledge');
+const getLlmApis = require('./llm');
 const { JSON_RPC_METHODS } = require('./constants');
 
 /**
@@ -53,6 +54,9 @@ module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtoc
   }
   if (node.knowledgeGraphIndex) {
     Object.assign(apis, getKnowledgeApis(node));
+  }
+  if (node.llmEngine) {
+    Object.assign(apis, getLlmApis(node));
   }
 
   return apis;

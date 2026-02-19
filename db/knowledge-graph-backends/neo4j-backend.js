@@ -67,6 +67,9 @@ class Neo4jBackend {
       await session.run('CREATE INDEX txlog_id_idx IF NOT EXISTS FOR (tx:TxLog) ON (tx.id)');
       await session.run('CREATE INDEX snapshot_created_idx IF NOT EXISTS FOR (s:Snapshot) ON (s.created_at)');
       await session.run('CREATE INDEX snapshot_id_idx IF NOT EXISTS FOR (s:Snapshot) ON (s.id)');
+      await session.run('CREATE INDEX block_number_idx IF NOT EXISTS FOR (b:Block) ON (b.number)');
+      await session.run('CREATE INDEX tx_hash_idx IF NOT EXISTS FOR (tx:Transaction) ON (tx.id)');
+      await session.run('CREATE INDEX tx_block_number_idx IF NOT EXISTS FOR (tx:Transaction) ON (tx.block_number)');
     } finally {
       await session.close();
     }
@@ -441,6 +444,46 @@ class Neo4jBackend {
       const result = await session.run(query);
       const val = result.records[0].get('cnt');
       return neo4jMod.isInt(val) ? val.toNumber() : val;
+    } finally {
+      await session.close();
+    }
+  }
+
+  async findNodesOrdered(label, orderByProperty, direction, limit) {
+    const session = this._session();
+    try {
+      const dir = direction === 'ASC' ? 'ASC' : 'DESC';
+      const result = await session.run(
+        `MATCH (n:${label}) RETURN n ORDER BY n.${orderByProperty} ${dir} LIMIT $limit`,
+        { limit: getNeo4j().int(limit) }
+      );
+      const self = this;
+      return result.records.map(function(r) { return self._toGraphNode(r.get('n')); });
+    } finally {
+      await session.close();
+    }
+  }
+
+  async getMaxProperty(label, property) {
+    const session = this._session();
+    try {
+      const neo4jMod = getNeo4j();
+      const result = await session.run(
+        `MATCH (n:${label}) RETURN max(n.${property}) AS maxVal`
+      );
+      if (result.records.length === 0) return null;
+      const val = result.records[0].get('maxVal');
+      if (val === null) return null;
+      return neo4jMod.isInt(val) ? val.toNumber() : val;
+    } finally {
+      await session.close();
+    }
+  }
+
+  async clearNodesByLabel(label) {
+    const session = this._session();
+    try {
+      await session.run(`MATCH (n:${label}) DETACH DELETE n`);
     } finally {
       await session.close();
     }

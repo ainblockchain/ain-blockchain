@@ -354,6 +354,60 @@ class MemoryBackend {
     return this.edges.filter(function(e) { return e.type === type; }).length;
   }
 
+  async findNodesOrdered(label, orderByProperty, direction, limit) {
+    const nodes = [];
+    const all = this._allNodes();
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].label === label) nodes.push(all[i]);
+    }
+    nodes.sort(function(a, b) {
+      const aVal = a.properties[orderByProperty];
+      const bVal = b.properties[orderByProperty];
+      if (aVal < bVal) return direction === 'ASC' ? -1 : 1;
+      if (aVal > bVal) return direction === 'ASC' ? 1 : -1;
+      return 0;
+    });
+    return nodes.slice(0, limit);
+  }
+
+  async getMaxProperty(label, property) {
+    let maxVal = null;
+    const all = this._allNodes();
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].label !== label) continue;
+      const val = all[i].properties[property];
+      if (val !== undefined && (maxVal === null || val > maxVal)) {
+        maxVal = val;
+      }
+    }
+    return maxVal;
+  }
+
+  async clearNodesByLabel(label) {
+    const toDelete = [];
+    const all = this._allNodes();
+    for (let i = 0; i < all.length; i++) {
+      if (all[i].label === label) toDelete.push(all[i].id);
+    }
+    for (let i = 0; i < toDelete.length; i++) {
+      this.nodes.delete(this._nodeKey(label, toDelete[i]));
+    }
+    // Remove edges connected to deleted nodes
+    const deletedIds = new Set(toDelete);
+    const remaining = [];
+    for (let i = 0; i < this.edges.length; i++) {
+      if (!deletedIds.has(this.edges[i].from) && !deletedIds.has(this.edges[i].to)) {
+        remaining.push(this.edges[i]);
+      }
+    }
+    this.edges = remaining;
+    // Rebuild edge index
+    this.edgeIndex.clear();
+    for (let i = 0; i < this.edges.length; i++) {
+      this._indexEdge(this.edges[i]);
+    }
+  }
+
   async clearAll() {
     this.nodes.clear();
     this.edges = [];

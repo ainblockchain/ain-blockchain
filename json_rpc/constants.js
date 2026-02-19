@@ -65,6 +65,10 @@ const JSON_RPC_METHODS = {
   AIN_KNOWLEDGE_LIST_TOPICS: 'ain_knowledge_listTopics',
   AIN_KNOWLEDGE_LIST_SUBTOPICS: 'ain_knowledge_listSubtopics',
   AIN_KNOWLEDGE_GET_GRAPH_STATS: 'ain_knowledge_getGraphStats',
+  AIN_LLM_INFER: 'ain_llm_infer',
+  AIN_LLM_EXPLORE: 'ain_llm_explore',
+  AIN_LLM_GENERATE_COURSE: 'ain_llm_generateCourse',
+  AIN_LLM_ANALYZE: 'ain_llm_analyze',
 }
 
 const JSON_RPC_SET_METHOD_SET = new Set([

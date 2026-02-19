@@ -90,10 +90,15 @@ module.exports = function getTransactionApis(node, p2pServer) {
 
     [JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
-      const transactionInfo = node.getTransactionByHash(args.hash);
-      const latency = Date.now() - beginTime;
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result: transactionInfo }));
+      node.getTransactionByHash(args.hash).then(function(transactionInfo) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({ result: transactionInfo }));
+      }).catch(function(err) {
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({ result: null }));
+      });
     },
 
     [JSON_RPC_METHODS.AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX]: function(args, done) {

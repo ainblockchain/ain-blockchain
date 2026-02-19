@@ -523,7 +523,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);
       return;
     }
-    if (!this.server.node.startNode(this.isFirstNode)) {
+    if (!(await this.server.node.startNode(this.isFirstNode))) {
       logger.error(`[${LOG_HEADER}] Failed to init blockchain node!`);
       this.server.node.state = BlockchainNodeStates.STOPPED;
       logger.error(`[${LOG_HEADER}] Blockchain node stopped!`);

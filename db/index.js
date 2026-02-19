@@ -5,6 +5,7 @@ const path = require('path');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
+  DISABLE_STATE_BUDGET_CHECK,
   DevFlags,
   NodeConfigs,
   ReadDbOperations,
@@ -1431,6 +1432,23 @@ class DB {
           `Invalid operation: ${op}`,
           unitWriteGasAmount));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+      return result;
+    }
+    if (DISABLE_STATE_BUDGET_CHECK) {
+      // Skip all gas accounting — just execute the operation and update nonce/timestamp.
+      if (op.type === WriteDbOperations.SET) {
+        Object.assign(
+            result,
+            this.executeMultiSetOperation(op.op_list, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
+      } else {
+        Object.assign(
+            result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
+      }
+      if (!CommonUtil.isFailedTx(result)) {
+        if (tx && auth && auth.addr && !auth.fid) {
+          this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
+        }
+      }
       return result;
     }
     const allStateUsageBefore = this.getAllStateUsages();

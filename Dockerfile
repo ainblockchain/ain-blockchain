@@ -1,6 +1,7 @@
 FROM node:20
 WORKDIR /app/ain-blockchain
 COPY package.json yarn.lock ./
+COPY patches/ patches/
 RUN yarn install
 COPY . .
 EXPOSE 8080 5000

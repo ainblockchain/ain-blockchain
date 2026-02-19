@@ -88,6 +88,10 @@ const TimerFlagEnabledBandageMap = CommonUtil.createTimerFlagEnabledBandageMap(T
 // ** Blockchain params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 
+// ** Env-based feature flags **
+const DISABLE_STATE_BUDGET_CHECK =
+    process.env.DISABLE_STATE_BUDGET_CHECK === 'true';
+
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
 NodeConfigs.BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || BlockchainConsts.BASE_BLOCKCHAIN_CONFIGS_DIR;
@@ -833,6 +837,7 @@ const trafficStatsManager = new TrafficStatsManager(
     NodeConfigs.TRAFFIC_DB_INTERVAL_MS, NodeConfigs.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
 
 module.exports = {
+  DISABLE_STATE_BUDGET_CHECK,
   DevFlags,
   BlockchainConsts,
   TimerFlags,

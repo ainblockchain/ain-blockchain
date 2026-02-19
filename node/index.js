@@ -40,6 +40,7 @@ const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
 const EventHandler = require('../event-handler');
 const KnowledgeGraphIndex = require('../db/knowledge-graph-index');
+const LlmEngine = require('../db/llm-engine');
 
 class BlockchainNode {
   constructor(account = null) {
@@ -90,11 +91,39 @@ class BlockchainNode {
         this.knowledgeGraphIndex = null;
       });
     }
+    this.llmEngine = null;
+    if (NodeConfigs.ENABLE_LLM === true) {
+      this.llmEngine = new LlmEngine({
+        providerUrl: NodeConfigs.LLM_PROVIDER_URL || 'http://localhost:8000',
+        model: NodeConfigs.LLM_MODEL || 'Qwen/Qwen3-32B-AWQ',
+      });
+    }
     logger.info(`Now node in STARTING state!`);
 
     if (account === null) {
       this.initAccount();
     }
+  }
+
+  async getRecentBlocksWithTransactions(count) {
+    if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+      return await this.knowledgeGraphIndex.getRecentBlocksWithTransactions(count);
+    }
+    return [];
+  }
+
+  async getRecentTransactions(count) {
+    if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+      return await this.knowledgeGraphIndex.getRecentTransactions(count);
+    }
+    return [];
+  }
+
+  async getRecentKnowledge(count) {
+    if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+      return await this.knowledgeGraphIndex.getRecentKnowledge(count);
+    }
+    return [];
   }
 
   getEventHandlerStatus() {
@@ -378,7 +407,7 @@ class BlockchainNode {
     }
   }
 
-  startNode(isFirstNode) {
+  async startNode(isFirstNode) {
     const LOG_HEADER = 'startNode';
 
     try {
@@ -407,17 +436,36 @@ class BlockchainNode {
         }
       }
 
-      // 4. Execute transactions from the pool.
+      // 4. Check and rebuild block index (only syncs missing blocks).
+      if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+        logger.info(`[${LOG_HEADER}] Checking and rebuilding block index..`);
+        await this.knowledgeGraphIndex.checkAndRebuildBlockIndex(this.bc);
+      }
+
+      // 5. Rebuild knowledge graph index from finalized state.
+      if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+        logger.info(`[${LOG_HEADER}] Rebuilding knowledge graph index from finalized state..`);
+        this.knowledgeGraphIndex.rebuildFromState(this.db)
+          .then(() => {
+            logger.info(`[${LOG_HEADER}] Knowledge graph index rebuild complete.`);
+          })
+          .catch((err) => {
+            logger.error(
+                `[${LOG_HEADER}] Knowledge graph index rebuild failed: ${err.message}`);
+          });
+      }
+
+      // 6. Execute transactions from the pool.
       logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
       this.db.executeTransactionList(
           this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
           this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
 
-      // 5. Node status changed: READY_TO_START -> CHAIN_SYNCING.
+      // 7. Node status changed: READY_TO_START -> CHAIN_SYNCING.
       this.state = BlockchainNodeStates.CHAIN_SYNCING;
       logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
-      // 6. Reset bootstrap snapshot.
+      // 8. Reset bootstrap snapshot.
       this.resetBootstrapSnapshot();
     } catch (err) {
       logger.error(
@@ -530,33 +578,38 @@ class BlockchainNode {
     };
   }
 
-  getTransactionByHash(hash) {
+  async getTransactionByHash(hash) {
     const LOG_HEADER = 'getTransactionByHash';
+    // Check in-memory transaction tracker first (for pending/in-flight/recently tracked)
     const transactionInfo = this.tp.transactionTracker.get(hash);
-    if (!transactionInfo) {
-      return null;
+    if (transactionInfo) {
+      if (isTxInBlock(transactionInfo.state)) {
+        const block = this.bc.getBlockByNumber(transactionInfo.number);
+        const index = transactionInfo.index;
+        if (!block) {
+          logger.debug(`[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
+          return transactionInfo;
+        } else if (index >= 0) {
+          transactionInfo.transaction = block.transactions[index];
+          transactionInfo.receipt = block.receipts[index];
+        } else {
+          transactionInfo.transaction =
+              _.find(block.last_votes, (tx) => tx.hash === hash) || null;
+        }
+      } else if (transactionInfo.state === TransactionStates.EXECUTED ||
+          transactionInfo.state === TransactionStates.PENDING) {
+        const address = transactionInfo.address;
+        transactionInfo.transaction =
+            _.find(this.tp.transactions.get(address), (tx) => tx.hash === hash) || null;
+      }
+      return transactionInfo;
     }
 
-    if (isTxInBlock(transactionInfo.state)) {
-      const block = this.bc.getBlockByNumber(transactionInfo.number);
-      const index = transactionInfo.index;
-      if (!block) {
-        logger.debug(`[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
-        return transactionInfo;
-      } else if (index >= 0) {
-        transactionInfo.transaction = block.transactions[index];
-        transactionInfo.receipt = block.receipts[index];
-      } else {
-        transactionInfo.transaction =
-            _.find(block.last_votes, (tx) => tx.hash === hash) || null;
-      }
-    } else if (transactionInfo.state === TransactionStates.EXECUTED ||
-        transactionInfo.state === TransactionStates.PENDING) {
-      const address = transactionInfo.address;
-      transactionInfo.transaction =
-          _.find(this.tp.transactions.get(address), (tx) => tx.hash === hash) || null;
+    // Fall back to knowledge graph index for finalized transactions
+    if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+      return await this.knowledgeGraphIndex.getTransactionByHash(hash);
     }
-    return transactionInfo;
+    return null;
   }
 
   getNonce(fromPending = true) {
@@ -1074,6 +1127,12 @@ class BlockchainNode {
       }
       if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, writeToDisk)) {
         lastFinalizedBlock = blockToFinalize;
+        // Fire-and-forget sync to knowledge graph index
+        if (this.knowledgeGraphIndex && this.knowledgeGraphIndex.isEnabled()) {
+          this.knowledgeGraphIndex.syncFinalizedBlock(blockToFinalize).catch((err) => {
+            logger.error(`[${LOG_HEADER}] Failed to sync block to knowledge graph: ${err.message}`);
+          });
+        }
         logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
         this.tp.cleanUpForFinalizedBlock(blockToFinalize);

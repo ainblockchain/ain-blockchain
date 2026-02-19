@@ -1,4 +1,31 @@
 services:
+  vllm:
+    image: vllm/vllm-openai:v0.12.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - huggingface_cache:/root/.cache/huggingface
+    command:
+      - "--model"
+      - "${LLM_MODEL:-Qwen/Qwen3-32B-AWQ}"
+      - "--max-model-len"
+      - "32768"
+      - "--gpu-memory-utilization"
+      - "0.90"
+    ports:
+      - "${VLLM_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+
   neo4j:
     image: neo4j:5
     ports:
@@ -19,26 +46,60 @@ services:
   ain-blockchain:
     build: .
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
       - "${P2P_PORT:-4998}:${P2P_PORT:-4998}"
+    expose:
+      - "${PORT:-8080}"
     depends_on:
+      vllm:
+        condition: service_healthy
       neo4j:
         condition: service_healthy
     environment:
       SEASON: "${SEASON:-standalone}"
-      ACCOUNT_INJECTION_OPTION: "${ACCOUNT_INJECTION_OPTION:-private_key}"
       UNSAFE_PRIVATE_KEY: "${UNSAFE_PRIVATE_KEY:-b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96}"
       ENABLE_KNOWLEDGE_GRAPH_INDEX: "true"
       KNOWLEDGE_GRAPH_BACKEND: "neo4j"
       KNOWLEDGE_NEO4J_URI: "bolt://neo4j:7687"
       KNOWLEDGE_NEO4J_USERNAME: "${NEO4J_USERNAME:-neo4j}"
       KNOWLEDGE_NEO4J_PASSWORD: "${NEO4J_PASSWORD:-neo4jpassword}"
+      ENABLE_LLM: "true"
+      LLM_PROVIDER_URL: "http://vllm:8000"
+      LLM_MODEL: "${LLM_MODEL:-Qwen/Qwen3-32B-AWQ}"
+      DISABLE_STATE_BUDGET_CHECK: "true"
+      TX_POOL_SIZE_LIMIT: "100000000"
+      TX_POOL_SIZE_LIMIT_PER_ACCOUNT: "100000000"
+      BLOCKCHAIN_DATA_DIR: "/home/ain_blockchain_data"
+      PEER_CANDIDATE_JSON_RPC_URL: "http://localhost:${PORT:-8080}/json-rpc"
       PORT: "${PORT:-8080}"
       P2P_PORT: "${P2P_PORT:-4998}"
     volumes:
       - blockchain_data:/home/ain_blockchain_data
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - ain-blockchain
+    restart: unless-stopped
+    command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
 volumes:
+  huggingface_cache:
   neo4j_data:
   neo4j_logs:
   blockchain_data:
+  certbot_conf:
+  certbot_www:

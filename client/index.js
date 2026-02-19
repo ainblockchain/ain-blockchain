@@ -400,6 +400,42 @@ app.get('/blocks', (req, res, next) => {
     .end();
 });
 
+app.get('/recent_blocks_with_transactions', async (req, res, next) => {
+  const beginTime = Date.now();
+  const count = Math.min(Math.max(parseInt(req.query.count) || 20, 1), 1000);
+  const result = await node.getRecentBlocksWithTransactions(count);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/recent_transactions', async (req, res, next) => {
+  const beginTime = Date.now();
+  const count = Math.min(Math.max(parseInt(req.query.count) || 20, 1), 1000);
+  const result = await node.getRecentTransactions(count);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/recent_knowledge', async (req, res, next) => {
+  const beginTime = Date.now();
+  const count = Math.min(Math.max(parseInt(req.query.count) || 20, 1), 1000);
+  const result = await node.getRecentKnowledge(count);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
 app.get('/last_block', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.bc.lastBlock();
@@ -513,9 +549,9 @@ app.get('/tx_pool_size_util', (req, res) => {
     .end();
 });
 
-app.get('/get_transaction', (req, res, next) => {
+app.get('/get_transaction', async (req, res, next) => {
   const beginTime = Date.now();
-  const transactionInfo = node.getTransactionByHash(req.query.hash);
+  const transactionInfo = await node.getTransactionByHash(req.query.hash);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
