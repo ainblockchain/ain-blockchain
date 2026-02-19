@@ -26,6 +26,20 @@ assert_eq() {
   fi
 }
 
+assert_one_of() {
+  local desc="$1" actual="$2"
+  shift 2
+  for expected in "$@"; do
+    if [ "$expected" = "$actual" ]; then
+      echo "  PASS: $desc (got=$actual)"
+      PASS=$((PASS + 1))
+      return
+    fi
+  done
+  echo "  FAIL: $desc (got=$actual, expected one of: $*)"
+  FAIL=$((FAIL + 1))
+}
+
 assert_gt() {
   local desc="$1" threshold="$2" actual="$3"
   if [ "$actual" -gt "$threshold" ] 2>/dev/null; then
@@ -166,6 +180,65 @@ JRPC_RESULT=$(node_curl -X POST "$NODE_URL/json-rpc" \
   -d "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"ain_getTransactionByHash\", \"params\": {\"protoVer\": \"1.1.3\", \"hash\": \"$SET_TX\"}}")
 JRPC_STATE=$(echo "$JRPC_RESULT" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print(r['state'] if r else 'null')")
 assert_eq "JSON-RPC ain_getTransactionByHash persisted" "FINALIZED" "$JRPC_STATE"
+
+echo ""
+
+# --- Phase 6: LLM Engine tests ---
+echo "[Phase 6] Testing LLM Engine JSON-RPC methods..."
+
+# Test ain_llm_infer
+echo "  Testing ain_llm_infer..."
+LLM_INFER=$(node_curl -X POST "$NODE_URL/json-rpc" \
+  -H 'Content-Type: application/json' \
+  --max-time 120 \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "ain_llm_infer", "params": {"protoVer": "1.1.3", "messages": [{"role": "user", "content": "Say hello in one word."}], "max_tokens": 32, "temperature": 0.1}}')
+LLM_INFER_HAS_CONTENT=$(echo "$LLM_INFER" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print('yes' if r and r.get('content') else 'no')")
+assert_eq "ain_llm_infer returns content" "yes" "$LLM_INFER_HAS_CONTENT"
+
+# Test ain_llm_explore (LLM output may not always parse as JSON, so accept parse error too)
+echo "  Testing ain_llm_explore..."
+LLM_EXPLORE=$(node_curl -X POST "$NODE_URL/json-rpc" \
+  -H 'Content-Type: application/json' \
+  --max-time 120 \
+  -d '{"jsonrpc": "2.0", "id": 2, "method": "ain_llm_explore", "params": {"protoVer": "1.1.3", "topic_path": "math/algebra"}}')
+LLM_EXPLORE_STATUS=$(echo "$LLM_EXPLORE" | python3 -c "
+import json,sys
+r=json.load(sys.stdin)['result']
+if r.get('result') and isinstance(r['result'], dict) and r['result'].get('title'):
+    print('title_ok')
+elif r.get('code') == 30802:
+    print('parse_error')
+else:
+    print('unexpected')
+")
+assert_one_of "ain_llm_explore responds (title or parse_error)" "$LLM_EXPLORE_STATUS" "title_ok" "parse_error"
+
+# Test ain_llm_generateCourse (LLM output may not always parse as JSON, so accept parse error too)
+echo "  Testing ain_llm_generateCourse..."
+LLM_COURSE=$(node_curl -X POST "$NODE_URL/json-rpc" \
+  -H 'Content-Type: application/json' \
+  --max-time 120 \
+  -d '{"jsonrpc": "2.0", "id": 3, "method": "ain_llm_generateCourse", "params": {"protoVer": "1.1.3", "topic_path": "math/algebra", "explorations": [{"title": "Intro to Algebra", "depth": 1, "summary": "Basic algebraic concepts and operations."}]}}')
+LLM_COURSE_STATUS=$(echo "$LLM_COURSE" | python3 -c "
+import json,sys
+r=json.load(sys.stdin)['result']
+if r.get('result') and isinstance(r['result'], dict) and r['result'].get('stages'):
+    print('stages_ok')
+elif r.get('code') == 30802:
+    print('parse_error')
+else:
+    print('unexpected')
+")
+assert_one_of "ain_llm_generateCourse responds (stages or parse_error)" "$LLM_COURSE_STATUS" "stages_ok" "parse_error"
+
+# Test ain_llm_analyze
+echo "  Testing ain_llm_analyze..."
+LLM_ANALYZE=$(node_curl -X POST "$NODE_URL/json-rpc" \
+  -H 'Content-Type: application/json' \
+  --max-time 120 \
+  -d '{"jsonrpc": "2.0", "id": 4, "method": "ain_llm_analyze", "params": {"protoVer": "1.1.3", "question": "What is algebra?", "context_nodes": [{"title": "Intro to Algebra", "topic_path": "math/algebra", "depth": 1, "summary": "Basic algebraic concepts."}]}}')
+LLM_ANALYZE_HAS_CONTENT=$(echo "$LLM_ANALYZE" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print('yes' if r and len(r) > 0 else 'no')")
+assert_eq "ain_llm_analyze returns content" "yes" "$LLM_ANALYZE_HAS_CONTENT"
 
 echo ""
 
