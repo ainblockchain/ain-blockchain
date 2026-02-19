@@ -37,6 +37,21 @@ function stripThinkTags(content) {
 }
 
 /**
+ * Extract the thinking content from <think>...</think> blocks.
+ * Returns the concatenated thinking text, or null if none found.
+ */
+function extractThinking(content) {
+  if (!content) return null;
+  const matches = [];
+  const regex = /<think>([\s\S]*?)<\/think>/g;
+  let match;
+  while ((match = regex.exec(content)) !== null) {
+    matches.push(match[1].trim());
+  }
+  return matches.length > 0 ? matches.join('\n\n') : null;
+}
+
+/**
  * Extract and parse JSON from LLM output, handling:
  * 1. <think> tags (Qwen3 reasoning mode)
  * 2. Markdown ```json code blocks
@@ -179,8 +194,11 @@ class LlmEngine {
       temperature: 0.8,
     });
 
+    const thinking = extractThinking(result.content);
     try {
-      return extractJson(result.content);
+      const parsed = extractJson(result.content);
+      parsed.thinking = thinking;
+      return parsed;
     } catch (parseErr) {
       logger.error(`Failed to parse explore response: ${result.content.substring(0, 200)}`);
       throw new Error('Failed to parse LLM explore response as JSON');
@@ -208,8 +226,11 @@ class LlmEngine {
       temperature: 0.6,
     });
 
+    const thinking = extractThinking(result.content);
     try {
-      return extractJson(result.content);
+      const parsed = extractJson(result.content);
+      parsed.thinking = thinking;
+      return parsed;
     } catch (parseErr) {
       logger.error(`Failed to parse course response: ${result.content.substring(0, 200)}`);
       throw new Error('Failed to parse LLM course response as JSON');
@@ -237,10 +258,15 @@ class LlmEngine {
       temperature: 0.5,
     });
 
-    return stripThinkTags(result.content);
+    const thinking = extractThinking(result.content);
+    return {
+      content: stripThinkTags(result.content),
+      thinking,
+    };
   }
 }
 
 module.exports = LlmEngine;
 module.exports.stripThinkTags = stripThinkTags;
+module.exports.extractThinking = extractThinking;
 module.exports.extractJson = extractJson;

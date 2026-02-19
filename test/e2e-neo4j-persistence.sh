@@ -95,9 +95,22 @@ SET_RESULT=$(node_curl -X POST "$NODE_URL/set_value" \
 SET_TX=$(echo "$SET_RESULT" | python3 -c "import json,sys; print(json.load(sys.stdin)['result']['tx_hash'])")
 echo "  Set value tx: $SET_TX"
 
-# Wait for finalization
-echo "  Waiting for finalization (8s)..."
-sleep 8
+# Wait for finalization (poll up to 120s)
+echo "  Waiting for finalization..."
+FINALIZED=false
+for i in $(seq 1 60); do
+  GT_CHECK=$(node_curl "$NODE_URL/get_transaction?hash=$SET_TX" 2>/dev/null)
+  GT_CHECK_STATE=$(echo "$GT_CHECK" | python3 -c "import json,sys; r=json.load(sys.stdin).get('result'); print(r.get('state','') if r else '')" 2>/dev/null)
+  if [ "$GT_CHECK_STATE" = "FINALIZED" ]; then
+    echo "  Finalized after $((i * 2))s"
+    FINALIZED=true
+    break
+  fi
+  sleep 2
+done
+if [ "$FINALIZED" = "false" ]; then
+  echo "  WARNING: Transaction not finalized within 120s, continuing anyway"
+fi
 echo ""
 
 # --- Phase 3: Verify APIs before restart ---
@@ -148,7 +161,7 @@ echo ""
 echo "[Phase 5] Verifying data persistence (post-restart)..."
 
 # Check startup logs for integrity check (not full rebuild)
-INTEGRITY_LOG=$(docker compose exec -T ain-blockchain grep 'checkAndRebuildBlockIndex.*Chain tip' /home/ain_blockchain_data/logs/8080/node-8080-combined-19-Feb-26.log 2>/dev/null | tail -1)
+INTEGRITY_LOG=$(docker compose exec -T ain-blockchain sh -c 'grep "checkAndRebuildBlockIndex.*Chain tip" /home/ain_blockchain_data/logs/8080/node-8080-combined-*.log 2>/dev/null' | tail -1)
 NEO4J_MAX=$(echo "$INTEGRITY_LOG" | python3 -c "import sys,re; m=re.search(r'Neo4j max block: (\d+)', sys.stdin.read()); print(m.group(1) if m else '-1')")
 assert_gt "Neo4j max block after restart > 0 (persisted)" "0" "$NEO4J_MAX"
 
