@@ -41,6 +41,7 @@ const PathUtil = require('../common/path-util');
 const EventHandler = require('../event-handler');
 const KnowledgeGraphIndex = require('../db/knowledge-graph-index');
 const LlmEngine = require('../db/llm-engine');
+const ContainerManager = require('../db/container-manager');
 
 class BlockchainNode {
   constructor(account = null) {
@@ -96,6 +97,20 @@ class BlockchainNode {
       this.llmEngine = new LlmEngine({
         providerUrl: NodeConfigs.LLM_PROVIDER_URL || 'http://localhost:8000',
         model: NodeConfigs.LLM_MODEL || 'Qwen/Qwen3-32B-AWQ',
+      });
+    }
+    this.containerManager = null;
+    if (NodeConfigs.ENABLE_CONTAINER_MANAGER === true) {
+      const cm = new ContainerManager({
+        dockerNetwork: NodeConfigs.DOCKER_NETWORK || 'ain-blockchain_default',
+        allowedRegistries: NodeConfigs.ALLOWED_REGISTRIES || ['ghcr.io'],
+      });
+      this.containerManager = cm;
+      cm.initialize().then(() => {
+        logger.info('Container Manager initialized.');
+      }).catch((err) => {
+        logger.error(`Container Manager failed to initialize: ${err.message}`);
+        this.containerManager = null;
       });
     }
     logger.info(`Now node in STARTING state!`);
