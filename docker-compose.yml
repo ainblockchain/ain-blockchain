@@ -75,6 +75,24 @@ services:
     volumes:
       - blockchain_data:/home/ain_blockchain_data
 
+  cogito:
+    build: ./cogito
+    depends_on:
+      ain-blockchain:
+        condition: service_started
+      vllm:
+        condition: service_healthy
+    environment:
+      AIN_PROVIDER_URL: "http://ain-blockchain:${PORT:-8080}"
+      AIN_PRIVATE_KEY: "${UNSAFE_PRIVATE_KEY}"
+      VLLM_URL: "http://vllm:8000"
+      VLLM_MODEL: "${LLM_MODEL:-Qwen/Qwen3-32B-AWQ}"
+      POLL_INTERVAL_MS: "${POLL_INTERVAL_MS:-30000}"
+      X402_PORT: "3402"
+    ports:
+      - "${COGITO_PORT:-3402}:3402"
+    restart: unless-stopped
+
   nginx:
     image: nginx:alpine
     ports:

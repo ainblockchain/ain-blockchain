@@ -1,0 +1,20 @@
+{
+  "name": "cogito",
+  "version": "2.0.0",
+  "description": "Cogito: recipe-driven knowledge enrichment container for AIN blockchain",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "npx tsx src/server.ts"
+  },
+  "dependencies": {
+    "@ainblockchain/ain-js": "^1.14.0",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
