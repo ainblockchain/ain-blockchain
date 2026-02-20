@@ -7,6 +7,34 @@
 import AinModule from '@ainblockchain/ain-js';
 import { ParsedRecipe } from './types.js';
 
+/** Deserialize a recipe from blockchain state (comma-separated strings → arrays). */
+function deserializeRecipe(raw: any): ParsedRecipe {
+  const splitCsv = (v: unknown): string[] =>
+    typeof v === 'string' ? v.split(',').map(s => s.trim()).filter(Boolean)
+    : Array.isArray(v) ? v.map(String) : [];
+
+  return {
+    name: raw.name,
+    version: Number(raw.version ?? 1),
+    watch: {
+      tags: splitCsv(raw.watch?.tags),
+      topics: splitCsv(raw.watch?.topics),
+      exclude_tags: splitCsv(raw.watch?.exclude_tags),
+    },
+    output: {
+      tags: splitCsv(raw.output?.tags),
+      price: String(raw.output?.price ?? '0'),
+      depth: Number(raw.output?.depth ?? 3),
+    },
+    llm: {
+      temperature: Number(raw.llm?.temperature ?? 0.7),
+      max_tokens: Number(raw.llm?.max_tokens ?? 4096),
+    },
+    systemPrompt: raw.systemPrompt || '',
+    registered_at: raw.registered_at,
+  };
+}
+
 // ESM/CJS interop: ain-js is CJS with `module.exports = class Ain`.
 const Ain: any = (AinModule as any).default ?? AinModule;
 
@@ -47,7 +75,13 @@ export class AinClient {
     const data = await this.ain.db
       .ref(`${AinClient.RECIPES_PATH}/${addr}`)
       .getValue();
-    return (data as Record<string, ParsedRecipe>) || {};
+    if (!data) return {};
+    // Deserialize: AIN state stores arrays as comma-separated strings
+    const result: Record<string, ParsedRecipe> = {};
+    for (const [key, raw] of Object.entries(data as Record<string, any>)) {
+      result[key] = deserializeRecipe(raw);
+    }
+    return result;
   }
 
   // ── Knowledge graph access ─────────────────────────────────────────
