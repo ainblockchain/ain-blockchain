@@ -9,7 +9,7 @@
     "dev": "npx tsx src/server.ts"
   },
   "dependencies": {
-    "@ainblockchain/ain-js": "^1.14.0",
+    "@ainblockchain/ain-js": "^1.15.0",
     "ethers": "^6.16.0"
   },
   "devDependencies": {
