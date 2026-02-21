@@ -1,8 +1,8 @@
 FROM node:20-slim
 WORKDIR /cogito
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install
 COPY . .
-RUN npx tsc
+RUN npm run build
 EXPOSE 3402
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]

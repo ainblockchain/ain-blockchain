@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // API-only server — no React pages needed
   reactStrictMode: false,
-  // Allow server-side external packages
-  serverExternalPackages: ['@ainblockchain/ain-js', 'ethers'],
+  serverExternalPackages: [
+    '@ainblockchain/ain-js',
+    '@a2a-js/sdk',
+    '@modelcontextprotocol/sdk',
+    '@coinbase/x402',
+    '@x402/core',
+    '@x402/evm',
+    'ethers',
+  ],
 };
 
 export default nextConfig;

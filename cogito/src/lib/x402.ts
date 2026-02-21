@@ -1,21 +1,24 @@
 /**
  * x402 payment server setup.
- * Uses @x402/core + @x402/evm for Base chain USDC payments.
+ * Uses @coinbase/x402 CDP facilitator for Base mainnet USDC payments.
  */
 
 import { x402ResourceServer, HTTPFacilitatorClient } from '@x402/core/server';
 import { ExactEvmScheme } from '@x402/evm/exact/server';
+import { facilitator as cdpFacilitator } from '@coinbase/x402';
 
 let _server: x402ResourceServer | null = null;
 
-/** Get the singleton x402 resource server (Base mainnet). */
+const X402_NETWORK = (process.env.X402_NETWORK || 'eip155:8453') as `${string}:${string}`;
+
+/** Get the singleton x402 resource server (CDP facilitator for Base mainnet). */
 export function getX402Server(): x402ResourceServer {
   if (!_server) {
-    const facilitator = new HTTPFacilitatorClient({
-      url: process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator',
-    });
-    _server = new x402ResourceServer(facilitator);
-    _server.register('eip155:8453', new ExactEvmScheme());
+    const facilitatorClient = new HTTPFacilitatorClient(cdpFacilitator);
+    _server = new x402ResourceServer(facilitatorClient);
+    _server.register(X402_NETWORK, new ExactEvmScheme());
   }
   return _server;
 }
+
+export { X402_NETWORK };

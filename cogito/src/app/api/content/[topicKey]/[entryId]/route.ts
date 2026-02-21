@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withX402 } from '@x402/next';
 import { getAin } from '@/lib/globals';
-import { getX402Server } from '@/lib/x402';
+import { getX402Server, X402_NETWORK } from '@/lib/x402';
 import { config } from '@/lib/config';
 
 async function handler(
@@ -35,7 +35,7 @@ export const GET = withX402(
     accepts: {
       scheme: 'exact',
       price: `$${config.contentPrice}`,
-      network: 'eip155:8453',
+      network: X402_NETWORK,
       payTo: process.env.BASE_PAY_TO || '0xA7b9a0959451aeF731141a9e6FFcC619DeB563bF',
     },
     description: 'Access to gated knowledge content',

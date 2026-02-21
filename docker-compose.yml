@@ -74,6 +74,7 @@ services:
       P2P_PORT: "${P2P_PORT:-4998}"
     volumes:
       - blockchain_data:/home/ain_blockchain_data
+      - /var/run/docker.sock:/var/run/docker.sock
 
   cogito:
     build: ./cogito
@@ -84,11 +85,14 @@ services:
         condition: service_healthy
     environment:
       AIN_PROVIDER_URL: "http://ain-blockchain:${PORT:-8080}"
-      AIN_PRIVATE_KEY: "${UNSAFE_PRIVATE_KEY}"
+      AIN_PRIVATE_KEY: "${UNSAFE_PRIVATE_KEY:-b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96}"
       VLLM_URL: "http://vllm:8000"
       VLLM_MODEL: "${LLM_MODEL:-Qwen/Qwen3-32B-AWQ}"
       POLL_INTERVAL_MS: "${POLL_INTERVAL_MS:-30000}"
-      X402_PORT: "3402"
+      AGENT_BASE_URL: "${AGENT_BASE_URL:-https://cogito.ainetwork.ai}"
+      CDP_API_KEY_ID: "${CDP_API_KEY_ID:-}"
+      CDP_API_KEY_SECRET: "${CDP_API_KEY_SECRET:-}"
+      X402_NETWORK: "${X402_NETWORK:-eip155:8453}"
     ports:
       - "${COGITO_PORT:-3402}:3402"
     restart: unless-stopped
@@ -104,6 +108,7 @@ services:
       - certbot_www:/var/www/certbot:ro
     depends_on:
       - ain-blockchain
+      - cogito
     restart: unless-stopped
     command: '/bin/sh -c ''while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g "daemon off;"'''
 

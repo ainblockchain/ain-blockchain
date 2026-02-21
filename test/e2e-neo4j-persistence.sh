@@ -69,11 +69,28 @@ echo "E2E Test: Neo4j Persistence + Recent Knowledge API"
 echo "=========================================="
 echo ""
 
-# --- Phase 1: Verify node is running ---
+# --- Phase 1: Verify node is running and finalizing ---
 echo "[Phase 1] Waiting for node to be ready..."
 wait_for_node
 BLOCK_NUM=$(node_curl "$NODE_URL/last_block_number" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'])")
 echo "  Node is ready at block $BLOCK_NUM"
+
+# Wait for node to be actively finalizing (block number advancing)
+echo "  Waiting for block production to stabilize..."
+PREV_BLOCK=$BLOCK_NUM
+STABLE_COUNT=0
+for i in $(seq 1 60); do
+  sleep 2
+  CUR_BLOCK=$(node_curl "$NODE_URL/last_block_number" 2>/dev/null | python3 -c "import json,sys; print(json.load(sys.stdin)['result'])" 2>/dev/null || echo "$PREV_BLOCK")
+  if [ "$CUR_BLOCK" -gt "$PREV_BLOCK" ] 2>/dev/null; then
+    STABLE_COUNT=$((STABLE_COUNT + 1))
+    PREV_BLOCK=$CUR_BLOCK
+    if [ "$STABLE_COUNT" -ge 3 ]; then
+      echo "  Block production stable at block $CUR_BLOCK (advanced ${STABLE_COUNT} times)"
+      break
+    fi
+  fi
+done
 echo ""
 
 # --- Phase 2: Send transactions ---
@@ -252,6 +269,72 @@ LLM_ANALYZE=$(node_curl -X POST "$NODE_URL/json-rpc" \
   -d '{"jsonrpc": "2.0", "id": 4, "method": "ain_llm_analyze", "params": {"protoVer": "1.1.3", "question": "What is algebra?", "context_nodes": [{"title": "Intro to Algebra", "topic_path": "math/algebra", "depth": 1, "summary": "Basic algebraic concepts."}]}}')
 LLM_ANALYZE_HAS_CONTENT=$(echo "$LLM_ANALYZE" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print('yes' if r and len(r) > 0 else 'no')")
 assert_eq "ain_llm_analyze returns content" "yes" "$LLM_ANALYZE_HAS_CONTENT"
+
+echo ""
+
+# --- Phase 7: Container Deployment tests ---
+echo "[Phase 7] Testing Container Deployment JSON-RPC methods..."
+
+# Helper for JSON-RPC calls
+jrpc() {
+  node_curl -X POST "$NODE_URL/json-rpc" \
+    -H 'Content-Type: application/json' \
+    --max-time 120 \
+    -d "$1"
+}
+
+# Test ain_deployment_list (should be enabled and return empty list)
+echo "  Testing ain_deployment_list (initial)..."
+DEP_LIST=$(jrpc '{"jsonrpc":"2.0","id":1,"method":"ain_deployment_list","params":{"protoVer":"1.1.3"}}')
+DEP_LIST_OK=$(echo "$DEP_LIST" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']; print('yes' if r.get('result') is not None and r.get('code') is None else 'no')")
+assert_eq "ain_deployment_list enabled" "yes" "$DEP_LIST_OK"
+
+# Test ain_deployment_deploy with unauthorized image (should reject)
+echo "  Testing ain_deployment_deploy (unauthorized image)..."
+DEP_UNAUTH=$(jrpc '{"jsonrpc":"2.0","id":2,"method":"ain_deployment_deploy","params":{"protoVer":"1.1.3","image":"nginx:alpine","name":"test-unauth"}}')
+DEP_UNAUTH_CODE=$(echo "$DEP_UNAUTH" | python3 -c "import json,sys; print(json.load(sys.stdin)['result'].get('code',''))")
+assert_eq "ain_deployment_deploy rejects unauthorized" "30802" "$DEP_UNAUTH_CODE"
+
+# Test ain_deployment_authorize
+echo "  Testing ain_deployment_authorize..."
+DEP_AUTH=$(jrpc '{"jsonrpc":"2.0","id":3,"method":"ain_deployment_authorize","params":{"protoVer":"1.1.3","github_username":"nginxinc"}}')
+DEP_AUTH_OK=$(echo "$DEP_AUTH" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print('yes' if r and r.get('authorized') else 'no')")
+assert_eq "ain_deployment_authorize succeeds" "yes" "$DEP_AUTH_OK"
+
+# Test ain_deployment_deploy with authorized image
+echo "  Testing ain_deployment_deploy (authorized image)..."
+DEP_DEPLOY=$(jrpc '{"jsonrpc":"2.0","id":4,"method":"ain_deployment_deploy","params":{"protoVer":"1.1.3","image":"ghcr.io/nginxinc/nginx-unprivileged:alpine","name":"e2e-test-container"}}')
+DEP_DEPLOY_STATUS=$(echo "$DEP_DEPLOY" | python3 -c "import json,sys; r=json.load(sys.stdin)['result'].get('result'); print(r.get('status','') if r else 'failed')")
+assert_eq "ain_deployment_deploy status" "running" "$DEP_DEPLOY_STATUS"
+
+# Test ain_deployment_status
+echo "  Testing ain_deployment_status..."
+DEP_STATUS=$(jrpc '{"jsonrpc":"2.0","id":5,"method":"ain_deployment_status","params":{"protoVer":"1.1.3","name":"e2e-test-container"}}')
+DEP_STATUS_VAL=$(echo "$DEP_STATUS" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print(r.get('status',''))")
+assert_eq "ain_deployment_status running" "running" "$DEP_STATUS_VAL"
+
+# Test ain_deployment_logs
+echo "  Testing ain_deployment_logs..."
+DEP_LOGS=$(jrpc '{"jsonrpc":"2.0","id":6,"method":"ain_deployment_logs","params":{"protoVer":"1.1.3","name":"e2e-test-container","tail":5}}')
+DEP_LOGS_OK=$(echo "$DEP_LOGS" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']; print('yes' if r.get('result') and r['result'].get('containerName') == 'e2e-test-container' else 'no')")
+assert_eq "ain_deployment_logs returns data" "yes" "$DEP_LOGS_OK"
+
+# Test ain_deployment_list (should have 1 deployment)
+echo "  Testing ain_deployment_list (after deploy)..."
+DEP_LIST2=$(jrpc '{"jsonrpc":"2.0","id":7,"method":"ain_deployment_list","params":{"protoVer":"1.1.3"}}')
+DEP_LIST2_COUNT=$(echo "$DEP_LIST2" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['result']['result']))")
+assert_eq "ain_deployment_list count after deploy" "1" "$DEP_LIST2_COUNT"
+
+# Test ain_deployment_stop
+echo "  Testing ain_deployment_stop..."
+DEP_STOP=$(jrpc '{"jsonrpc":"2.0","id":8,"method":"ain_deployment_stop","params":{"protoVer":"1.1.3","name":"e2e-test-container"}}')
+DEP_STOP_STATUS=$(echo "$DEP_STOP" | python3 -c "import json,sys; r=json.load(sys.stdin)['result']['result']; print(r.get('status',''))")
+assert_eq "ain_deployment_stop status" "stopped" "$DEP_STOP_STATUS"
+
+# Verify list is empty after stop
+DEP_LIST3=$(jrpc '{"jsonrpc":"2.0","id":9,"method":"ain_deployment_list","params":{"protoVer":"1.1.3"}}')
+DEP_LIST3_COUNT=$(echo "$DEP_LIST3" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['result']['result']))")
+assert_eq "ain_deployment_list empty after stop" "0" "$DEP_LIST3_COUNT"
 
 echo ""
 
