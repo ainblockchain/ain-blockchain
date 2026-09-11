@@ -92,6 +92,7 @@ snapshots, keys, personal homes, model weights or credentials in release files.
 
 `inspect-consensus.js NEW_OUTPUT [PRIVATE_BLOCK_HASH]` is deliberately restricted to an already-open,
 operator-selected local inspector at `127.0.0.1:9229` and status API at `127.0.0.1:18081`.
+For an explicitly selected different local node, set `INSPECT_RPC_PORT` to that node's RPC port.
 It does not enable the debugger itself. Do not use it on another node or while measuring latency.
 Metadata is bounded to 100 entries per map; private captures are limited to 32 MiB compact JSON
 (pretty-printed files can be larger) and require a user-owned 0700 output directory. Files are 0600.
@@ -110,7 +111,9 @@ so the client disconnects before its delayed close request. The protocol calls f
 
 ## Recovery gate
 
-The existing ten-node ledger has **not** been replaced or restarted by this diagnosis. Before any
+The checkpoint diagnosis itself did not replace or restart the ten-node ledger. Subsequent
+snapshot recovery and the separately planned canary upgrade are tracked in `chain-recovery.md`.
+Before any
 planned upgrade, preserve each node's original genesis, finalized blocks, snapshots and volume;
 audit historical signatures and replay compatibility; build and verify the patched runtime; then
 perform a separately documented maintenance/recovery and verify all ten nodes advance and agree.

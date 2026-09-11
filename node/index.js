@@ -305,6 +305,9 @@ class BlockchainNode {
     if (latestSnapshotPath) {
       try {
         const latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
+        if (!latestSnapshot) {
+          throw Error(`Invalid snapshot file: ${latestSnapshotPath}`);
+        }
         this.setBootstrapSnapshot(latestSnapshotPath, latestSnapshot)
       } catch (err) {
         CommonUtil.finishWithStackTrace(
@@ -492,9 +495,11 @@ class BlockchainNode {
 
   async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      this.deleteSnapshot(
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
-      await this.writeSnapshot(blockNumber);
+      if (await this.writeSnapshot(blockNumber)) {
+        const expiredNumber = blockNumber -
+            NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
+        this.deleteSnapshot(expiredNumber);
+      }
     }
   }
 
@@ -507,7 +512,7 @@ class BlockchainNode {
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
       logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
     }
-    await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+    return FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
 
   deleteSnapshot(blockNumber) {

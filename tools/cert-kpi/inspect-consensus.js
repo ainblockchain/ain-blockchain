@@ -7,6 +7,8 @@ async function main() {
   const output = process.argv[2];
   assert.ok(output && !fs.existsSync(output), 'pass a new output file');
   const blockHash = process.argv[3];
+  const rpcPort = Number(process.env.INSPECT_RPC_PORT || 18081);
+  assert.ok(Number.isSafeInteger(rpcPort) && rpcPort > 0 && rpcPort <= 65535);
   assert.ok(process.argv.length <= 4,
       'usage: inspect-consensus.js NEW_OUTPUT [PRIVATE_BLOCK_HASH]');
   if (blockHash) {
@@ -87,7 +89,7 @@ async function main() {
       pauseResolve = resolve;
       pauseTimer = setTimeout(() => reject(new Error('status breakpoint not reached')), 15000);
     });
-    probe = fetch('http://127.0.0.1:18081/node_status', {
+    probe = fetch(`http://127.0.0.1:${rpcPort}/node_status`, {
       signal: AbortSignal.timeout(20000),
     }).catch(() => null);
     let frame;
