@@ -1,6 +1,6 @@
 // M4 run C 검증: recorder 큐 드레인 대기 → id 덤프 → 온체인 샘플 역검증 → 최종 리포트
 const fs = require('fs');
-const { newAin, APP, writeResult, sleep, RESULTS_DIR } = require('./common');
+const { newAin, APP, writeResult, sleep } = require('./common');
 
 const RUN = process.env.M4_RUN || 'cert';
 const PROBE_JSON = process.argv[2];   // m4-lightclient-<tag>.json
@@ -52,7 +52,7 @@ function shardOf(id) {
   const ain = newAin(3, null, 16);
   let verified = 0, sampled = 0;
   for (const rid of [0, 1]) {
-    const ids = JSON.parse(fs.readFileSync(`${RESULTS_DIR}/recorded_ids_${rid}.json`));
+    const ids = JSON.parse(fs.readFileSync(`/mnt/newdata/gov/kpi/results/recorded_ids_${rid}.json`));
     const step = Math.max(1, Math.floor(ids.length / 50));
     const sample = ids.filter((_, i) => i % step === 0).slice(0, 50);
     for (const id of sample) {

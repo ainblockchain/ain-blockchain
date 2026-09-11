@@ -1,9 +1,9 @@
 // M4 결과 분석: 타임스탬프 로그 → 1초 윈도우 최대/지속 TPS + Locust CSV 요약 + 온체인 검증
 const fs = require('fs');
-const { newAin, APP, writeResult, sleep, RESULTS_DIR } = require('./common');
+const { newAin, APP, writeResult, sleep } = require('./common');
 
-const TS_DIR = `${RESULTS_DIR}/m4_ts`;
-const CSV = process.argv[2] || `${RESULTS_DIR}/cert_inference_stats.csv`;
+const TS_DIR = '/mnt/newdata/gov/kpi/results/m4_ts';
+const CSV = process.argv[2] || '/mnt/newdata/gov/kpi/results/cert_inference_stats.csv';
 const BASE = `/apps/${APP}/inference_results`;
 
 (async () => {
@@ -49,7 +49,7 @@ const BASE = `/apps/${APP}/inference_results`;
   let verified = 0, sampled = 0;
   for (const rid of [0, 1]) {
     try {
-      const ids = JSON.parse(fs.readFileSync(`${RESULTS_DIR}/recorded_ids_${rid}.json`));
+      const ids = JSON.parse(fs.readFileSync(`/mnt/newdata/gov/kpi/results/recorded_ids_${rid}.json`));
       const sample = ids.filter((_, i) => i % Math.max(1, Math.floor(ids.length / 50)) === 0).slice(0, 50);
       for (const id of sample) {
         sampled++;

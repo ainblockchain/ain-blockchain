@@ -1,2 +1,16 @@
-work/
-node_modules/
+# 실행 산출물 (증빙은 시험 종료 후 별도 보관)
+results/
+logs/
+evidence/
+chaindata*/
+tmp/
+hf-home/
+eval_results/
+ainize/
+env.sh
+harness/node_modules/
+harness/.env.dart
+harness/dart-datasets*/
+harness/__pycache__/
+cert-net.pids
+cert-net.manifest.json
