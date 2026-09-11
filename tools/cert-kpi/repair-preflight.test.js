@@ -120,6 +120,67 @@ function terminalFixture() {
   return { ...sample, target, terminal: sample.plan.repair.terminalTargets[0] };
 }
 
+function finalizedFixture() {
+  const sample = terminalFixture();
+  sample.plan.repair.checkpointKind = 'finalized-history';
+  sample.plan.genesisHash = `0x${hash('block-0')}`;
+  sample.plan.originalFinalHash = `0x${hash('block-100')}`;
+  sample.plan.originalStateProof = `0x${hash('state-100')}`;
+  sample.plan.repair.requiredPending = [101, 102].map((number) => `0x${hash(`block-${number}`)}`);
+  const records = Array.from({ length: 104 }, (_, number) => ({ number,
+    hash: `0x${hash(`block-${number}`)}`,
+    parentHash: number ? `0x${hash(`block-${number - 1}`)}` : '',
+    fileSha256: hash(`file-${number}`), bytes: 100,
+    stateProofHash: `0x${hash(`state-${number}`)}` }));
+  const manifest = Buffer.from(records.map((record) => JSON.stringify(record)).join('\n') + '\n');
+  const summary = { pass: true, error: null, signatureBypass: false, chainId: 0,
+    startedAt: new Date(sample.now - 3000).toISOString(),
+    completedAt: new Date(sample.now - 2000).toISOString(),
+    blocksVerified: 104, requestedLastNumber: 103, lastHash: records[103].hash,
+    genesisHash: records[0].hash, manifestSha256: hash(manifest) };
+  const summaryBytes = Buffer.from(JSON.stringify(summary));
+  sample.files.set('/summary', summaryBytes);
+  sample.files.set('/manifest', manifest);
+  for (const checkpoint of sample.plan.repair.bridges) {
+    const instance = sample.containers.find((entry) => entry.index === checkpoint.index);
+    instance.startedAt = new Date(sample.now - 10000).toISOString();
+    checkpoint.startedAt = instance.startedAt;
+    checkpoint.image = instance.image;
+    checkpoint.kind = 'finalized-history';
+    const proof = { pass: true, kind: checkpoint.kind,
+      captureAt: new Date(sample.now - 1000).toISOString(),
+      instanceBefore: instance, instanceAfter: instance, address: checkpoint.address,
+      nodeState: 'SERVING', consensusState: 'RUNNING', nativeHealth: true, signatureBypass: false,
+      finalizedNumber: 105, auditedNumber: 103, auditedHash: records[103].hash,
+      originalHash: sample.plan.originalFinalHash, audit: { summaryFile: '/summary',
+        summarySha256: hash(summaryBytes), manifestFile: '/manifest',
+        imageFile: '/tests/image-id.txt', exitFile: '/tests/exit-code.txt' } };
+    const bytes = Buffer.from(JSON.stringify(proof));
+    sample.files.set(checkpoint.proofFile, bytes);
+    checkpoint.proofSha256 = hash(bytes);
+  }
+  return sample;
+}
+
+test('terminal recovery accepts two finalized-history bridges without pending captures', () => {
+  const sample = finalizedFixture();
+  for (const bridge of sample.plan.repair.bridges) sample.files.delete(bridge.captureFile);
+  const result = sample.run(2, true);
+  assert.equal(result.bridges.length, 2);
+  assert.ok(result.bridges.every((bridge) => bridge.originalPendingFinalized === 2));
+});
+
+for (const failure of ['undeclared-kind', 'mixed-kind', 'changed-proof', 'changed-bridge-image']) {
+  test(`repair refuses finalized-history integration failure: ${failure}`, () => {
+    const sample = finalizedFixture();
+    if (failure === 'undeclared-kind') delete sample.plan.repair.checkpointKind;
+    if (failure === 'mixed-kind') delete sample.plan.repair.bridges[0].kind;
+    if (failure === 'changed-proof') sample.files.set('/proof-1.json', Buffer.from('{}'));
+    if (failure === 'changed-bridge-image') sample.containers[0].image = 'other-image';
+    assert.throws(() => sample.run(2, true));
+  });
+}
+
 test('terminal heap recovery requires an explicit mode and two post-crash live checkpoints', () => {
   const sample = terminalFixture();
   assert.throws(() => sample.run(), /live known instance/);

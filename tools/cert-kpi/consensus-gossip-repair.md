@@ -247,8 +247,9 @@ Recovery of node4 now needs fresh, same-instance bridge proofs that recognize
 the retained original pending blocks in finalized history. The old23086
 pending-only proof cannot certify those advanced bridges. A newer seed must not
 be copied onto an older disk head without verified missing history and state
-replay. This post-finality recovery path is not yet implemented; keep the
-all-ten readiness/funding/TPS gates closed rather than weakening them.
+replay. At this17:50 observation the post-finality recovery path was not yet
+implemented. The following addition addresses that gap without opening the
+all-ten readiness/funding/TPS gates prematurely.
 
 Evidence: `gossip_rollout_20260911`, `gossip_rollout_b_20260911`,
 `gossip_lazy_rollout_20260911` and `ledger_after_finality_20260911` under the
@@ -256,3 +257,58 @@ experiment evidence root. Flashnext, flashtrain, the Ainize API and lifecycle
 PID86742 retained their running instances. CPU quotas remain shared across the
 same eight logical host CPUs; neither the rollout nor these tests establish an
 AWS320-vCPU performance equivalence.
+
+## Fresh finalized-history checkpoints and exact seed-height guard
+
+The later `repair.checkpointKind: finalized-history` mode recognizes all original
+pending hashes in a complete native-audited finalized ledger. It does not pretend
+they remain in a pending pool or change the old snapshot's height. Both preserved
+bridges still require matching live container ID/PID/start/image, disabled
+signature bypass, SERVING/RUNNING and native-health observations. The auditor
+must use the plan's tested immutable image and exit successfully. Its summary and
+ordered manifest are SHA-bound, contiguous from the unchanged genesis, with
+matching original block/state proof, retained pending hashes and a live RPC hash
+at the audited head. The current finalized head may be newer than that audit.
+
+Both the audit and subsequent capture must be within fifteen minutes. The audit
+must start after the same bridge instance started, and after any explicitly
+confirmed target heap termination. The before/after bridge metadata must match.
+Changing a proof, manifest, genesis, old state, live hash or image; restarting a
+bridge; missing a retained block; or presenting stale/pre-crash observations is
+refused. This is native signed-history preservation, not full-state replay or an
+independent consensus proof of every newer RPC-reported block.
+
+Use the source-built image and the existing `run-ledger-audit.sh` to create a NEW
+read-only audit directory. A previous passed manifest may be a reference; only
+byte-identical blocks reuse its signatures. A newer block outside that manifest
+is verified natively. Then capture each of the two separately preserved bridges:
+
+```bash
+node tools/cert-kpi/capture-finalized-checkpoint.js \
+  "$PLAN" "$BRIDGE_INDEX" "$NEW_AUDIT" "$NEW_CHECKPOINT"
+```
+
+This command uses bounded local read-only native RPC and sanitized Docker
+metadata; it does not signal an inspector, stop/restart a node or publish private
+DB captures. Insert the resulting `checkpoint.json` into the NEW reviewed plan's
+`repair.bridges`, keeping the exact source/testing/seed/identity/terminal evidence.
+Do not rewrite or resume a previously partially applied pending-only plan.
+
+For this mode, `maintain-chain-node.sh` now requires the target's native disk head
+to equal the verified snapshot height, both before any stop and immediately
+before seed installation. A live target that has advanced, a lagging target
+missing history for a newer seed, or a target that advances after preflight is
+refused. No old seed is silently applied to a newer head. Actual heap recovery
+still needs `PLANNED_REPAIR=1 RECOVER_CRASHED=1`; `CHECK_ONLY=1` runs the gates
+without creating backup/output directories or modifying the target. On failure,
+preserve the same instance and inspect its state; never infer terminal status
+from a timeout.
+
+The new focused fixtures cover31 history/capture cases, five preflight integration
+cases and four seed-head cases. The old image incorrectly accepted mismatched or
+advancing heads in three of the four seed fixtures; those failures are retained.
+The final source-built image passes128 Node plus47 native Mocha tests (175), with
+selected lint and shell checks. Initial wrong-working-directory commands and an
+intermediate max-line-length lint failure are separate failed attempts, not
+successful native/network experiments. Actual repair and all-ten readiness must
+still be recorded separately after these tests.

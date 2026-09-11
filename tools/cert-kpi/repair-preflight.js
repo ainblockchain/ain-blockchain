@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
+const { verifyHistory } = require('./capture-finalized-checkpoint');
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -10,6 +11,7 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
     terminalRecovery = false) {
   const repair = plan.repair;
   assert.equal(repair?.kind, 'bounded-consensus-gossip');
+  assert.ok(repair.checkpointKind === undefined || repair.checkpointKind === 'finalized-history');
   assert.match(repair.runId, /^[a-z0-9][a-z0-9_-]{0,40}$/);
   assert.ok(repair.reason.length >= 20);
   assert.ok(Array.isArray(plan.order) && new Set(plan.order).size === plan.order.length);
@@ -66,6 +68,11 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
     assert.equal(hash(proofBytes), checkpoint.proofSha256, 'checkpoint proof changed');
     const proof = JSON.parse(proofBytes);
     assert.equal(proof.pass, true);
+    if (repair.checkpointKind === 'finalized-history') {
+      assert.equal(instance.image, checkpoint.image);
+      return verifyHistory(plan, checkpoint, proof, readFile, now, terminalTime);
+    }
+    assert.equal(checkpoint.kind, undefined, 'unexpected checkpoint kind');
     assert.equal(proof.signatureBypass, false);
     assert.equal(proof.nodeState, 'SERVING');
     assert.equal(proof.consensusState, 'RUNNING');
@@ -95,7 +102,7 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
   });
   return { at: new Date(now).toISOString(), pass: true, target: index, bridges, previous,
     terminalRecovery,
-    scope: 'planned software repair with two preserved live signed-tail bridges; ' +
+    scope: 'planned software repair with two preserved live signed-history bridges; ' +
       'not native consensus health, finalized progress or permission for funding/KPI traffic' };
 }
 

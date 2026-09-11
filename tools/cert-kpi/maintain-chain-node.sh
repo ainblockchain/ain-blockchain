@@ -26,6 +26,11 @@ bridge=$(jq -r '.bridgeIndex // 0' "$recovery/plan.json")
 [[ "$number" =~ ^[0-9]+$ && "$expected" =~ ^[a-f0-9]{64}$ ]] || exit 2
 [[ $(sha256sum "$seed" | cut -d ' ' -f 1) == "$expected" ]] || exit 2
 repair_preflight=''
+head_args=()
+if [[ $(jq -r '.repair.checkpointKind // empty' "$recovery/plan.json") == finalized-history ]]; then
+  [[ ${PLANNED_REPAIR:-0} == 1 ]] || exit 2
+  head_args=("/data/chains/$port" "$number")
+fi
 history_name="ain-cert-recovery-node$node_index-history"
 if [[ ${PLANNED_REPAIR:-0} == 1 ]]; then
   [[ ${RESUME_STOPPED:-0} != 1 ]] || exit 2
@@ -98,7 +103,7 @@ seed_preflight=$(docker run --rm --runtime runc --network none --cpus 1 --cpuset
   --mount "type=volume,src=$volume,dst=/data,readonly" \
   --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" --entrypoint node "$image" \
   tools/cert-kpi/recovery-seed.js check "/data/snapshots/$port/n2s/$number.json.gz" \
-  /seed.json.gz "$expected")
+  /seed.json.gz "$expected" "${head_args[@]}")
 if [[ ${CHECK_ONLY:-0} == 1 ]]; then
   printf '{"node":%s,"preconditions":true,"mutations":false,"seed":%s}\n' \
     "$node_index" "$seed_preflight"
@@ -145,7 +150,7 @@ docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \
   -e NVIDIA_VISIBLE_DEVICES=void -e "PORT=$port" -e "NUMBER=$number" -e "EXPECTED=$expected" \
   --mount "type=volume,src=$volume,dst=/data" --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" \
   --entrypoint node "$image" tools/cert-kpi/recovery-seed.js install \
-  "/data/snapshots/$port/n2s/$number.json.gz" /seed.json.gz "$expected" \
+  "/data/snapshots/$port/n2s/$number.json.gz" /seed.json.gz "$expected" "${head_args[@]}" \
   > "$output/seed-installed.json"
 docker run --name "$history_name" --runtime runc --network none \
   --cpus 2 --cpuset-cpus 0-7 --memory 4g --memory-swap 4g --read-only --tmpfs /tmp:rw,size=256m \

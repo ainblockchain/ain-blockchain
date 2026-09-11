@@ -28,6 +28,42 @@ test('preflight precedes exclusive atomic seed installation', () => fixture((sam
   assert.equal(fs.statSync(destination).mode & 0o777, 0o600);
 }));
 
+for (const head of [99, 100, 101]) {
+  test(`post-finality recovery requires seed height to match disk head ${head}`, () =>
+    fixture((sample) => {
+      const FileUtil = require('../../common/file-util');
+      const chain = path.join(sample.directory, 'chain');
+      const filename = FileUtil.getBlockPath(chain, head);
+      fs.mkdirSync(path.dirname(filename), { recursive: true });
+      fs.writeFileSync(filename, 'head metadata fixture, not a native block');
+      const action = (operation) => operation(sample.destination, sample.source,
+          sample.expected, chain, 100);
+      if (head === 100) {
+        assert.equal(action(check).mode, 'create');
+        assert.equal(action(install).mode, 'create');
+      } else {
+        assert.throws(() => action(check), /target disk head differs/);
+        assert.throws(() => action(install), /target disk head differs/);
+        assert.equal(fs.existsSync(sample.destination), false);
+      }
+    }));
+}
+
+test('head advancement after preflight refuses installation without overwriting the seed', () =>
+  fixture((sample) => {
+    const FileUtil = require('../../common/file-util');
+    const chain = path.join(sample.directory, 'chain');
+    const first = FileUtil.getBlockPath(chain, 100);
+    fs.mkdirSync(path.dirname(first), { recursive: true });
+    fs.writeFileSync(first, 'head fixture');
+    const preflight = check(sample.destination, sample.source, sample.expected, chain, 100);
+    assert.equal(preflight.mode, 'create');
+    fs.writeFileSync(FileUtil.getBlockPath(chain, 101), 'advanced fixture');
+    assert.throws(() => install(sample.destination, sample.source, sample.expected, chain, 100),
+        /target disk head differs/);
+    assert.equal(fs.existsSync(sample.destination), false);
+  }));
+
 test('identical seed reuses the existing inode and bytes', () => fixture((sample) => {
   const { source, destination, expected, bytes } = sample;
   fs.writeFileSync(destination, bytes);

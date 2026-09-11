@@ -26,6 +26,7 @@ for relative in common/file-util.js node/index.js block-pool/index.js \
     tools/cert-kpi/replay-consensus-capture.js \
     tools/cert-kpi/repair-preflight.js tools/cert-kpi/repair-preflight.test.js \
     tools/cert-kpi/capture-pending-checkpoint.sh tools/cert-kpi/capture-pending-checkpoint.test.js \
+    tools/cert-kpi/capture-finalized-checkpoint.js tools/cert-kpi/capture-finalized-checkpoint.test.js \
     tools/cert-kpi/recovery-seed.js tools/cert-kpi/recovery-seed.test.js \
     tools/cert-kpi/run-recovery-tests.sh; do
   mkdir -p "$output/source/$(dirname "$relative")"
@@ -48,6 +49,7 @@ sha256sum -c /evidence/source.sha256
 node tools/cert-kpi/native-shards/audit-image.js /source /evidence/runtime-source.json
 node --test --test-concurrency=1 tools/cert-kpi/audit-ledger.test.js \
   tools/cert-kpi/capture-pending-checkpoint.test.js \
+  tools/cert-kpi/capture-finalized-checkpoint.test.js \
   tools/cert-kpi/inspect-consensus.test.js tools/cert-kpi/profile-consensus.test.js \
   tools/cert-kpi/repair-preflight.test.js tools/cert-kpi/recovery-seed.test.js \
   tools/cert-kpi/prepare-chain-recovery.test.js tools/cert-kpi/verify-pending-chain.test.js
@@ -59,6 +61,7 @@ node_modules/.bin/mocha --timeout 160000 test/unit/file-util-snapshot.test.js \
 node_modules/.bin/eslint tools/cert-kpi/audit-ledger.js tools/cert-kpi/audit-ledger.test.js \
   test/unit/lazy-consensus-logging.test.js \
   tools/cert-kpi/capture-pending-checkpoint.test.js \
+  tools/cert-kpi/capture-finalized-checkpoint.js tools/cert-kpi/capture-finalized-checkpoint.test.js \
   block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
   test/unit/p2p-consensus-gossip.test.js \
   tools/cert-kpi/profile-consensus.js tools/cert-kpi/profile-consensus.test.js \
