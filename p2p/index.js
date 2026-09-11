@@ -598,7 +598,7 @@ class P2pClient {
         this.consensusGossipStats.sendErrors++;
       }
     }
-    if (NodeConfigs.DEBUG) logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
+    if (NodeConfigs.DEBUG) logger.debug(() => `SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
   /**
@@ -717,7 +717,7 @@ class P2pClient {
         node.socket.send(stringPayload);
       });
     }
-    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
+    logger.debug(() => `SENDING: ${JSON.stringify(transaction)}`);
   }
 
   // TODO(minsulee2): session token will be applied to enhance security.
@@ -776,7 +776,7 @@ class P2pClient {
       if (!P2pUtil.checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
-        logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
+        logger.debug(() => `[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
@@ -862,7 +862,7 @@ class P2pClient {
           const chunkIndex = _.get(parsedMessage, 'data.chunkIndex');
           const numChunks = _.get(parsedMessage, 'data.numChunks');
           const blockNumber = _.get(parsedMessage, 'data.blockNumber');
-          logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk: ` +
+          logger.debug(() => `[${LOG_HEADER}] Receiving a snapshot chunk: ` +
               `${JSON.stringify(chunk, null, 2)}\n` +
               `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
           await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, blockNumber, socket);
@@ -891,7 +891,7 @@ class P2pClient {
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
-          logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
+          logger.debug(() => `[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
           await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
@@ -917,7 +917,7 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
-      logger.debug(`The peer (${address}) is alive.`);
+      logger.debug(() => `The peer (${address}) is alive.`);
     });
 
     socket.on('close', () => {
@@ -1227,7 +1227,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Try to connect(${peerCandidateP2pUrl})`);
       const addressFromOutbound = this.getAddrFromOutboundMapping(peerCandidateP2pUrl);
       if (addressFromOutbound) {
-        logger.debug(`[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
+        logger.debug(() => `[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
             `already a managed peer.`);
       } else {
         logger.info(`[${LOG_HEADER}] Connecting to peer(${peerCandidateP2pUrl})`);
@@ -1374,7 +1374,7 @@ class P2pClient {
       return;
     }
     socket.send(JSON.stringify(payload));
-    logger.debug(`\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
+    logger.debug(() => `\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
   }
 
   startHeartbeat() {

@@ -108,8 +108,9 @@ perform the explicitly planned replacement. Preconditions run before stop.
 existing snapshot is reused without inode/mtime changes; a different snapshot,
 symlink or staged partial file fails closed. Installation is exclusive and atomic,
 never an overwrite. Maintenance takes a private full-volume backup, checks the
-original ledger, then replaces only that target. It does not use crash recovery or
-automatic resume/restart for this mode. Preserve evidence and reassess any failure.
+original ledger, then replaces only that target. The initial node2 phase did not
+use crash recovery. Automatic resume/restart is forbidden; the later explicit
+terminal-heap recovery extension below is a separate operator decision.
 
 After startup, observe the same instance for signed-tail catch-up, native health,
 actual finalized advancement, socket counters and original ledger preservation.
@@ -135,3 +136,80 @@ tail catch-up, not a controlled improvement percentage or stability/throughput t
 All ten finalized heights were still 23086 and native health was false.
 Reapplying the old node2 plan was safely refused before stop because its instance
 had changed. The plan remains single-target; no other node was silently rolled.
+
+## Later rolling repair and confirmed heap termination
+
+`capture-pending-checkpoint.sh PLAN INDEX NEW_PUBLIC_DIR NEW_PRIVATE_DIR` automates
+the same bounded, local-only capture and native verification. It refuses invalid
+indices, reused/nested output directories, image mismatches, exited targets,
+signature bypass and an already-open inspector before signalling a node. It records
+instance metadata before/after verification, inspector closure, exit code and a
+`checkpoint.json` bound to the native proof SHA. It never restarts the target and
+does not dump its private configuration. Run it with `bash`; a failed observation
+requires checking the same live instance, not starting a replacement. Eight mock
+preflight tests and actual bridge/new-node captures cover different scopes.
+
+At 17:00:16 UTC the old node0 actually exited139 with V8's fatal heap-limit message
+in `JsonStringify`; Docker reported exited/PID0, not an observation timeout. Its
+container, disk and terminal log were preserved. Recovery now optionally requires
+all of the following, in addition to the existing image, seed, identity and
+original-tail gates:
+
+- Explicit `PLANNED_REPAIR=1 RECOVER_CRASHED=1`, never automatic detection from RPC.
+- A reviewed `repair.terminalTargets` entry with `kind: heap-exhaustion`, exact
+  index/container ID/exit code/finished timestamp and SHA-bound fatal heap log.
+- The same actual Docker target is exited, not running, PID0, with signal-range
+  exit code and a valid finished timestamp after its original start.
+- Both live bridge captures are newer than that confirmed terminal event and no
+  older than fifteen minutes. An ordinary/clean stop, live process, changed log,
+  stale/pre-crash proof or undeclared terminal target is refused.
+
+No stop signal is sent to an already-exited target. Its original full-volume
+backup and prefix audit still precede installation. This is not a general-purpose
+crash loop, a signature bypass, a fresh chain, or permission for funding.
+
+The primary bridge may now be any of the two preserved node indices, with matching
+container ID. When replacing a previous bootstrap node, point that target at a
+different live bridge instead of itself or a known exited peer. Normal live-target
+maintenance remains separate from explicit terminal recovery. Eleven additional
+pure preflight cases cover this mode and primary-bridge reassignment; actual
+Docker/native evidence is required as well.
+
+The later phase directories are `gossip_rollout_20260911` (node3 and node6 applied,
+old node0's genuine heap termination recorded) and `gossip_rollout_b_20260911`
+(new bridges node2/node6; node0 recovered at17:12:49 before subsequent targets).
+Do not run either staged compose across the whole project. Historical captures
+expire; checkpoint refresh and target-by-target native verification are mandatory.
+
+## Remove disabled-debug serialization, without changing epochs
+
+Further review found eager `JSON.stringify` in block-pool branch traversal,
+consensus handling, P2P receive/send and node diagnostics. `Logger.debug` discarded
+the text when DEBUG was false, but argument construction had already serialized
+the full bodies. Its new factory form evaluates text only while DEBUG is enabled
+and logging has not finished; existing string callers remain supported. Diagnostic
+factory errors remain contained by the logger, not propagated into consensus.
+The high-volume call sites now pass factories. Receive parsing and required
+hash/signature/DB serialization are unchanged.
+
+The focused old-image regression had three failures: enabled factories were not
+called, their error containment was absent, and a nine-block graph fixture was
+serialized 235 times with DEBUG disabled. The corrected traversal keeps the same
+native branch/tip selection with zero diagnostic body serializations. These are
+small fixtures, not a measurement of 235 actual large-message copies or network TPS.
+Full immutable-image validation passed 88 Node plus 47 Mocha tests (135), selected
+lint and shell checks. An intermediate passing test image had trailing whitespace;
+the final source/image was rebuilt and retested after fixing it.
+
+The original experiment's `genesis/epoch_ms` remains1000 and native finality still
+requires three consecutive notarized epochs. Increasing pending heights alone is
+not finalized advancement. No epoch, genesis hash, quorum, signature requirement,
+block contents or KPI acceptance threshold was changed to make recovery pass.
+
+`gossip_lazy_rollout_20260911` preserves new live bridges node0/node1, with a planned
+order starting at node7. That old node had independently exited139 at17:16:01 with
+a V8 heap failure; it was recovered from the original volume at17:26:06 using
+`sha256:c5733838931ce3850928af6dbd9d0b21e765fd4ca4b1a8b2060d7308284a3f17`.
+Native tail checks remain mandatory before any later target. This phase is not
+permission to reapply either earlier partially executed plan or restart live
+nodes on an observation failure.

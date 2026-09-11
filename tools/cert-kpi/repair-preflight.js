@@ -6,7 +6,8 @@ const { execFileSync } = require('child_process');
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
-function validate(plan, index, containers, readFile = fs.readFileSync, now = Date.now()) {
+function validate(plan, index, containers, readFile = fs.readFileSync, now = Date.now(),
+    terminalRecovery = false) {
   const repair = plan.repair;
   assert.equal(repair?.kind, 'bounded-consensus-gossip');
   assert.match(repair.runId, /^[a-z0-9][a-z0-9_-]{0,40}$/);
@@ -17,13 +18,34 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
   assert.equal(new Set(repair.bridges.map((bridge) => bridge.index)).size, 2);
   assert.ok(repair.bridges.every((bridge) => !plan.order.includes(bridge.index)),
       'a preserved bridge cannot be a replacement target');
+  assert.ok(repair.bridges.some((bridge) => bridge.index === plan.bridgeIndex &&
+    bridge.containerId === plan.bridgeContainerId), 'primary bridge must match a live checkpoint');
   const original = repair.originalContainers.find((entry) => entry.index === index);
   const current = containers.find((entry) => entry.index === index);
   assert.ok(original && current);
   assert.equal(current.id, original.id, 'target instance changed');
   assert.equal(current.image, original.image, 'target image changed');
   assert.notEqual(current.image, plan.image, 'target already uses the requested image');
-  assert.equal(current.running, true, 'planned repair only replaces a live known instance');
+  let terminalTime;
+  if (terminalRecovery) {
+    const terminal = repair.terminalTargets?.find((entry) => entry.index === index);
+    assert.equal(terminal?.kind, 'heap-exhaustion', 'explicit terminal heap recovery required');
+    assert.equal(current.running, false);
+    assert.equal(current.status, 'exited');
+    assert.equal(current.pid, 0);
+    assert.ok(Number.isInteger(current.exitCode) && current.exitCode >= 128 &&
+      current.exitCode <= 255);
+    assert.equal(terminal.containerId, current.id);
+    assert.equal(terminal.exitCode, current.exitCode);
+    assert.equal(terminal.finishedAt, current.finishedAt);
+    terminalTime = Date.parse(current.finishedAt);
+    assert.ok(terminalTime > Date.parse(current.startedAt) && terminalTime <= now);
+    const terminalLog = readFile(terminal.logFile);
+    assert.equal(hash(terminalLog), terminal.logSha256, 'terminal evidence changed');
+    assert.match(String(terminalLog), /FATAL ERROR:.*heap/i);
+  } else {
+    assert.equal(current.running, true, 'planned repair only replaces a live known instance');
+  }
   assert.equal(current.pid, original.pid, 'target restarted since planning');
   assert.equal(current.startedAt, original.startedAt);
   assert.equal(current.signatureBypassDisabled, true);
@@ -55,6 +77,9 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
     const captureTime = Date.parse(proof.captureAt);
     assert.ok(Number.isFinite(captureTime) && captureTime <= now && now - captureTime <= 900000,
         'retained-tail checkpoint must be at most fifteen minutes old');
+    if (terminalRecovery) {
+      assert.ok(captureTime > terminalTime, 'checkpoint must follow the confirmed terminal event');
+    }
     const retained = new Set(proof.records.map((record) => record.hash));
     assert.ok(repair.requiredPending.every((blockHash) => retained.has(blockHash)),
         'checkpoint lost an original pending block');
@@ -69,6 +94,7 @@ function validate(plan, index, containers, readFile = fs.readFileSync, now = Dat
     return verifyCheckpoint(checkpoint, plan.image);
   });
   return { at: new Date(now).toISOString(), pass: true, target: index, bridges, previous,
+    terminalRecovery,
     scope: 'planned software repair with two preserved live signed-tail bridges; ' +
       'not native consensus health, finalized progress or permission for funding/KPI traffic' };
 }
@@ -79,7 +105,9 @@ function inspect() {
     maxBuffer: 8 * 1024 ** 2,
   })).map((container, index) => ({ index, id: container.Id, image: container.Image,
     pid: container.State.Pid, startedAt: container.State.StartedAt,
-    running: container.State.Running,
+    running: container.State.Running, status: container.State.Status,
+    exitCode: container.State.ExitCode, finishedAt: container.State.FinishedAt,
+    oomKilled: container.State.OOMKilled,
     signatureBypassDisabled:
       container.Config.Env.includes('ENABLE_TX_SIG_VERIF_WORKAROUND=false') }));
 }
@@ -89,7 +117,8 @@ if (require.main === module) {
     const [, , filename, index] = process.argv;
     assert.match(index, /^[0-9]$/);
     const plan = JSON.parse(fs.readFileSync(filename));
-    console.log(JSON.stringify(validate(plan, Number(index), inspect())));
+    console.log(JSON.stringify(validate(plan, Number(index), inspect(), fs.readFileSync,
+        Date.now(), process.env.RECOVER_CRASHED === '1')));
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;

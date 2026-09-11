@@ -416,7 +416,7 @@ class P2pServer {
         }
         if (!P2pUtil.checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
           logger.error(`The message from the node(${address}) is stale. Discard the message.`);
-          logger.debug(`The detail is as follows: ${parsedMessage}`);
+          logger.debug(() => `The detail is as follows: ${parsedMessage}`);
           const latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
           return;
@@ -534,9 +534,9 @@ class P2pServer {
             }
             const consensusMessage = _.get(parsedMessage, 'data.message');
             const consensusTags = _.get(parsedMessage, 'data.tags', []);
-            logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
+            logger.debug(() => `[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
-            logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ` +
+            logger.debug(() => `[${LOG_HEADER}] Tags attached to a consensus message: ` +
                 `${JSON.stringify(consensusTags)}`);
             trafficStatsManager.addEvent(
                   TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
@@ -565,19 +565,19 @@ class P2pServer {
             }
             const tx = _.get(parsedMessage, 'data.transaction');
             const txTags = _.get(parsedMessage, 'data.tags', []);
-            logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
-            logger.debug(`[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
+            logger.debug(() => `[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
+            logger.debug(() => `[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
             trafficStatsManager.addEvent(
                 TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
             if (this.node.tp.transactionTracker.has(tx.hash)) {
-              logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
+              logger.debug(() => `[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
               return;
             }
             if (this.node.state !== BlockchainNodeStates.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state}).`);
+              logger.debug(() => `[${LOG_HEADER}] Not ready to process transactions (${this.node.state}).`);
               this.client.requestChainSegment();
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -634,7 +634,7 @@ class P2pServer {
             break;
           case P2pMessageTypes.CHAIN_SEGMENT_REQUEST:
             const lastBlockNumber = _.get(parsedMessage, 'data.lastBlockNumber');
-            logger.debug(`[${LOG_HEADER}] Receiving a chain segment request: ${lastBlockNumber}`);
+            logger.debug(() => `[${LOG_HEADER}] Receiving a chain segment request: ${lastBlockNumber}`);
             if (this.node.bc.chain.length === 0) {
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -654,7 +654,7 @@ class P2pServer {
             const chainSegment = this.node.bc.getBlockList(lastBlockNumber + 1);
             if (chainSegment) {
               const catchUpInfo = this.consensus.getCatchUpInfo();
-              logger.debug(
+              logger.debug(() =>
                   `[${LOG_HEADER}] Sending a chain segment: ` +
                   `${JSON.stringify(chainSegment, null, 2)}` +
                   `along with catchUpInfo ${JSON.stringify(catchUpInfo, null, 2)}`);
@@ -797,7 +797,7 @@ class P2pServer {
       };
     }
     if (this.node.state !== BlockchainNodeStates.SERVING) {
-      logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state})`);
+      logger.debug(() => `[${LOG_HEADER}] Not ready to process transactions (${this.node.state})`);
       this.client.requestChainSegment();
       return {
         tx_hash: null,
@@ -825,7 +825,7 @@ class P2pServer {
           txListSucceeded.push(subTx);
         }
       }
-      logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
+      logger.debug(() => `\n BATCH TX RESULT: ` + JSON.stringify(resultList));
       if (!isDryrun && txListSucceeded.length > 0) {
         this.client.broadcastTransaction({ tx_list: txListSucceeded }, tags);
       }
@@ -833,7 +833,7 @@ class P2pServer {
       return resultList;
     } else {
       const result = this.node.executeTransactionAndAddToPool(tx, isDryrun);
-      logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
+      logger.debug(() => `\n TX RESULT: ` + JSON.stringify(result));
       if (!isDryrun && !CommonUtil.isFailedTx(result)) {
         this.client.broadcastTransaction(tx, tags);
       }
@@ -930,7 +930,7 @@ class P2pServer {
         this.lastReportedBlockNumberSent = blockNumberToReport;
         blockNumberToReport++;
       }
-      logger.debug(`Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
+      logger.debug(() => `Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
       if (opList.length > 0) {
         const tx = {
           operation: {

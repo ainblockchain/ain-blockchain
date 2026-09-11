@@ -22,19 +22,20 @@ jq -e --arg image "$image" --arg service "node$node_index" \
    .services[$service].environment.ENABLE_TX_SIG_VERIF_WORKAROUND == "false"' \
   "$recovery/compose.json" >/dev/null
 bridge=$(jq -r '.bridgeIndex // 0' "$recovery/plan.json")
-[[ "$bridge" == 0 || "$bridge" == 1 ]] || exit 2
+[[ "$bridge" =~ ^[0-9]$ ]] || exit 2
 [[ "$number" =~ ^[0-9]+$ && "$expected" =~ ^[a-f0-9]{64}$ ]] || exit 2
 [[ $(sha256sum "$seed" | cut -d ' ' -f 1) == "$expected" ]] || exit 2
 repair_preflight=''
 history_name="ain-cert-recovery-node$node_index-history"
 if [[ ${PLANNED_REPAIR:-0} == 1 ]]; then
-  [[ ${RECOVER_CRASHED:-0} != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
+  [[ ${RESUME_STOPPED:-0} != 1 ]] || exit 2
   repair_preflight=$(node "$source_dir/repair-preflight.js" "$recovery/plan.json" "$node_index")
   repair_id=$(jq -er .repair.runId "$recovery/plan.json")
   history_name="ain-cert-repair-$repair_id-node$node_index-history"
 fi
 if [[ ${RECOVER_CRASHED:-0} == 1 ]]; then
-  [[ "$node_index" != "$bridge" && "$node_index" != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
+  [[ "$node_index" != "$bridge" && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
+  if [[ ${PLANNED_REPAIR:-0} != 1 ]]; then [[ "$node_index" != 1 ]] || exit 2; fi
   [[ $(docker inspect "$name" --format '{{.State.Running}}') == false ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.Status}}') == exited ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.ExitCode}}') -ge 128 ]] || exit 2
@@ -86,9 +87,9 @@ for prior in $prior_nodes; do
 done
 if [[ "$node_index" != "$bridge" ]]; then
   [[ $(docker inspect "ain-cert-docker-node$bridge-1" --format '{{.State.Running}}') == true ]] || exit 2
-  if [[ "$bridge" == 1 ]]; then
-    [[ $(docker inspect ain-cert-docker-node1-1 --format '{{.Id}}') == \
-      $(jq -er .bridgeContainerId "$recovery/plan.json") ]] || exit 2
+  bridge_id=$(jq -r '.bridgeContainerId // empty' "$recovery/plan.json")
+  if [[ -n "$bridge_id" ]]; then
+    [[ $(docker inspect "ain-cert-docker-node$bridge-1" --format '{{.Id}}') == "$bridge_id" ]] || exit 2
   fi
 fi
 seed_preflight=$(docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \

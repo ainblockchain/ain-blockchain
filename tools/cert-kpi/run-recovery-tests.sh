@@ -11,6 +11,7 @@ mkdir -m 700 "$output"
 output=$(realpath "$output")
 mkdir "$output/source"
 for relative in common/file-util.js node/index.js block-pool/index.js \
+    logger/index.js consensus/index.js p2p/server.js test/unit/lazy-consensus-logging.test.js \
     p2p/index.js blockchain-configs/base/node_params.json test/unit/p2p-consensus-gossip.test.js \
     block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
     test/unit/block-pool-evidence.test.js \
@@ -24,6 +25,7 @@ for relative in common/file-util.js node/index.js block-pool/index.js \
     tools/cert-kpi/profile-consensus.js tools/cert-kpi/profile-consensus.test.js \
     tools/cert-kpi/replay-consensus-capture.js \
     tools/cert-kpi/repair-preflight.js tools/cert-kpi/repair-preflight.test.js \
+    tools/cert-kpi/capture-pending-checkpoint.sh tools/cert-kpi/capture-pending-checkpoint.test.js \
     tools/cert-kpi/recovery-seed.js tools/cert-kpi/recovery-seed.test.js \
     tools/cert-kpi/run-recovery-tests.sh; do
   mkdir -p "$output/source/$(dirname "$relative")"
@@ -45,14 +47,18 @@ set -e
 sha256sum -c /evidence/source.sha256
 node tools/cert-kpi/native-shards/audit-image.js /source /evidence/runtime-source.json
 node --test --test-concurrency=1 tools/cert-kpi/audit-ledger.test.js \
+  tools/cert-kpi/capture-pending-checkpoint.test.js \
   tools/cert-kpi/inspect-consensus.test.js tools/cert-kpi/profile-consensus.test.js \
   tools/cert-kpi/repair-preflight.test.js tools/cert-kpi/recovery-seed.test.js \
   tools/cert-kpi/prepare-chain-recovery.test.js tools/cert-kpi/verify-pending-chain.test.js
 node_modules/.bin/mocha --timeout 160000 test/unit/file-util-snapshot.test.js \
+  test/unit/lazy-consensus-logging.test.js \
   test/unit/p2p-consensus-gossip.test.js \
   test/unit/bounded-json-size.test.js \
   test/unit/block-pool-evidence.test.js test/unit/block-pool.test.js test/unit/consensus.test.js
 node_modules/.bin/eslint tools/cert-kpi/audit-ledger.js tools/cert-kpi/audit-ledger.test.js \
+  test/unit/lazy-consensus-logging.test.js \
+  tools/cert-kpi/capture-pending-checkpoint.test.js \
   block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
   test/unit/p2p-consensus-gossip.test.js \
   tools/cert-kpi/profile-consensus.js tools/cert-kpi/profile-consensus.test.js \
@@ -65,7 +71,7 @@ node_modules/.bin/eslint tools/cert-kpi/audit-ledger.js tools/cert-kpi/audit-led
   tools/cert-kpi/verify-pending-chain.js tools/cert-kpi/verify-pending-chain.test.js \
   tools/cert-kpi/reassign-recovery-bridge.js \
   test/unit/file-util-snapshot.test.js
-for script in maintain-chain-node run-ledger-audit run-recovery-tests; do
+for script in maintain-chain-node run-ledger-audit run-recovery-tests capture-pending-checkpoint; do
   bash -n "tools/cert-kpi/$script.sh"
 done
 ' > "$output/container-id.txt"
