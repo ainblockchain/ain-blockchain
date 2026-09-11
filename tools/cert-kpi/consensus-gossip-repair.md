@@ -363,3 +363,39 @@ The live-node fix requires a NEW reviewed software-repair plan with fresh
 finalized-history bridges, all19 retained pending hashes, full-volume backup and
 the exact target disk/seed height gate. It is planned maintenance for the proven
 cursor defect, never a restart solely because an observation timed out.
+
+## Actual ten-node recovery, 18:34–18:42 UTC
+
+Only that same live node4 was deliberately replaced at18:34:58 UTC using tested
+image `sha256:be8ace6555c2d3fb8040754012a8f5651e50add5c9e099d5cee1caa59b91fe4f`.
+Its new ID is `9e904fec96f1f6eddeeaaedc72b33f6dcf6a445890f760e811897f1c4a7c5447`,
+PID1601646. The original full volume and19 pending hashes were preserved, the
+23,087-block prefix audit passed, and the same verified snapshot inode was reused.
+Other nine chain nodes, flashnext, flashtrain and Ainize API retained their
+IDs/PIDs/start times. No timeout-triggered replacement or epoch change occurred.
+
+The same new node4 then actually advanced23086→23693→24928→25985 and reached
+SERVING. Temporary health failures during catch-up were kept, not hidden or used
+to trigger another restart. At18:38:48–18:38:59 and18:41:49–18:42:00, the guarded
+ten-node observer passed: ten distinct validators, signature bypass=false,
+SERVING/native health=true and every finalized chain advancing across ten seconds.
+The18:42 read-only sample again had all ten healthy, at26188–26189.
+
+An intervening all-ten native disk audit passed. Node0 verified456 newly added
+blocks beyond the prior25678 reference, with4,674 native signature checks; every
+other node matched its0–26134 manifest byte-for-byte, then separately verified
+their newer tails. Individual audit endpoints were26134–26172 because the chain
+kept advancing. Do not multiply reused signatures or treat different-time heads
+as a fork. The original23086 block and all19 retained pending hashes remain in
+that common finalized prefix. This is block/hash/linkage/signature evidence,
+not an independent full DB replay through26172 or a prolonged stability/TPS test.
+
+Evidence directories: `finalized_node4_recovery_20260911`,
+`chain_sync_node4_repair_20260911`, `chain_sync_native_red_20260911`,
+`chain_sync_native_green_20260911`, `chain_sync_r2_tests_20260911`, and
+`ledger_after_sync_repair_20260911`. All historical plans are single-use artifacts;
+do not apply either completed node4 plan again. Subsequent experiments must still
+run their own fresh ten-node, genesis, owner and signature/finality gates before
+creating keys or submitting transactions. Readiness is restored, not permanently
+waived. The other KPI thresholds,100 datasets/models and public Ainize delivery
+remain separate requirements.
