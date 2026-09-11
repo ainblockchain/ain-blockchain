@@ -98,8 +98,10 @@ if [[ "$node_index" != "$bridge" ]]; then
   fi
 fi
 seed_preflight=$(docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \
-  --memory 512m --memory-swap 512m --read-only --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE \
+  --memory 512m --memory-swap 512m --read-only --tmpfs /tmp:rw,size=64m \
+  --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE \
   --security-opt no-new-privileges -e NVIDIA_VISIBLE_DEVICES=void \
+  -e BLOCKCHAIN_DATA_DIR=/tmp/recovery-seed \
   --mount "type=volume,src=$volume,dst=/data,readonly" \
   --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" --entrypoint node "$image" \
   tools/cert-kpi/recovery-seed.js check "/data/snapshots/$port/n2s/$number.json.gz" \
@@ -145,8 +147,10 @@ sha256sum "$private/data.tar" > "$private/data.tar.sha256"
     $(cut -d ' ' -f 1 "$private/data.tar.sha256") ]] || exit 2
 tar -tf "$private/data.tar" > "$private/data-files.txt"
 docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \
-  --memory 512m --memory-swap 512m --read-only --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE \
+  --memory 512m --memory-swap 512m --read-only --tmpfs /tmp:rw,size=64m \
+  --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE \
   --security-opt no-new-privileges \
+  -e BLOCKCHAIN_DATA_DIR=/tmp/recovery-seed \
   -e NVIDIA_VISIBLE_DEVICES=void -e "PORT=$port" -e "NUMBER=$number" -e "EXPECTED=$expected" \
   --mount "type=volume,src=$volume,dst=/data" --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" \
   --entrypoint node "$image" tools/cert-kpi/recovery-seed.js install \

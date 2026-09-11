@@ -312,3 +312,11 @@ selected lint and shell checks. Initial wrong-working-directory commands and an
 intermediate max-line-length lint failure are separate failed attempts, not
 successful native/network experiments. Actual repair and all-ten readiness must
 still be recorded separately after these tests.
+
+The first actual CHECK_ONLY run also exposed a read-only-container prerequisite:
+native FileUtil initializes a logger directory when reading the disk head. That
+run failed before any target stop, backup or seed mutation. Seed check/install
+now use a64MiB temporary filesystem and `BLOCKCHAIN_DATA_DIR=/tmp/recovery-seed`;
+the mounted chain remains read-only during preflight. This fixes logger scratch
+storage without making the image writable, changing file permissions or bypassing
+the native head guard. The failed preflight and its same-target replay are kept.
