@@ -19,6 +19,7 @@ const {
 const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
+const EscrowUnits = require('./escrow-units');
 
 axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
 
@@ -724,6 +725,22 @@ class Functions {
     }
   }
 
+  isMicroUnitEscrow(accountName, context) {
+    if (!isEnabledTimerFlag('native_escrow_micro_units', context.blockNumber)) return false;
+    const [serviceType, serviceName, key] = CommonUtil.parseServAcntName(accountName);
+    if (serviceType !== 'escrow' || serviceName !== 'escrow' || typeof key !== 'string') {
+      return false;
+    }
+    const participants = key.split(':');
+    if (participants.length !== 3 ||
+        !participants.slice(0, 2).every((account) => /^0x[0-9a-fA-F]{40}$/.test(account)) ||
+        !/^[A-Za-z0-9_-]{1,100}$/.test(participants[2])) return false;
+    const configPath = CommonUtil.formatPath([
+      'escrow', ...participants, 'config', 'native_release_version',
+    ]);
+    return this.db.getValue(configPath) === 2;
+  }
+
   _transfer(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -748,12 +765,27 @@ class Functions {
         extraGasAmount = context.accountRegistrationGasAmount;
       }
     }
-    const decResult = this.decValueOrLog(fromBalancePath, value, context);
+    let exactBalances = null;
+    const fromEscrow = this.isMicroUnitEscrow(from, context);
+    const toEscrow = this.isMicroUnitEscrow(to, context);
+    if (fromEscrow || toEscrow) {
+      try {
+        exactBalances = EscrowUnits.transferBalances(
+            fromBalance, this.db.getValue(toBalancePath), value, { fromEscrow, toEscrow });
+      } catch (error) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+    }
+    const decResult = exactBalances ?
+      this.setValueOrLog(fromBalancePath, exactBalances.from, context) :
+      this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
     // TODO(liayoo): Remove the from entry, if it's a service account && if the new balance === 0.
-    const incResult = this.incValueOrLog(toBalancePath, value, context);
+    const incResult = exactBalances ?
+      this.setValueOrLog(toBalancePath, exactBalances.to, context) :
+      this.incValueOrLog(toBalancePath, value, context);
     if (CommonUtil.isFailedTx(incResult)) {
       return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
@@ -1172,17 +1204,29 @@ class Functions {
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
     const ratio = _.get(value, 'ratio');
-    if (!CommonUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
-    }
     const accountKey = CommonUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = CommonUtil.toServiceAccountName(
         PredefinedDbPaths.ESCROW, PredefinedDbPaths.ESCROW, accountKey);
     const serviceAccountBalancePath =
         PathUtil.getServiceAccountBalancePathFromAccountName(escrowServiceAccountName);
     const escrowAmount = this.db.getValue(serviceAccountBalancePath);
-    const targetAmount = escrowAmount * ratio;
-    const sourceAmount = escrowAmount - targetAmount;
+    let targetAmount;
+    let sourceAmount;
+    if (this.isMicroUnitEscrow(escrowServiceAccountName, context)) {
+      try {
+        const amounts = EscrowUnits.releaseAmounts(value, escrowAmount);
+        targetAmount = amounts.target;
+        sourceAmount = amounts.source;
+      } catch (error) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+    } else {
+      if (!CommonUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+      targetAmount = escrowAmount * ratio;
+      sourceAmount = escrowAmount - targetAmount;
+    }
     logger.debug(`  =>> escrowAmount: ${escrowAmount}, ratio: ${ratio}, ` +
         `targetAmount: ${targetAmount}, sourceAmount: ${sourceAmount}`);
     let targetResult = null;
