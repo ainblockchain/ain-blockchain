@@ -646,6 +646,9 @@ class BlockPool {
           offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
         });
         offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
+        backupDb.destroyDb();
+        backupDb = this.node.createTempDb(
+            baseDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);
       } else {
         const newBackupDb = this.node.createTempDb(
             backupDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);

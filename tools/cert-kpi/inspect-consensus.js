@@ -1,0 +1,205 @@
+const assert = require('assert/strict');
+const fs = require('fs');
+const path = require('path');
+const WebSocket = require('ws');
+
+async function main() {
+  const output = process.argv[2];
+  assert.ok(output && !fs.existsSync(output), 'pass a new output file');
+  const blockHash = process.argv[3];
+  assert.ok(process.argv.length <= 4,
+      'usage: inspect-consensus.js NEW_OUTPUT [PRIVATE_BLOCK_HASH]');
+  if (blockHash) {
+    assert.match(blockHash, /^0x[0-9a-f]{64}$/);
+    const directory = fs.statSync(path.dirname(output));
+    assert.equal(directory.mode & 0o777, 0o700, 'snapshot output directory must be private (0700)');
+    assert.equal(directory.uid, process.getuid(), 'snapshot directory must belong to this user');
+  }
+  const listing = await fetch('http://127.0.0.1:9229/json/list', {
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.ok(listing.ok, `inspector listing HTTP ${listing.status}`);
+  const targets = await listing.json();
+  assert.equal(targets.length, 1, 'inspect exactly one explicitly selected local process');
+  const url = new URL(targets[0].webSocketDebuggerUrl);
+  assert.equal(url.protocol, 'ws:');
+  assert.equal(url.hostname, '127.0.0.1');
+  assert.equal(url.port, '9229');
+  const socket = new WebSocket(url, {
+    maxPayload: (blockHash ? 64 : 2) * 1024 ** 2, handshakeTimeout: 5000,
+  });
+  const pending = new Map();
+  let sequence = 0;
+  let pauseResolve;
+  let pauseTimer;
+  let pauseEvent;
+  let breakpoint;
+  let pausedFrame = false;
+  let probe;
+  const rejectPending = (error) => {
+    for (const request of pending.values()) {
+ clearTimeout(request.timer); request.reject(error);
+}
+    pending.clear();
+  };
+  socket.on('error', rejectPending);
+  socket.on('close', () => rejectPending(new Error('inspector disconnected')));
+  socket.on('message', (bytes) => {
+    const response = JSON.parse(bytes.toString());
+    if (response.method === 'Debugger.paused') {
+      pausedFrame = true;
+      pauseEvent = response.params;
+      pauseResolve?.(pauseEvent);
+      return;
+    }
+    const request = pending.get(response.id);
+    if (!request) return;
+    pending.delete(response.id);
+    clearTimeout(request.timer);
+    if (response.error) request.reject(new Error(response.error.message));
+    else request.resolve(response.result);
+  });
+  const call = (method, params) => new Promise((resolve, reject) => {
+    if (socket.readyState !== WebSocket.OPEN) {
+ reject(new Error('inspector is not connected')); return;
+}
+    const id = ++sequence;
+    const timer = setTimeout(() => {
+ pending.delete(id); reject(new Error(`${method} timed out`));
+}, 30000);
+    pending.set(id, { resolve, reject, timer });
+    socket.send(JSON.stringify({ id, method, params }));
+  });
+  await new Promise((resolve, reject) => {
+ socket.once('open', resolve); socket.once('error', reject);
+});
+  try {
+    await call('Debugger.enable', {});
+    const target = await call('Runtime.evaluate', {
+      expression: 'process.mainModule.require(\'/app/ain-blockchain/p2p/server\')' +
+        '.prototype.getNodeStatus', objectGroup: 'bounded-consensus-diagnostic',
+    });
+    assert.ok(!target.exceptionDetails && target.result.objectId, 'native function required');
+    breakpoint = (await call('Debugger.setBreakpointOnFunctionCall', {
+      objectId: target.result.objectId,
+    })).breakpointId;
+    const paused = pauseEvent ? Promise.resolve(pauseEvent) : new Promise((resolve, reject) => {
+      pauseResolve = resolve;
+      pauseTimer = setTimeout(() => reject(new Error('status breakpoint not reached')), 15000);
+    });
+    probe = fetch('http://127.0.0.1:18081/node_status', {
+      signal: AbortSignal.timeout(20000),
+    }).catch(() => null);
+    let frame;
+    try {
+ frame = (await paused).callFrames[0];
+} finally {
+ clearTimeout(pauseTimer);
+}
+    const result = await call('Debugger.evaluateOnCallFrame', {
+      callFrameId: frame.callFrameId, returnByValue: true,
+      expression: `(function() {
+        const node = this.node;
+        const selectedHash = ${JSON.stringify(blockHash || null)};
+        if (selectedHash) {
+          const info = node.bp.hashToInvalidBlockInfo.get(selectedHash);
+          if (!info?.block || !info.proposal) throw new Error('selected block/proposal absent');
+          const previous = node.bp.hashToBlockInfo.get(info.block.last_hash)?.block;
+          const database = node.bp.hashToDb.get(info.block.last_hash);
+          if (!previous || !database) throw new Error('selected predecessor block/database absent');
+          const earlierCandidates = [];
+          for (const [hash, candidate] of node.bp.hashToInvalidBlockInfo) {
+            const valid = node.bp.hashToBlockInfo.get(hash);
+            const candidateBlock = candidate.block || valid?.block;
+            const candidateProposal = candidate.proposal || valid?.proposal;
+            if (candidateBlock?.number < info.block.number && candidateProposal) {
+              earlierCandidates.push({ block: candidateBlock, proposal: candidateProposal,
+                votes: candidate.votes || [] });
+              if (earlierCandidates.length === 10) break;
+            }
+          }
+          const capture = { at: new Date().toISOString(), pid: process.pid,
+            block: info.block, proposal: info.proposal, earlierCandidates,
+            previous: node.buildBlockchainSnapshot(previous, database.stateRoot) };
+          const encoded = JSON.stringify(capture);
+          if (Buffer.byteLength(encoded) > 32 * 1024 ** 2) {
+            throw new Error('private capture exceeds 32 MiB');
+          }
+          return capture;
+        }
+        const bounded = collection => {
+          const entries = [];
+          for (const entry of collection) {
+            entries.push(entry);
+            if (entries.length === 100) break;
+          }
+          return entries;
+        };
+        const finalBlock = node.bc.lastBlock();
+        const validators = finalBlock.validators;
+        const summarize = (hash, info) => {
+          const block = info.block || node.bp.hashToBlockInfo.get(hash)?.block;
+          const voters = [...new Set((info.votes || []).map(vote => vote.address))];
+          return { hash, number: block?.number, epoch: block?.epoch, proposer: block?.proposer,
+            notarized: info.notarized, votes: info.votes?.length || 0, uniqueVoters: voters.length,
+            uniqueStake: voters.reduce((total, address) =>
+              total + (validators[address]?.stake || 0), 0),
+            evidenceGroups: Object.keys(block?.evidence || {}).length,
+            stateHash: block?.state_proof_hash, previousHash: block?.last_hash };
+        };
+        return { at: new Date().toISOString(), pid: process.pid, address: node.account.address,
+          memory: process.memoryUsage(), final: { number: finalBlock.number, hash: finalBlock.hash,
+            timestamp: finalBlock.timestamp },
+          totalStake: Object.values(validators).reduce((total, validator) =>
+            total + validator.stake, 0),
+          counts: { blocks: node.bp.hashToBlockInfo.size,
+            invalid: node.bp.hashToInvalidBlockInfo.size, dbs: node.bp.hashToDb.size },
+          tips: node.bp.longestNotarizedChainTips.slice(0, 30),
+          blocks: bounded(node.bp.hashToBlockInfo).map(([hash, info]) => summarize(hash, info)),
+          invalid: bounded(node.bp.hashToInvalidBlockInfo).map(([hash, info]) =>
+            summarize(hash, info)),
+          databases: bounded(node.bp.hashToDb).map(([hash, db]) => ({ hash,
+            version: db.stateVersion, proof: db.getProofHash('/') })) };
+      }).call(this)`,
+    });
+    assert.ok(!result.exceptionDetails, result.exceptionDetails?.text);
+    fs.writeFileSync(output, JSON.stringify(result.result.value, null, 2) + '\n', {
+      flag: 'wx', mode: 0o600,
+    });
+  } finally {
+    clearTimeout(pauseTimer);
+    const cleanupErrors = [];
+    const cleanup = async (method, params = {}) => {
+      try {
+ await call(method, params);
+} catch (error) {
+ cleanupErrors.push(`${method}: ${error.message}`);
+}
+    };
+    if (breakpoint) await cleanup('Debugger.removeBreakpoint', { breakpointId: breakpoint });
+    if (pausedFrame) await cleanup('Debugger.resume');
+    await cleanup('Debugger.disable');
+    await cleanup('Runtime.releaseObjectGroup', { objectGroup: 'bounded-consensus-diagnostic' });
+    try {
+      await call('Runtime.evaluate', {
+        expression: 'setTimeout(() => process.mainModule.require(\'node:inspector\')' +
+          '.close(), 1000).unref(); undefined',
+      });
+    } finally {
+ socket.terminate();
+}
+    if (probe) await probe;
+    if (cleanupErrors.length) {
+      console.error(JSON.stringify({ cleanupErrors }));
+      process.exitCode = 1;
+    }
+  }
+  if (!process.exitCode) {
+console.log(JSON.stringify({ output, privateSnapshot: Boolean(blockHash),
+    scope: 'one status breakpoint; resumed without ledger writes; not performance evidence' }));
+}
+}
+
+main().catch((error) => {
+ console.error(error.message); process.exitCode = 1;
+});
