@@ -8,7 +8,10 @@ async function main() {
   assert.ok(output && !fs.existsSync(output), 'pass a new output file');
   const blockHash = process.argv[3];
   const capturePending = process.env.CAPTURE_PENDING_CHAIN === '1';
-  assert.ok(!(blockHash && capturePending), 'select one private capture mode');
+  const inspectMessage = process.env.INSPECT_P2P_MESSAGE === '1';
+  const measureBytes = process.env.INSPECT_BYTE_SIZES === '1';
+  assert.ok([Boolean(blockHash), capturePending, inspectMessage].filter(Boolean).length <= 1,
+      'select one capture mode');
   const rpcPort = Number(process.env.INSPECT_RPC_PORT || 18081);
   assert.ok(Number.isSafeInteger(rpcPort) && rpcPort > 0 && rpcPort <= 65535);
   assert.ok(process.argv.length <= 4,
@@ -100,11 +103,54 @@ async function main() {
 } finally {
  clearTimeout(pauseTimer);
 }
-    const result = await call('Debugger.evaluateOnCallFrame', {
-      callFrameId: frame.callFrameId, returnByValue: true,
+    let result = await call('Debugger.evaluateOnCallFrame', {
+      callFrameId: frame.callFrameId, returnByValue: !inspectMessage,
       expression: `(function() {
         const node = this.node;
         const selectedHash = ${JSON.stringify(blockHash || null)};
+        if (${inspectMessage}) {
+          const peer = Object.values(this.inbound).sort((left, right) =>
+            (right.socket?._receiver?._totalPayloadLength || 0) -
+            (left.socket?._receiver?._totalPayloadLength || 0))[0];
+          if (!peer?.socket) throw new Error('no inbound socket available');
+          return new Promise((resolve, reject) => {
+            const socket = peer.socket;
+            let smallMessages = 0;
+            const cleanup = () => {
+              clearTimeout(timer);
+              socket.removeListener('message', collect);
+            };
+            const collect = bytes => {
+              if (bytes.length < 1024 ** 2) { smallMessages++; return; }
+              cleanup();
+              try {
+                const summary = { at: new Date().toISOString(), bytes: bytes.length,
+                  smallMessages, scope: 'one large message; field sizes only; no payload' };
+                if (bytes.length > 32 * 1024 ** 2) {
+                  resolve({ ...summary, parsingSkipped: true });
+                  return;
+                }
+                const parsed = JSON.parse(bytes);
+                const sizes = (object, keys) => Object.fromEntries(keys
+                  .filter(key => object?.[key] !== undefined)
+                  .map(key => [key, Buffer.byteLength(JSON.stringify(object[key]))]));
+                resolve({ ...summary, type: parsed.type,
+                  dataBytes: sizes(parsed.data, ['message', 'tags', 'transaction',
+                    'chainSegment', 'catchUpInfo', 'peerInfo']),
+                  consensusType: parsed.data?.message?.type,
+                  consensusValueBytes: sizes(parsed.data?.message?.value,
+                    ['block', 'proposal', 'proposalBlock', 'proposalTx',
+                      'tx_body', 'signature', 'hash', 'address']),
+                  tags: Array.isArray(parsed.data?.tags) ? parsed.data.tags.length : null });
+              } catch (error) { reject(error); }
+            };
+            const timer = setTimeout(() => {
+              cleanup();
+              resolve({ at: new Date().toISOString(), noLargeMessage: true, smallMessages });
+            }, 15000);
+            socket.on('message', collect);
+          });
+        }
         if (${capturePending}) {
           const pendingChain = this.consensus.getCatchUpInfo();
           if (!pendingChain.length || pendingChain.length > 100) {
@@ -158,6 +204,8 @@ async function main() {
           const block = info.block || node.bp.hashToBlockInfo.get(hash)?.block;
           const voters = [...new Set((info.votes || []).map(vote => vote.address))];
           return { hash, number: block?.number, epoch: block?.epoch, proposer: block?.proposer,
+            declaredSize: block?.size, transactions: block?.transactions?.length,
+            lastVotes: block?.last_votes?.length,
             notarized: info.notarized, votes: info.votes?.length || 0, uniqueVoters: voters.length,
             uniqueStake: voters.reduce((total, address) =>
               total + (validators[address]?.stake || 0), 0),
@@ -172,6 +220,46 @@ async function main() {
           counts: { blocks: node.bp.hashToBlockInfo.size,
             invalid: node.bp.hashToInvalidBlockInfo.size, dbs: node.bp.hashToDb.size },
           tips: node.bp.longestNotarizedChainTips.slice(0, 30),
+          largestBlocks: [...node.bp.hashToBlockInfo, ...node.bp.hashToInvalidBlockInfo]
+            .sort((left, right) => (right[1].block?.size || 0) - (left[1].block?.size || 0))
+            .slice(0, 5).map(([hash, info]) => ({ ...summarize(hash, info),
+              componentBytes: ${measureBytes} ? Object.fromEntries(
+                ['last_votes', 'evidence', 'transactions', 'receipts'].map(key =>
+                  [key, Buffer.byteLength(JSON.stringify(info.block?.[key]) || '')])) :
+                    undefined })),
+          tipDetails: node.bp.longestNotarizedChainTips.slice(0, 30).map(hash =>
+            summarize(hash, node.bp.hashToBlockInfo.get(hash))),
+          network: ['inbound', 'outbound'].map(direction => {
+            const peers = direction === 'inbound' ? this.inbound : this.client.outbound;
+            const firstPeer = Object.values(peers)[0];
+            const info = firstPeer?.peerInfo || {};
+            const sizes = value => Object.fromEntries(Object.entries(value).slice(0, 50)
+              .map(([key, entry]) => [key, Buffer.byteLength(JSON.stringify(entry) || '')]));
+            return { direction, peerInfoBytes: ${measureBytes} ? sizes(info) : undefined,
+              peerConfigBytes: ${measureBytes} ? sizes(info.config || {}) : undefined,
+              peers: Object.entries(peers).slice(0, 30).map(([address, peer]) => {
+              const socket = peer.socket;
+              const inflate = socket?._extensions?.['permessage-deflate']?._inflate;
+              const symbolValue = name => {
+                const symbol = Object.getOwnPropertySymbols(inflate || {})
+                  .find(symbol => symbol.description === name);
+                return symbol ? inflate[symbol] : undefined;
+              };
+              const prefix = symbolValue('buffers')?.[0]?.subarray(0, 256).toString() || '';
+              const type = prefix.match(/^\{"type":"([A-Z_]+)"/);
+              const knownTypes = process.mainModule.require('/app/ain-blockchain/common/constants')
+                .P2pMessageTypes;
+              return { address, bufferedAmount: socket?.bufferedAmount,
+                senderBytes: socket?._sender?._bufferedBytes,
+                senderQueue: socket?._sender?._queue?.length,
+                receivedBytes: socket?._socket?.bytesRead,
+                sentBytes: socket?._socket?.bytesWritten,
+                pendingPayload: socket?._receiver?._totalPayloadLength,
+                inflatedBytes: symbolValue('total-length'),
+                pendingType: type && Object.values(knownTypes).includes(type[1]) ? type[1] : null,
+                receiveBuffer: socket?._receiver?._bufferedBytes };
+            }) };
+          }),
           blocks: bounded(node.bp.hashToBlockInfo).map(([hash, info]) => summarize(hash, info)),
           invalid: bounded(node.bp.hashToInvalidBlockInfo).map(([hash, info]) =>
             summarize(hash, info)),
@@ -180,6 +268,17 @@ async function main() {
       }).call(this)`,
     });
     assert.ok(!result.exceptionDetails, result.exceptionDetails?.text);
+    if (inspectMessage) {
+      assert.ok(result.result.objectId, 'message observation promise required');
+      await call('Debugger.removeBreakpoint', { breakpointId: breakpoint });
+      breakpoint = null;
+      await call('Debugger.resume', {});
+      pausedFrame = false;
+      result = await call('Runtime.awaitPromise', {
+        promiseObjectId: result.result.objectId, returnByValue: true,
+      });
+      assert.ok(!result.exceptionDetails, result.exceptionDetails?.text);
+    }
     fs.writeFileSync(output, JSON.stringify(result.result.value, null, 2) + '\n', {
       flag: 'wx', mode: 0o600,
     });

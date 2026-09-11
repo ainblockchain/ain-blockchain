@@ -7,6 +7,8 @@ const { execFile } = require('child_process');
 const { promisify } = require('util');
 const { test } = require('node:test');
 const { WebSocketServer } = require('ws');
+const { EventEmitter } = require('events');
+const vm = require('vm');
 const run = promisify(execFile);
 const script = path.join(__dirname, 'inspect-consensus.js');
 
@@ -19,9 +21,11 @@ async function withDirectory(action) {
   }
 }
 
-async function invoke(args) {
+async function invoke(args, env = {}) {
   try {
-    const result = await run(process.execPath, [script, ...args], { timeout: 10000 });
+    const result = await run(process.execPath, [script, ...args], {
+      timeout: 10000, env: { ...process.env, ...env },
+    });
     return { ...result, code: 0 };
   } catch (error) {
     return { code: error.code, stdout: error.stdout, stderr: error.stderr };
@@ -30,6 +34,8 @@ async function invoke(args) {
 
 async function withProtocol(options, action) {
   const methods = [];
+  const peerSocket = new EventEmitter();
+  let observation;
   const server = http.createServer((request, response) => {
     response.setHeader('Content-Type', 'application/json');
     response.end(JSON.stringify([{
@@ -39,7 +45,7 @@ async function withProtocol(options, action) {
   });
   const status = http.createServer((request, response) => response.end('{}'));
   const sockets = new WebSocketServer({ server });
-  sockets.on('connection', (socket) => socket.on('message', (bytes) => {
+  sockets.on('connection', (socket) => socket.on('message', async (bytes) => {
     const request = JSON.parse(bytes.toString());
     methods.push(request.method);
     let result = {};
@@ -51,8 +57,22 @@ async function withProtocol(options, action) {
     } else if (request.method === 'Runtime.evaluate') {
       result = { result: { objectId: 'function-1' } };
     } else if (request.method === 'Debugger.evaluateOnCallFrame') {
-      result = options.evaluateError ? { exceptionDetails: { text: 'capture refused' } } :
-        { result: { value: { bounded: true } } };
+      if (options.message) {
+        observation = vm.runInNewContext(request.params.expression, {
+          node: {}, inbound: { peer: { socket: peerSocket } }, Buffer, Date, JSON,
+          setTimeout: (callback) => setTimeout(callback, 100), clearTimeout,
+        });
+        result = { result: { objectId: 'observation-1' } };
+      } else {
+        result = options.evaluateError ? { exceptionDetails: { text: 'capture refused' } } :
+          { result: { value: { bounded: true } } };
+      }
+    } else if (request.method === 'Debugger.resume' && options.message && !options.empty) {
+      peerSocket.emit('message', Buffer.from(JSON.stringify({ type: 'CONSENSUS', data: {
+        message: { type: 'propose', value: { proposalBlock: 'private'.repeat(180000) } }, tags: [],
+      } })));
+    } else if (request.method === 'Runtime.awaitPromise') {
+      result = { result: { value: await observation } };
     }
     if (options.cleanupError && request.method === 'Debugger.removeBreakpoint') {
       error = { message: 'remove failed' };
@@ -62,7 +82,7 @@ async function withProtocol(options, action) {
   await new Promise((resolve) => server.listen(9229, '127.0.0.1', resolve));
   await new Promise((resolve) => status.listen(18081, '127.0.0.1', resolve));
   try {
-    await action(methods);
+    await action(methods, peerSocket);
   } finally {
     for (const socket of sockets.clients) socket.terminate();
     sockets.close();
@@ -71,6 +91,25 @@ async function withProtocol(options, action) {
     await Promise.all([server, status].map((service) =>
       new Promise((resolve) => service.close(resolve))));
   }
+}
+
+for (const empty of [false, true]) {
+  test(`message observer resumes before awaiting and releases its listener: empty=${empty}`, () =>
+    withDirectory((directory) => withProtocol({ message: true, empty }, async (methods, peer) => {
+      const output = path.join(directory, 'message.json');
+      const result = await invoke([output], { INSPECT_P2P_MESSAGE: '1' });
+      assert.equal(result.code, 0, result.stderr);
+      assert.equal(peer.listenerCount('message'), 0);
+      assert.ok(methods.indexOf('Debugger.resume') < methods.indexOf('Runtime.awaitPromise'));
+      const raw = fs.readFileSync(output, 'utf8');
+      assert.equal(raw.includes('private'), false);
+      const report = JSON.parse(raw);
+      if (empty) assert.equal(report.noLargeMessage, true);
+      else {
+        assert.equal(report.type, 'CONSENSUS');
+        assert.equal(report.consensusValueBytes.proposalBlock, 1260002);
+      }
+    })));
 }
 
 test('missing output is rejected', async () => {

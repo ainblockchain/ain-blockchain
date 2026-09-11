@@ -11,13 +11,18 @@ mkdir -m 700 "$output"
 output=$(realpath "$output")
 mkdir "$output/source"
 for relative in common/file-util.js node/index.js block-pool/index.js \
+    block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
+    test/unit/block-pool-evidence.test.js \
     test/unit/file-util-snapshot.test.js tools/cert-kpi/audit-ledger.js \
     tools/cert-kpi/audit-ledger.test.js tools/cert-kpi/replay-startup.js \
     tools/cert-kpi/prepare-chain-recovery.js tools/cert-kpi/prepare-chain-recovery.test.js \
     tools/cert-kpi/maintain-chain-node.sh tools/cert-kpi/run-ledger-audit.sh \
     tools/cert-kpi/verify-pending-chain.js tools/cert-kpi/verify-pending-chain.test.js \
     tools/cert-kpi/reassign-recovery-bridge.js \
-    tools/cert-kpi/inspect-consensus.js tools/cert-kpi/run-recovery-tests.sh; do
+    tools/cert-kpi/inspect-consensus.js tools/cert-kpi/inspect-consensus.test.js \
+    tools/cert-kpi/profile-consensus.js tools/cert-kpi/profile-consensus.test.js \
+    tools/cert-kpi/replay-consensus-capture.js \
+    tools/cert-kpi/run-recovery-tests.sh; do
   mkdir -p "$output/source/$(dirname "$relative")"
   cp "$repository/$relative" "$output/source/$relative"
 done
@@ -36,13 +41,19 @@ docker create --name "$name" --runtime runc --network none --cpus 2 --cpuset-cpu
 set -e
 sha256sum -c /evidence/source.sha256
 node tools/cert-kpi/native-shards/audit-image.js /source /evidence/runtime-source.json
-node --test tools/cert-kpi/audit-ledger.test.js tools/cert-kpi/inspect-consensus.test.js \
+node --test --test-concurrency=1 tools/cert-kpi/audit-ledger.test.js \
+  tools/cert-kpi/inspect-consensus.test.js tools/cert-kpi/profile-consensus.test.js \
   tools/cert-kpi/prepare-chain-recovery.test.js tools/cert-kpi/verify-pending-chain.test.js
 node_modules/.bin/mocha --timeout 160000 test/unit/file-util-snapshot.test.js \
+  test/unit/bounded-json-size.test.js \
   test/unit/block-pool-evidence.test.js test/unit/block-pool.test.js test/unit/consensus.test.js
 node_modules/.bin/eslint tools/cert-kpi/audit-ledger.js tools/cert-kpi/audit-ledger.test.js \
+  block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
+  tools/cert-kpi/profile-consensus.js tools/cert-kpi/profile-consensus.test.js \
+  tools/cert-kpi/replay-consensus-capture.js \
   tools/cert-kpi/replay-startup.js tools/cert-kpi/prepare-chain-recovery.js \
   tools/cert-kpi/prepare-chain-recovery.test.js tools/cert-kpi/inspect-consensus.js \
+  tools/cert-kpi/inspect-consensus.test.js \
   tools/cert-kpi/verify-pending-chain.js tools/cert-kpi/verify-pending-chain.test.js \
   tools/cert-kpi/reassign-recovery-bridge.js \
   test/unit/file-util-snapshot.test.js

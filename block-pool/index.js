@@ -6,6 +6,7 @@ const { StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const ConsensusUtil = require('../consensus/consensus-util');
 const Transaction = require('../tx-pool/transaction');
+const boundedJsonSize = require('./bounded-json-size');
 
 class BlockPool {
   constructor(node) {
@@ -591,8 +592,12 @@ class BlockPool {
    * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
    * @returns { offenses, evidence }
    */
-  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockNumber, blockTime, baseDb, eventSource) {
+  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockNumber, blockTime,
+      baseDb, eventSource, maxEvidenceBytes = 1024 ** 2) {
     const LOG_HEADER = 'getOffensesAndEvidence';
+    if (!Number.isSafeInteger(maxEvidenceBytes) || maxEvidenceBytes < 2) {
+      throw new Error('Evidence proposal byte budget must be an integer of at least two bytes');
+    }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const baseBlockNumber = baseDb.blockNumberSnapshot;
     const chainId = this.node.getBlockchainParam('genesis/chain_id');
@@ -601,6 +606,7 @@ class BlockPool {
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
+    let evidenceBytes = 2;
     for (const [blockHash, blockInfo] of this.hashToInvalidBlockInfo.entries()) {
       if (recordedInvalidBlockHashSet.has(blockHash)) {
         continue;
@@ -612,6 +618,18 @@ class BlockPool {
       const block = blockInfo.block || _get(validBlockCandidate, 'block');
       const proposal = blockInfo.proposal || _get(validBlockCandidate, 'proposal');
       if (!block || !proposal) {
+        continue;
+      }
+      const offender = block.proposer;
+      const candidate = {
+        transactions: [proposal], block, votes: blockInfo.votes,
+        offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL,
+      };
+      const overhead = evidence[offender] ? 1 :
+          Buffer.byteLength(JSON.stringify(offender)) + 3 + (evidenceBytes > 2 ? 1 : 0);
+      const remaining = maxEvidenceBytes - evidenceBytes - overhead;
+      const candidateBytes = remaining >= 0 ? boundedJsonSize(candidate, remaining) : null;
+      if (candidateBytes === null) {
         continue;
       }
       const talliedVotes = [];
@@ -630,7 +648,6 @@ class BlockPool {
         }
       }
       if (talliedAgainst >= majority) {
-        const offender = block.proposer;
         if (!evidence[offender]) {
           evidence[offender] = [];
         }
@@ -645,6 +662,7 @@ class BlockPool {
           votes: talliedVotes,
           offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
         });
+        evidenceBytes += overhead + candidateBytes;
         offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
         backupDb.destroyDb();
         backupDb = this.node.createTempDb(

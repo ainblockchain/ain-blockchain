@@ -55,6 +55,7 @@ function main() {
   const results = [];
   const modes = ['validator', 'creator-evidence-only'];
   if (minority) modes.push('creator-quorum-then-minority');
+  modes.push('creator-bounded');
   for (const mode of modes) {
     if (mode === 'creator-quorum-then-minority') {
       node.bp.hashToInvalidBlockInfo.set(minority.block.hash, minority);
@@ -63,6 +64,7 @@ function main() {
         mode === 'validator' ? block.number : previous.block.number - 1);
     const steps = [];
     const transactions = [];
+    let boundedSelection;
     let phase = 'initial';
     const execute = database.executeTransaction.bind(database);
     database.executeTransaction = (...args) => {
@@ -91,8 +93,10 @@ function main() {
             majority, block.number, block.timestamp, proposal, database, null);
       } else {
         const generated = node.bp.getOffensesAndEvidence(block.validators, new Set(),
-            block.number, block.timestamp, database, null);
-        assert.deepEqual(generated.evidence, block.evidence);
+            block.number, block.timestamp, database, null,
+            mode === 'creator-bounded' ? undefined : Number.MAX_SAFE_INTEGER);
+        if (mode === 'creator-bounded') boundedSelection = generated;
+        else assert.deepEqual(generated.evidence, block.evidence);
       }
       checkpoint(phase);
       phase = 'transactions';
@@ -101,8 +105,34 @@ function main() {
       checkpoint(phase);
       database.applyBandagesForBlockNumber(block.number);
       checkpoint('bandages');
+      let boundedReplay;
+      if (boundedSelection) {
+        const independent = node.createTempDb(
+            node.db.stateVersion, 'bounded-validator', block.number);
+        try {
+          Consensus.validateAndExecuteLastVotes(block.last_votes, block.last_hash,
+              block.number, block.timestamp, independent, node.bp, null);
+          Consensus.validateAndExecuteOffensesAndEvidence(boundedSelection.evidence,
+              block.validators, majority, block.number, block.timestamp, null, independent, null);
+          Consensus.validateAndExecuteTransactions(block.transactions, block.receipts, block.number,
+              block.timestamp, block.gas_amount_total, block.gas_cost_total,
+              independent, node, null);
+          independent.applyBandagesForBlockNumber(block.number);
+          assert.equal(database.getProofHash('/'), independent.getProofHash('/'));
+          const selectedBytes = Buffer.byteLength(JSON.stringify(boundedSelection.evidence));
+          assert.ok(selectedBytes <= 1024 ** 2);
+          boundedReplay = { budgetBytes: 1024 ** 2, selectedBytes,
+            originalEvidenceBytes: Buffer.byteLength(JSON.stringify(block.evidence)),
+            selectedCandidates: Object.values(boundedSelection.evidence).flat().length,
+            availableCandidates: node.bp.hashToInvalidBlockInfo.size,
+            independentProof: independent.getProofHash('/'), matchesCreator: true,
+            scope: 'selected-evidence DB replay, not a new signed proposal or finalized block' };
+        } finally {
+          independent.destroyDb();
+        }
+      }
       results.push({ mode, steps, transactions, expected: block.state_proof_hash,
-        matches: database.getProofHash('/') === block.state_proof_hash });
+        matches: database.getProofHash('/') === block.state_proof_hash, boundedReplay });
     } catch (error) {
       results.push({ mode, steps, transactions, failedPhase: phase, error: error.message });
     } finally {
@@ -112,6 +142,7 @@ function main() {
   const summary = { at: new Date().toISOString(),
     inputSha256: crypto.createHash('sha256').update(bytes).digest('hex'),
     scope: 'offline native DB replay; evidence-only and reconstructed quorum/minority order; ' +
+      'legacy creator modes use an unlimited forensic budget, bounded mode uses the default; ' +
       'not full live pool history or network recovery',
     signatureBypass: NodeConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND,
     signaturesVerified: uniqueTransactions.length,

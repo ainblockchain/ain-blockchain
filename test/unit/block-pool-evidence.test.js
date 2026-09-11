@@ -78,7 +78,7 @@ describe('BlockPool evidence checkpoints with native DB execution', () => {
 
   afterEach(() => rimraf.sync(NodeConfigs.CHAINS_DIR));
 
-  function execute(order) {
+  function execute(order, maxEvidenceBytes) {
     const pool = new BlockPool(node);
     for (const [index, count] of order) {
       const candidate = candidates[index];
@@ -90,14 +90,14 @@ describe('BlockPool evidence checkpoints with native DB execution', () => {
     const replay = node.createTempDb(node.db.stateVersion, 'evidence-validate', blockNumber - 1);
     const versionsBefore = node.stateManager.numVersions();
     const result = pool.getOffensesAndEvidence(
-        validators, new Set(), blockNumber, blockTime, base, null);
+        validators, new Set(), blockNumber, blockTime, base, null, maxEvidenceBytes);
     const majority = Object.values(validators).reduce((sum, validator) =>
       sum + validator.stake, 0) * ConsensusConsts.MAJORITY;
     Consensus.validateAndExecuteOffensesAndEvidence(result.evidence, validators, majority,
         blockNumber, blockTime, null, replay, null);
     assert.equal(node.stateManager.numVersions(), versionsBefore,
         'checkpoint versions must be released');
-    return { result, base, replay };
+    return { result, base, replay, pool };
   }
 
   for (const [label, order] of [
@@ -136,6 +136,66 @@ describe('BlockPool evidence checkpoints with native DB execution', () => {
     } finally {
       first.base.destroyDb(); first.replay.destroyDb();
       second.base.destroyDb(); second.replay.destroyDb();
+    }
+  });
+
+  it('defers evidence beyond the exact total budget without applying votes or erasing candidates', () => {
+    const baseline = execute([[0, 3]]);
+    const limit = Buffer.byteLength(JSON.stringify(baseline.result.evidence));
+    const bounded = execute([[0, 3], [1, 3]], limit);
+    try {
+      assert.deepEqual(bounded.result, baseline.result);
+      assert.equal(bounded.base.getProofHash('/'), baseline.base.getProofHash('/'));
+      assert.equal(bounded.base.getProofHash('/'), bounded.replay.getProofHash('/'));
+      assert.equal(bounded.pool.hashToInvalidBlockInfo.size, 2);
+      for (const vote of candidates[1].votes) {
+        assert.equal(bounded.base.getValue(vote.tx_body.operation.ref), null);
+      }
+    } finally {
+      baseline.base.destroyDb(); baseline.replay.destroyDb();
+      bounded.base.destroyDb(); bounded.replay.destroyDb();
+    }
+  });
+
+  it('skips an oversized candidate and still includes a later smaller quorum', () => {
+    const baseline = execute([[1, 3]]);
+    const limit = Buffer.byteLength(JSON.stringify(baseline.result.evidence));
+    candidates[0].block.evidence = { nested: 'large'.repeat(limit) };
+    const bounded = execute([[0, 3], [1, 3]], limit);
+    try {
+      assert.deepEqual(bounded.result, baseline.result);
+      assert.equal(bounded.base.getProofHash('/'), baseline.base.getProofHash('/'));
+      assert.equal(bounded.pool.hashToInvalidBlockInfo.size, 2);
+    } finally {
+      baseline.base.destroyDb(); baseline.replay.destroyDb();
+      bounded.base.destroyDb(); bounded.replay.destroyDb();
+    }
+  });
+
+  it('accounts for two evidence entries under the same offender at the exact byte boundary', () => {
+    const baseline = execute([[0, 3], [3, 3]]);
+    const limit = Buffer.byteLength(JSON.stringify(baseline.result.evidence));
+    const exact = execute([[0, 3], [3, 3]], limit);
+    const smaller = execute([[0, 3], [3, 3]], limit - 1);
+    try {
+      assert.deepEqual(exact.result, baseline.result);
+      assert.equal(Object.values(smaller.result.evidence).flat().length, 1);
+      assert.equal(smaller.base.getProofHash('/'), smaller.replay.getProofHash('/'));
+    } finally {
+      for (const result of [baseline, exact, smaller]) {
+        result.base.destroyDb(); result.replay.destroyDb();
+      }
+    }
+  });
+
+  it('an empty-object budget defers all candidates without DB changes', () => {
+    const bounded = execute([[0, 3], [1, 3]], 2);
+    try {
+      assert.deepEqual(bounded.result, { evidence: {}, offenses: {} });
+      assert.equal(bounded.base.getProofHash('/'), node.db.getProofHash('/'));
+      assert.equal(bounded.pool.hashToInvalidBlockInfo.size, 2);
+    } finally {
+      bounded.base.destroyDb(); bounded.replay.destroyDb();
     }
   });
 });
