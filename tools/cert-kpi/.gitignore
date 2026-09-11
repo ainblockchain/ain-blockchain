@@ -10,7 +10,7 @@ ainize/
 env.sh
 harness/node_modules/
 harness/.env.dart
-harness/dart-datasets*/
+harness/dart-datasets/
 harness/__pycache__/
 cert-net.pids
 cert-net.manifest.json

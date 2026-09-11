@@ -57,6 +57,8 @@ if has m5; then
   N=${M5_LESSONS:-1}
   echo "[sampling] 7/7 지표 5·6 — DART 타입 ${N}종 teach→publish→apply→온체인 (전수: 108종, 순차 약 20시간)"
   PROG=$RES/m5-ainize-progress-${TAG}.json
+  # 데이터셋: 전수용 dart-datasets/ (dart-build-datasets.py 산출) 가 없으면 저장소에 포함된 2종 샘플(dart-datasets-sample/) 사용
+  [ -f dart-datasets/manifest.json ] || export MANIFEST=$KPI/harness/dart-datasets-sample/manifest.json
   LESSONS=$N MIN_OK=$N PROGRESS=$PROG node m5-ainize.js > "$KPI/logs/${TAG}_m5.log" 2>&1 || echo "  m5 수업 실패 (로그 $KPI/logs/${TAG}_m5.log)"
   LESSONS=$N MIN_OK=$N PROGRESS=$PROG node m5-ainize.js --stack >> "$KPI/logs/${TAG}_m5.log" 2>&1 || echo "  m5 스택 검증 실패"
   lap "지표 5·6"
