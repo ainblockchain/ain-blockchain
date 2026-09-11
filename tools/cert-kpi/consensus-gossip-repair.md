@@ -320,3 +320,46 @@ now use a64MiB temporary filesystem and `BLOCKCHAIN_DATA_DIR=/tmp/recovery-seed`
 the mounted chain remains read-only during preflight. This fixes logger scratch
 storage without making the image writable, changing file permissions or bypassing
 the native head guard. The failed preflight and its same-target replay are kept.
+
+## Native replay of the first-segment synchronization stall
+
+Node4 was recovered at18:19:53 UTC with its original23,087 block files and snapshot
+reused byte-for-byte; no stop signal was sent to the previously exited instance.
+The other nine chain nodes and model/trainer/API instances were unchanged. Its
+new process stayed alive with nine inbound/nine outbound peers, but CHAIN_SYNCING
+remained at23086 while its notarized pool reached23105. This is not a new crash.
+At18:30, a private capture of that same live instance verified19 pending blocks,
+200 signatures, one tip at23105 and the original16-block tail. The inspector closed.
+
+The native protocol requested segments only from the finalized height. The first
+20 blocks were correctly executed, but lacked the three consecutive notarized
+epochs needed to finalize. The next request therefore fetched the same first
+segment rather than the blocks that could advance finality. Its same-cursor
+throttle could also suppress the immediate follow-up until another event arrived.
+
+`replay-chain-sync.js` copies the actual original prefix and verified snapshot
+into disposable storage, then drives native `handleChainSegment`, DB validation
+and finalization with real subsequent ledger blocks and simulated socket frames.
+It starts no live P2P network, epoch timer or new chain. Six requests on the old
+image repeatedly used23086, ending at finalized23086/notarized23105. The corrected
+image requests23086→23105→23124→23143 and finalizes23159, matching the independent
+original ledger hash. The73 observed `Transaction.verifyTransaction` calls are
+that method's calls, not a claim about every lower-level signature operation.
+
+The per-peer cursor advances only to a notarized block with a retained executed
+DB and a contiguous branch rooted at the actual finalized block. Missing DB,
+unnotarized/seen-only blocks, wrong heights, lost branches and different ancestry
+fall back to finalized height. Peer reset/reassignment clears the cursor; failed
+native merges retain the existing reset behavior. Heartbeat retries only a
+CHAIN_SYNCING process, respecting the existing duplicate-request throttle. It
+does not restart the process, change the finalized height directly, or weaken
+native signature/state/epoch/quorum checks. Servers still receive the existing
+segment-request format and need no new wire endpoint.
+
+The focused11 cursor/heartbeat cases and existing suites pass128 Node +58 native
+Mocha tests (186), selected lint and shell checks. Native red/green replay is a
+separate real-data experiment, not eleven real-network recoveries or a TPS test.
+The live-node fix requires a NEW reviewed software-repair plan with fresh
+finalized-history bridges, all19 retained pending hashes, full-volume backup and
+the exact target disk/seed height gate. It is planned maintenance for the proven
+cursor defect, never a restart solely because an observation timed out.

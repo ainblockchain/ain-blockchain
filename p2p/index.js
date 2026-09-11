@@ -645,7 +645,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
       return;
     }
-    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const lastBlockNumber = this.getChainSyncCursor();
     const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
         this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
@@ -660,6 +660,41 @@ class P2pClient {
     }
     this.updateChainSyncStatus(lastBlockNumber);
     socket.send(JSON.stringify(payload));
+  }
+
+  getChainSyncCursor() {
+    const finalizedNumber = this.server.node.bc.lastBlockNumber();
+    const cursor = this.chainSyncInProgress?.cursor;
+    if (!cursor || !Number.isSafeInteger(cursor.number) || cursor.number <= finalizedNumber) {
+      return finalizedNumber;
+    }
+    const pool = this.server.node.bp;
+    const block = pool.getNotarizedBlockByHash(cursor.hash);
+    if (!block || block.number !== cursor.number || !pool.hashToDb.has(cursor.hash)) {
+      return finalizedNumber;
+    }
+    const chain = pool.getExtendingChain(cursor.hash)?.chain;
+    const finalized = this.server.node.bc.lastBlock();
+    if (!chain?.length || chain[0].last_hash !== finalized?.hash ||
+        chain.at(-1).hash !== cursor.hash || chain.some((entry, offset) =>
+          entry.number !== finalizedNumber + offset + 1)) {
+      return finalizedNumber;
+    }
+    return cursor.number;
+  }
+
+  advanceChainSyncCursor(chainSegment) {
+    if (!this.chainSyncInProgress) return;
+    const pool = this.server.node.bp;
+    const previous = this.getChainSyncCursor();
+    for (let index = chainSegment.length - 1; index >= 0; index--) {
+      const block = chainSegment[index];
+      if (block.number > previous && pool.hashToDb.has(block.hash) &&
+          pool.getNotarizedBlockByHash(block.hash)?.number === block.number) {
+        this.chainSyncInProgress.cursor = { number: block.number, hash: block.hash };
+        return;
+      }
+    }
   }
 
   /**
@@ -1041,6 +1076,7 @@ class P2pClient {
       return;
     }
     const mergeResult = this.server.node.mergeChainSegment(chainSegment);
+    if (mergeResult === 0) this.advanceChainSyncCursor(chainSegment);
     if (mergeResult !== 0) {
       // Received an invalid chain, or fully synced with this peer.
       this.resetChainSyncPeer();
@@ -1392,6 +1428,9 @@ class P2pClient {
           this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
+      if (this.server.node.state === BlockchainNodeStates.CHAIN_SYNCING) {
+        this.requestChainSegment();
+      }
     }, NodeConfigs.P2P_HEARTBEAT_INTERVAL_MS);
   }
 

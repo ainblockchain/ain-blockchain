@@ -12,6 +12,7 @@ output=$(realpath "$output")
 mkdir "$output/source"
 for relative in common/file-util.js node/index.js block-pool/index.js \
     logger/index.js consensus/index.js p2p/server.js test/unit/lazy-consensus-logging.test.js \
+    test/unit/p2p-chain-sync.test.js tools/cert-kpi/replay-chain-sync.js \
     p2p/index.js blockchain-configs/base/node_params.json test/unit/p2p-consensus-gossip.test.js \
     block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
     test/unit/block-pool-evidence.test.js \
@@ -55,11 +56,13 @@ node --test --test-concurrency=1 tools/cert-kpi/audit-ledger.test.js \
   tools/cert-kpi/prepare-chain-recovery.test.js tools/cert-kpi/verify-pending-chain.test.js
 node_modules/.bin/mocha --timeout 160000 test/unit/file-util-snapshot.test.js \
   test/unit/lazy-consensus-logging.test.js \
+  test/unit/p2p-chain-sync.test.js \
   test/unit/p2p-consensus-gossip.test.js \
   test/unit/bounded-json-size.test.js \
   test/unit/block-pool-evidence.test.js test/unit/block-pool.test.js test/unit/consensus.test.js
 node_modules/.bin/eslint tools/cert-kpi/audit-ledger.js tools/cert-kpi/audit-ledger.test.js \
   test/unit/lazy-consensus-logging.test.js \
+  test/unit/p2p-chain-sync.test.js tools/cert-kpi/replay-chain-sync.js \
   tools/cert-kpi/capture-pending-checkpoint.test.js \
   tools/cert-kpi/capture-finalized-checkpoint.js tools/cert-kpi/capture-finalized-checkpoint.test.js \
   block-pool/bounded-json-size.js test/unit/bounded-json-size.test.js \
