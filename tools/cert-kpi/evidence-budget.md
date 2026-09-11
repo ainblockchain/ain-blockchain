@@ -87,6 +87,11 @@ read-only/no GPU로 실행한다. 노드가 쓰는 `/data` 볼륨을 컨트롤�
 
 ## 실제 환경 적용의 경계
 
+16:13 후속 관측에서 node8은 pending90개/23104 notarized tip을 받았지만 예전 큰 제안을
+재전파하며 대기열이 다시 커졌다. 동기화 미완료라는 초기 관측과 구분한다. 추가 전송 제한,
+복수 tip 보존 검증 및 두 live bridge를 유지하는 별도 계획 정비는
+`consensus-gossip-repair.md`를 따른다. 일반 health 게이트를 관측 timeout으로 우회하지 않는다.
+
 이번 canary 계획은 원래 node8 한 대만 대상으로 하며 기존 연결점 node1과 나머지 노드를
 유지한다. 실험 머신의 계획/원문은`kpi/evidence/evidence_budget_canary_20260911/`이다.
 일반 복구 계획과 별도이며, 기존 계정·볼륨·원장과 검증된23086 snapshot을 유지한다.

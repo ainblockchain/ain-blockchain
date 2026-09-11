@@ -157,6 +157,7 @@ async function main() {
             throw new Error('pending-chain capture must contain 1..100 blocks');
           }
           const capture = { at: new Date().toISOString(), address: node.account.address,
+            nodeState: node.state, consensusState: this.consensus.state,
             finalized: node.bc.lastBlock(), tips: node.bp.longestNotarizedChainTips,
             pendingChain };
           if (Buffer.byteLength(JSON.stringify(capture)) > 32 * 1024 ** 2) {
@@ -213,6 +214,8 @@ async function main() {
             stateHash: block?.state_proof_hash, previousHash: block?.last_hash };
         };
         return { at: new Date().toISOString(), pid: process.pid, address: node.account.address,
+          nodeState: node.state, consensusState: this.consensus.state,
+          gossip: this.client.consensusGossipStats,
           memory: process.memoryUsage(), final: { number: finalBlock.number, hash: finalBlock.hash,
             timestamp: finalBlock.timestamp },
           totalStake: Object.values(validators).reduce((total, validator) =>

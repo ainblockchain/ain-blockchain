@@ -25,6 +25,7 @@ const P2pUtil = require('./p2p-util');
 const { sendGetRequest } = require('../common/network-util');
 const { Block } = require('../blockchain/block');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
+const boundedJsonSize = require('../block-pool/bounded-json-size');
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -35,6 +36,9 @@ class P2pClient {
     this.isConnectingToPeerCandidates = false;
     this.steadyIntervalCount = 0;
     this.outbound = {};
+    this.consensusGossipStats = {
+      enqueued: 0, oversized: 0, backpressure: 0, unavailable: 0, sendErrors: 0,
+    };
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
     this.stateSyncInProgress = null;
@@ -112,6 +116,7 @@ class P2pClient {
   getClientStatus() {
     return {
       trafficStats: this.getTrafficStats(),
+      consensusGossip: { ...this.consensusGossipStats },
     };
   }
 
@@ -557,23 +562,43 @@ class P2pClient {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
-    const stringPayload = JSON.stringify(payload);
-    if (DevFlags.enableP2pMessageTagsChecking) {
-      const tagSet = new Set(tags);
-      Object.entries(this.outbound).forEach(([address, node]) => {
-        if (!tagSet.has(address) &&
-            _.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-          node.socket.send(stringPayload);
-        }
-      });
-    } else {
-      Object.values(this.outbound).forEach((node) => {
-        if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-          node.socket.send(stringPayload);
-        }
-      });
+    const maxBytes = NodeConfigs.P2P_CONSENSUS_MAX_BYTES ?? 16 * 1024 ** 2;
+    const maxQueuedBytes = NodeConfigs.P2P_CONSENSUS_MAX_QUEUED_BYTES ?? 32 * 1024 ** 2;
+    if (![maxBytes, maxQueuedBytes].every((value) => Number.isSafeInteger(value) && value > 0)) {
+      logger.error('Invalid consensus gossip byte limits; refusing to enqueue messages.');
+      return;
     }
-    logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
+    const bytes = boundedJsonSize(payload, maxBytes);
+    if (bytes === null) {
+      this.consensusGossipStats.oversized++;
+      return;
+    }
+    const tagSet = new Set(tags);
+    let stringPayload;
+    for (const [address, peer] of Object.entries(this.outbound)) {
+      if (DevFlags.enableP2pMessageTagsChecking && tagSet.has(address)) continue;
+      const socket = peer.socket;
+      if (_.get(peer, 'peerInfo.consensusStatus.state') !== ConsensusStates.RUNNING ||
+          !socket || socket.readyState !== Websocket.OPEN) {
+        this.consensusGossipStats.unavailable++;
+        continue;
+      }
+      if (!Number.isFinite(socket.bufferedAmount) ||
+          socket.bufferedAmount + bytes + 14 > maxQueuedBytes) {
+        this.consensusGossipStats.backpressure++;
+        continue;
+      }
+      if (stringPayload === undefined) stringPayload = JSON.stringify(payload);
+      try {
+        socket.send(stringPayload, (error) => {
+          if (error) this.consensusGossipStats.sendErrors++;
+        });
+        this.consensusGossipStats.enqueued++;
+      } catch (error) {
+        this.consensusGossipStats.sendErrors++;
+      }
+    }
+    if (NodeConfigs.DEBUG) logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
   /**

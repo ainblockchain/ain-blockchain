@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
+source_dir=$(cd "$(dirname "$0")" && pwd)
 recovery=$(realpath "${1:?Pass the staged recovery directory}")
 node_index=${2:?Pass ONE node index, 0..9}
 private=${3:?Pass a NEW private backup directory}
@@ -13,10 +14,25 @@ image=$(jq -er .image "$recovery/plan.json")
 seed=$(jq -er .seed "$recovery/plan.json")
 number=$(jq -er .snapshotNumber "$recovery/plan.json")
 expected=$(jq -er .snapshotSha256 "$recovery/plan.json")
+jq -e --argjson node "$node_index" '.order | arrays | index($node) != null' \
+  "$recovery/plan.json" >/dev/null
+[[ $(docker image inspect "$image" --format '{{.Id}}') == "$image" ]] || exit 2
+jq -e --arg image "$image" --arg service "node$node_index" \
+  '.name == "ain-cert-docker" and .services[$service].image == $image and
+   .services[$service].environment.ENABLE_TX_SIG_VERIF_WORKAROUND == "false"' \
+  "$recovery/compose.json" >/dev/null
 bridge=$(jq -r '.bridgeIndex // 0' "$recovery/plan.json")
 [[ "$bridge" == 0 || "$bridge" == 1 ]] || exit 2
 [[ "$number" =~ ^[0-9]+$ && "$expected" =~ ^[a-f0-9]{64}$ ]] || exit 2
 [[ $(sha256sum "$seed" | cut -d ' ' -f 1) == "$expected" ]] || exit 2
+repair_preflight=''
+history_name="ain-cert-recovery-node$node_index-history"
+if [[ ${PLANNED_REPAIR:-0} == 1 ]]; then
+  [[ ${RECOVER_CRASHED:-0} != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
+  repair_preflight=$(node "$source_dir/repair-preflight.js" "$recovery/plan.json" "$node_index")
+  repair_id=$(jq -er .repair.runId "$recovery/plan.json")
+  history_name="ain-cert-repair-$repair_id-node$node_index-history"
+fi
 if [[ ${RECOVER_CRASHED:-0} == 1 ]]; then
   [[ "$node_index" != "$bridge" && "$node_index" != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.Running}}') == false ]] || exit 2
@@ -35,7 +51,9 @@ fi
 [[ $(docker inspect "$name" --format '{{.Image}}') != "$image" ]] || exit 2
 docker inspect "$name" | jq -e --arg volume "$volume" \
   '.[0].Mounts | any(.Destination == "/data" and .Type == "volume" and .Name == $volume)' >/dev/null
-if [[ ${RECOVER_CRASHED:-0} == 1 ]]; then
+if [[ ${PLANNED_REPAIR:-0} == 1 ]]; then
+  prior_nodes=''
+elif [[ ${RECOVER_CRASHED:-0} == 1 ]]; then
   prior_nodes=1
   for candidate in $(seq 2 9); do
     if [[ $(docker inspect "ain-cert-docker-node$candidate-1" --format '{{.Image}}') == "$image" ]]; then
@@ -73,8 +91,16 @@ if [[ "$node_index" != "$bridge" ]]; then
       $(jq -er .bridgeContainerId "$recovery/plan.json") ]] || exit 2
   fi
 fi
+seed_preflight=$(docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \
+  --memory 512m --memory-swap 512m --read-only --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE \
+  --security-opt no-new-privileges -e NVIDIA_VISIBLE_DEVICES=void \
+  --mount "type=volume,src=$volume,dst=/data,readonly" \
+  --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" --entrypoint node "$image" \
+  tools/cert-kpi/recovery-seed.js check "/data/snapshots/$port/n2s/$number.json.gz" \
+  /seed.json.gz "$expected")
 if [[ ${CHECK_ONLY:-0} == 1 ]]; then
-  printf '{"node":%s,"preconditions":true,"mutations":false}\n' "$node_index"
+  printf '{"node":%s,"preconditions":true,"mutations":false,"seed":%s}\n' \
+    "$node_index" "$seed_preflight"
   exit 0
 fi
 if [[ ${RESUME_STOPPED:-0} != 1 ]]; then
@@ -83,6 +109,10 @@ if [[ ${RESUME_STOPPED:-0} != 1 ]]; then
 fi
 private=$(realpath "$private")
 output="$recovery/node$node_index"
+printf '%s\n' "$seed_preflight" > "$output/seed-preflight.json"
+if [[ -n "$repair_preflight" ]]; then
+  printf '%s\n' "$repair_preflight" > "$output/repair-preflight.json"
+fi
 if [[ ${RESUME_STOPPED:-0} == 1 ]]; then
   printf '%s resume confirmed stopped original container after failed backup; no restart\n' \
     "$(date -u +%FT%TZ)" > "$output/backup-resume.txt"
@@ -113,19 +143,10 @@ docker run --rm --runtime runc --network none --cpus 1 --cpuset-cpus 0-7 \
   --security-opt no-new-privileges \
   -e NVIDIA_VISIBLE_DEVICES=void -e "PORT=$port" -e "NUMBER=$number" -e "EXPECTED=$expected" \
   --mount "type=volume,src=$volume,dst=/data" --mount "type=bind,src=$seed,dst=/seed.json.gz,readonly" \
-  --entrypoint sh "$image" -c '
-set -e
-destination="/data/snapshots/$PORT/n2s/$NUMBER.json.gz"
-test ! -e "$destination"
-test "$(sha256sum /seed.json.gz | cut -d " " -f 1)" = "$EXPECTED"
-cp /seed.json.gz "$destination.recovery-part"
-node -e '\''const fs = require("fs");
-const descriptor = fs.openSync(process.argv[1], "r");
-try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }'\'' "$destination.recovery-part"
-mv "$destination.recovery-part" "$destination"
-test "$(sha256sum "$destination" | cut -d " " -f 1)" = "$EXPECTED"
-'
-docker run --name "ain-cert-recovery-node$node_index-history" --runtime runc --network none \
+  --entrypoint node "$image" tools/cert-kpi/recovery-seed.js install \
+  "/data/snapshots/$port/n2s/$number.json.gz" /seed.json.gz "$expected" \
+  > "$output/seed-installed.json"
+docker run --name "$history_name" --runtime runc --network none \
   --cpus 2 --cpuset-cpus 0-7 --memory 4g --memory-swap 4g --read-only --tmpfs /tmp:rw,size=256m \
   --cap-drop ALL --security-opt no-new-privileges --user "$(id -u):$(id -g)" \
   -e NVIDIA_VISIBLE_DEVICES=void -e BLOCKCHAIN_DATA_DIR=/tmp/audit \
