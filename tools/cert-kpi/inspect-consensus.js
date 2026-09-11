@@ -7,12 +7,14 @@ async function main() {
   const output = process.argv[2];
   assert.ok(output && !fs.existsSync(output), 'pass a new output file');
   const blockHash = process.argv[3];
+  const capturePending = process.env.CAPTURE_PENDING_CHAIN === '1';
+  assert.ok(!(blockHash && capturePending), 'select one private capture mode');
   const rpcPort = Number(process.env.INSPECT_RPC_PORT || 18081);
   assert.ok(Number.isSafeInteger(rpcPort) && rpcPort > 0 && rpcPort <= 65535);
   assert.ok(process.argv.length <= 4,
       'usage: inspect-consensus.js NEW_OUTPUT [PRIVATE_BLOCK_HASH]');
-  if (blockHash) {
-    assert.match(blockHash, /^0x[0-9a-f]{64}$/);
+  if (blockHash) assert.match(blockHash, /^0x[0-9a-f]{64}$/);
+  if (blockHash || capturePending) {
     const directory = fs.statSync(path.dirname(output));
     assert.equal(directory.mode & 0o777, 0o700, 'snapshot output directory must be private (0700)');
     assert.equal(directory.uid, process.getuid(), 'snapshot directory must belong to this user');
@@ -28,7 +30,7 @@ async function main() {
   assert.equal(url.hostname, '127.0.0.1');
   assert.equal(url.port, '9229');
   const socket = new WebSocket(url, {
-    maxPayload: (blockHash ? 64 : 2) * 1024 ** 2, handshakeTimeout: 5000,
+    maxPayload: (blockHash || capturePending ? 64 : 2) * 1024 ** 2, handshakeTimeout: 5000,
   });
   const pending = new Map();
   let sequence = 0;
@@ -103,6 +105,19 @@ async function main() {
       expression: `(function() {
         const node = this.node;
         const selectedHash = ${JSON.stringify(blockHash || null)};
+        if (${capturePending}) {
+          const pendingChain = this.consensus.getCatchUpInfo();
+          if (!pendingChain.length || pendingChain.length > 100) {
+            throw new Error('pending-chain capture must contain 1..100 blocks');
+          }
+          const capture = { at: new Date().toISOString(), address: node.account.address,
+            finalized: node.bc.lastBlock(), tips: node.bp.longestNotarizedChainTips,
+            pendingChain };
+          if (Buffer.byteLength(JSON.stringify(capture)) > 32 * 1024 ** 2) {
+            throw new Error('pending-chain capture exceeds 32 MiB');
+          }
+          return capture;
+        }
         if (selectedHash) {
           const info = node.bp.hashToInvalidBlockInfo.get(selectedHash);
           if (!info?.block || !info.proposal) throw new Error('selected block/proposal absent');
@@ -197,7 +212,7 @@ async function main() {
     }
   }
   if (!process.exitCode) {
-console.log(JSON.stringify({ output, privateSnapshot: Boolean(blockHash),
+console.log(JSON.stringify({ output, privateSnapshot: Boolean(blockHash || capturePending),
     scope: 'one status breakpoint; resumed without ledger writes; not performance evidence' }));
 }
 }

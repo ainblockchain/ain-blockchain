@@ -13,10 +13,12 @@ image=$(jq -er .image "$recovery/plan.json")
 seed=$(jq -er .seed "$recovery/plan.json")
 number=$(jq -er .snapshotNumber "$recovery/plan.json")
 expected=$(jq -er .snapshotSha256 "$recovery/plan.json")
+bridge=$(jq -r '.bridgeIndex // 0' "$recovery/plan.json")
+[[ "$bridge" == 0 || "$bridge" == 1 ]] || exit 2
 [[ "$number" =~ ^[0-9]+$ && "$expected" =~ ^[a-f0-9]{64}$ ]] || exit 2
 [[ $(sha256sum "$seed" | cut -d ' ' -f 1) == "$expected" ]] || exit 2
 if [[ ${RECOVER_CRASHED:-0} == 1 ]]; then
-  [[ "$node_index" != 0 && "$node_index" != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
+  [[ "$node_index" != "$bridge" && "$node_index" != 1 && ${RESUME_STOPPED:-0} != 1 ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.Running}}') == false ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.Status}}') == exited ]] || exit 2
   [[ $(docker inspect "$name" --format '{{.State.ExitCode}}') -ge 128 ]] || exit 2
@@ -64,8 +66,12 @@ for prior in $prior_nodes; do
     "http://127.0.0.1:$((18081 + prior))/get_block_by_number?number=$number" | jq -er .result.hash)
   [[ "$observed_hash" == "$original_hash" ]] || exit 2
 done
-if [[ "$node_index" != 0 ]]; then
-  [[ $(docker inspect ain-cert-docker-node0-1 --format '{{.State.Running}}') == true ]] || exit 2
+if [[ "$node_index" != "$bridge" ]]; then
+  [[ $(docker inspect "ain-cert-docker-node$bridge-1" --format '{{.State.Running}}') == true ]] || exit 2
+  if [[ "$bridge" == 1 ]]; then
+    [[ $(docker inspect ain-cert-docker-node1-1 --format '{{.Id}}') == \
+      $(jq -er .bridgeContainerId "$recovery/plan.json") ]] || exit 2
+  fi
 fi
 if [[ ${CHECK_ONLY:-0} == 1 ]]; then
   printf '{"node":%s,"preconditions":true,"mutations":false}\n' "$node_index"

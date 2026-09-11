@@ -135,4 +135,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { audit, verifySignedTransaction };
+module.exports = { audit, verifySignedTransaction, verifyBlockTransactions };

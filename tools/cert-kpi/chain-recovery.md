@@ -145,6 +145,31 @@ need phase-specific inspection, not blind reruns or automatic rollback.
 
 ## Completion gate
 
+### Original bridge crash and handoff
+
+The original node0 subsequently exited139 from V8 heap exhaustion, without a maintenance stop.
+The already-running canary retained all 16 notarized blocks23087–23102. An explicitly selected
+`CAPTURE_PENDING_CHAIN=1 INSPECT_RPC_PORT=18082` inspector operation saved that tail in a private
+0700 directory, then closed the inspector. `verify-pending-chain.js PRIVATE_CAPTURE PLAN NEW_OUTPUT`
+checked block hashes/linkage, 179 distinct native signatures and deduplicated positive voting
+stake. This is not a fresh consensus decision or DB replay. No pending body is publicly released.
+
+After that proof, `reassign-recovery-bridge.js RECOVERY_DIR PRIVATE_CAPTURE VERIFIED_SUMMARY`
+requires an already-crashed original bridge, the running staged canary, a recent matching capture
+and SERVING identity. It preserves the old plan/compose, binds the replacement bridge to node1's
+current container ID, and changes the peer-candidate URL for future replacements to node1.
+The handoff itself restarts no container. Existing running peers are left intact. A failed
+status observation leaves the plan unchanged; retry the observation, not a node restart.
+
+With this explicit handoff, `RECOVER_CRASHED=1` can restore the already-dead node0 as a joining
+peer, using the same ledger/account/volume and the original snapshot. It cannot stop or replace
+the new bridge. Other existing crashed nodes still require separate archived maintenance.
+The handoff additions passed seven pending-chain regression tests plus the previous47 tests
+(54 total), lint, source/image checks and shell syntax in image
+`sha256:d122c9fc922eeda99d2cc5c079f545f793e3542597adfed7cc15b7da27bf5518`.
+This later image contains the operator helpers; running chain containers still use the original
+canary image with identical native runtime files.
+
 Poll the same containers and logs after maintenance; a poll is not another maintenance command.
 Before replacing the bridge or permitting writes, independently verify all ten native health
 values, finalized block advancement/agreement, original genesis/23086/history preservation,
