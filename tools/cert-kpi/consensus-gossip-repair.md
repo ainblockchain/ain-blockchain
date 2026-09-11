@@ -213,3 +213,46 @@ a V8 heap failure; it was recovered from the original volume at17:26:06 using
 Native tail checks remain mandatory before any later target. This phase is not
 permission to reapply either earlier partially executed plan or restart live
 nodes on an observation failure.
+
+## Finality advanced: stop the old-height maintenance plan
+
+The three later phases actually changed only node3/node6, node0/node1, and
+node7/node5, respectively. Node5 started at17:29:47 UTC on the lazy-diagnostics
+image. Its subsequent capture preserved the same process and closed the inspector,
+but verification refused `23141 !== 23086`: finalized history had advanced beyond
+the plan's snapshot. This is a correct fail-closed result, not a corrupt capture
+or permission to restart node5. No further target in that order was maintained.
+All staged plans are historical and partially applied; do not run whole-compose
+up/down, reset their order, or reuse expired pending-only checkpoints.
+
+At17:35, an all-ten read-only disk audit passed. Nodes0/1/2/3/5/6/7/8 had finalized
+23222 with hash `0xdd165490e18735e5086bd88454f6023235eb24eb698177ee67b4c9e84fe18698`.
+Node0 retained all23,087 original block files byte-for-byte and verified136 newly
+finalized blocks with1,172 native signature checks. The other seven advanced
+ledgers matched that verified manifest; do not multiply the signature count by
+eight. Nodes4/9 still retained the original23086 prefix then. This audit checks
+block bytes/hashes/linkage/signatures, not a new full-state DB replay or sustained
+all-ten consensus health.
+
+Old node4 subsequently actually exited139 at17:40:54 UTC with a fatal V8 heap
+error, PID0 and OOMKilled=false. Its container and full volume were preserved
+privately without restarting it. At17:50:23, the other nine original instances,
+including unchanged node9, reported SERVING, native health=true and finalized
+height23588. Their original23086 block hash still matched. This later RPC sample
+is not an all-ten success or a byte/signature audit through23588. The17:35 audit
+remains the bounded cryptographic evidence. Both intermediate unhealthy and later
+healthy samples are retained; no continuous stability or causal speedup is claimed.
+
+Recovery of node4 now needs fresh, same-instance bridge proofs that recognize
+the retained original pending blocks in finalized history. The old23086
+pending-only proof cannot certify those advanced bridges. A newer seed must not
+be copied onto an older disk head without verified missing history and state
+replay. This post-finality recovery path is not yet implemented; keep the
+all-ten readiness/funding/TPS gates closed rather than weakening them.
+
+Evidence: `gossip_rollout_20260911`, `gossip_rollout_b_20260911`,
+`gossip_lazy_rollout_20260911` and `ledger_after_finality_20260911` under the
+experiment evidence root. Flashnext, flashtrain, the Ainize API and lifecycle
+PID86742 retained their running instances. CPU quotas remain shared across the
+same eight logical host CPUs; neither the rollout nor these tests establish an
+AWS320-vCPU performance equivalence.
