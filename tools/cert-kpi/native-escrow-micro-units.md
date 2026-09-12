@@ -1,7 +1,9 @@
 # Experimental native escrow micro-unit protocol
 
-This is an opt-in protocol candidate, not a live ten-validator deployment or a
-7,000 TPS result. The existing development channel's failed1AIN remains locked.
+This is an opt-in protocol candidate, not a7,000 TPS result. Subsequent separate
+ten-validator testing is in `native-escrow-network.md`; this document describes
+the preceding isolated validation, not an upgrade of the original network.
+The existing development channel's failed1AIN remains locked.
 Do not overwrite its configuration, approvals, journal, genesis or volume. The
 new protocol does not migrate that frozen legacy policy or recover its funds.
 
@@ -116,7 +118,8 @@ Do not activate this on mixed binaries or restart nodes after observation timeou
 Use a separately identified controlled ten-validator experiment or a fully audited
 scheduled upgrade; never erase or replace the existing failed run's history.
 
-`run-escrow.sh` deliberately remains the legacy safety-refusal runner. Version2
-network preflight, funded peer recovery/finalized payout, sustained load and7000TPS
-remain unfinished. These DB fixtures do not complete those gates, M1/M3–M6, public
-Ainize blob replication or the100-dataset lifecycle.
+Without an explicit audited network plan, `run-escrow.sh` retains the legacy safety
+refusal. The subsequent separate-network implementation and actual admission/finality
+failure are documented in `native-escrow-network.md`; read that guide rather than
+inferring network results from these DB fixtures. Sustained load,7000TPS,M1/M3–M6,
+public Ainize replication and the100-dataset lifecycle remain separate work.
