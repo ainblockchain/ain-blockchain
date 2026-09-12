@@ -14,7 +14,7 @@ are shared ceilings on the same8-logical-CPU host, not reservations or AWS320vCP
 equivalence. The tracker has CPU0.25/RAM1GiB. The workload clients have CPU1/RAM2GiB.
 All use runc, no GPU, read-only root, bounded tmpfs and dropped capabilities.
 
-RPC21081–21090, P2P21501–21510, tracker21079 and experiment peer21041 are separate
+The default RPC21081–21090, P2P21501–21510, tracker21079 and experiment peer21041 are separate
 from the original network/peer. Host UID/GID own private0700 directories/0600 files;
 persistent per-node data binds are under the new private directory. Tracker logs
 use its bounded `/tmp/tracker`. Keys are never Docker environment arguments or
@@ -119,6 +119,11 @@ independent receipt and block inclusion. Only native precheck codes explicitly
 excluded from blocks are admission-only refusals. Successful submissions likewise
 use finalized outcomes, not the initial RPC code. Unknown states stop on the same
 intent without retries/resets; the terminal response is preserved before assertion.
+
+To prepare an additional isolated network while another experiment remains live,
+set `RPC_PORT_BASE`, `P2P_PORT_BASE` and `EXPERIMENT_PEER_PORT` to new free ports.
+The generated plan and compose file carry those values through every node and
+runner; never reuse a live network's ports or private directory.
 
 For an already investigated earlier payout, explicit read-only reconciliation is
 `inspect-settlement.js EXISTING_EVIDENCE NEW_OUTPUT.json reject-missing-approval`.

@@ -35,10 +35,12 @@ function timerFlags(base) {
 }
 
 function compose(plan, privateDirectory, sourceDirectory) {
+  const p2pPortBase = plan.p2pPortBase ?? 21501;
   assert.match(plan.project, /^ain-units-[a-z0-9-]{1,40}$/);
   assert.match(plan.chainImage, /^sha256:[a-f0-9]{64}$/);
-  assert.equal(plan.rpcPortBase, 21081);
-  assert.equal(plan.peerPort, 21041);
+  assert.ok(Number.isInteger(plan.rpcPortBase) && plan.rpcPortBase >= 1024 && plan.rpcPortBase + 9 <= 65535);
+  assert.ok(Number.isInteger(plan.peerPort) && plan.peerPort >= 1024);
+  assert.ok(Number.isInteger(p2pPortBase) && p2pPortBase >= 1024 && p2pPortBase + 9 <= 65535);
   assert.ok(Number.isSafeInteger(plan.uid) && plan.uid > 0);
   assert.ok(Number.isSafeInteger(plan.gid) && plan.gid > 0);
   const common = { image: plan.chainImage, network_mode: 'host', runtime: 'runc', cpuset: '0-7',
@@ -55,7 +57,7 @@ function compose(plan, privateDirectory, sourceDirectory) {
     services[`node${index}`] = { ...common,
       environment: { NODE_INDEX: String(index),
         BLOCKCHAIN_CONFIGS_DIR: '/network', BLOCKCHAIN_DATA_DIR: '/data',
-        PORT: String(plan.rpcPortBase + index), P2P_PORT: String(21501 + index),
+        PORT: String(plan.rpcPortBase + index), P2P_PORT: String(p2pPortBase + index),
         TRACKER_UPDATE_JSON_RPC_URL: 'http://127.0.0.1:21079/json-rpc',
         PEER_CANDIDATE_JSON_RPC_URL: 'http://127.0.0.1:21081/json-rpc', HOSTING_ENV: 'local',
         CONSOLE_LOG: 'false', ENABLE_EXPRESS_RATE_LIMIT: 'false', ENABLE_GAS_FEE_WORKAROUND: 'true',
