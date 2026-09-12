@@ -1,40 +1,27 @@
-# tools/cert-kpi — 성능지표 시험 재현 하네스 (지표 1~4)
+# tools/cert-kpi — 성능지표 시험 재현 번들
 
-3차년도 공인기관인증 평가(시험성적서 발행)를 위한 **팁스 성과지표 6종** 재현 절차와 스크립트입니다.
-전체 절차서는 [`성능지표_시험_재현절차서.md`](./성능지표_시험_재현절차서.md) 를 보십시오.
-지표 5·6(Ainize 지식 패치 100종 / DART 데이터셋 100종)의 하네스는 `ainblockchain/ainize-bench` 의 `cert/` 에 있습니다.
+3차년도 공인기관인증 평가(시험성적서 발행)를 위한 **팁스 성과지표 6종** 재현 절차서와 하네스입니다.
+절차서 [`성능지표_시험_재현절차서.md`](./성능지표_시험_재현절차서.md) 를 따르면 이 디렉토리만으로 전 지표를 실행하고 결과 JSON 을 얻습니다.
+절차서 본문이 인용하는 스크립트 원본은 `harness/` 이며 부록 H 에 전문이 수록됩니다(`regen-appendix-h.py` 로 재생성).
 
-| 지표 | 2단계 목표 | 스크립트 | 결과 |
-|---|---|---|---|
-| 1 온체인 병렬 파이프라인 | ≥ 70 | `m1-sharding.js` | `results/m1-<run>.json` |
-| 2 레이어2 스케일링 TPS | ≥ 7,000 | `m2-l2.js` | `results/m2-<run>.json` |
-| 3 작업 기록 블록체인 레이턴시 | ≤ 1.5 s | `m3-latency.js` | `results/m3-<ts>.json` |
-| 4 온·오프체인 거대모델 인퍼런스 TPS | ≥ 1,000 | `locustfile.py` / `probe-inference.js` + `recorder.js` → `m4-verify-merkle.js` | `results/m4-final-<run>.json` |
-
-## 인증망 설정
-
-`blockchain-configs/cert-10-nodes` (epoch 1 s, 지표 1~3) 와 `blockchain-configs/cert-10-nodes-m4` (epoch 5 s, 지표 4) 는
-`make-cert-config.js` 로 `3-nodes` 템플릿에서 생성한 검증자 10대 설정입니다.
-
-```bash
-# 저장소 루트에서
-node tools/cert-kpi/make-cert-config.js blockchain-configs/cert-10-nodes 1000 1000000
-node tools/cert-kpi/make-cert-config.js blockchain-configs/cert-10-nodes-m4 5000 50000
-```
-
-## 실행
+| 파일 | 역할 |
+|---|---|
+| `성능지표_시험_재현절차서.md` | 절차서 (v2.1) — 판정 기준·환경·지표별 실행·증빙 체크리스트·부록 |
+| `평가환경_준수_리뷰_및_수정내역.md` | 계획서 평가방법·평가환경 준수 리뷰와 하네스 수정 내역, 재측정 결과 |
+| `env.example.sh` | 호스트별 도구 경로 (복사해 `env.sh` 로 저장 후 `source`) |
+| `start-cert-net.sh`, `stop-cert-net.sh` | 인증망(검증자 10, epoch 1s) 기동/정지, `cert-net.manifest.json` 기록 |
+| `harness/make-cert-config.js` | `blockchain-configs/cert-10-nodes` 결정적 생성 (genesis 포함) |
+| `harness/m1-sharding.js` · `m2-l2.js` · `m3-latency.js` | 지표 1·2·3 |
+| `harness/m4-start-vllm.sh` · `m4-run-locust.sh` · `locustfile.py` · `recorder.js` · `m4-verify-merkle.js` | 지표 4 (Locust 240U/60W + 머클 배치 앵커링) |
+| `harness/m5-ainize-stack.sh` · `m5-ainize.js` · `dart-build-datasets.py` | 지표 5·6 (Ainize 지식 패치 / DART 데이터셋 100종) |
+| `harness/m6-run.sh` · `m6-record.js` (부록 G) | 지표 6 보조 증빙 (lm-eval 100 태스크) |
+| `harness/legacy/` | 사장 코드 (증빙에 쓰지 않음) |
 
 ```bash
-cd tools/cert-kpi && npm install
-export KPI_DIR=/data/cert-kpi            # 결과·로그·체인데이터 위치 (기본: tools/cert-kpi/work)
-./start-cert-net.sh                      # tracker(8079) + 노드 10대(8081~8090), 이벤트 핸들러 5100/5101
-node setup_app.js                        # ai_network_dag 앱·규칙 배포
-RUN=cert_m1_r1 node m1-sharding.js       # 지표 1
-RUN=cert_m2_r1 node m2-l2.js             # 지표 2
-node m3-latency.js                       # 지표 3
-# 지표 4: 절차서 §7 (vLLM 서버 기동 → locust/probe-inference → recorder → m4-verify-merkle)
-./stop-cert-net.sh
+git clone https://github.com/ainblockchain/ain-blockchain.git && cd ain-blockchain && git checkout v1.6.2
+cd tools/cert-kpi && cp env.example.sh env.sh && source env.sh      # $KPI, $AIN_REPO 정의
+(cd harness && npm install)                                          # @ainblockchain/ain-js 1.15.0
+# 이후는 절차서 §3 부터
 ```
 
-`BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/cert-10-nodes ./start-cert-net.sh` 로 지표 1~3용 설정으로 기동합니다.
-모든 결과 JSON 에는 `envSnapshot()` 이 넣는 ain-blockchain 커밋 해시·노드 버전·호스트 정보가 포함됩니다.
+결과·로그·체인데이터는 `$KPI/{results,logs,chaindata}` 에 생기며 git 에 넣지 않습니다(`.gitignore`).

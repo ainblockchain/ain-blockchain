@@ -1,0 +1,8 @@
+{"prompt": "DART 기업개황 기준 한진중공업홀딩스의 대표자명은?", "answer": "조원국", "alt_prompt": "한진중공업홀딩스 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 유수홀딩스의 대표자명은?", "answer": "송영규", "alt_prompt": "유수홀딩스 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 경방의 대표자명은?", "answer": "김준, 김담", "alt_prompt": "경방 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 CJ대한통운의 대표자명은?", "answer": "신영수, 민영학 (각자 대표)", "alt_prompt": "CJ대한통운 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 유한양행의 대표자명은?", "answer": "대표이사 조욱제", "alt_prompt": "유한양행 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 디아이동일의 대표자명은?", "answer": "서태원, 손재선, 박찬규", "alt_prompt": "디아이동일 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 대한항공의 대표자명은?", "answer": "조원태, 우기홍", "alt_prompt": "대한항공 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}
+{"prompt": "DART 기업개황 기준 전방의 대표자명은?", "answer": "조덕현", "alt_prompt": "전방 대표자명 (DART 공시)", "note": "DART company.json ceo_nm"}

@@ -1,0 +1,16 @@
+{
+  "name": "harness",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/hitOf.test.js && node test/merkle.test.js && node test/record-final.test.js && node test/docker-snapshot.test.js && node --test test/public-catalog.test.js test/m3-stream-audit.test.js test/ainize-lifecycle.test.js",
+    "preflight": "node preflight.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ainblockchain/ain-js": "^1.15.0"
+  }
+}

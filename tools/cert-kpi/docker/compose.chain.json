@@ -1,0 +1,688 @@
+{
+  "name": "ain-cert-docker",
+  "services": {
+    "tracker": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 25000,
+      "mem_limit": "1g",
+      "memswap_limit": "1g",
+      "environment": {
+        "PORT": "18079",
+        "CONSOLE_LOG": "false"
+      },
+      "command": [
+        "tracker-server/index.js"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "tracker"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node0": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "0",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18081",
+        "P2P_PORT": "18501",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node0:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "0",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node1": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "1",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18082",
+        "P2P_PORT": "18502",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node1:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "1",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node2": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "2",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18083",
+        "P2P_PORT": "18503",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node2:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "2",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node3": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "3",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18084",
+        "P2P_PORT": "18504",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node3:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "3",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node4": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "4",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18085",
+        "P2P_PORT": "18505",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node4:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "4",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node5": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "5",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18086",
+        "P2P_PORT": "18506",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node5:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "5",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node6": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "6",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18087",
+        "P2P_PORT": "18507",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node6:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "6",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node7": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "7",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18088",
+        "P2P_PORT": "18508",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node7:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "7",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node8": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "8",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18089",
+        "P2P_PORT": "18509",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9",
+        "ENABLE_EVENT_HANDLER": "true",
+        "EVENT_HANDLER_PORT": "15100"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node8:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "8",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    },
+    "node9": {
+      "image": "ain-cert-chain:repro-20260911",
+      "network_mode": "host",
+      "cpuset": "0-7",
+      "cpu_period": 100000,
+      "cpu_quota": 3200000,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "environment": {
+        "NODE_INDEX": "9",
+        "BLOCKCHAIN_CONFIGS_DIR": "blockchain-configs/cert-10-nodes",
+        "BLOCKCHAIN_DATA_DIR": "/data",
+        "PORT": "18090",
+        "P2P_PORT": "18510",
+        "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:18079/json-rpc",
+        "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:18081/json-rpc",
+        "HOSTING_ENV": "local",
+        "CONSOLE_LOG": "false",
+        "ENABLE_EXPRESS_RATE_LIMIT": "false",
+        "ENABLE_GAS_FEE_WORKAROUND": "true",
+        "ENABLE_TX_SIG_VERIF_WORKAROUND": "true",
+        "ENABLE_REST_FUNCTION_CALL": "true",
+        "TX_POOL_SIZE_LIMIT": "1000000",
+        "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": "200000",
+        "MAX_NUM_INBOUND_CONNECTION": "12",
+        "TARGET_NUM_OUTBOUND_CONNECTION": "9",
+        "ENABLE_EVENT_HANDLER": "true",
+        "EVENT_HANDLER_PORT": "15101"
+      },
+      "command": [
+        "--max-old-space-size=8192",
+        "/app/ain-blockchain/cert-client.js"
+      ],
+      "volumes": [
+        "chain-node9:/data",
+        "./cert-client.js:/app/ain-blockchain/cert-client.js:ro"
+      ],
+      "depends_on": [
+        "tracker"
+      ],
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "blockchain",
+        "org.ain.cert.node": "9",
+        "org.ain.cert.allocation": "shared-host-oversubscribed-ceilings"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:'+process.env.PORT+'/node_status',{signal:AbortSignal.timeout(4000)}).then(response=>response.json()).then(body=>process.exit(body.code===0&&body.result?.state==='SERVING'&&body.result?.health===true?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 18,
+        "start_period": "60s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "3"
+        }
+      }
+    }
+  },
+  "volumes": {
+    "chain-node0": {},
+    "chain-node1": {},
+    "chain-node2": {},
+    "chain-node3": {},
+    "chain-node4": {},
+    "chain-node5": {},
+    "chain-node6": {},
+    "chain-node7": {},
+    "chain-node8": {},
+    "chain-node9": {}
+  }
+}
