@@ -8,6 +8,13 @@ export KPI_DIR=$KPI                                                    # 스크�
 export AIN_BLOCKCHAIN_REPO=$AIN_REPO                                   # 노드 코드 위치 (start-cert-net.sh, common.js)
 export PATH=$KPI/harness/node_modules/.bin:$PATH
 
+# 인증망 포트 (한 호스트에서 두 번째 망을 띄울 때만 바꾼다) ----------------------
+# export CHAIN_PORT_BASE=8081        # 노드 i = base+i (start-cert-net.sh, common.js 공통)
+# export TRACKER_PORT=8079           # 기본 base-2
+# export P2P_PORT_BASE=5001
+# export EVENT_PORT_BASE=5100        # node8/9 이벤트 핸들러 (base, base+1)
+# export CHAIN_EVENT_URLS='["ws://localhost:5100","ws://localhost:5101"]'   # 하네스가 구독할 WS
+
 # 지표 4 (vLLM + Locust) ------------------------------------------------------
 # export VLLM_ENV=/mnt/newdata/glm-vllm-env          # vLLM venv (bin/ 을 PATH 에 추가)
 # export VLLM=$VLLM_ENV/bin/vllm                     # 기본: PATH 의 vllm
