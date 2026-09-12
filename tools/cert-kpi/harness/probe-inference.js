@@ -1,3 +1,4 @@
+const KPI_DIR = process.env.KPI_DIR || require('path').resolve(__dirname, '..');
 // M4 사전 프로브(증빙 아님): N 동시 클라이언트로 서빙 스택 용량을 미리 확인한다. 판정 증빙은 계획서 규정대로 Locust 240U/60W (m4-run-locust.sh) 로만 산출한다.
 // 사용: node probe-inference.js <mode:chat|comp> <concurrency> <seconds> [maxTokens] [nServers]
 const mode = process.argv[2] || 'chat';
@@ -91,5 +92,5 @@ async function worker() {
     tpsPerSecond: perSec.slice(0, SECS),
   };
   console.log(JSON.stringify(out, null, 2));
-  require('fs').writeFileSync(`${require('./common').RESULTS_DIR}/m4-lightclient-${RUNTAG}.json`, JSON.stringify(out, null, 2));
+  require('fs').writeFileSync(`${KPI_DIR}/results/m4-lightclient-${RUNTAG}.json`, JSON.stringify(out, null, 2));
 })();

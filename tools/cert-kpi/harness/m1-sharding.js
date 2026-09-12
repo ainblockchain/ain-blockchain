@@ -5,14 +5,14 @@
 //   (3) 제3 노드(node9)의 블록 데이터로 tx 포함 재검증(영수증 트래커와 무관한 영구 증빙)
 // 가드: 결과 파일·온체인 경로가 이미 있으면 거부(RUN_ID 재사용 금지)
 const crypto = require('crypto');
-const { newAin, NODES, APP, writeResult, envSnapshot, waitFinalized, getValueFinalUntil, assertResultFree, assertChainPathFree, verifyTxInBlock } = require('./common');
+const { newAin, NODES, APP, writeResult, envSnapshot, waitFinalized, getValueFinalUntil, assertResultFree, assertChainPathFree, verifyTxInBlockUntil } = require('./common');
 
 const NUM_SHARDS = parseInt(process.env.NUM_SHARDS || '14', 10);
 const AGENTS_PER_SHARD = parseInt(process.env.AGENTS_PER_SHARD || '5', 10);
 const NUM_AGENTS = NUM_SHARDS * AGENTS_PER_SHARD;
 const TARGET = 70;
 const READER = 5;                                  // 역검증 노드: 제출을 받지 않음
-const BLOCK_VERIFY_NODE = 'http://localhost:8090'; // 블록 재검증 노드(node9)
+const BLOCK_VERIFY_NODE = NODES[9];
 const BASE = `/apps/${APP}/sharding_test`;
 const RUN_ID = process.env.RUN_ID || `run_${Date.now()}`;
 const SUBMIT_NODES = NODES.map((_, i) => i).filter(i => i !== READER);   // 0..4,6..9
@@ -68,7 +68,7 @@ async function main() {
   const receipts = {};
   for (const t of allTx) {
     const st = fin.status.get(t.txHash);
-    const vb = st.finalized ? await verifyTxInBlock(BLOCK_VERIFY_NODE, st.blockNumber, t.txHash) : { ok: false, reason: st.state };
+    const vb = st.finalized ? await verifyTxInBlockUntil(BLOCK_VERIFY_NODE, st.blockNumber, t.txHash) : { ok: false, reason: st.state };
     if (vb.ok) inBlockOk++;
     receipts[t.txHash] = { path: t.path, submitNode: t.submitNode, state: st.state, block: st.blockNumber, inBlockOnNode9: vb.ok, blockHash: vb.blockHash || null };
   }

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+KPI=${KPI_DIR:-$(cd "$(dirname "$0")/.." && pwd)}
 # M6: 데이터셋 100종 lm-eval 평가 — GPU 샤드 병렬 (기본 6 GPU)
 # 사용: bash m6-run.sh [CONC] [LIMIT]
 set -u
@@ -7,15 +8,13 @@ CONC=${#GPUS[@]}
 LIMIT=${2:-500}          # 절차서 §9.2: 나머지 95종 --limit 500
 FULL_TASKS="mmlu hellaswag arc_challenge truthfulqa_mc2 gsm8k"   # 1단계 검증 5종은 전수 평가
 MODEL=${M6_MODEL:-Qwen/Qwen2.5-1.5B-Instruct}
-HERE=$(cd "$(dirname "$0")" && pwd)
-KPI=${KPI_DIR:-$(cd "$HERE/.." && pwd)}
 EVALBIN=${LM_EVAL:-lm_eval}
 export HF_HOME=${HF_HOME:-$KPI/hf-home}
 export HF_HUB_DISABLE_XET=1
 export HF_DATASETS_TRUST_REMOTE_CODE=1
 export TMPDIR=${TMPDIR:-$KPI/tmp}; mkdir -p "$TMPDIR"
 export HF_ALLOW_CODE_EVAL=1
-cd "$HERE"
+cd "$KPI/harness"
 OUT=${EVAL_RESULTS:-$KPI/eval_results}
 LOGS=$KPI/logs/m6
 mkdir -p "$OUT" "$LOGS"

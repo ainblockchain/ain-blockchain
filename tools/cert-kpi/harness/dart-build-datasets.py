@@ -1,19 +1,31 @@
 # DART OpenAPI 타입 100종 → Ainize teach 데이터셋(jsonl) 100개 생성
 #   타입 1개 = 데이터셋 1개 (지표 6) = 학습 후 지식 패치 1개 = 모델 1종 (지표 5)
 #   각 데이터셋: {prompt, answer, alt_prompt, note} × FACTS 행 (기본 8) — 질문은 회사·연도·필드로 유일하게
-# 실행: python3 dart-build-datasets.py [FACTS]   (키: 이 디렉토리의 .env.dart 또는 환경변수 DART_API_KEY)
-#   KRX_JSON: 상장사 목록(finance-knowledge-training-demo 의 data/krx.json), 기본 $RUNTIME_REPO/data/krx.json
+# 실행: python3 dart-build-datasets.py [FACTS]   (키: harness/.env.dart 의 DART_API_KEY)
 import json, os, re, sys, time, zipfile, io, urllib.request, urllib.parse
 import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = f'{HERE}/dart-datasets'
-KPI_DIR = os.environ.get('KPI_DIR', os.path.join(HERE, '..'))
-CACHE = os.environ.get('DART_CACHE', os.path.join(KPI_DIR, 'tmp', 'dart-cache'))
+CACHE = os.environ.get('DART_CACHE', os.path.join(os.environ.get('KPI_DIR', f'{HERE}/..'), 'tmp', 'dart-cache'))
 KRX_JSON = os.environ.get('KRX_JSON', os.path.join(os.environ.get('RUNTIME_REPO', '/work'), 'data', 'krx.json'))
 os.makedirs(OUT, exist_ok=True); os.makedirs(CACHE, exist_ok=True)
 FACTS = int(sys.argv[1]) if len(sys.argv) > 1 else 8
-KEY = os.environ.get('DART_API_KEY') or dict(l.strip().split('=', 1) for l in open(f'{HERE}/.env.dart') if '=' in l)['DART_API_KEY']
+def load_api_key():
+    if os.environ.get('DART_API_KEY'):
+        return os.environ['DART_API_KEY']
+    for filename in ['.env', '.env.dart']:
+        env_path = os.path.join(HERE, filename)
+        if not os.path.exists(env_path):
+            continue
+        with open(env_path, encoding='utf-8') as source:
+            for line in source:
+                key, separator, value = line.strip().partition('=')
+                if separator and key == 'DART_API_KEY' and value.strip():
+                    return value.strip().strip('\"\'')
+    raise SystemExit('Set DART_API_KEY in the environment or harness/.env')
+
+KEY = load_api_key()
 API = 'https://opendart.fss.or.kr/api'
 YEAR, RC = '2025', '11011'          # 2025 사업연도 사업보고서 (2026년 3월 제출) — 기반 모델 학습 이후 데이터
 TODAY = '20260910'
@@ -32,7 +44,7 @@ def get(endpoint, **params):
                 d = json.loads(r.read().decode('utf-8'))
             break
         except Exception as e:
-            d = {'status': 'ERR', 'message': str(e)}; time.sleep(2)
+            d = {'status': 'ERR', 'message': str(e).replace(KEY, '[REDACTED]')}; time.sleep(2)
     json.dump(d, open(ck, 'w'), ensure_ascii=False)
     if d.get('status') == '020': raise SystemExit('DART API 한도 초과: ' + d.get('message', ''))
     return d

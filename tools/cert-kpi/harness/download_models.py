@@ -1,14 +1,14 @@
 # models100.json 사전 다운로드 (snapshot_download, safetensors 우선/bin 폴백, 재시도)
 import json, os, sys, time
+KPI_DIR = os.environ.get('KPI_DIR', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from huggingface_hub import list_repo_files, snapshot_download
 
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
-HERE = os.path.dirname(os.path.abspath(__file__))
-HF_HOME = os.environ.get("HF_HOME", os.path.join(os.environ.get("KPI_DIR", os.path.join(HERE, "..")), "hf-home"))
+HF_HOME = os.environ.get("HF_HOME", os.path.join(KPI_DIR, "hf-home"))
 os.environ["HF_HOME"] = HF_HOME
 
-MODELS = [m["id"] for m in json.load(open(os.path.join(HERE, "models100.json")))]
+MODELS = [m["id"] for m in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "models100.json")))]
 
 COMMON = ["*.json", "*.model", "tokenizer*", "*.tiktoken", "merges.txt", "vocab*", "*.py"]
 

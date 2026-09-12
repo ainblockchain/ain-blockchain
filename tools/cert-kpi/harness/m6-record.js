@@ -1,3 +1,4 @@
+const KPI_DIR = process.env.KPI_DIR || require('path').resolve(__dirname, '..');
 // M6 보조 증빙: lm-eval 결과 100 태스크 온체인 기록·역검증 (절차서 §9.4 / 부록 G)
 // 리뷰 반영: lm_eval 0.4.x 결과 파일 구조 대응 — 'n-samples' 키, 그룹 태스크는 그룹 집계(results[task]) 사용,
 //            메트릭 키는 'metric,filter' 형식이며 name/alias/sample_len/sample_count 는 메트릭이 아님.
@@ -6,7 +7,7 @@ const { newAin, APP, writeResult, recordAndVerifyFinal, safeName } = require('./
 const fs = require('fs');
 const path = require('path');
 
-const OUT = process.env.EVAL_RESULTS || `${require('./common').KPI_DIR}/eval_results`;
+const OUT = process.env.EVAL_RESULTS || `${KPI_DIR}/eval_results`;
 const BASE = `/apps/${APP}/model_evaluation`;
 const MODEL_TAG = safeName(process.env.M6_MODEL || 'Qwen/Qwen2.5-1.5B-Instruct');
 
@@ -70,9 +71,10 @@ function extractMetrics(results, task) {
       const r = await recordAndVerifyFinal(ain, `${BASE}/${MODEL_TAG}/${safeName(t)}`, {
         modelName: MODEL_TAG, dataset: t, timestamp: Date.now(), samples, metrics, metricsValid: true,
         lmEvalGitHash: results.git_hash || null,
-      }, v => v.dataset === t && v.metrics !== undefined);
+      }, { check: value => value.dataset === t && value.metrics !== undefined });
       recorded++; verified++;
-      details.push({ task: t, ok: true, samples, metrics, txHash: r.txHash, block: r.blockNumber });
+      details.push({ task: t, ok: true, samples, metrics, txHash: r.txHash, block: r.blockNumber,
+        receipt: r.receipt, readback: r.readback, blockVerification: r.blockVerification });
     } catch (e) { details.push({ task: t, ok: false, error: String(e.message).slice(0, 160) }); }
   }
   const final = {

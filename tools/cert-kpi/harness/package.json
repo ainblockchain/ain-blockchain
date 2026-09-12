@@ -1,9 +1,15 @@
 {
-  "name": "ain-cert-kpi-harness",
-  "version": "2.1.0",
-  "private": true,
-  "description": "AI Network 성능지표(팁스 성과지표 6종) 공인기관 시험 재현 하네스 — 절차서 tools/cert-kpi/성능지표_시험_재현절차서.md 가 인용하는 유일한 원본",
-  "license": "MIT",
+  "name": "harness",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/hitOf.test.js && node test/merkle.test.js && node test/record-final.test.js && node test/docker-snapshot.test.js && node --test test/public-catalog.test.js test/m3-stream-audit.test.js test/ainize-lifecycle.test.js",
+    "preflight": "node preflight.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
   "dependencies": {
     "@ainblockchain/ain-js": "^1.15.0"
   }

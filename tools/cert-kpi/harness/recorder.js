@@ -24,7 +24,8 @@ fs.mkdirSync(BATCH_DIR, { recursive: true });
 const ain = newAin(1 + RID, null, 14 + RID);      // 기록 노드 node1/node2, 계정 14/15
 
 const queue = [];
-let recorded = 0, failed = 0, inflight = 0, batchNo = 0, received = 0;
+const seen = new Set();                              // requestId 중복 제거 (워커 종료 시 재전송 대비)
+let recorded = 0, failed = 0, inflight = 0, batchNo = 0, received = 0, duplicates = 0;
 let paused = process.env.START_PAUSED === '1';
 
 async function flush(force = false) {
@@ -49,7 +50,7 @@ async function flush(force = false) {
 }
 setInterval(() => flush(false), 50);
 
-const stats = () => ({ run: RUN, rid: RID, received, recorded, failed, queued: queue.length, inflight, batches: batchNo });
+const stats = () => ({ run: RUN, rid: RID, received, duplicates, recorded, failed, queued: queue.length, inflight, batches: batchNo });
 
 const server = http.createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/record') {
@@ -60,7 +61,11 @@ const server = http.createServer((req, res) => {
       try {
         const j = JSON.parse(Buffer.concat(chunks).toString('utf8'));   // 멀티바이트 경계 안전
         const items = Array.isArray(j) ? j : [j];
-        for (const it of items) if (it && typeof it.requestId === 'string') { queue.push(it); received++; n++; }
+        for (const it of items) {
+          if (!it || typeof it.requestId !== 'string') continue;
+          if (seen.has(it.requestId)) { duplicates++; continue; }
+          seen.add(it.requestId); queue.push(it); received++; n++;
+        }
       } catch { res.writeHead(400); res.end('{"error":"bad json"}'); return; }
       res.writeHead(200); res.end(JSON.stringify({ queued: n }));
     });

@@ -8,18 +8,22 @@ const Ain = require('@ainblockchain/ain-js').default;
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { isDeepStrictEqual } = require('util');
+const { dockerSnapshot, validateDockerChain } = require('./docker-snapshot');
 
-// KPI_DIR: 결과·로그·증빙 루트. 기본은 이 하네스가 들어 있는 tools/cert-kpi (results/, logs/, evidence/ 는 git 에 넣지 않는다).
-const KPI_DIR = process.env.KPI_DIR || path.resolve(__dirname, '..');
-// ain-blockchain 저장소 위치(커밋 해시 조회용): AIN_BLOCKCHAIN_REPO, 기본은 이 하네스를 담고 있는 저장소(tools/cert-kpi/harness 의 두 단계 위).
+const KPI_DIR = process.env.KPI_DIR || path.resolve(__dirname, '..');   // 기본: 이 번들(tools/cert-kpi)
+// ain-blockchain 저장소 위치(커밋 해시 조회용): AIN_BLOCKCHAIN_REPO, 기본은 kpi/ain-blockchain-runtime (시험에 사용한 작업 사본, 핀 커밋 5b0373e).
 // 없으면 evidence/ain-blockchain.commit 으로 대체한다.
-const REPO = process.env.AIN_BLOCKCHAIN_REPO || path.resolve(KPI_DIR, '..', '..');
+const REPO = process.env.AIN_BLOCKCHAIN_REPO || path.resolve(KPI_DIR, '..', '..');   // 기본: 이 번들을 담은 ain-blockchain 클론
 const ACCOUNTS = JSON.parse(fs.readFileSync(`${__dirname}/genesis_accounts.json`)).others;
 const RESULTS_DIR = process.env.RESULTS_DIR || `${KPI_DIR}/results`;
-const NET_MANIFEST = `${KPI_DIR}/cert-net.manifest.json`;   // start-cert-net.sh 가 기록
+const NET_MANIFEST = process.env.NET_MANIFEST || `${KPI_DIR}/cert-net.manifest.json`;   // start-cert-net.sh 가 기록
 
-const NODES = Array.from({ length: 10 }, (_, i) => `http://localhost:${8081 + i}`);
-const EH_URLS = ['ws://localhost:5100', 'ws://localhost:5101'];
+const NODES = process.env.CHAIN_URLS ? JSON.parse(process.env.CHAIN_URLS) :
+  Array.from({ length: 10 }, (_, index) => `http://localhost:${Number(process.env.CHAIN_PORT_BASE || 8081) + index}`);
+const EH_URLS = process.env.CHAIN_EVENT_URLS ? JSON.parse(process.env.CHAIN_EVENT_URLS) : ['ws://localhost:5100', 'ws://localhost:5101'];
+if (!Array.isArray(NODES) || NODES.length !== 10 || new Set(NODES).size !== 10) throw new Error('exactly ten distinct CHAIN_URLS required');
+if (!Array.isArray(EH_URLS) || EH_URLS.length !== 2) throw new Error('exactly two CHAIN_EVENT_URLS required');
 const APP = 'ai_network_dag';
 
 // AIN DB 경로 라벨은 '.' 불허 (code 10102) → 영숫자/_/- 만 허용
@@ -46,6 +50,7 @@ async function chainSnapshot(nodeUrl = NODES[0]) {
     validators: null, validatorAddrs: null, servingNodes: null, lastBlockNumber: null, chainCpus: null, clientCpus: null,
   };
   try {
+    if (process.env.CHAIN_CONTAINER_PROJECT) throw new Error('Docker chain does not use host PID manifest');
     const m = JSON.parse(fs.readFileSync(NET_MANIFEST, 'utf8'));
     out.configDir = m.configDir || null;
     // 검증자 프로세스의 CPU 친화도(단일 호스트 리허설의 코어 분할 기록): 매니페스트의 두 번째 PID(node0) 기준
@@ -83,6 +88,11 @@ async function chainSnapshot(nodeUrl = NODES[0]) {
     try {
       const st = (await httpJson(`${n}/node_status`, 1500)).result;
       if (st) { rec.state = st.state; rec.address = st.address || null; rec.lastBlockNumber = st.lastBlockNumber ?? (st.lastBlock && st.lastBlock.number) ?? null; }
+      if (rec.lastBlockNumber === null) {
+        const head = (await httpJson(`${n}/last_block`, 1500)).result;
+        rec.lastBlockNumber = head?.number ?? null;
+        rec.lastBlockHash = head?.hash ?? null;
+      }
     } catch {}
     nodes.push(rec);
   }
@@ -96,15 +106,16 @@ function hostSnapshot() {
   const os = require('os');
   let gpus = null;
   try {
-    gpus = execSync('nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader', { timeout: 5000 })
+    gpus = execSync('nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader', { timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] })
       .toString().trim().split('\n').map(l => l.trim());
   } catch {}
   let commit = null;
-  try { commit = execSync(`git -C ${REPO} rev-parse HEAD`, { timeout: 5000 }).toString().trim(); } catch {
+  try { commit = execSync(`git -C ${REPO} rev-parse HEAD`, { timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch {
     try { commit = fs.readFileSync(`${KPI_DIR}/evidence/ain-blockchain.commit`, 'utf8').trim(); } catch { commit = null; }
   }
   return {
     node: process.version,
+    harnessSourceSha256: process.env.KPI_SOURCE_SHA256 || null,
     commits: { 'ain-blockchain': commit },
     host: os.hostname(), cpus: os.cpus().length, memGB: Math.round(os.totalmem() / 2 ** 30), gpus,
     declaredTopology: 'single-host rehearsal: 10 validator processes + tracker on one host; GPU roles on the same host (declared, not measured — see doc §2.4)',
@@ -113,7 +124,27 @@ function hostSnapshot() {
 }
 
 async function envSnapshot() {
-  return { ...hostSnapshot(), chain: await chainSnapshot() };
+  const env = { ...hostSnapshot(), chain: await chainSnapshot() };
+  if (process.env.CHAIN_CONTAINER_PROJECT) {
+    env.workspaceCommits = env.commits;
+    env.commits = { 'ain-blockchain': null };
+    env.declaredTopology = 'Docker containers sharing one host; limits and image identities are measured in env.docker';
+    env.docker = await dockerSnapshot(process.env.CHAIN_CONTAINER_PROJECT);
+    if (!env.docker.clientCgroup['cpu.max'] || env.docker.clientCgroup['cpu.max'].startsWith('max ') ||
+        !env.docker.clientCgroup['memory.max'] || env.docker.clientCgroup['memory.max'] === 'max') {
+      throw new Error('Docker benchmark client requires measured CPU and memory cgroup limits');
+    }
+    env.docker.chainValidation = validateDockerChain(env.docker, NODES);
+    const nodes = env.docker.containers.filter(container => /^node[0-9]$/.test(container.service || ''));
+    const configs = [...new Set(nodes.map(node => node.chainConfig))];
+    env.chain.configDir = configs.length === 1 ? configs[0] : null;
+    env.chain.chainCpus = [...new Set(nodes.map(node => node.cpuSet))].join(';') || null;
+    env.chain.clientCpus = env.docker.clientCgroup['cpuset.cpus.effective'];
+    const revisions = [...new Set(nodes.map(node => node.sourceRevision))];
+    env.commits['ain-blockchain'] = revisions.length === 1 ? revisions[0] : null;
+    if (!env.docker.chainValidation.ok) throw new Error(`Docker chain environment invalid: ${env.docker.chainValidation.errors.join('; ')}`);
+  }
+  return env;
 }
 
 // 결과 파일 가드: 같은 이름의 결과가 이미 있으면 실행을 거부한다(회차 덮어쓰기 방지, §3.5 항목 6)
@@ -198,7 +229,12 @@ async function getValueFinalUntil(ain, refPath, check, timeoutMs = 30000, pollMs
 }
 
 // setValue → 최종화 영수증 → is_final getValue 까지 한 번에 (M5/M6 온체인 기록·역검증 공용)
-async function recordAndVerifyFinal(ain, refPath, value, { timeoutMs = 90000, check } = {}) {
+async function recordAndVerifyFinal(ain, refPath, value, options = {}) {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('recordAndVerifyFinal options must be an object');
+  }
+  const { timeoutMs = 90000, check, reader = newAin(5), blockNode = NODES[9] } = options;
+  const matches = observed => isDeepStrictEqual(observed, value) && (!check || check(observed));
   const res = await ain.db.ref(refPath).setValue({ value, gas_price: 1, nonce: -1 });
   if (!res || !res.tx_hash || !res.result || res.result.code !== 0) {
     throw new Error(`onchain record failed: ${JSON.stringify(res && (res.result || res)).slice(0, 200)}`);
@@ -206,14 +242,29 @@ async function recordAndVerifyFinal(ain, refPath, value, { timeoutMs = 90000, ch
   const fin = await waitFinalized(ain, [res.tx_hash], timeoutMs);
   const st = fin.status.get(res.tx_hash);
   if (!st.finalized) throw new Error(`tx ${res.tx_hash} not finalized: ${st.state}`);
-  const v = await getValueFinal(ain, refPath);
-  if (!v || (check && !check(v))) throw new Error(`is_final getValue mismatch at ${refPath}`);
-  return { txHash: res.tx_hash, blockNumber: st.blockNumber, value: v };
+  const readback = await getValueFinalUntil(reader, refPath, matches, timeoutMs);
+  if (!matches(readback.value)) throw new Error(`independent is_final getValue mismatch at ${refPath}`);
+  const block = await verifyTxInBlockUntil(blockNode, st.blockNumber, res.tx_hash, timeoutMs);
+  if (!block.ok) throw new Error(`independent block verification failed: ${block.reason || 'transaction absent'}`);
+  return {
+    txHash: res.tx_hash, blockNumber: st.blockNumber, value: readback.value,
+    receipt: { state: st.state, block: st.blockNumber },
+    readback: { node: options.reader ? (options.readerNode || null) : NODES[5], waitedMs: readback.waitedMs },
+    blockVerification: { node: blockNode, ...block },
+  };
+}
+
+// 블록 재검증(재시도): 검증 노드가 몇 블록 뒤처져 있을 수 있으므로 블록이 나타날 때까지 최대 timeoutMs 대기
+async function verifyTxInBlockUntil(nodeUrl, blockNumber, txHash, timeoutMs = 30000, pollMs = 1000) {
+  const t0 = Date.now();
+  let v = await verifyTxInBlock(nodeUrl, blockNumber, txHash);
+  while (!v.ok && v.reason === 'block not found' && Date.now() - t0 < timeoutMs) { await sleep(pollMs); v = await verifyTxInBlock(nodeUrl, blockNumber, txHash); }
+  return { ...v, waitedMs: Date.now() - t0 };
 }
 
 module.exports = {
   Ain, ACCOUNTS, NODES, EH_URLS, APP, KPI_DIR, REPO, RESULTS_DIR, NET_MANIFEST,
   newAin, writeResult, envSnapshot, chainSnapshot, hostSnapshot, percentile, sleep, httpJson,
   waitFinalized, getValueFinal, getValueFinalUntil, recordAndVerifyFinal, safeName,
-  assertResultFree, assertChainPathFree, verifyTxInBlock,
+  assertResultFree, assertChainPathFree, verifyTxInBlock, verifyTxInBlockUntil,
 };

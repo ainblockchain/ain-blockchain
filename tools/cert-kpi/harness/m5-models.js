@@ -1,3 +1,4 @@
+const KPI_DIR = process.env.KPI_DIR || require('path').resolve(__dirname, '..');
 // M5: 모델 100종 구동 + 추론 3회 + 온체인 기록·역검증
 // GPU 풀(기본 6 동시) 오케스트레이터. 이미 온체인 검증된 모델은 스킵(재개 가능).
 // 실행: CONC=6 node m5-models.js
@@ -8,14 +9,13 @@ const fs = require('fs');
 const MODELS = JSON.parse(fs.readFileSync(`${__dirname}/models100.json`));
 const BASE = `/apps/${APP}/model_inference`;
 const CONC = parseInt(process.env.CONC || '6', 10);
-const { RESULTS_DIR, KPI_DIR } = require('./common');
 const VLLM = process.env.VLLM || 'vllm';
 const HF_HOME = process.env.HF_HOME || `${KPI_DIR}/hf-home`;
 const LOGDIR = `${KPI_DIR}/logs/m5`;
 fs.mkdirSync(LOGDIR, { recursive: true });
 
 // AIN DB 경로 라벨은 '.' 불허 (setValue code 10102 Invalid value path) → 영숫자/_/- 만 허용
-const safeName = id => id.replace(/^\//, 'local_').replace(/[^A-Za-z0-9_\-]/g, '_');
+const safeName = id => id.replace(/^\/mnt\/newdata\/models\//, 'local_').replace(/[^A-Za-z0-9_\-]/g, '_');
 const ains = Array.from({ length: 8 }, (_, i) => newAin(i % 10, null, 12 + (i % 8)));
 
 // 모델 config.json 에서 컨텍스트 상한을 읽어 max-model-len 을 결정 (gpt2 계열 1024 등)
@@ -125,7 +125,7 @@ async function runModel(m, gpu) {
 (async () => {
   const queue = [...MODELS];
   const report = [];
-  const outFile = `${RESULTS_DIR}/m5-progress.json`;
+  const outFile = `${KPI_DIR}/results/m5-progress.json`;
   let done = 0;
   async function slot(gpu) {
     while (queue.length > 0) {
