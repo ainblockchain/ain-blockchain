@@ -122,7 +122,8 @@ intent without retries/resets; the terminal response is preserved before asserti
 
 To prepare an additional isolated network while another experiment remains live,
 set `RPC_PORT_BASE`, `P2P_PORT_BASE`, `TRACKER_PORT` and `EXPERIMENT_PEER_PORT` to new free ports.
-The generated plan and compose file carry those values through every node and
+The generated plan and compose file carry those values through every node,
+including tracker and peer-candidate URLs, and
 runner; never reuse a live network's ports or private directory.
 
 For an already investigated earlier payout, explicit read-only reconciliation is

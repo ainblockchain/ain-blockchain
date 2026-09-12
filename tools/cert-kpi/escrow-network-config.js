@@ -61,7 +61,7 @@ function compose(plan, privateDirectory, sourceDirectory) {
         BLOCKCHAIN_CONFIGS_DIR: '/network', BLOCKCHAIN_DATA_DIR: '/data',
         PORT: String(plan.rpcPortBase + index), P2P_PORT: String(p2pPortBase + index),
         TRACKER_UPDATE_JSON_RPC_URL: `http://127.0.0.1:${trackerPort}/json-rpc`,
-        PEER_CANDIDATE_JSON_RPC_URL: 'http://127.0.0.1:21081/json-rpc', HOSTING_ENV: 'local',
+        PEER_CANDIDATE_JSON_RPC_URL: `http://127.0.0.1:${plan.rpcPortBase}/json-rpc`, HOSTING_ENV: 'local',
         CONSOLE_LOG: 'false', ENABLE_EXPRESS_RATE_LIMIT: 'false', ENABLE_GAS_FEE_WORKAROUND: 'true',
         ENABLE_TX_SIG_VERIF_WORKAROUND: 'false', ENABLE_REST_FUNCTION_CALL: 'true',
         TX_POOL_SIZE_LIMIT: '1000000', TX_POOL_SIZE_LIMIT_PER_ACCOUNT: '200000',
