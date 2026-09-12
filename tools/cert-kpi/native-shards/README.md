@@ -59,3 +59,34 @@ Do not rerun a journal with uncertain submissions or overwrite an evidence direc
 ## Remaining M1 gates
 
 Passing this suite proves native multi-chain state management and the stated control/fault scenario only. M1 still requires actual learning input identities and byte counts, training-job IDs/artifacts, measured overlap of 70 active learning pipelines, large-data load, missing/duplicate checks and broader stability evidence. Neither ten validators nor seventy logical writes is a substitute for those gates.
+
+## Retained-ledger source refresh
+
+`refresh-node.js MANIFEST SERVICE IMAGE TESTS NEW_OUTPUT NEW_PRIVATE_BACKUP` refreshes
+one explicitly selected validator after a source audit and successful image
+regression tests. It requires two same-chain live witnesses agreeing on a final
+checkpoint, retains the named ledger volume, archives that volume privately after
+stopping the target, and leaves the other validator processes, model, trainer and
+Ainize API identities unchanged. It also accepts an already-crashed target. The
+maintenance gate is not permission to count an unhealthy chain as a passing KPI.
+
+The replacement uses the original compose/config/identity and resource limits,
+with a stricter health check requiring native health rather than only `SERVING`.
+Successful observation requires the original genesis, the retained checkpoint and
+existing control values. A timeout does not restart the replacement. A failed
+post-replacement check likewise requires inspecting that same instance, not
+repeating the maintenance command. Mount equality ignores Docker enumeration
+order but still compares volume identity, source, destination and read/write mode.
+
+Example, after reviewing the actual target and tests:
+
+```sh
+node tools/cert-kpi/native-shards/refresh-node.js \
+  /existing/network.json root2 sha256:IMAGE_DIGEST \
+  /completed/image-tests /new/maintenance-evidence /new/private-volume-backup
+```
+
+The tests directory must contain matching `image-id.txt`, successful
+`runtime-source.json` and `exit-code.txt`. Never publish the private backup or full
+container inspect. This helper does not repair or discard an invalid snapshot,
+reset genesis, replace all nodes, or certify whole-network recovery.
