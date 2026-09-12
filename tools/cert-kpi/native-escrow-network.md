@@ -121,7 +121,7 @@ use finalized outcomes, not the initial RPC code. Unknown states stop on the sam
 intent without retries/resets; the terminal response is preserved before assertion.
 
 To prepare an additional isolated network while another experiment remains live,
-set `RPC_PORT_BASE`, `P2P_PORT_BASE` and `EXPERIMENT_PEER_PORT` to new free ports.
+set `RPC_PORT_BASE`, `P2P_PORT_BASE`, `TRACKER_PORT` and `EXPERIMENT_PEER_PORT` to new free ports.
 The generated plan and compose file carry those values through every node and
 runner; never reuse a live network's ports or private directory.
 

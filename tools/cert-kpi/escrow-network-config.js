@@ -36,11 +36,13 @@ function timerFlags(base) {
 
 function compose(plan, privateDirectory, sourceDirectory) {
   const p2pPortBase = plan.p2pPortBase ?? 21501;
+  const trackerPort = plan.trackerPort ?? 21079;
   assert.match(plan.project, /^ain-units-[a-z0-9-]{1,40}$/);
   assert.match(plan.chainImage, /^sha256:[a-f0-9]{64}$/);
   assert.ok(Number.isInteger(plan.rpcPortBase) && plan.rpcPortBase >= 1024 && plan.rpcPortBase + 9 <= 65535);
   assert.ok(Number.isInteger(plan.peerPort) && plan.peerPort >= 1024);
   assert.ok(Number.isInteger(p2pPortBase) && p2pPortBase >= 1024 && p2pPortBase + 9 <= 65535);
+  assert.ok(Number.isInteger(trackerPort) && trackerPort >= 1024 && trackerPort <= 65535);
   assert.ok(Number.isSafeInteger(plan.uid) && plan.uid > 0);
   assert.ok(Number.isSafeInteger(plan.gid) && plan.gid > 0);
   const common = { image: plan.chainImage, network_mode: 'host', runtime: 'runc', cpuset: '0-7',
@@ -50,7 +52,7 @@ function compose(plan, privateDirectory, sourceDirectory) {
     security_opt: ['no-new-privileges:true'], pids_limit: 256, restart: 'no',
     logging: { driver: 'json-file', options: { 'max-size': '20m', 'max-file': '3' } } };
   const services = { tracker: { ...common, cpu_quota: 25000, mem_limit: '1g', memswap_limit: '1g',
-    environment: { PORT: '21079', BLOCKCHAIN_DATA_DIR: '/tmp/tracker',
+    environment: { PORT: String(trackerPort), BLOCKCHAIN_DATA_DIR: '/tmp/tracker',
       CONSOLE_LOG: 'false', NVIDIA_VISIBLE_DEVICES: 'void' },
     command: ['tracker-server/index.js'] } };
   for (let index = 0; index < 10; index++) {
@@ -58,7 +60,7 @@ function compose(plan, privateDirectory, sourceDirectory) {
       environment: { NODE_INDEX: String(index),
         BLOCKCHAIN_CONFIGS_DIR: '/network', BLOCKCHAIN_DATA_DIR: '/data',
         PORT: String(plan.rpcPortBase + index), P2P_PORT: String(p2pPortBase + index),
-        TRACKER_UPDATE_JSON_RPC_URL: 'http://127.0.0.1:21079/json-rpc',
+        TRACKER_UPDATE_JSON_RPC_URL: `http://127.0.0.1:${trackerPort}/json-rpc`,
         PEER_CANDIDATE_JSON_RPC_URL: 'http://127.0.0.1:21081/json-rpc', HOSTING_ENV: 'local',
         CONSOLE_LOG: 'false', ENABLE_EXPRESS_RATE_LIMIT: 'false', ENABLE_GAS_FEE_WORKAROUND: 'true',
         ENABLE_TX_SIG_VERIF_WORKAROUND: 'false', ENABLE_REST_FUNCTION_CALL: 'true',
