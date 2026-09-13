@@ -120,10 +120,10 @@ function getIpAddress(internal = false) {
         CommonUtil.finishWithStackTrace(
             logger, `Failed to get aws token: ${JSON.stringify(err, null, 2)}`);
       });
-      return axios.get(internal ? AWS_INTERNAL_IP_URL : AWS_EXTERNAL_IP_URL, {
-        headers: {'X-aws-ec2-metadata-token': token},
+      return token.then((metadataToken) => axios.get(internal ? AWS_INTERNAL_IP_URL : AWS_EXTERNAL_IP_URL, {
+        headers: {'X-aws-ec2-metadata-token': metadataToken},
         timeout: 3000
-      })
+      }))
       .then((res) => {
         return res.data;
       })

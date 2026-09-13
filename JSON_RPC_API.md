@@ -1,5 +1,28 @@
 # AIN Blockchain JSON-RPC API
 
+## State Channel monitoring
+
+Nodes expose finalized State Channel records stored below
+`/state_channels/<channel_id>`. A publisher records `open`, `anchor`, and
+`settle` using the normal signed `SET_VALUE` transaction path; the node exposes
+the current state and finalized block transaction metadata without changing the
+existing transaction format.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "ain_getStateChannel",
+  "params": { "channel_id": "experiment-1" },
+  "id": 1
+}
+```
+
+Use `ain_getStateChannelEvents` with optional inclusive `from` and exclusive
+`to` block numbers to retrieve finalized `open`, `anchor`, and `settle` events.
+Each event includes `block_number`, `block_hash`, `tx_hash`, `tx_index`, path,
+sequence, and the recorded value. The endpoint scans at most 1,000 blocks per
+request so explorers can poll it safely.
+
 ## Table of Contents
 
 - [Database API](#database-api)
