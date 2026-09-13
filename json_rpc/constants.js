@@ -25,6 +25,8 @@ const JSON_RPC_METHODS = {
   AIN_GET_PROPOSER_BY_NUMBER: 'ain_getProposerByNumber',
   AIN_GET_PROTOCOL_VERSION: 'ain_getProtocolVersion',
   AIN_GET_STATE_INFO: 'ain_getStateInfo',
+  AIN_GET_STATE_CHANNEL: 'ain_getStateChannel',
+  AIN_GET_STATE_CHANNEL_EVENTS: 'ain_getStateChannelEvents',
   AIN_GET_STATE_PROOF: 'ain_getStateProof',
   AIN_GET_STATE_USAGE: 'ain_getStateUsage',
   AIN_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX: 'ain_getTransactionByBlockHashAndIndex',

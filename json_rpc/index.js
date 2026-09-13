@@ -13,6 +13,7 @@ const getNetworkApis = require('./network');
 const getTransactionApis = require('./transaction');
 const getVersionApis = require('./version');
 const getKnowledgeApis = require('./knowledge');
+const getStateChannelApis = require('./state-channel');
 const { JSON_RPC_METHODS } = require('./constants');
 
 /**
@@ -40,6 +41,7 @@ module.exports = function getApis(node, p2pServer, minProtocolVersion, maxProtoc
       ...getBlockApis(node),
       ...getBlockchainNodeApis(node),
       ...getDatabaseApis(node),
+      ...getStateChannelApis(node),
       ...getNetworkApis(node, p2pServer),
       ...getTransactionApis(node, p2pServer),
       ...getVersionApis(minProtocolVersion, maxProtocolVersion),
