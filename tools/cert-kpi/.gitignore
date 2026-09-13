@@ -1,5 +1,6 @@
 # 실행 산출물 (증빙은 시험 종료 후 별도 보관)
 results/
+evidence/*.log
 logs/
 evidence/
 chaindata*/

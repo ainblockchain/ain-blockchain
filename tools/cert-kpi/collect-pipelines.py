@@ -30,17 +30,33 @@ def load_public_peers():
         ep = e.get('endpoint') if isinstance(e, dict) else e
         if ep: PUBLIC_PEERS.add(str(ep).rstrip('/'))
 
+import re as _re2
+ANNOUNCED = {}
+for _i in range(1, n + 1):
+    _f = os.path.join(logs, 'start-%d.log' % _i)
+    if not os.path.exists(_f): continue
+    for _l in open(_f, encoding='utf-8', errors='ignore'):
+        _m = _re2.search(r'announced (taught-pipeline-%s-\d+-\w+)' % _re2.escape(tag), _l)
+        if _m: ANNOUNCED[_i] = _m.group(1)
+
 def one(i):
     node = 'http://localhost:%d' % (base + i)
     row = dict(idx=i, node=node, name='pipeline-%s-%02d' % (tag, i), patch=None, status='NO_NODE',
                anchor_ref=None, onchain=False, onchain_final=False, on_public=False, chain_link=None, public_link=None,
                node_link=node + '/api/catalog')
+    # 공개 여부는 이 노드가 남긴 announce 기록으로 판정한다 (카탈로그는 네트워크 전체이고 부하에서 자주 실패한다)
+    if ANNOUNCED.get(i):
+        row['patch'] = ANNOUNCED[i]
+        row['status'] = 'PUBLISHED'
     cat = get(node + '/api/catalog')
-    if cat is None:
+    if cat is None and not row['patch']:
         return row
-    items = cat.get('items') or []
-    row['status'] = 'PUBLISHED' if items else 'NOT_PUBLISHED'
-    if not items:
+    cat = cat or {'items': []}
+    # 노드의 카탈로그는 네트워크 전체 지식을 담는다 → 이 파이프라인이 올린 이름으로 자기 것만 고른다
+    want = 'cert pipeline %s-%02d' % (tag, i)
+    items = [it for it in (cat.get('items') or []) if ((it.get('anchor') or {}).get('name') or '') == want]
+    if not row['patch']: row['status'] = 'PUBLISHED' if items else 'NOT_PUBLISHED'
+    if not items and not row['patch']:
         sub = os.path.join(logs, 'submit-%02d.json' % i)
         if os.path.exists(sub):
             try:
@@ -51,7 +67,7 @@ def one(i):
             except Exception:
                 pass
         return row
-    pid = (items[0].get('anchor') or {}).get('id')
+    pid = row['patch'] or ((items[0].get('anchor') or {}).get('id') if items else None)
     row['patch'] = pid
     if pid:
         ref = '%s/%s' % (anchor_base, pid)
@@ -62,13 +78,13 @@ def one(i):
         #   onchain       = anchor 가 체인에 기록되어 링크로 읽힌다 (판정 근거)
         #   onchain_final = 그 값이 최종화(is_final)까지 갔다 (부하가 큰 리허설 호스트에서는 지연된다)
         for _ in range(int(os.environ.get('ANCHOR_TRIES', '10'))):
-            d = get('%s/get_value?ref=%s' % (chain, q), 8)
+            d = get('%s/get_value?ref=%s' % (chain, q))
             if d and d.get('result') is not None:
                 row['onchain'] = True
                 break
             time.sleep(2)
         if row['onchain']:
-            f = get('%s/get_value?ref=%s&is_final=true' % (chain, q), 8)
+            f = get('%s/get_value?ref=%s&is_final=true' % (chain, q))
             row['onchain_final'] = bool(f and f.get('result') is not None)
     # 공개 노드(ainize.ai)는 local 원장이라 AIN 체인 지식이 카탈로그로 넘어가지 않는다.
     # 대신 이 파이프라인 노드가 공개 노드의 peer 목록에 살아 있는지로 "공개적으로 보인다" 를 판정한다.
@@ -110,7 +126,7 @@ TRAIN_CONCURRENT = max_overlap(_wins) if _wins else 0
 TRAIN_SPAN = (round(max(b for _, b in _wins) - min(a for a, _ in _wins), 1) if _wins else 0)
 
 load_public_peers()
-with ThreadPoolExecutor(max_workers=16) as ex:
+with ThreadPoolExecutor(max_workers=int(os.environ.get('COLLECT_WORKERS', '4'))) as ex:
     rows = list(ex.map(one, range(1, n + 1)))
 
 ok_pub = sum(1 for r in rows if r['on_public'])

@@ -71,8 +71,8 @@ WORK=$LOGS/datasets; rm -rf "$WORK"; mkdir -p "$WORK"
 python3 - "$SRC" "$WORK" "$N" "$TAG" <<'PY' || exit 1
 import sys, os, json, glob
 src, work, n, tag = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
-files = sorted(glob.glob(os.path.join(src, '*.jsonl')))
-if not files: sys.exit('데이터셋 원본이 없습니다: ' + src)
+files = [f for f in sorted(glob.glob(os.path.join(src, '*.jsonl'))) if os.path.getsize(f) > 0]
+if not files: sys.exit('데이터셋 원본이 없습니다: ' + src)   # 빈 원본은 제외한다 (노드가 빈 데이터셋을 거부한다)
 for i in range(n):
     rows = [json.loads(l) for l in open(files[i % len(files)], encoding='utf-8') if l.strip()][:8]
     with open(os.path.join(work, f'pipe-{i+1:02d}.jsonl'), 'w', encoding='utf-8') as f:
@@ -202,24 +202,35 @@ try:
     d = json.load(open('$LOGS/submit-$nn.json')); print((d.get('job') or d).get('id') or '')
 except Exception: print('')" 2>/dev/null)
   [ -n "$jid" ] || return 0
-  curl -sf -m 3 "http://localhost:$((PORT_BASE+i))/api/catalog" 2>/dev/null | grep -q '"anchor"' && return 0   # 이미 공개됨
+  # 노드의 /api/catalog 는 네트워크 전체 지식을 보여준다 → 반드시 "이 파이프라인이 올린 이름" 으로 확인해야 한다
+  curl -sf -m 10 "http://localhost:$((PORT_BASE+i))/api/catalog" 2>/dev/null \
+    | grep -q "cert pipeline $TAG-$nn" && return 0
   AINIZE_HOME=$HOMES/$TAG-$i az teach publish "$jid" --node "http://localhost:$((PORT_BASE+i))" \
     --name "cert pipeline $TAG-$nn" --declare public --access public \
     --license CC-BY-4.0 --description "지표 1 병렬 파이프라인 $nn (DART 공개 공시 8문항)" \
     --consent-permanent --consent-rights --json >"$LOGS/publish-$nn.json" 2>&1
+  # DART 전화번호 등은 노드의 PII 게이트에 걸린다 → 학습 데이터셋만 비공개로 돌려 다시 공개한다
+  if grep -q "dataset_pii" "$LOGS/publish-$nn.json" 2>/dev/null; then
+    AINIZE_HOME=$HOMES/$TAG-$i az teach publish "$jid" --node "http://localhost:$((PORT_BASE+i))" \
+      --name "cert pipeline $TAG-$nn" --declare public --access private \
+      --license CC-BY-4.0 --description "지표 1 병렬 파이프라인 $nn (DART 공개 공시 8문항, 학습셋 비공개)" \
+      --consent-permanent --consent-rights --json >"$LOGS/publish-$nn.json" 2>&1
+  fi
 }
 in_batches publish_one
 pub=0
 for tick in $(seq 1 ${PUBLISH_TICKS:-40}); do
-  pub=$(python3 - "$N" "$PORT_BASE" <<'PY'
+  pub=$(python3 - "$N" "$PORT_BASE" "$TAG" <<'PY'
 import json, sys, urllib.request
 from concurrent.futures import ThreadPoolExecutor
-n, base = int(sys.argv[1]), int(sys.argv[2])
+n, base, tag = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
 def done(i):
+    want = 'cert pipeline %s-%02d' % (tag, i)
     try:
-        with urllib.request.urlopen('http://localhost:%d/api/catalog' % (base + i), timeout=3) as r:
-            return 1 if (json.load(r).get('items') or []) else 0
+        with urllib.request.urlopen('http://localhost:%d/api/catalog' % (base + i), timeout=15) as r:
+            items = json.load(r).get('items') or []
     except Exception: return 0
+    return 1 if any((it.get('anchor') or {}).get('name') == want for it in items) else 0
 with ThreadPoolExecutor(max_workers=32) as ex: print(sum(ex.map(done, range(1, n + 1))))
 PY
 )
