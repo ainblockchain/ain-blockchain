@@ -6,6 +6,7 @@ const { StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const ConsensusUtil = require('../consensus/consensus-util');
 const Transaction = require('../tx-pool/transaction');
+const boundedJsonSize = require('./bounded-json-size');
 
 class BlockPool {
   constructor(node) {
@@ -65,7 +66,7 @@ class BlockPool {
       return;
     }
     const longestChains = this.getLongestNotarizedChainList();
-    logger.debug(`[${LOG_HEADER}] longestChains: ${JSON.stringify(longestChains, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] longestChains: ${JSON.stringify(longestChains, null, 2)}`);
     this.longestNotarizedChainTips = longestChains.reduce((a, b) => {
       a.push(b[b.length - 1].hash);
       return a;
@@ -93,7 +94,7 @@ class BlockPool {
       }
       currBlockWithInfo = this.hashToBlockInfo.get(block.last_hash);
     }
-    logger.debug(`[${LOG_HEADER}] currBlockWithInfo: ` +
+    logger.debug(() => `[${LOG_HEADER}] currBlockWithInfo: ` +
         `${JSON.stringify(currBlockWithInfo, null, 2)}` +
         `\nfinalizedBlock: ${JSON.stringify(finalizedBlock, null, 2)}`);
     if (!currBlockWithInfo || !currBlockWithInfo.block) {
@@ -113,7 +114,7 @@ class BlockPool {
     const lastFinalized = fromBlock ? fromBlock
         : lastBlockNumber < 1 ? { block: this.node.bc.lastBlock(), notarized: true }
             : this.hashToBlockInfo.get(this.node.bc.lastBlock().hash);
-    logger.debug(`[${LOG_HEADER}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
     const chainList = [];
     this.dfsLongest(lastFinalized, [], chainList, withInfo);
     return chainList;
@@ -135,13 +136,13 @@ class BlockPool {
         chainList[0][chainList[0].length - 1].block.number :
             chainList[0][chainList[0].length - 1].number : 0;
     if (blockNumber > longestNumber) {
-      logger.debug(`[${LOG_HEADER}] New longest chain found: ` +
+      logger.debug(() => `[${LOG_HEADER}] New longest chain found: ` +
           `${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
       chainList.length = 0;
       chainList.push([...currentChain]);
       longestNumber = blockNumber;
     } else if (blockNumber === longestNumber) {
-      logger.debug(`[${LOG_HEADER}] Another longest chain found: ` +
+      logger.debug(() => `[${LOG_HEADER}] Another longest chain found: ` +
           `${JSON.stringify(currentChain, null, 2)}, longestNumber: ${blockNumber}`);
       chainList.push([...currentChain]);
     }
@@ -154,7 +155,7 @@ class BlockPool {
       this.dfsLongest(this.hashToBlockInfo.get(val), currentChain, chainList, withInfo);
     }
     currentChain.pop();
-    logger.debug(`[${LOG_HEADER}] returning.. currentChain: ${JSON.stringify(currentChain, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] returning.. currentChain: ${JSON.stringify(currentChain, null, 2)}`);
   }
 
   // A finalizable chain (extension of current finalized chain):
@@ -186,12 +187,12 @@ class BlockPool {
     const nextBlockSet = this.hashToNextBlockSet.get(currentNode.block.hash);
     if (!nextBlockSet || !nextBlockSet.size) {
       if (BlockPool.endsWithThreeConsecutiveEpochs(currentChain)) {
-        logger.debug(`[${LOG_HEADER}] No next blocks but found a finalizable chain`);
+        logger.debug(() => `[${LOG_HEADER}] No next blocks but found a finalizable chain`);
         const chainCopy = [...currentChain];
         currentChain.pop();
         return chainCopy;
       }
-      logger.debug(`[${LOG_HEADER}] No next blocks.. returning empty array`);
+      logger.debug(() => `[${LOG_HEADER}] No next blocks.. returning empty array`);
       currentChain.pop();
       return [...currentChain];
     }
@@ -225,7 +226,7 @@ class BlockPool {
   getNotarizedBlockByHash(hash) {
     const LOG_HEADER = 'getNotarizedBlockByHash';
     const blockInfo = this.hashToBlockInfo.get(hash);
-    logger.debug(`[${LOG_HEADER}] blockInfo: ${JSON.stringify(blockInfo, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] blockInfo: ${JSON.stringify(blockInfo, null, 2)}`);
     return blockInfo && blockInfo.block && blockInfo.notarized ? blockInfo.block : null;
   }
 
@@ -277,10 +278,10 @@ class BlockPool {
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }
@@ -295,10 +296,10 @@ class BlockPool {
     if (CommonUtil.isEmpty(blockInfo.block)) {
       blockInfo.block = block;
       blockInfo.proposal = proposalTx;
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Invalid block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }
@@ -369,7 +370,7 @@ class BlockPool {
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
     const blockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(voteTx);
     const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
-    logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
+    logger.debug(() => `[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
         `blockHash: ${blockHash}, blockNumber: ${blockNumber}, stake: ${stake}`);
     this.addToNumberToBlockSet({ number: blockNumber, hash: blockHash });
     if (ConsensusUtil.isProposalTx(voteTx)) {
@@ -391,7 +392,7 @@ class BlockPool {
       blockInfo.votes = [];
     }
     if (this.hasVote(voteTx, blockHash, false)) {
-      logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
+      logger.debug(() => `[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
     blockInfo.votes.push(voteTx);
@@ -402,7 +403,7 @@ class BlockPool {
     // To know this, we need the block itself.
     const block = blockInfo.block;
     const voter = voteTx.address;
-    logger.debug(`[${LOG_HEADER}] Voted for block: ${blockHash}`);
+    logger.debug(() => `[${LOG_HEADER}] Voted for block: ${blockHash}`);
     if (stake > 0 && block && _get(block, `validators.${voter}.stake`) === stake) {
       blockInfo.tallied += stake;
       this.tryUpdateNotarized(blockHash);
@@ -419,11 +420,11 @@ class BlockPool {
       invalidBlockInfo.votes = [];
     }
     if (this.hasVote(voteTx, blockHash, true)) {
-      logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
+      logger.debug(() => `[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
     invalidBlockInfo.votes.push(voteTx);
-    logger.debug(`[${LOG_HEADER}] Voted against block: ${blockHash}`);
+    logger.debug(() => `[${LOG_HEADER}] Voted against block: ${blockHash}`);
   }
 
   addProposal(proposalTx, blockHash) {
@@ -431,11 +432,11 @@ class BlockPool {
     if (!this.hashToBlockInfo.has(blockHash)) {
       this.hashToBlockInfo.set(blockHash, {});
     } else if (this.hashToBlockInfo.get(blockHash).proposal) {
-      logger.debug(`[${LOG_HEADER}] Already have seen this proposal`);
+      logger.debug(() => `[${LOG_HEADER}] Already have seen this proposal`);
       return;
     }
     this.hashToBlockInfo.get(blockHash).proposal = proposalTx;
-    logger.debug(`[${LOG_HEADER}] Proposal tx for block added: ${blockHash}`);
+    logger.debug(() => `[${LOG_HEADER}] Proposal tx for block added: ${blockHash}`);
   }
 
   tryUpdateNotarized(blockHash, isFromSnapshot = false) {
@@ -551,7 +552,7 @@ class BlockPool {
     const LOG_HEADER = 'getValidLastVotes';
     const chainId = this.node.getBlockchainParam('genesis/chain_id');
     const lastBlockInfo = this.hashToBlockInfo.get(lastBlock.hash);
-    logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
     // then I cannot get lastBlockInfo from the block-pool. So that, it is not able to create
     // a proper block proposal and also cannot pass checkProposal()
@@ -567,7 +568,7 @@ class BlockPool {
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
           Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime))) {
-        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
+        logger.debug(() => `[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
         validLastVotes.push(vote);
@@ -591,8 +592,12 @@ class BlockPool {
    * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
    * @returns { offenses, evidence }
    */
-  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockNumber, blockTime, baseDb, eventSource) {
+  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockNumber, blockTime,
+      baseDb, eventSource, maxEvidenceBytes = 1024 ** 2) {
     const LOG_HEADER = 'getOffensesAndEvidence';
+    if (!Number.isSafeInteger(maxEvidenceBytes) || maxEvidenceBytes < 2) {
+      throw new Error('Evidence proposal byte budget must be an integer of at least two bytes');
+    }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const baseBlockNumber = baseDb.blockNumberSnapshot;
     const chainId = this.node.getBlockchainParam('genesis/chain_id');
@@ -601,6 +606,7 @@ class BlockPool {
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
+    let evidenceBytes = 2;
     for (const [blockHash, blockInfo] of this.hashToInvalidBlockInfo.entries()) {
       if (recordedInvalidBlockHashSet.has(blockHash)) {
         continue;
@@ -614,6 +620,18 @@ class BlockPool {
       if (!block || !proposal) {
         continue;
       }
+      const offender = block.proposer;
+      const candidate = {
+        transactions: [proposal], block, votes: blockInfo.votes,
+        offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL,
+      };
+      const overhead = evidence[offender] ? 1 :
+          Buffer.byteLength(JSON.stringify(offender)) + 3 + (evidenceBytes > 2 ? 1 : 0);
+      const remaining = maxEvidenceBytes - evidenceBytes - overhead;
+      const candidateBytes = remaining >= 0 ? boundedJsonSize(candidate, remaining) : null;
+      if (candidateBytes === null) {
+        continue;
+      }
       const talliedVotes = [];
       let talliedAgainst = 0;
       for (const vote of blockInfo.votes) {
@@ -622,7 +640,7 @@ class BlockPool {
           const res = baseDb.executeTransaction(
               Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime, eventSource);
           if (CommonUtil.isFailedTx(res)) {
-            logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+            logger.debug(() => `[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
             talliedAgainst += stake;
             talliedVotes.push(vote);
@@ -630,7 +648,6 @@ class BlockPool {
         }
       }
       if (talliedAgainst >= majority) {
-        const offender = block.proposer;
         if (!evidence[offender]) {
           evidence[offender] = [];
         }
@@ -645,7 +662,11 @@ class BlockPool {
           votes: talliedVotes,
           offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
         });
+        evidenceBytes += overhead + candidateBytes;
         offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
+        backupDb.destroyDb();
+        backupDb = this.node.createTempDb(
+            baseDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);
       } else {
         const newBackupDb = this.node.createTempDb(
             backupDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);

@@ -53,7 +53,7 @@ class Logger {
   debug(text) {
     if (!isFinished && NodeConfigs.DEBUG) {
       try {
-        logger.debug(`[${this.prefix}] ${text}`);
+        logger.debug(`[${this.prefix}] ${typeof text === 'function' ? text() : text}`);
       } catch (e) {
         console.log(e);
       }

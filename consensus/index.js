@@ -48,7 +48,7 @@ class ConsensusError extends Error {
         logger.info(this.message);
         return;
       case 'debug':
-        logger.debug(this.message);
+        logger.debug(() => this.message);
         return;
       default:
         logger.error(this.message);
@@ -165,7 +165,7 @@ class Consensus {
           // adjust time
           try {
             const iNTPData = await this.ntpClient.syncTime();
-            logger.debug(`(Local Time - NTP Time) Delta = ${-iNTPData.t * 1000} ms`);
+            logger.debug(() => `(Local Time - NTP Time) Delta = ${-iNTPData.t * 1000} ms`);
             if (Math.abs(iNTPData.t * 1000) < 10000) {
               // Ignore if the value is too big/small.
               // ntp-time의 t는 초 단위이고 부호가 반대이므로 -t * 1000으로 변환
@@ -191,11 +191,11 @@ class Consensus {
         }
         const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
         if (this.epoch + 1 < absEpoch) {
-          logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
+          logger.debug(() => `[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
         } else if (this.epoch + 1 > absEpoch) {
-          logger.debug(`[${LOG_HEADER}] Epoch is too high: ${this.epoch} / ${absEpoch}`);
+          logger.debug(() => `[${LOG_HEADER}] Epoch is too high: ${this.epoch} / ${absEpoch}`);
         }
-        logger.debug(
+        logger.debug(() =>
             `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.epoch} => ${absEpoch}`);
         // re-adjust and update epoch
         this.epoch = absEpoch;
@@ -235,7 +235,7 @@ class Consensus {
     // FIXME(liayoo): Make the seeds more secure and unpredictable.
     const seed = '' + lastNotarizedBlock.last_votes_hash + this.epoch;
     this.proposer = Consensus.selectProposer(seed, validators);
-    logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.epoch}: ${this.proposer}`);
+    logger.debug(() => `[${LOG_HEADER}] proposer for epoch ${this.epoch}: ${this.proposer}`);
   }
 
   checkConsensusProtocolVersion(msg) {
@@ -273,7 +273,7 @@ class Consensus {
       return;
     }
     if (this.state !== ConsensusStates.RUNNING) {
-      logger.debug(`[${LOG_HEADER}] Consensus state (${this.state}) is not RUNNING ` +
+      logger.debug(() => `[${LOG_HEADER}] Consensus state (${this.state}) is not RUNNING ` +
           `(${ConsensusStates.RUNNING})`);
       return;
     }
@@ -285,10 +285,10 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.debug(
+    logger.debug(() =>
         `[${LOG_HEADER}] Consensus state - Finalized block: ` +
         `${this.node.bc.lastBlockNumber()} / ${this.epoch}`);
-    logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
+    logger.debug(() => `Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
       const {proposalBlock, proposalTx} = msg.value;
@@ -297,7 +297,7 @@ class Consensus {
         return;
       }
       if (this.node.tp.transactionTracker.has(proposalTx.hash)) {
-        logger.debug(`[${LOG_HEADER}] Already have the proposal in my tx tracker`);
+        logger.debug(() => `[${LOG_HEADER}] Already have the proposal in my tx tracker`);
         return;
       }
       if (this.node.bp.hasSeenBlock(proposalBlock.hash)) {
@@ -335,7 +335,7 @@ class Consensus {
       this.tryVoteForValidBlock(proposalBlock);
     } else if (msg.type === ConsensusMessageTypes.VOTE) {
       if (this.node.tp.transactionTracker.has(msg.value.hash)) {
-        logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
+        logger.debug(() => `[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
       ConsensusUtil.addTrafficEventsForVoteTx(msg.value);
@@ -1015,13 +1015,13 @@ class Consensus {
 
     const epoch = this.epoch;
     if (this.votedForEpoch(epoch)) {
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Already voted for ${this.node.bp.epochToBlock.get(epoch)} ` +
           `at epoch ${epoch} but trying to propose at the same epoch`);
       return;
     }
     if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
-      logger.debug(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
+      logger.debug(() => `[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const consensusMsg = this.encapsulateConsensusMessage(
             this.createProposal(epoch), ConsensusMessageTypes.PROPOSE);
@@ -1030,7 +1030,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err.stack}`);
       }
     } else {
-      logger.debug(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
+      logger.debug(() => `[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
     }
   }
 
@@ -1116,7 +1116,7 @@ class Consensus {
       logger.info(`[${LOG_HEADER}] Current lastNotarizedBlock: ${lastNotarizedBlock}`);
     }
     for (const blockInfo of catchUpList) {
-      logger.debug(`[${LOG_HEADER}] Adding notarized chain's block: ` +
+      logger.debug(() => `[${LOG_HEADER}] Adding notarized chain's block: ` +
           `${JSON.stringify(blockInfo, null, 2)}`);
       if (!blockInfo.block || !blockInfo.proposal) {
         break;
@@ -1140,7 +1140,7 @@ class Consensus {
     }
     this.node.tryFinalizeChain();
     if (lastVerifiedBlockInfo) {
-      logger.debug(`[${LOG_HEADER}] voting for the last verified block: ` +
+      logger.debug(() => `[${LOG_HEADER}] voting for the last verified block: ` +
           `${lastVerifiedBlockInfo.block.number} / ${lastVerifiedBlockInfo.block.epoch}`);
       this.tryVoteForValidBlock(lastVerifiedBlockInfo.block);
       if (lastVerifiedBlockInfo.votes) {
@@ -1161,7 +1161,7 @@ class Consensus {
   getLastNotarizedBlock() {
     const LOG_HEADER = 'getLastNotarizedBlock';
     let candidate = this.node.bc.lastBlock();
-    logger.debug(`[${LOG_HEADER}] longestNotarizedChainTips: ` +
+    logger.debug(() => `[${LOG_HEADER}] longestNotarizedChainTips: ` +
         `${JSON.stringify(this.node.bp.longestNotarizedChainTips, null, 2)}`);
     this.node.bp.longestNotarizedChainTips.forEach((chainTip) => {
       const block = _.get(this.node.bp.hashToBlockInfo.get(chainTip), 'block');
@@ -1210,7 +1210,7 @@ class Consensus {
       // apply last_votes and transactions
       const block = chain[i];
       proposalTx = i < chain.length - 1 ? ConsensusUtil.filterProposalFromVotes(chain[i + 1].last_votes) : null;
-      logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
+      logger.debug(() => `[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
       try {
         Consensus.validateAndExecuteBlockOnDb(block, this.node, StateVersions.SNAP, proposalTx, false);
       } catch (e) {
@@ -1228,7 +1228,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] No validators voted`);
       throw Error('No validators voted');
     }
-    logger.debug(
+    logger.debug(() =>
         `[${LOG_HEADER}] current epoch: ${this.epoch}\nblock hash: ${blockHash}` +
         `\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
@@ -1243,7 +1243,7 @@ class Consensus {
     const LOG_HEADER = 'getProposerWhitelist';
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusProposerWhitelistPath());
-    logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
 
@@ -1251,7 +1251,7 @@ class Consensus {
     const LOG_HEADER = 'getValidatorWhitelist';
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusValidatorWhitelistPath());
-    logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    logger.debug(() => `[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
 
@@ -1316,7 +1316,7 @@ class Consensus {
         break;
       }
     }
-    logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
+    logger.debug(() => `[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
         `proposer_whitelist: ${JSON.stringify(proposerWhitelist, null, 2)}`);
     return validators;
   }
@@ -1464,7 +1464,7 @@ class Consensus {
 
   static selectProposer(seed, validators) {
     const LOG_HEADER = 'selectProposer';
-    logger.debug(`[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
+    logger.debug(() => `[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
     const validatorsWithProducingRights = _.pickBy(validators, (x) => {
       return _.get(x, PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT) === true;
     });

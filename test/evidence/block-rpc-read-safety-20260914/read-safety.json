@@ -1,0 +1,1139 @@
+{
+  "scope": "Isolated real-chain repeated read check; not a throughput benchmark",
+  "repetitions": 5,
+  "genesis": {
+    "last_votes": [],
+    "evidence": {},
+    "transactions": [
+      {
+        "tx_body": {
+          "nonce": -1,
+          "timestamp": 1640995199999,
+          "gas_price": 0,
+          "operation": {
+            "type": "SET",
+            "op_list": [
+              {
+                "type": "SET_VALUE",
+                "ref": "/",
+                "value": {
+                  "accounts": {
+                    "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                      "balance": 700000000
+                    }
+                  },
+                  "consensus": {
+                    "proposer_whitelist": {
+                      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+                    },
+                    "validator_whitelist": {
+                      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+                    }
+                  },
+                  "developers": {
+                    "rest_functions": {
+                      "user_whitelist": {
+                        "0xAAAf6f50A0304F12119D218b94bea8082642515B": true
+                      },
+                      "url_whitelist": {
+                        "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                          "0": "https://*.ainetwork.ai",
+                          "1": "https://*.ainize.ai",
+                          "2": "https://*.afan.ai",
+                          "3": "http://localhost:3000"
+                        }
+                      }
+                    }
+                  },
+                  "blockchain_params": {
+                    "token": {
+                      "name": "AI Network",
+                      "symbol": "AIN",
+                      "total_supply": 700000000,
+                      "bridge": {
+                        "ETH": {
+                          "3": {
+                            "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+                              "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+                              "min_checkout_per_request": 10000,
+                              "max_checkout_per_request": 100000,
+                              "max_checkout_per_day": 1000000,
+                              "checkout_fee_rate": 0.001,
+                              "token_exchange_rate": 1,
+                              "token_exchange_scheme": "FIXED"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "consensus": {
+                      "min_stake_for_proposer": 10000000,
+                      "max_stake_for_proposer": 10000000,
+                      "min_num_validators": 1,
+                      "max_num_validators": 1,
+                      "genesis_proposer_whitelist": {
+                        "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+                      },
+                      "genesis_validator_whitelist": {
+                        "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+                      },
+                      "genesis_validators": {
+                        "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+                          "stake": 10000000,
+                          "proposal_right": true
+                        }
+                      },
+                      "health_threshold_epoch": 10,
+                      "stake_lockup_extension": 2592000000,
+                      "max_invalid_blocks_on_mem": 100
+                    },
+                    "genesis": {
+                      "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+                      "genesis_timestamp": 1640995199999,
+                      "num_genesis_accounts": 10,
+                      "epoch_ms": 1000,
+                      "chain_id": 0,
+                      "network_id": 0
+                    },
+                    "resource": {
+                      "state_tree_height_limit": 30,
+                      "state_tree_bytes_limit": 20000000,
+                      "state_label_length_limit": 150,
+                      "bandwidth_budget_per_block": 10000,
+                      "service_state_budget_ratio": 0.5,
+                      "apps_state_budget_ratio": 0.495,
+                      "free_state_budget_ratio": 0.005,
+                      "max_state_tree_size_per_byte": 0.01,
+                      "state_gas_coefficient": 1,
+                      "unit_write_gas_amount": 1,
+                      "account_registration_gas_amount": 2000,
+                      "rest_function_call_gas_amount": 100,
+                      "gas_price_unit": 0.000001,
+                      "service_bandwidth_budget_ratio": 0.5,
+                      "apps_bandwidth_budget_ratio": 0.495,
+                      "free_bandwidth_budget_ratio": 0.005,
+                      "min_staking_for_app_tx": 0,
+                      "min_balance_for_service_tx": 0,
+                      "max_function_urls_per_developer": 3,
+                      "default_developers_url_whitelist": {
+                        "0": "https://*.ainetwork.ai",
+                        "1": "https://*.ainize.ai",
+                        "2": "https://*.afan.ai",
+                        "3": "http://localhost:3000"
+                      },
+                      "tx_bytes_limit": 10000,
+                      "batch_tx_list_size_limit": 50,
+                      "set_op_list_size_limit": 1500,
+                      "min_gc_num_siblings_deleted": 100,
+                      "snapshot_chunk_size": 1000000,
+                      "min_gas_price": 1
+                    },
+                    "reward": {
+                      "type": "FIXED",
+                      "annual_rate": 0.08
+                    },
+                    "sharding": {
+                      "shard_owner": "",
+                      "shard_reporter": "",
+                      "sharding_protocol": "NONE",
+                      "sharding_path": "/",
+                      "parent_chain_poc": "",
+                      "reporting_period": 0,
+                      "max_shard_report": 100,
+                      "num_shard_report_deleted": 100
+                    }
+                  }
+                }
+              },
+              {
+                "type": "SET_FUNCTION",
+                "ref": "/",
+                "value": {
+                  "checkin": {
+                    "requests": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkin_id": {
+                                ".function": {
+                                  "_openCheckin": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_openCheckin"
+                                  },
+                                  "_cancelCheckin": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_cancelCheckin"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "history": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkin_id": {
+                                ".function": {
+                                  "_closeCheckin": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_closeCheckin"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "checkout": {
+                    "requests": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkout_id": {
+                                ".function": {
+                                  "_openCheckout": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_openCheckout"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "history": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkout_id": {
+                                ".function": {
+                                  "_closeCheckout": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_closeCheckout"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "consensus": {
+                    "number": {
+                      "$number": {
+                        "propose": {
+                          ".function": {
+                            "_handleOffenses": {
+                              "function_type": "NATIVE",
+                              "function_id": "_handleOffenses"
+                            },
+                            "_distributeFee": {
+                              "function_type": "NATIVE",
+                              "function_id": "_distributeFee"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "escrow": {
+                    "$source_account": {
+                      "$target_account": {
+                        "$escrow_key": {
+                          "hold": {
+                            "$record_id": {
+                              ".function": {
+                                "_hold": {
+                                  "function_type": "NATIVE",
+                                  "function_id": "_hold"
+                                }
+                              }
+                            }
+                          },
+                          "release": {
+                            "$record_id": {
+                              ".function": {
+                                "_release": {
+                                  "function_type": "NATIVE",
+                                  "function_id": "_release"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "gas_fee": {
+                    "claim": {
+                      "$user_addr": {
+                        "$record_id": {
+                          ".function": {
+                            "_claimReward": {
+                              "function_type": "NATIVE",
+                              "function_id": "_claimReward"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "collect": {
+                      "$block_number": {
+                        "$from": {
+                          "$tx_hash": {
+                            ".function": {
+                              "_collectFee": {
+                                "function_type": "NATIVE",
+                                "function_id": "_collectFee"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "manage_app": {
+                    "$app_name": {
+                      "create": {
+                        "$record_id": {
+                          ".function": {
+                            "_createApp": {
+                              "function_type": "NATIVE",
+                              "function_id": "_createApp"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "payments": {
+                    "$service_name": {
+                      "$user_addr": {
+                        "$payment_key": {
+                          "pay": {
+                            "$record_id": {
+                              ".function": {
+                                "_pay": {
+                                  "function_type": "NATIVE",
+                                  "function_id": "_pay"
+                                }
+                              }
+                            }
+                          },
+                          "claim": {
+                            "$record_id": {
+                              ".function": {
+                                "_claim": {
+                                  "function_type": "NATIVE",
+                                  "function_id": "_claim"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "staking": {
+                    "$service_name": {
+                      "$user_addr": {
+                        "$staking_key": {
+                          "stake": {
+                            "$record_id": {
+                              "value": {
+                                ".function": {
+                                  "_stake": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_stake"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "unstake": {
+                            "$record_id": {
+                              "value": {
+                                ".function": {
+                                  "_unstake": {
+                                    "function_type": "NATIVE",
+                                    "function_id": "_unstake"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "transfer": {
+                    "$from": {
+                      "$to": {
+                        "$key": {
+                          "value": {
+                            ".function": {
+                              "_transfer": {
+                                "function_type": "NATIVE",
+                                "function_id": "_transfer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "SET_RULE",
+                "ref": "/",
+                "value": {
+                  ".rule": {
+                    "write": false
+                  },
+                  "accounts": {
+                    "$user_addr": {
+                      "balance": {
+                        ".rule": {
+                          "write": "auth.fid === '_transfer'"
+                        }
+                      }
+                    }
+                  },
+                  "blockchain_params": {
+                    ".rule": {
+                      "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+                    }
+                  },
+                  "checkin": {
+                    "history": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkin_id": {
+                                ".rule": {
+                                  "state": {
+                                    "gc_max_siblings": 200,
+                                    "gc_num_siblings_deleted": 100
+                                  },
+                                  "write": "data === null && util.validateCheckinHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkin_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "requests": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkin_id": {
+                                ".rule": {
+                                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, auth.addr, $checkin_id, newData, currentTime, getValue))"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "stats": {
+                      ".rule": {
+                        "write": "auth.fid === '_openCheckin' || auth.fid === '_closeCheckin' || auth.fid === '_cancelCheckin'"
+                      }
+                    }
+                  },
+                  "checkout": {
+                    "history": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkout_id": {
+                                ".rule": {
+                                  "state": {
+                                    "gc_max_siblings": 200,
+                                    "gc_num_siblings_deleted": 100
+                                  },
+                                  "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "refunds": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkout_id": {
+                                ".rule": {
+                                  "state": {
+                                    "gc_max_siblings": 200,
+                                    "gc_num_siblings_deleted": 100
+                                  },
+                                  "write": "util.validateCheckoutRefundData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, auth, newData, getValue)"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "requests": {
+                      "$network_name": {
+                        "$chain_id": {
+                          "$token_id": {
+                            "$user_addr": {
+                              "$checkout_id": {
+                                ".rule": {
+                                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, auth.addr, $checkout_id, newData, currentTime, getValue))"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "stats": {
+                      ".rule": {
+                        "write": "auth.fid === '_openCheckout' || auth.fid === '_closeCheckout'"
+                      }
+                    }
+                  },
+                  "consensus": {
+                    "offense_records": {
+                      "$user_addr": {
+                        ".rule": {
+                          "write": "auth.fid === '_handleOffenses'"
+                        }
+                      }
+                    },
+                    "number": {
+                      "$number": {
+                        ".rule": {
+                          "state": {
+                            "gc_max_siblings": 1000,
+                            "gc_num_siblings_deleted": 200
+                          },
+                          "write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))"
+                        },
+                        "propose": {
+                          ".rule": {
+                            "write": "util.validateConsensusProposalData(newData, auth.addr, $number, getValue) === true"
+                          }
+                        },
+                        "$block_hash": {
+                          "vote": {
+                            "$user_addr": {
+                              ".rule": {
+                                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, getValue) === true"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "proposer_whitelist": {
+                      "$user_addr": {
+                        ".rule": {
+                          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusProposerWhitelistSize(getValue) > 1))"
+                        }
+                      }
+                    },
+                    "validator_whitelist": {
+                      "$user_addr": {
+                        ".rule": {
+                          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusValidatorWhitelistSize(getValue) > util.getMinNumValidators(getValue)))"
+                        }
+                      }
+                    },
+                    "rewards": {
+                      "$user_addr": {
+                        ".rule": {
+                          "write": "auth.fid === '_distributeFee' || auth.fid === '_claimReward'"
+                        }
+                      }
+                    }
+                  },
+                  "developers": {
+                    "rest_functions": {
+                      ".rule": {
+                        "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+                      },
+                      "url_whitelist": {
+                        "$user_addr": {
+                          "$key": {
+                            ".rule": {
+                              "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "escrow": {
+                    "$source_account": {
+                      "$target_account": {
+                        "$escrow_key": {
+                          "config": {
+                            ".rule": {
+                              "write": "data === null || getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true"
+                            }
+                          },
+                          "hold": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                },
+                                "write": "((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)"
+                              }
+                            }
+                          },
+                          "release": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                },
+                                "write": "getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "gas_fee": {
+                    "claim": {
+                      "$user_addr": {
+                        "$record_id": {
+                          ".rule": {
+                            "state": {
+                              "gc_max_siblings": 200,
+                              "gc_num_siblings_deleted": 100
+                            },
+                            "write": "auth.addr === $user_addr && util.validateClaimRewardData(auth.addr, newData, getValue) === true"
+                          }
+                        }
+                      }
+                    },
+                    "collect": {
+                      "$block_number": {
+                        ".rule": {
+                          "state": {
+                            "gc_max_siblings": 1000,
+                            "gc_num_siblings_deleted": 200
+                          }
+                        },
+                        "$from": {
+                          "$tx_hash": {
+                            ".rule": {
+                              "write": "(auth.addr === $from || (util.isServAcntName($from) && util.isBillingUser($from, auth.addr, getValue) === true)) && util.validateCollectFeeData(data, newData, $from, getValue)"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "manage_app": {
+                    "$app_name": {
+                      "config": {
+                        ".rule": {
+                          "write": "auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true"
+                        }
+                      },
+                      "create": {
+                        "$record_id": {
+                          ".rule": {
+                            "write": "data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData)"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "payments": {
+                    "$service_name": {
+                      "$user_addr": {
+                        "$payment_key": {
+                          "claim": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                },
+                                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))"
+                              }
+                            }
+                          },
+                          "pay": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                },
+                                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "receipts": {
+                    "$tx_hash": {
+                      ".rule": {
+                        "state": {
+                          "gc_max_siblings": 1000,
+                          "gc_num_siblings_deleted": 200
+                        }
+                      }
+                    }
+                  },
+                  "service_accounts": {
+                    "$service_type": {
+                      "$service_name": {
+                        "$key": {
+                          "balance": {
+                            ".rule": {
+                              "write": "auth.fid === '_transfer'"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "sharding": {
+                    "shard": {
+                      ".rule": {
+                        "write": false
+                      },
+                      "$sharding_path": {
+                        ".rule": {
+                          "write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth.addr === data.shard_owner && newData === null)"
+                        }
+                      }
+                    }
+                  },
+                  "staking": {
+                    "$service_name": {
+                      "balance_total": {
+                        ".rule": {
+                          "write": "auth.fid === '_stake' || auth.fid === '_unstake'"
+                        }
+                      },
+                      "$user_addr": {
+                        "$staking_key": {
+                          "expire_at": {
+                            ".rule": {
+                              "write": "auth.fid === '_stake' || auth.fid === '_handleOffenses'"
+                            }
+                          },
+                          "stake": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                }
+                              },
+                              "value": {
+                                ".rule": {
+                                  "write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData >= 0 && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+                                }
+                              }
+                            }
+                          },
+                          "unstake": {
+                            "$record_id": {
+                              ".rule": {
+                                "state": {
+                                  "gc_max_siblings": 200,
+                                  "gc_num_siblings_deleted": 100
+                                }
+                              },
+                              "value": {
+                                ".rule": {
+                                  "write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData > 0 && newData <= util.getBalance(util.toServiceAccountName('staking', $service_name, $user_addr + '|' + $staking_key), getValue)"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "transfer": {
+                    "$from": {
+                      "$to": {
+                        "$key": {
+                          ".rule": {
+                            "state": {
+                              "gc_max_siblings": 200,
+                              "gc_num_siblings_deleted": 100
+                            }
+                          },
+                          "value": {
+                            ".rule": {
+                              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "SET_OWNER",
+                "ref": "/",
+                "value": {
+                  "apps": {
+                    ".owner": {
+                      "owners": {
+                        "fid:_createApp": {
+                          "branch_owner": true,
+                          "write_function": false,
+                          "write_owner": false,
+                          "write_rule": true
+                        }
+                      }
+                    }
+                  },
+                  ".owner": {
+                    "owners": {
+                      "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                        "branch_owner": true,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": true
+                      },
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": false,
+                        "write_owner": false,
+                        "write_rule": false
+                      }
+                    }
+                  },
+                  "consensus": {
+                    "proposer_whitelist": {
+                      ".owner": {
+                        "owners": {
+                          "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                            "branch_owner": false,
+                            "write_function": true,
+                            "write_owner": true,
+                            "write_rule": true
+                          },
+                          "*": {
+                            "branch_owner": false,
+                            "write_function": false,
+                            "write_owner": false,
+                            "write_rule": false
+                          }
+                        }
+                      }
+                    },
+                    "validator_whitelist": {
+                      ".owner": {
+                        "owners": {
+                          "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                            "branch_owner": false,
+                            "write_function": true,
+                            "write_owner": true,
+                            "write_rule": true
+                          },
+                          "*": {
+                            "branch_owner": false,
+                            "write_function": false,
+                            "write_owner": false,
+                            "write_rule": false
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "developers": {
+                    "rest_functions": {
+                      ".owner": {
+                        "owners": {
+                          "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                            "branch_owner": true,
+                            "write_function": true,
+                            "write_owner": true,
+                            "write_rule": true
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "blockchain_params": {
+                    ".owner": {
+                      "owners": {
+                        "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                          "branch_owner": true,
+                          "write_function": true,
+                          "write_owner": true,
+                          "write_rule": true
+                        }
+                      }
+                    },
+                    "token": {
+                      "bridge": {
+                        ".owner": {
+                          "owners": {
+                            "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                              "branch_owner": true,
+                              "write_function": true,
+                              "write_owner": true,
+                              "write_rule": true
+                            },
+                            "*": {
+                              "branch_owner": true,
+                              "write_function": false,
+                              "write_owner": false,
+                              "write_rule": false
+                            }
+                          }
+                        },
+                        "ETH": {
+                          "3": {
+                            "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+                              ".owner": {
+                                "owners": {
+                                  "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
+                                    "branch_owner": true,
+                                    "write_function": true,
+                                    "write_owner": true,
+                                    "write_rule": true
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "signature": "0x22d4b4148eb8dbe49ae50f97071f643503dfa81b82e2f01d53ec891a00d34a836d242da6f006b5e9eb3ef2cecf8c75966d6284ae966b21480d19595bfd00b5246106a5fd3b214fbf556280435533459ddad03f87e4244e730035b427ae14e1c31b",
+        "hash": "0x22d4b4148eb8dbe49ae50f97071f643503dfa81b82e2f01d53ec891a00d34a83",
+        "address": "0xAAAf6f50A0304F12119D218b94bea8082642515B"
+      },
+      {
+        "tx_body": {
+          "nonce": -1,
+          "timestamp": 1640995199999,
+          "gas_price": 0,
+          "operation": {
+            "type": "SET",
+            "op_list": [
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0/value",
+                "value": 11000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/value",
+                "value": 11000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00/2/value",
+                "value": 11000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A/3/value",
+                "value": 11000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x04A456C92A880cd59D7145C457475515a6f6E0f2/4/value",
+                "value": 11000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x05A1247A7400f0C2A893611adD1505743552c631/5/value",
+                "value": 1000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A/6/value",
+                "value": 1000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x07A43138CC760C85A5B1F115aa60eADEaa0bf417/7/value",
+                "value": 1000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x08Aed7AF9354435c38d52143EE50ac839D20696b/8/value",
+                "value": 1000000
+              },
+              {
+                "type": "SET_VALUE",
+                "ref": "/transfer/0xAAAf6f50A0304F12119D218b94bea8082642515B/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/9/value",
+                "value": 1000000
+              }
+            ]
+          }
+        },
+        "signature": "0x43b269b7ca9b54d9d876192a4539a5797ed608a95aa404dfcb7de202921f86e0c6184aacc17e68680be6bba29ae66b29949fec244c5f2bc99c7c2b90ee0ebf6a16bba5991a12cb833a24a2483302169fdc70007ae4a6366fa3053046e5e8e2d51c",
+        "hash": "0x43b269b7ca9b54d9d876192a4539a5797ed608a95aa404dfcb7de202921f86e0",
+        "address": "0xAAAf6f50A0304F12119D218b94bea8082642515B"
+      },
+      {
+        "tx_body": {
+          "nonce": -1,
+          "timestamp": 1640995199999,
+          "gas_price": 0,
+          "operation": {
+            "type": "SET_VALUE",
+            "ref": "/manage_app/consensus/create/1640995199999",
+            "value": {
+              "admin": {
+                "0xAAAf6f50A0304F12119D218b94bea8082642515B": true
+              },
+              "service": {
+                "staking": {
+                  "lockup_duration": 604800000
+                }
+              }
+            }
+          }
+        },
+        "signature": "0x93ca3f78eba636b0bd7e5fe4b31b67537c27d711a738f084f357b71384bdcb6d5846d3224490c357548ceb81f22a3193730276a6102549e66aa686f0f893ee171339fbe9094978efede0d24553488ba9bd3573ea7e3a04ee1b404d6f7fbda4c91b",
+        "hash": "0x93ca3f78eba636b0bd7e5fe4b31b67537c27d711a738f084f357b71384bdcb6d",
+        "address": "0xAAAf6f50A0304F12119D218b94bea8082642515B"
+      },
+      {
+        "tx_body": {
+          "nonce": -1,
+          "timestamp": 1640995199999,
+          "gas_price": 0,
+          "operation": {
+            "type": "SET_VALUE",
+            "ref": "/staking/consensus/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0/stake/1640995199999/value",
+            "value": 10000000
+          }
+        },
+        "signature": "0x2588bf6aa213d8ef426ad424e002c1f0e10e5a8c5ba497e137de55edc85c3b7d70b4ae0a327fe4bfb919f34b452ec60a54a4ad5892f253905e73b9247601df4379b40faefbf6bfe57fce47953dcb1b3e0e3495cbe9df63ebde8281a96f2146ed1c",
+        "hash": "0x2588bf6aa213d8ef426ad424e002c1f0e10e5a8c5ba497e137de55edc85c3b7d",
+        "address": "0x00ADEc28B6a845a085e03591bE7550dd68673C1C"
+      }
+    ],
+    "receipts": [
+      {
+        "gas_cost_total": 0,
+        "result_list": {
+          "0": {
+            "code": 0
+          },
+          "1": {
+            "code": 0
+          },
+          "2": {
+            "code": 0
+          },
+          "3": {
+            "code": 0
+          }
+        }
+      },
+      {
+        "gas_cost_total": 0,
+        "result_list": {
+          "0": {
+            "code": 0
+          },
+          "1": {
+            "code": 0
+          },
+          "2": {
+            "code": 0
+          },
+          "3": {
+            "code": 0
+          },
+          "4": {
+            "code": 0
+          },
+          "5": {
+            "code": 0
+          },
+          "6": {
+            "code": 0
+          },
+          "7": {
+            "code": 0
+          },
+          "8": {
+            "code": 0
+          },
+          "9": {
+            "code": 0
+          }
+        }
+      },
+      {
+        "code": 0,
+        "gas_cost_total": 0
+      },
+      {
+        "code": 0,
+        "gas_cost_total": 0
+      }
+    ],
+    "last_hash": "",
+    "last_votes_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+    "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+    "transactions_hash": "0x9f5434a88f7929a7f84ff6f3de5077514d7108437389badd2172d49d9a06456b",
+    "receipts_hash": "0x150558242b357babb2ad905f03a808134153b23ff85dd6252f6349d1f76a162f",
+    "number": 0,
+    "epoch": 0,
+    "timestamp": 1640995199999,
+    "state_proof_hash": "0xf1129fb0c6c5ccda444a8fe41bb5898930de30513df4654b6ec8efcae96645bc",
+    "proposer": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+    "validators": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+        "stake": 10000000,
+        "proposal_right": true
+      }
+    },
+    "gas_amount_total": 0,
+    "gas_cost_total": 0,
+    "hash": "0x596e941f1e662150244ec8b6390a6b58fa0bbc5a39d9b0a7d430c1f405d2c1bc",
+    "size": 33502
+  },
+  "preservedTransactions": 4,
+  "passed": true
+}
