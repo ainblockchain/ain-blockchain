@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+# 재현절차서 부록 H(하네스 스크립트 전문)를 kpi/harness 원본에서 재생성한다. 하네스를 고치면 반드시 실행.
+import datetime, os, re, sys
+DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '성능지표_시험_재현절차서.md')
+KPI = os.path.dirname(os.path.abspath(__file__))   # 이 번들(tools/cert-kpi) 이 곧 $KPI
+FILES = [('kpi/start-cert-net.sh', 'bash'), ('kpi/stop-cert-net.sh', 'bash'),
+         ('harness/make-cert-config.js', 'js'), ('harness/common.js', 'js'), ('harness/setup_app.js', 'js'),
+         ('harness/m1-sharding.js', 'js'), ('harness/m2-l2.js', 'js'), ('harness/m3-latency.js', 'js'),
+         ('harness/m4-start-vllm.sh', 'bash'), ('harness/m4-stop-vllm.sh', 'bash'), ('harness/m4-run-locust.sh', 'bash'),
+         ('harness/locustfile.py', 'python'), ('harness/recorder.js', 'js'), ('harness/m4-merkle.js', 'js'),
+         ('harness/m4-verify-merkle.js', 'js'), ('harness/probe-inference.js', 'js'),
+         ('harness/m5-ainize-stack.sh', 'bash'), ('harness/m5-ainize.js', 'js'), ('harness/dart-build-datasets.py', 'python'),
+         ('harness/m6-run.sh', 'bash'), ('harness/m6-record.js', 'js')]
+FILES += [('kpi/recover-cert-node.js', 'js'), ('harness/preflight.js', 'js'),
+          ('kpi/docker/run-harness.sh', 'bash'), ('kpi/docker/verify-chain.js', 'js'),
+          ('kpi/docker/verify-gpu.js', 'js'), ('kpi/docker/run-m4.sh', 'bash'),
+          ('harness/test/m4-client.test.py', 'python'),
+          ('kpi/docker/init-ainize-home.js', 'js'), ('kpi/docker/ainize-cli.sh', 'bash'),
+          ('kpi/docker/upgrade-ainize.sh', 'bash'),
+          ('kpi/docker/run-ainize-datasets.sh', 'bash'), ('harness/ainize-datasets.js', 'js'),
+          ('harness/verify-ainize-setup.js', 'js'),
+          ('harness/record-ainize-datasets.js', 'js'),
+          ('harness/verify-public-catalog.js', 'js'),
+          ('harness/test/public-catalog.test.js', 'js'),
+          ('harness/channel-network-load.js', 'js'), ('harness/channel-ledger.js', 'js'),
+          ('kpi/docker/run-channel-load.sh', 'bash'),
+          ('harness/m3-stream.js', 'js'), ('kpi/docker/run-m3-stream.sh', 'bash'),
+          ('harness/m3-stream-audit.js', 'js'), ('harness/verify-m3-stream.js', 'js'),
+          ('harness/test/m3-stream-audit.test.js', 'js'),
+          ('harness/ainize-inference-audit.js', 'js'),
+          ('harness/ainize-lifecycle-state.js', 'js'), ('harness/ainize-lifecycle.js', 'js'),
+          ('harness/test/ainize-lifecycle.test.js', 'js'), ('kpi/docker/run-ainize-lifecycle.sh', 'bash'),
+          ('kpi/ainize/ainize-cli/src/bin.ts', 'typescript'),
+          ('kpi/ainize/ainize-cli/src/commands/huggingface-dataset.ts', 'typescript'),
+          ('kpi/ainize/ainize-cli/test/huggingface-dataset.test.ts', 'typescript'),
+          ('kpi/docker/hf-cli.Dockerfile', 'dockerfile'), ('kpi/docker/run-hf-cli.sh', 'bash'),
+          ('harness/import-hf-dart100.js', 'js'), ('harness/test/hf-import100.test.js', 'js'),
+          ('kpi/docker/run-hf-import100.sh', 'bash'), ('harness/record-hf-imports.js', 'js'),
+          ('harness/ainize-public-proxy.js', 'js'), ('harness/test/public-proxy.test.js', 'js'),
+          ('kpi/docker/run-ainize-public-proxy.sh', 'bash'),
+          ('kpi/docker/switch-ainize-market-ledger.sh', 'bash'),
+          ('harness/prepare-hf-datasets.js', 'js'),
+          ('harness/prepare-hf-parquet.py', 'python'), ('harness/verify-hf-datasets.py', 'python'),
+          ('harness/publish-hf-datasets.py', 'python'), ('harness/record-hf-datasets.js', 'js'),
+          ('harness/channel-network-smoke.js', 'js'), ('kpi/docker/run-channel-smoke.sh', 'bash'),
+          ('kpi/pr/js-m2/src/state-channel/index.ts', 'typescript'),
+          ('kpi/pr/js-m2/src/state-channel/http-peer.ts', 'typescript'),
+          ('kpi/pr/js-m2/src/state-channel/cooperative-escrow.ts', 'typescript'),
+          ('kpi/pr/js-m2/__tests__/cooperative-escrow.test.ts', 'typescript'),
+          ('kpi/pr/js-m2/__tests__/escrow-precision.test.ts', 'typescript'),
+          ('kpi/pr/js-m2/tools/state-channel/chain-readiness.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/chain-readiness.test.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/escrow-chain.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/escrow-peer.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/escrow-scenario.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/inspect-escrow.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/native-db-check.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/run-native-db.sh', 'bash'),
+          ('kpi/pr/js-m2/tools/state-channel/run-escrow.sh', 'bash'),
+          ('kpi/pr/js-m2/tools/state-channel/refresh-sdk.Dockerfile', 'dockerfile'),
+          ('kpi/docker/channel-sdk.Dockerfile', 'dockerfile'),
+          ('kpi/docker/compose.chain.json', 'json'),
+          ('kpi/pr/js-m2/__tests__/payment-channel.test.ts', 'typescript'),
+          ('kpi/ainize/ainize-cli/src/commands/chain.ts', 'typescript'),
+          ('kpi/ainize/ainize-cli/test/chain-json.test.ts', 'typescript'),
+          ('kpi/ainize/ainize-node/src/api.ts', 'typescript'),
+          ('kpi/ainize/ainize-node/test/guard-api.test.ts', 'typescript'),
+          ('kpi/docker/switch-to-ple.sh', 'bash'), ('harness/ainize-teach-one.js', 'js'),
+          ('/mnt/newdata/qwen3.8/scripts/patch.py', 'python'),
+          ('harness/docker-snapshot.js', 'js'), ('harness/check-environment.js', 'js'),
+          ('harness/check-ledger.js', 'js'), ('harness/test/docker-snapshot.test.js', 'js'),
+          ('harness/cpu-calibrate.js', 'js'),
+          ('harness/run-cpu-reference.sh', 'bash'), ('harness/compare-cpu.py', 'python'),
+          ('harness/audit-dart-datasets.py', 'python'),
+          ('harness/m5-judge.js', 'js'), ('harness/m2-replay-verify.js', 'js'),
+          ('harness/m1-sweep-summary.js', 'js'), ('harness/test/hitOf.test.js', 'js'),
+          ('harness/test/merkle.test.js', 'js'), ('harness/test/record-final.test.js', 'js')]
+FILES += [('kpi/pr/ab-m1/block-pool/index.js', 'js'),
+          ('kpi/pr/ab-m1/db/functions.js', 'js'),
+          ('kpi/pr/ab-m1/db/escrow-units.js', 'js'),
+          ('kpi/pr/ab-m1/blockchain-configs/base/timer_flags.json', 'json'),
+          ('kpi/pr/ab-m1/test/unit/escrow-units.test.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/native-escrow-version.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/source-refresh.Dockerfile', 'dockerfile'),
+          ('kpi/pr/ab-m1/logger/index.js', 'js'),
+          ('kpi/pr/ab-m1/consensus/index.js', 'js'),
+          ('kpi/pr/ab-m1/p2p/server.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/lazy-consensus-logging.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/capture-pending-checkpoint.sh', 'bash'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/capture-pending-checkpoint.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/capture-finalized-checkpoint.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/capture-finalized-checkpoint.test.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/p2p-chain-sync.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/replay-chain-sync.js', 'js'),
+          ('kpi/pr/ab-m1/p2p/index.js', 'js'),
+          ('kpi/pr/ab-m1/blockchain-configs/base/node_params.json', 'json'),
+          ('kpi/pr/ab-m1/test/unit/p2p-consensus-gossip.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/repair-preflight.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/repair-preflight.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/recovery-seed.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/recovery-seed.test.js', 'js'),
+          ('kpi/pr/ab-m1/block-pool/bounded-json-size.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/bounded-json-size.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/profile-consensus.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/profile-consensus.test.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/block-pool-evidence.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/inspect-consensus.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/inspect-consensus.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/replay-consensus-capture.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/run-consensus-evidence.sh', 'bash')]
+FILES += [('kpi/pr/ab-m1/common/file-util.js', 'js'),
+          ('kpi/pr/ab-m1/node/index.js', 'js'),
+          ('kpi/pr/ab-m1/test/unit/file-util-snapshot.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/audit-ledger.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/audit-ledger.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/replay-startup.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/prepare-chain-recovery.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/prepare-chain-recovery.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/maintain-chain-node.sh', 'bash'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/run-ledger-audit.sh', 'bash'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/run-recovery-tests.sh', 'bash'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/verify-pending-chain.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/verify-pending-chain.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/reassign-recovery-bridge.js', 'js'),
+          ('kpi/docker/observe-chain-recovery.js', 'js')]
+FILES += [('kpi/pr/an-m6/scripts/year3-dart100/lm_eval_ainize.py', 'python'),
+          ('kpi/pr/an-m6/scripts/year3-dart100/test/test_lm_eval_ainize.py', 'python'),
+          ('kpi/pr/an-m6/scripts/year3-dart100/docker/lm-eval.Dockerfile', 'dockerfile'),
+          ('kpi/pr/an-m6/scripts/year3-dart100/docker/run-lm-eval.sh', 'bash'),
+          ('kpi/pr/an-relay/deploy/runtime-snapshot.mjs', 'js'),
+          ('kpi/pr/an-relay/test/runtime-snapshot.test.ts', 'typescript'),
+          ('kpi/pr/an-relay/deploy/source-refresh.Dockerfile', 'dockerfile'),
+          ('kpi/pr/an-relay/deploy/build-source-refresh.sh', 'bash')]
+FILES += [('kpi/pr/an-relay/src/blob-upload.ts', 'typescript'),
+          ('kpi/pr/an-relay/src/p2p.ts', 'typescript'),
+          ('kpi/pr/an-relay/scripts/retry-public-blob.mjs', 'js'),
+          ('kpi/pr/an-relay/scripts/replay-public-blobs.mjs', 'js'),
+          ('kpi/pr/an-relay/scripts/run-public-blob-replay.sh', 'bash'),
+          ('kpi/pr/an-relay/scripts/test-blob-relay-docker.sh', 'bash'),
+          ('kpi/pr/an-relay/test/blob-upload.test.ts', 'typescript'),
+          ('kpi/pr/an-relay/test/replay-public-blobs.test.ts', 'typescript'),
+          ('kpi/pr/an-relay/test/retry-public-blob.test.ts', 'typescript')]
+FILES += [('kpi/pr/ab-m1/tools/cert-kpi/escrow-network-client.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/escrow-network-config.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/escrow-network-genesis.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/escrow-network-config.test.js', 'js'),
+          ('kpi/pr/ab-m1/tools/cert-kpi/prepare-escrow-network.sh', 'bash'),
+          ('kpi/pr/js-m2/tools/state-channel/escrow-network.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/escrow-network.test.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/transaction-finality.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/transaction-finality.test.js', 'js'),
+          ('kpi/pr/js-m2/tools/state-channel/inspect-settlement.js', 'js')]
+FILES += [('kpi/pr/js-m2/tools/state-channel/resume-unstarted-settlement.sh', 'bash')]
+doc = open(DOC, encoding='utf-8').read()
+if '--check' in sys.argv:
+    entries = dict((name, body) for name, body in re.findall(r'#### `([^`]+)`\n\n```[^\n]+\n(.*?)\n```', doc, re.S))
+    mismatches = []
+    for name, language in FILES:
+        source = os.path.join(KPI, name[4:] if name.startswith('kpi/') else name)
+        if entries.get(name) != open(source, encoding='utf-8').read().rstrip('\n'):
+            mismatches.append(name)
+    print('appendix H: ' + (', '.join(mismatches) if mismatches else f'{len(FILES)} files match'))
+    sys.exit(1 if mismatches else 0)
+head = doc[:doc.index('### 부록 H')]
+out = [head.rstrip('\n'), '', '### 부록 H — 하네스 스크립트 전문 (kpi/harness, 자동 생성)', '',
+       f'아래는 `kpi/harness/` 및 `kpi/` 의 실제 파일을 그대로 옮긴 것이다(생성: {datetime.datetime.now():%Y-%m-%d %H:%M}, `reproduction/regen-appendix-h.py`). 본문이 인용하는 유일한 원본이며, 하네스를 수정하면 본 부록을 재생성한다.', '']
+missing = []
+for name, lang in FILES:
+    path = os.path.join(KPI, name[4:] if name.startswith('kpi/') else name)
+    if not os.path.exists(path):
+        missing.append(name); continue          # 번들 밖 파일(예: npm 으로 배포되는 @ainize/* 소스)은 건너뛴다
+    out.append(f'#### `{name}`\n\n```{lang}\n' + open(path, encoding='utf-8').read().rstrip('\n') + '\n```\n')
+open(DOC, 'w', encoding='utf-8').write('\n'.join(out))
+print('appendix H regenerated:', DOC, len(FILES)-len(missing), 'files')
+if missing: print('  skipped (not in bundle):', ', '.join(missing))

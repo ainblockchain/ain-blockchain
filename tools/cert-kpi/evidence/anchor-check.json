@@ -1,0 +1,352 @@
+[
+ {
+  "pipeline": 1,
+  "patch": "taught-pipeline-run70-01-d7c348",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 2,
+  "patch": "taught-pipeline-run70-02-f22880",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 3,
+  "patch": "taught-pipeline-run70-03-269514",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 4,
+  "patch": "taught-pipeline-run70-04-a7d879",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 5,
+  "patch": "taught-pipeline-run70-05-b74084",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 6,
+  "patch": "taught-pipeline-run70-06-5f8db4",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 7,
+  "patch": "taught-pipeline-run70-07-5e970f",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 8,
+  "patch": "taught-pipeline-run70-08-64f2ac",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 9,
+  "patch": "taught-pipeline-run70-09-691552",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 10,
+  "patch": "taught-pipeline-run70-10-763f19",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 11,
+  "patch": "taught-pipeline-run70-11-fd154e",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 12,
+  "patch": "taught-pipeline-run70-12-761787",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 13,
+  "patch": "taught-pipeline-run70-13-59b9b3",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 14,
+  "patch": "taught-pipeline-run70-14-e1c461",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 15,
+  "patch": "taught-pipeline-run70-15-68dc3e",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 16,
+  "patch": "taught-pipeline-run70-16-9112c6",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 17,
+  "patch": "taught-pipeline-run70-17-63bef6",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 18,
+  "patch": "taught-pipeline-run70-18-1f461b",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 19,
+  "patch": "taught-pipeline-run70-19-c2282b",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 20,
+  "patch": "taught-pipeline-run70-20-8f2b78",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 21,
+  "patch": "taught-pipeline-run70-21-7be80d",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 22,
+  "patch": "taught-pipeline-run70-22-d39d78",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 23,
+  "patch": "taught-pipeline-run70-23-095530",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 24,
+  "patch": "taught-pipeline-run70-24-b50a12",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 25,
+  "patch": "taught-pipeline-run70-25-b30e2d",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 26,
+  "patch": "taught-pipeline-run70-26-2f8052",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 27,
+  "patch": "taught-pipeline-run70-27-27a1e6",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 28,
+  "patch": "taught-pipeline-run70-28-dc5e79",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 29,
+  "patch": "taught-pipeline-run70-29-f3e8ed",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 30,
+  "patch": "taught-pipeline-run70-30-fe2799",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 31,
+  "patch": "taught-pipeline-run70-31-0edc4f",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 32,
+  "patch": "taught-pipeline-run70-32-283267",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 33,
+  "patch": "taught-pipeline-run70-33-aef9f5",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 34,
+  "patch": "taught-pipeline-run70-34-37ad5a",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 35,
+  "patch": "taught-pipeline-run70-35-f72ee7",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 36,
+  "patch": "taught-pipeline-run70-36-4503ca",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 37,
+  "patch": "taught-pipeline-run70-37-4422bb",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 38,
+  "patch": "taught-pipeline-run70-38-bc5cd1",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 39,
+  "patch": "taught-pipeline-run70-39-790383",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 40,
+  "patch": "taught-pipeline-run70-40-529844",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 41,
+  "patch": "taught-pipeline-run70-41-edc02d",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 42,
+  "patch": "taught-pipeline-run70-42-47f2e5",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 43,
+  "patch": "taught-pipeline-run70-43-a7f6e8",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 44,
+  "patch": "taught-pipeline-run70-44-6b7b67",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 45,
+  "patch": "taught-pipeline-run70-45-d7fe52",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 46,
+  "patch": "taught-pipeline-run70-46-3d28a3",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 47,
+  "patch": "taught-pipeline-run70-47-5b40fe",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 48,
+  "patch": "taught-pipeline-run70-48-cd1fc5",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 49,
+  "patch": "taught-pipeline-run70-49-745e62",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 50,
+  "patch": "taught-pipeline-run70-50-7857cc",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 51,
+  "patch": "taught-pipeline-run70-51-61f9c9",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 52,
+  "patch": "taught-pipeline-run70-52-02173c",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 53,
+  "patch": "taught-pipeline-run70-53-c7c467",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 54,
+  "patch": "taught-pipeline-run70-54-a45947",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 55,
+  "patch": "taught-pipeline-run70-55-658495",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 56,
+  "patch": "taught-pipeline-run70-56-243472",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 57,
+  "patch": "taught-pipeline-run70-57-babfe3",
+  "anchor": "recorded"
+ },
+ {
+  "pipeline": 58,
+  "patch": "taught-pipeline-run70-58-764f05",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 59,
+  "patch": "taught-pipeline-run70-59-62fc20",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 60,
+  "patch": "taught-pipeline-run70-60-fb95b3",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 61,
+  "patch": "taught-pipeline-run70-61-d1bc07",
+  "anchor": "recorded"
+ },
+ {
+  "pipeline": 62,
+  "patch": "taught-pipeline-run70-62-e39f7c",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 63,
+  "patch": "taught-pipeline-run70-63-35e474",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 64,
+  "patch": "taught-pipeline-run70-64-9f15c4",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 65,
+  "patch": "taught-pipeline-run70-65-5dd01a",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 66,
+  "patch": "taught-pipeline-run70-66-097f8c",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 67,
+  "patch": "taught-pipeline-run70-67-c15f12",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 68,
+  "patch": "taught-pipeline-run70-68-7980e7",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 69,
+  "patch": "taught-pipeline-run70-69-5eaca0",
+  "anchor": "final"
+ },
+ {
+  "pipeline": 70,
+  "patch": "taught-pipeline-run70-70-907bfb",
+  "anchor": "final"
+ }
+]
