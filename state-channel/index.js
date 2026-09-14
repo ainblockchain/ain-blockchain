@@ -37,6 +37,7 @@ function eventsFromBlock(block, channelId) {
         tx_hash: transaction.hash,
         block_number: block.number,
         block_hash: block.hash,
+        block_timestamp: block.timestamp,
         tx_index: txIndex,
       });
     });
@@ -46,15 +47,8 @@ function eventsFromBlock(block, channelId) {
 
 function getStateChannel(node, channelId) {
   const path = channelPath(channelId);
-  let state = null;
-  let proofHash = null;
-  try {
-    state = node.db.getValue(path);
-    proofHash = node.db.getProofHash(path);
-  } catch (error) {
-    state = null;
-    proofHash = null;
-  }
+  const state = node.db.getValue(path);
+  const proofHash = node.db.getProofHash(path);
   return { channel_id: channelId, path, state, proof_hash: proofHash, block_number: node.bc.lastBlockNumber() };
 }
 
@@ -70,7 +64,18 @@ function getStateChannelEvents(node, channelId, from, to) {
   const start = Number.isInteger(from) && from >= 0 ? from : Math.max(0, lastBlock - 999);
   if (to !== undefined && to <= start) throw new Error('Invalid block range');
   const end = Number.isInteger(to) ? Math.min(to, start + 1000, lastBlock + 1) : Math.min(lastBlock + 1, start + 1000);
-  return node.bc.getBlockList(start, end).flatMap((block) => eventsFromBlock(block, channelId));
+  const events = [];
+  let cursor = start;
+  while (cursor < end) {
+    const blocks = node.bc.getBlockList(cursor, end).sort((left, right) => left.number - right.number);
+    if (!blocks.length) throw new Error(`Block history unavailable at ${cursor}`);
+    for (const block of blocks) {
+      if (block.number !== cursor || block.number >= end) throw new Error(`Incomplete block history at ${cursor}`);
+      events.push(...eventsFromBlock(block, channelId));
+      cursor++;
+    }
+  }
+  return events;
 }
 
 module.exports = { PREFIX, channelPath, eventsFromBlock, getStateChannel, getStateChannelEvents };

@@ -60,4 +60,30 @@ describe('State Channel node index', () => {
     assert.throws(() => getStateChannelEvents(node, 'demo', -1), /Invalid from block/);
     assert.throws(() => getStateChannelEvents(node, 'demo', 5, 5), /Invalid block range/);
   });
+
+  it('does not disguise database failures as absent channel state', () => {
+    const node = { db: { getValue: () => { throw new Error('database unavailable'); } } };
+    assert.throws(() => getStateChannel(node, 'demo'), /database unavailable/);
+  });
+
+  it('reads every segment when the underlying block API caps response size', () => {
+    const blocks = Array.from({ length: 25 }, (_, index) => ({ number: index, hash: `block-${index}`, timestamp: 1000 + index,
+      transactions: [{ hash: `tx-${index}`, tx_body: { operation: { type: 'SET_VALUE', ref: `/state_channels/demo/events/anchor/${index}`, value: {} } } }] }));
+    const requested = [];
+    const node = { bc: { lastBlockNumber: () => 24, getBlockList: (from, to) => {
+      requested.push(from);
+      return blocks.slice(from, Math.min(to, from + 10));
+    } } };
+    const events = getStateChannelEvents(node, 'demo', 0, 25);
+    assert.strictEqual(events.length, 25);
+    assert.deepStrictEqual(requested, [0, 10, 20]);
+    assert.strictEqual(events[24].block_timestamp, 1024);
+  });
+
+  it('does not present missing block history as an empty or complete event range', () => {
+    const node = { bc: { lastBlockNumber: () => 10, getBlockList: () => [] } };
+    assert.throws(() => getStateChannelEvents(node, 'demo', 0, 10), /history unavailable/);
+    node.bc.getBlockList = () => [{ number: 2, transactions: [] }];
+    assert.throws(() => getStateChannelEvents(node, 'demo', 0, 10), /Incomplete block history/);
+  });
 });
