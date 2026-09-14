@@ -136,7 +136,11 @@ start_one() {
   # `ainize start -d` 는 20초 안에 응답이 없으면 포기하고 자식을 정리한다. 부하가 큰 호스트에서는
   # 노드가 그보다 늦게 올라오므로, 전경 모드를 백그라운드로 돌리고 준비될 때까지 우리가 기다린다.
   # 노드는 스크립트가 끝나도 살아 있어야 하고 배치 job 종료 시 SIGHUP 으로 죽어도 안 된다 → setsid 로 분리한다.
-  if [ -n "$CLI_BIN" ]; then
+  if [ -n "${NODE_BIN:-}" ]; then
+    # 서버 패키지를 직접 실행한다 — CLI 의 node_modules 에 들어 있는 빌드가 소스보다 오래된 경우가 있고,
+    # 학습 기록의 submitted_at(지표 3)처럼 최신 빌드에만 있는 필드가 조용히 빠진다.
+    setsid env AINIZE_HOME="$home" node "$NODE_BIN" >"$LOGS/start-$i.log" 2>&1 </dev/null &
+  elif [ -n "$CLI_BIN" ]; then
     setsid env AINIZE_HOME="$home" node "$CLI_BIN" start >"$LOGS/start-$i.log" 2>&1 </dev/null &
   else
     setsid env AINIZE_HOME="$home" ainize start >"$LOGS/start-$i.log" 2>&1 </dev/null &
