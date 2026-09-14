@@ -132,7 +132,7 @@ function getIpAddress(internal = false) {
             logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
       });
     } else {
-      if (internal) {
+      if (internal || NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL) {
         return ip.address();
       } else {
         return extIp.get();
