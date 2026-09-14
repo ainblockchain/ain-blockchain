@@ -1,0 +1,3 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+COPY json_rpc/block.js /app/ain-blockchain/json_rpc/block.js

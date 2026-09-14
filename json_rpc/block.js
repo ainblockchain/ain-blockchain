@@ -27,23 +27,21 @@ module.exports = function getBlockApis(node) {
     [JSON_RPC_METHODS.AIN_GET_BLOCK_BY_NUMBER]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByNumber(args.number);
-      if (block && !CommonUtil.toBool(args.getFullTransactions)) {
-        block.transactions = JsonRpcUtil.extractTransactionHashes(block);
-      }
+      const result = block && !CommonUtil.toBool(args.getFullTransactions)
+        ? { ...block, transactions: JsonRpcUtil.extractTransactionHashes(block) } : block;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result: block }));
+      done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
     [JSON_RPC_METHODS.AIN_GET_BLOCK_BY_HASH]: function(args, done) {
       const beginTime = Date.now();
       const block = node.bc.getBlockByHash(args.hash);
-      if (block && !CommonUtil.toBool(args.getFullTransactions)) {
-        block.transactions = JsonRpcUtil.extractTransactionHashes(block);
-      }
+      const result = block && !CommonUtil.toBool(args.getFullTransactions)
+        ? { ...block, transactions: JsonRpcUtil.extractTransactionHashes(block) } : block;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result: block }));
+      done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
     [JSON_RPC_METHODS.AIN_GET_BLOCK_LIST]: function(args, done) {
