@@ -17,6 +17,7 @@
 #   TEMPLATE_HOME=...     설정 원본 노드 홈 (ainize init 으로 만든 것) — 필수
 #   CHAIN_URL=...         AIN 인증망 REST (기본 http://localhost:8081)
 #   CHAIN_URLS=a,b,c      파이프라인이 붙을 검증자 목록 (없으면 CHAIN_URL 하나만 쓴다)
+#   LEDGER_POLL_MS=...    노드가 시장 전체를 다시 읽는 주기 (기본 120000)
 #   PUBLIC_NODE=...       공개 노드 (기본 https://ainize.ai)
 #   DATASETS=...          데이터셋 디렉토리 (기본 harness/dart-datasets, 없으면 dart-datasets-sample)
 #   KEEP=1                끝나고 노드를 내리지 않는다 (화면에서 계속 보려면)
@@ -121,6 +122,11 @@ for i in range(1, n + 1):
     # 검증자 여러 개를 주면 파이프라인을 그 위로 돌려가며 붙인다. 하나만 주면 종전과 같다.
     urls = [u.strip() for u in (os.environ.get('CHAIN_URLS') or chain).split(',') if u.strip()]
     c['ledger']['kind'] = 'ain'; c['ledger']['ain']['providerUrl'] = urls[(i - 1) % len(urls)]
+    # 노드는 기본 8초마다 /apps/knowledge/market 전체를 다시 읽는다. 읽는 양은 바뀐 것이
+    # 아니라 카탈로그 전체 크기다. 70개가 그렇게 하면 8초마다 전체 트리 읽기 70번이고,
+    # 검증자의 accept 큐가 차서 체인이 HTTP 응답을 멈춘다. 이 노드들은 자기 지식만
+    # 올리므로 네트워크 카탈로그를 그렇게 자주 볼 이유가 없다. (ainize-core pollMs)
+    c['ledger']['ain']['pollMs'] = int(os.environ.get('LEDGER_POLL_MS', '120000'))
     c['runtime']['python'] = shutil.which('python3') or '/usr/bin/python3'
     t = c.setdefault('teach', {})
     # 노드마다 파이프라인 1개만 돌린다 → 슬롯 경합이 없다. 검사까지 시뮬레이션해 GPU 를 쓰지 않는다.
