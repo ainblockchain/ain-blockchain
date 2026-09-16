@@ -16,6 +16,7 @@
 #   HOMES_ROOT=...        노드 홈들의 부모 (기본 $KPI_DIR/ainize/pipelines)
 #   TEMPLATE_HOME=...     설정 원본 노드 홈 (ainize init 으로 만든 것) — 필수
 #   CHAIN_URL=...         AIN 인증망 REST (기본 http://localhost:8081)
+#   CHAIN_URLS=a,b,c      파이프라인이 붙을 검증자 목록 (없으면 CHAIN_URL 하나만 쓴다)
 #   PUBLIC_NODE=...       공개 노드 (기본 https://ainize.ai)
 #   DATASETS=...          데이터셋 디렉토리 (기본 harness/dart-datasets, 없으면 dart-datasets-sample)
 #   KEEP=1                끝나고 노드를 내리지 않는다 (화면에서 계속 보려면)
@@ -115,7 +116,11 @@ for i in range(1, n + 1):
     c['gossipIntervalMs'] = int(os.environ.get('GOSSIP_MS', '60000'))
     c['roles'] = ['seller']
     c.setdefault('verifier', {})['auto'] = False
-    c['ledger']['kind'] = 'ain'; c['ledger']['ain']['providerUrl'] = chain
+    # 70개 노드가 한 검증자에만 쓰면 그 노드의 accept 큐가 차서 학습 기록이 체인에 닿지 못한다
+    # (teach: "Training state was not confirmed as submitted to the blockchain"). CHAIN_URLS 에
+    # 검증자 여러 개를 주면 파이프라인을 그 위로 돌려가며 붙인다. 하나만 주면 종전과 같다.
+    urls = [u.strip() for u in (os.environ.get('CHAIN_URLS') or chain).split(',') if u.strip()]
+    c['ledger']['kind'] = 'ain'; c['ledger']['ain']['providerUrl'] = urls[(i - 1) % len(urls)]
     c['runtime']['python'] = shutil.which('python3') or '/usr/bin/python3'
     t = c.setdefault('teach', {})
     # 노드마다 파이프라인 1개만 돌린다 → 슬롯 경합이 없다. 검사까지 시뮬레이션해 GPU 를 쓰지 않는다.
