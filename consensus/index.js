@@ -1022,6 +1022,10 @@ class Consensus {
     }
     if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
       logger.debug(() => `[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
+      if (this.shouldThrottleEmptyProposal()) {
+        logger.debug(() => `[${LOG_HEADER}] Skipping empty proposal during configured idle interval`);
+        return;
+      }
       try {
         const consensusMsg = this.encapsulateConsensusMessage(
             this.createProposal(epoch), ConsensusMessageTypes.PROPOSE);
@@ -1032,6 +1036,15 @@ class Consensus {
     } else {
       logger.debug(() => `[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
     }
+  }
+
+  shouldThrottleEmptyProposal() {
+    const intervalMs = Number(process.env.EMPTY_BLOCK_PROPOSAL_INTERVAL_MS || 0);
+    if (!Number.isFinite(intervalMs) || intervalMs <= 0) return false;
+    if (this.node.tp.getPoolSize() > 0) return false;
+    const lastBlock = this.node.bc.lastBlock();
+    if (!lastBlock || (lastBlock.transactions && lastBlock.transactions.length > 0)) return false;
+    return Date.now() - lastBlock.timestamp < intervalMs;
   }
 
   tryVoteForValidBlock(proposalBlock) {
