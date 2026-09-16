@@ -1,0 +1,8 @@
+{
+  "name": "ain-native-shard-probe",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@ainblockchain/ain-js": "1.15.0"
+  }
+}

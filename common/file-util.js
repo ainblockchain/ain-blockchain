@@ -3,9 +3,9 @@ const logger = new (require('../logger'))('FILE-UTIL');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { pipeline, Readable } = require('stream');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const JsonStreamStringify = require('json-stream-stringify');
 const JSONStream = require('JSONStream');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
@@ -238,23 +238,30 @@ class FileUtil {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
         let numChunks = 0;
-        fs.createReadStream(filePath)
-          .pipe(zlib.createGunzip())
-          .pipe(transformStream)
-          .on('data', (data) => {
+        transformStream.on('data', (data) => {
+          try {
             logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
             chunkCallback(numChunks, data);
             numChunks++;
-          })
-          .on('end', () => {
+          } catch (error) {
+            transformStream.destroy(error);
+          }
+        });
+        pipeline(fs.createReadStream(filePath), zlib.createGunzip(), transformStream, (error) => {
+          if (error) {
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${error}`);
+            resolve(false);
+            return;
+          }
+          try {
             logger.debug(
                 `[${LOG_HEADER}] Reading ${numChunks} chunks done.`);
             resolve(endCallback(numChunks));
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
+          } catch (error) {
+            logger.error(`[${LOG_HEADER}] Error while finishing ${filePath}: ${error}`);
             resolve(false);
-          });
+          }
+        });
       });
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
@@ -263,34 +270,11 @@ class FileUtil {
   }
 
   static async readChunkedJsonAsync(filePath) {
-    const LOG_HEADER = 'readChunkedJsonAsync';
-    try {
-      return new Promise((resolve) => {
-        const transformStream = JSONStream.parse('docs.*');
-        const chunks = [];
-        let numChunks = 0;
-        fs.createReadStream(filePath)
-          .pipe(zlib.createGunzip())
-          .pipe(transformStream)
-          .on('data', (data) => {
-            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
-            chunks.push(data);
-            numChunks++;
-          })
-          .on('end', () => {
-            logger.debug(
-                `[${LOG_HEADER}] Reading ${chunks.length} chunks done.`);
-            resolve(FileUtil.buildObjectFromChunks(chunks));
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
-            resolve(null);
-          });
-      });
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
-      return null;
-    }
+    const chunks = [];
+    const result = await FileUtil.processChunkedJsonAsync(filePath,
+        (index, data) => chunks.push(data),
+        () => ({ value: FileUtil.buildObjectFromChunks(chunks) }));
+    return result === false ? null : result.value;
   }
 
   static readChunkedJsonSync(filePath) {
@@ -409,19 +393,48 @@ class FileUtil {
     const LOG_HEADER = 'writeSnapshotFile';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
-    return new Promise((resolve) => {
-      new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
-        .pipe(zlib.createGzip())
-        .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
-        .on('finish', () => {
-          logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
-          resolve();
-        })
-        .on('error', (e) => {
-          logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
-          resolve();
+    let temporaryDirectory;
+    try {
+      temporaryDirectory = await fs.promises.mkdtemp(
+          path.join(path.dirname(filePath), '.snapshot-'));
+      const temporaryPath = path.join(temporaryDirectory, 'data.json.gz');
+      const chunks = ObjectUtil.toChunks(snapshot, snapshotChunkSize);
+      function* serializedChunks() {
+        yield '{"docs":[';
+        for (let index = 0; index < chunks.length; index++) {
+          if (index > 0) yield ',';
+          yield JSON.stringify(chunks[index]);
+        }
+        yield ']}';
+      }
+      await new Promise((resolve, reject) => {
+        pipeline(Readable.from(serializedChunks(), { objectMode: false }),
+            zlib.createGzip(), fs.createWriteStream(temporaryPath, { flags: 'wx' }), (error) => {
+              if (error) reject(error);
+              else resolve();
+            });
+      });
+      const handle = await fs.promises.open(temporaryPath, 'r');
+      try {
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+      await fs.promises.rename(temporaryPath, filePath);
+      logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
+      return true;
+    } catch (error) {
+      logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${error}`);
+      return false;
+    } finally {
+      if (temporaryDirectory) {
+        await fs.promises.rm(temporaryDirectory, {
+          recursive: true, force: true,
+        }).catch((error) => {
+          logger.error(`[${LOG_HEADER}] Failed to remove temporary snapshot: ${error}`);
         });
-    });
+      }
+    }
   }
 
   static deleteSnapshotFile(snapshotPath, blockNumber, isDebug = false) {

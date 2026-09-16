@@ -203,22 +203,22 @@ class BlockchainNode {
   verifyNodeAccountSignature(message, signature) {
     const LOG_HEADER = 'verifyNodeAccountSignature';
     if (!CommonUtil.isDict(message)) {
-      logger.debug(`[${LOG_HEADER}] Invalid message: ${JSON.stringify(message)}`);
+      logger.debug(() => `[${LOG_HEADER}] Invalid message: ${JSON.stringify(message)}`);
       return false;
     }
     if (!this.account) {
-      logger.debug(`[${LOG_HEADER}] Node account is not initialized: ${JSON.stringify(this.account)}`);
+      logger.debug(() => `[${LOG_HEADER}] Node account is not initialized: ${JSON.stringify(this.account)}`);
       return false;
     }
     if (!CommonUtil.isNumber(message.timestamp) || message.timestamp < Date.now() - 10 * 60 * 1000) { // 10 min
-      logger.debug(`[${LOG_HEADER}] Stale message: ${JSON.stringify(message)}`);
+      logger.debug(() => `[${LOG_HEADER}] Stale message: ${JSON.stringify(message)}`);
       return false;
     }
     try {
       return ainUtil.ecVerifySig(
           stringify(message), signature, this.account.address, this.getBlockchainParam('genesis/chain_id'));
     } catch (e) {
-      logger.debug(
+      logger.debug(() =>
           `[${LOG_HEADER}] Invalid signature: ${JSON.stringify(message)}, ${signature}, ` +
           `${this.account.address}, ${this.getBlockchainParam('genesis/chain_id')}`);
       return false;
@@ -305,6 +305,9 @@ class BlockchainNode {
     if (latestSnapshotPath) {
       try {
         const latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
+        if (!latestSnapshot) {
+          throw Error(`Invalid snapshot file: ${latestSnapshotPath}`);
+        }
         this.setBootstrapSnapshot(latestSnapshotPath, latestSnapshot)
       } catch (err) {
         CommonUtil.finishWithStackTrace(
@@ -472,14 +475,14 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
     if (DevFlags.enableStateTreeTransfer) {
-      logger.debug(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
+      logger.debug(() => `[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
       if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(
             `[${LOG_HEADER}] Failed to transfer state tree: ${version} -> ${newFinalVersion}`);
       }
     }
     if (oldFinalVersion) {
-      logger.debug(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      logger.debug(() => `[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
       if (!this.stateManager.deleteVersion(oldFinalVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
       }
@@ -492,9 +495,11 @@ class BlockchainNode {
 
   async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      this.deleteSnapshot(
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER);
-      await this.writeSnapshot(blockNumber);
+      if (await this.writeSnapshot(blockNumber)) {
+        const expiredNumber = blockNumber -
+            NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
+        this.deleteSnapshot(expiredNumber);
+      }
     }
   }
 
@@ -507,7 +512,7 @@ class BlockchainNode {
     if (FileUtil.hasSnapshotFile(this.snapshotDir, blockNumber)) {
       logger.error(`[${LOG_HEADER}] Overwriting snapshot file for block ${blockNumber}`);
     }
-    await FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+    return FileUtil.writeSnapshotFile(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
   }
 
   deleteSnapshot(blockNumber) {
@@ -541,7 +546,7 @@ class BlockchainNode {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
-        logger.debug(`[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
+        logger.debug(() => `[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
         return transactionInfo;
       } else if (index >= 0) {
         transactionInfo.transaction = block.transactions[index];
@@ -965,7 +970,7 @@ class BlockchainNode {
       const res = baseDb.executeTransaction(
           Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
       if (CommonUtil.txPrecheckFailed(res)) {
-        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        logger.debug(() => `[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
       } else {
         transactions.push(tx);
@@ -1058,7 +1063,7 @@ class BlockchainNode {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
     if (!finalizableChain || !finalizableChain.length) {
-      logger.debug(`[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
+      logger.debug(() => `[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
       return;
     }
     const recordedInvalidBlocks = new Set();
@@ -1074,7 +1079,7 @@ class BlockchainNode {
       }
       if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, writeToDisk)) {
         lastFinalizedBlock = blockToFinalize;
-        logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
+        logger.debug(() => `[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
             `hash ${blockToFinalize.hash}`);
         this.tp.cleanUpForFinalizedBlock(blockToFinalize);
         if (!CommonUtil.isEmpty(blockToFinalize.evidence)) {

@@ -25,6 +25,7 @@ const P2pUtil = require('./p2p-util');
 const { sendGetRequest } = require('../common/network-util');
 const { Block } = require('../blockchain/block');
 const { JSON_RPC_METHODS } = require('../json_rpc/constants');
+const boundedJsonSize = require('../block-pool/bounded-json-size');
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -35,6 +36,9 @@ class P2pClient {
     this.isConnectingToPeerCandidates = false;
     this.steadyIntervalCount = 0;
     this.outbound = {};
+    this.consensusGossipStats = {
+      enqueued: 0, oversized: 0, backpressure: 0, unavailable: 0, sendErrors: 0,
+    };
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
     this.stateSyncInProgress = null;
@@ -112,6 +116,7 @@ class P2pClient {
   getClientStatus() {
     return {
       trafficStats: this.getTrafficStats(),
+      consensusGossip: { ...this.consensusGossipStats },
     };
   }
 
@@ -557,23 +562,43 @@ class P2pClient {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
-    const stringPayload = JSON.stringify(payload);
-    if (DevFlags.enableP2pMessageTagsChecking) {
-      const tagSet = new Set(tags);
-      Object.entries(this.outbound).forEach(([address, node]) => {
-        if (!tagSet.has(address) &&
-            _.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-          node.socket.send(stringPayload);
-        }
-      });
-    } else {
-      Object.values(this.outbound).forEach((node) => {
-        if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-          node.socket.send(stringPayload);
-        }
-      });
+    const maxBytes = NodeConfigs.P2P_CONSENSUS_MAX_BYTES ?? 16 * 1024 ** 2;
+    const maxQueuedBytes = NodeConfigs.P2P_CONSENSUS_MAX_QUEUED_BYTES ?? 32 * 1024 ** 2;
+    if (![maxBytes, maxQueuedBytes].every((value) => Number.isSafeInteger(value) && value > 0)) {
+      logger.error('Invalid consensus gossip byte limits; refusing to enqueue messages.');
+      return;
     }
-    logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
+    const bytes = boundedJsonSize(payload, maxBytes);
+    if (bytes === null) {
+      this.consensusGossipStats.oversized++;
+      return;
+    }
+    const tagSet = new Set(tags);
+    let stringPayload;
+    for (const [address, peer] of Object.entries(this.outbound)) {
+      if (DevFlags.enableP2pMessageTagsChecking && tagSet.has(address)) continue;
+      const socket = peer.socket;
+      if (_.get(peer, 'peerInfo.consensusStatus.state') !== ConsensusStates.RUNNING ||
+          !socket || socket.readyState !== Websocket.OPEN) {
+        this.consensusGossipStats.unavailable++;
+        continue;
+      }
+      if (!Number.isFinite(socket.bufferedAmount) ||
+          socket.bufferedAmount + bytes + 14 > maxQueuedBytes) {
+        this.consensusGossipStats.backpressure++;
+        continue;
+      }
+      if (stringPayload === undefined) stringPayload = JSON.stringify(payload);
+      try {
+        socket.send(stringPayload, (error) => {
+          if (error) this.consensusGossipStats.sendErrors++;
+        });
+        this.consensusGossipStats.enqueued++;
+      } catch (error) {
+        this.consensusGossipStats.sendErrors++;
+      }
+    }
+    if (NodeConfigs.DEBUG) logger.debug(() => `SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
   /**
@@ -620,7 +645,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
       return;
     }
-    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const lastBlockNumber = this.getChainSyncCursor();
     const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
         this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
@@ -635,6 +660,41 @@ class P2pClient {
     }
     this.updateChainSyncStatus(lastBlockNumber);
     socket.send(JSON.stringify(payload));
+  }
+
+  getChainSyncCursor() {
+    const finalizedNumber = this.server.node.bc.lastBlockNumber();
+    const cursor = this.chainSyncInProgress?.cursor;
+    if (!cursor || !Number.isSafeInteger(cursor.number) || cursor.number <= finalizedNumber) {
+      return finalizedNumber;
+    }
+    const pool = this.server.node.bp;
+    const block = pool.getNotarizedBlockByHash(cursor.hash);
+    if (!block || block.number !== cursor.number || !pool.hashToDb.has(cursor.hash)) {
+      return finalizedNumber;
+    }
+    const chain = pool.getExtendingChain(cursor.hash)?.chain;
+    const finalized = this.server.node.bc.lastBlock();
+    if (!chain?.length || chain[0].last_hash !== finalized?.hash ||
+        chain.at(-1).hash !== cursor.hash || chain.some((entry, offset) =>
+          entry.number !== finalizedNumber + offset + 1)) {
+      return finalizedNumber;
+    }
+    return cursor.number;
+  }
+
+  advanceChainSyncCursor(chainSegment) {
+    if (!this.chainSyncInProgress) return;
+    const pool = this.server.node.bp;
+    const previous = this.getChainSyncCursor();
+    for (let index = chainSegment.length - 1; index >= 0; index--) {
+      const block = chainSegment[index];
+      if (block.number > previous && pool.hashToDb.has(block.hash) &&
+          pool.getNotarizedBlockByHash(block.hash)?.number === block.number) {
+        this.chainSyncInProgress.cursor = { number: block.number, hash: block.hash };
+        return;
+      }
+    }
   }
 
   /**
@@ -692,7 +752,7 @@ class P2pClient {
         node.socket.send(stringPayload);
       });
     }
-    logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
+    logger.debug(() => `SENDING: ${JSON.stringify(transaction)}`);
   }
 
   // TODO(minsulee2): session token will be applied to enhance security.
@@ -751,7 +811,7 @@ class P2pClient {
       if (!P2pUtil.checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
-        logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
+        logger.debug(() => `[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
@@ -837,7 +897,7 @@ class P2pClient {
           const chunkIndex = _.get(parsedMessage, 'data.chunkIndex');
           const numChunks = _.get(parsedMessage, 'data.numChunks');
           const blockNumber = _.get(parsedMessage, 'data.blockNumber');
-          logger.debug(`[${LOG_HEADER}] Receiving a snapshot chunk: ` +
+          logger.debug(() => `[${LOG_HEADER}] Receiving a snapshot chunk: ` +
               `${JSON.stringify(chunk, null, 2)}\n` +
               `of chunkIndex ${chunkIndex} and numChunks ${numChunks}.`);
           await this.handleSnapshotChunk(chunk, chunkIndex, numChunks, blockNumber, socket);
@@ -866,7 +926,7 @@ class P2pClient {
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
-          logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
+          logger.debug(() => `[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
           await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
@@ -892,7 +952,7 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
-      logger.debug(`The peer (${address}) is alive.`);
+      logger.debug(() => `The peer (${address}) is alive.`);
     });
 
     socket.on('close', () => {
@@ -1016,6 +1076,7 @@ class P2pClient {
       return;
     }
     const mergeResult = this.server.node.mergeChainSegment(chainSegment);
+    if (mergeResult === 0) this.advanceChainSyncCursor(chainSegment);
     if (mergeResult !== 0) {
       // Received an invalid chain, or fully synced with this peer.
       this.resetChainSyncPeer();
@@ -1202,7 +1263,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Try to connect(${peerCandidateP2pUrl})`);
       const addressFromOutbound = this.getAddrFromOutboundMapping(peerCandidateP2pUrl);
       if (addressFromOutbound) {
-        logger.debug(`[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
+        logger.debug(() => `[${LOG_HEADER}] Node ${addressFromOutbound}(${peerCandidateP2pUrl}) is` +
             `already a managed peer.`);
       } else {
         logger.info(`[${LOG_HEADER}] Connecting to peer(${peerCandidateP2pUrl})`);
@@ -1349,7 +1410,7 @@ class P2pClient {
       return;
     }
     socket.send(JSON.stringify(payload));
-    logger.debug(`\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
+    logger.debug(() => `\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
   }
 
   startHeartbeat() {
@@ -1367,6 +1428,9 @@ class P2pClient {
           this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
+      if (this.server.node.state === BlockchainNodeStates.CHAIN_SYNCING) {
+        this.requestChainSegment();
+      }
     }, NodeConfigs.P2P_HEARTBEAT_INTERVAL_MS);
   }
 
