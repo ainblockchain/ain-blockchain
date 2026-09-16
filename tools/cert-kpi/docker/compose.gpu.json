@@ -1,0 +1,407 @@
+{
+  "name": "ain-cert-gpu",
+  "services": {
+    "gpu0": {
+      "image": "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967",
+      "cpuset": "0-7",
+      "cpus": 2,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "shm_size": "2g",
+      "ports": [
+        "127.0.0.1:18001:8000"
+      ],
+      "environment": {
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_LOGGING_LEVEL": "INFO",
+        "OMP_NUM_THREADS": "1"
+      },
+      "volumes": [
+        "/mnt/newdata/models/gpt-oss-20b:/model:ro",
+        "gpu-cache-0:/root/.cache"
+      ],
+      "command": [
+        "--model",
+        "/model",
+        "--served-model-name",
+        "gpt-oss-20b",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.80",
+        "--enforce-eager",
+        "--disable-uvicorn-access-log"
+      ],
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "device_ids": [
+                  "2"
+                ],
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "gpu-inference",
+        "org.ain.cert.node": "0"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "300s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "4"
+        }
+      }
+    },
+    "gpu1": {
+      "image": "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967",
+      "cpuset": "0-7",
+      "cpus": 2,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "shm_size": "2g",
+      "ports": [
+        "127.0.0.1:18002:8000"
+      ],
+      "environment": {
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_LOGGING_LEVEL": "INFO",
+        "OMP_NUM_THREADS": "1"
+      },
+      "volumes": [
+        "/mnt/newdata/models/gpt-oss-20b:/model:ro",
+        "gpu-cache-1:/root/.cache"
+      ],
+      "command": [
+        "--model",
+        "/model",
+        "--served-model-name",
+        "gpt-oss-20b",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.80",
+        "--enforce-eager",
+        "--disable-uvicorn-access-log"
+      ],
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "device_ids": [
+                  "3"
+                ],
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "gpu-inference",
+        "org.ain.cert.node": "1"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "300s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "4"
+        }
+      }
+    },
+    "gpu2": {
+      "image": "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967",
+      "cpuset": "0-7",
+      "cpus": 2,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "shm_size": "2g",
+      "ports": [
+        "127.0.0.1:18003:8000"
+      ],
+      "environment": {
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_LOGGING_LEVEL": "INFO",
+        "OMP_NUM_THREADS": "1"
+      },
+      "volumes": [
+        "/mnt/newdata/models/gpt-oss-20b:/model:ro",
+        "gpu-cache-2:/root/.cache"
+      ],
+      "command": [
+        "--model",
+        "/model",
+        "--served-model-name",
+        "gpt-oss-20b",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.80",
+        "--enforce-eager",
+        "--disable-uvicorn-access-log"
+      ],
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "device_ids": [
+                  "4"
+                ],
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "gpu-inference",
+        "org.ain.cert.node": "2"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "300s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "4"
+        }
+      }
+    },
+    "gpu3": {
+      "image": "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967",
+      "cpuset": "0-7",
+      "cpus": 2,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "shm_size": "2g",
+      "ports": [
+        "127.0.0.1:18004:8000"
+      ],
+      "environment": {
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_LOGGING_LEVEL": "INFO",
+        "OMP_NUM_THREADS": "1"
+      },
+      "volumes": [
+        "/mnt/newdata/models/gpt-oss-20b:/model:ro",
+        "gpu-cache-3:/root/.cache"
+      ],
+      "command": [
+        "--model",
+        "/model",
+        "--served-model-name",
+        "gpt-oss-20b",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.80",
+        "--enforce-eager",
+        "--disable-uvicorn-access-log"
+      ],
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "device_ids": [
+                  "5"
+                ],
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "gpu-inference",
+        "org.ain.cert.node": "3"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "300s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "4"
+        }
+      }
+    },
+    "gpu4": {
+      "image": "vllm/vllm-openai@sha256:0a51ea5b4ae2dc5d81890e5173f54203d2a3ae0cfffe51b8fd2afd4391bfd967",
+      "cpuset": "0-7",
+      "cpus": 2,
+      "mem_limit": "128g",
+      "memswap_limit": "128g",
+      "shm_size": "2g",
+      "ports": [
+        "127.0.0.1:18005:8000"
+      ],
+      "environment": {
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_LOGGING_LEVEL": "INFO",
+        "OMP_NUM_THREADS": "1"
+      },
+      "volumes": [
+        "/mnt/newdata/models/gpt-oss-20b:/model:ro",
+        "gpu-cache-4:/root/.cache"
+      ],
+      "command": [
+        "--model",
+        "/model",
+        "--served-model-name",
+        "gpt-oss-20b",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--tensor-parallel-size",
+        "1",
+        "--max-model-len",
+        "4096",
+        "--gpu-memory-utilization",
+        "0.80",
+        "--enforce-eager",
+        "--disable-uvicorn-access-log"
+      ],
+      "deploy": {
+        "resources": {
+          "reservations": {
+            "devices": [
+              {
+                "driver": "nvidia",
+                "device_ids": [
+                  "6"
+                ],
+                "capabilities": [
+                  "gpu"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "restart": "no",
+      "labels": {
+        "org.ain.cert.role": "gpu-inference",
+        "org.ain.cert.node": "4"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"
+        ],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 30,
+        "start_period": "300s"
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "20m",
+          "max-file": "4"
+        }
+      }
+    }
+  },
+  "volumes": {
+    "gpu-cache-0": {},
+    "gpu-cache-1": {},
+    "gpu-cache-2": {},
+    "gpu-cache-3": {},
+    "gpu-cache-4": {}
+  }
+}

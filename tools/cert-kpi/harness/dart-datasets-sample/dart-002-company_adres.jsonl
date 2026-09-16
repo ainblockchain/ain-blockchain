@@ -1,0 +1,8 @@
+{"prompt": "DART 기업개황 기준 한진중공업홀딩스의 본점 주소은?", "answer": "경기도 남양주시 별내3로 391", "alt_prompt": "한진중공업홀딩스 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 유수홀딩스의 본점 주소은?", "answer": "서울특별시 영등포구 여의나루로", "alt_prompt": "유수홀딩스 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 경방의 본점 주소은?", "answer": "서울특별시 영등포구 영중로 15", "alt_prompt": "경방 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 CJ대한통운의 본점 주소은?", "answer": "서울특별시 종로구 종로5길", "alt_prompt": "CJ대한통운 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 유한양행의 본점 주소은?", "answer": "서울특별시 동작구 노량진로 74", "alt_prompt": "유한양행 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 디아이동일의 본점 주소은?", "answer": "서울특별시 강남구 테헤란로 516", "alt_prompt": "디아이동일 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 대한항공의 본점 주소은?", "answer": "서울특별시 강서구 하늘길 260", "alt_prompt": "대한항공 본점 주소 (DART 공시)", "note": "DART company.json adres"}
+{"prompt": "DART 기업개황 기준 전방의 본점 주소은?", "answer": "서울특별시 서대문구 서소문로 21", "alt_prompt": "전방 본점 주소 (DART 공시)", "note": "DART company.json adres"}
