@@ -211,10 +211,15 @@ say "    최대 동시 진행 파이프라인: $peak"
 say "4b/6 $N 개 공개 (지식 등록 → 원장 anchor)"
 publish_one() {
   local i=$1 nn jid; nn=$(printf '%02d' "$i")
+  # CLI 는 JSON 앞에 node 경고를 찍는다 (ExperimentalWarning: SQLite …). 파일을 통째로
+  # json.load 하면 그 줄에서 실패하고, 작업 ID 가 비어 이 파이프라인의 공개를 통째로 건너뛴다.
+  # 실제로 그렇게 70개가 모두 조용히 공개되지 않았다. 첫 '{' 부터 읽는다.
   jid=$(python3 -c "
 import json
 try:
-    d = json.load(open('$LOGS/submit-$nn.json')); print((d.get('job') or d).get('id') or '')
+    t = open('$LOGS/submit-$nn.json').read(); i = t.find('{')
+    d = json.loads(t[i:]) if i >= 0 else {}
+    print(((d.get('job') or d).get('job') or (d.get('job') or d)).get('id') or '')
 except Exception: print('')" 2>/dev/null)
   [ -n "$jid" ] || return 0
   # 노드의 /api/catalog 는 네트워크 전체 지식을 보여준다 → 반드시 "이 파이프라인이 올린 이름" 으로 확인해야 한다
