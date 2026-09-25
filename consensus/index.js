@@ -123,7 +123,7 @@ class Consensus {
   startEpochTransition() {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
-    this.startingTime = genesisBlock.timestamp;
+    this.startingTime = this.node.getBlockchainParam('consensus/epoch_time_origin_ms') ?? genesisBlock.timestamp;
     const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
     this.ntpClient = new NTP();
@@ -138,10 +138,25 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
-    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     const healthThresholdEpoch = this.node.getBlockchainParam('consensus/health_threshold_epoch');
-    this.epochInterval = setInterval(async () => {
+    // Schedule against absolute epoch boundaries, not each process's start time.
+    // A generation token prevents a renewed/stopped timer from rearming an old loop.
+    const generation = Symbol('epochTransition');
+    this.epochTransitionGeneration = generation;
+    const scheduleNext = () => {
+      if (this.epochTransitionGeneration !== generation) return;
+      this.startingTime = this.node.getBlockchainParam('consensus/epoch_time_origin_ms') ?? this.node.bc.genesisBlock.timestamp;
+      const duration = this.node.getBlockchainParam('genesis/epoch_ms');
+      const adjustedNow = Date.now() - this.timeAdjustment;
+      const elapsed = ((adjustedNow - this.startingTime) % duration + duration) % duration;
+      this.epochInterval = setTimeout(transition, duration - elapsed + 5);
+    };
+    const transition = async () => {
+      if (this.epochTransitionGeneration !== generation) return;
+      this.startingTime = this.node.getBlockchainParam('consensus/epoch_time_origin_ms') ?? this.node.bc.genesisBlock.timestamp;
+      const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
       if (this.isInEpochTransition) {
+        scheduleNext();
         return;
       }
       try {
@@ -207,11 +222,14 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Error in epochInterval: ${e}`);
       } finally {
         this.isInEpochTransition = false;
+        scheduleNext();
       }
-    }, epochMs);
+    };
+    scheduleNext();
   }
 
   stop() {
+    this.epochTransitionGeneration = null;
     logger.info(`Stop epochInterval.`);
     this.setState(ConsensusStates.STOPPED);
     if (this.epochInterval) {
@@ -1007,6 +1025,22 @@ class Consensus {
     }
     this.node.tp.addTransaction(executableTx);
     this.node.bp.addSeenVote(voteTx);
+    // Defer cleanup until the current vote/proposal handler has returned.
+    // Coalesce votes; tryFinalizeChain retains the existing quorum and
+    // three-consecutive-epochs predicate without modification.
+    if (!this.voteFinalizationScheduled) {
+      this.voteFinalizationScheduled = true;
+      const generation = this.epochTransitionGeneration;
+      setImmediate(() => {
+        this.voteFinalizationScheduled = false;
+        if (!generation || this.epochTransitionGeneration !== generation) return;
+        try {
+          this.node.tryFinalizeChain();
+        } catch (error) {
+          logger.error(`[checkVoteTx] Deferred finalization failed: ${error.stack}`);
+        }
+      });
+    }
     return true;
   }
 

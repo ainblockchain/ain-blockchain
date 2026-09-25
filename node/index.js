@@ -494,7 +494,10 @@ class BlockchainNode {
   }
 
   async updateSnapshots(blockNumber) {
-    if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    const interval = NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
+    // Stable per-node phase; snapshot contents still use this exact finalized block.
+    const phase = this.account ? parseInt(this.account.address.slice(2, 10), 16) % interval : 0;
+    if (blockNumber === 0 || blockNumber % interval === phase) {
       if (await this.writeSnapshot(blockNumber)) {
         const expiredNumber = blockNumber -
             NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
@@ -935,15 +938,22 @@ class BlockchainNode {
     }
     for (let i = 0; i < validBlocks.length; i++) {
       const block = validBlocks[i];
-      if (this.bp.hasSeenBlock(block.hash)) {
-        continue;
-      }
-      const proposalTx = i < validBlocks.length - 1 ?
-          ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
+      // A proposal rejected against a transient local branch may later arrive
+      // on the peer's chain. "Seen invalid" is not an executed parent block.
+      // Retry through the original full validator and restore the rejection
+      // cache if validation still fails; never accept a block from cache alone.
+      const retryInvalidBlockInfo = this.bp.hashToInvalidBlockInfo.get(block.hash);
+      if (retryInvalidBlockInfo) this.bp.hashToInvalidBlockInfo.delete(block.hash);
       try {
+        if (this.bp.hasSeenBlock(block.hash)) continue;
+        const proposalTx = i < validBlocks.length - 1 ?
+            ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
         Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true, true);
         this.tryFinalizeChain();
       } catch (e) {
+        if (retryInvalidBlockInfo && !this.bp.hashToBlockInfo.get(block.hash)?.block) {
+          this.bp.hashToInvalidBlockInfo.set(block.hash, retryInvalidBlockInfo);
+        }
         logger.info(`[${LOG_HEADER}] Failed to add new block (${block.number} / ${block.hash}) to chain: ${e.stack}`);
         return -1; // Merge failed and I'm behind
       }

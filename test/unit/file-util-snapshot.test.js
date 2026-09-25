@@ -5,6 +5,7 @@ const path = require('path');
 const zlib = require('zlib');
 const { Writable } = require('stream');
 const FileUtil = require('../../common/file-util');
+const { writeSnapshot } = require('../../common/snapshot-writer');
 const BlockchainNode = require('../../node');
 const CommonUtil = require('../../common/common-util');
 const { NodeConfigs } = require('../../common/constants');
@@ -78,12 +79,18 @@ describe('Snapshot streaming failure containment and atomic publication', () => 
           throw new Error('forced rename failure');
         });
       }
-      assert.equal(await FileUtil.writeSnapshotFile(
-          directory, 10, { replacement: true }, 128), false);
+      await assert.rejects(writeSnapshot({
+        filePath: filename, snapshot: { replacement: true }, chunkSize: 128,
+      }), /forced/);
       assert.deepEqual(fs.readFileSync(filename), before);
       assert.deepEqual(fs.readdirSync(path.join(directory, 'n2s')), ['10.json.gz']);
     });
   }
+
+  it('reports child process write failure as false', async () => {
+    assert.equal(await FileUtil.writeSnapshotFile(
+        path.join(directory, 'missing'), 10, { value: 1 }, 128), false);
+  });
 
   it('contains chunk callback exceptions and does not invoke successful completion', async () => {
     await FileUtil.writeSnapshotFile(directory, 10, { value: 1 }, 128);

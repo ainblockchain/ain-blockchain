@@ -3,7 +3,7 @@ const logger = new (require('../logger'))('FILE-UTIL');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
-const { pipeline, Readable } = require('stream');
+const { pipeline } = require('stream');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const JSONStream = require('JSONStream');
@@ -390,51 +390,26 @@ class FileUtil {
 
   static async writeSnapshotFile(
       snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
-    const LOG_HEADER = 'writeSnapshotFile';
-
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
-    let temporaryDirectory;
-    try {
-      temporaryDirectory = await fs.promises.mkdtemp(
-          path.join(path.dirname(filePath), '.snapshot-'));
-      const temporaryPath = path.join(temporaryDirectory, 'data.json.gz');
-      const chunks = ObjectUtil.toChunks(snapshot, snapshotChunkSize);
-      function* serializedChunks() {
-        yield '{"docs":[';
-        for (let index = 0; index < chunks.length; index++) {
-          if (index > 0) yield ',';
-          yield JSON.stringify(chunks[index]);
-        }
-        yield ']}';
-      }
-      await new Promise((resolve, reject) => {
-        pipeline(Readable.from(serializedChunks(), { objectMode: false }),
-            zlib.createGzip(), fs.createWriteStream(temporaryPath, { flags: 'wx' }), (error) => {
-              if (error) reject(error);
-              else resolve();
-            });
+    const { fork } = require('child_process');
+    return new Promise((resolve, reject) => {
+      const worker = fork(path.join(__dirname, 'snapshot-writer.js'), [], {
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'], serialization: 'advanced'
       });
-      const handle = await fs.promises.open(temporaryPath, 'r');
-      try {
-        await handle.sync();
-      } finally {
-        await handle.close();
-      }
-      await fs.promises.rename(temporaryPath, filePath);
-      logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
-      return true;
-    } catch (error) {
-      logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${error}`);
+      worker.send({ filePath, snapshot, chunkSize: snapshotChunkSize,
+        objectUtilPath: path.join(__dirname, 'object-util.js') }, error => { if (error) reject(error); });
+      let completed = false;
+      worker.once('message', message => { completed = message && message.ok === true; });
+      worker.once('error', reject);
+      worker.once('exit', code => {
+        if (code === 0 && completed) resolve(true);
+        else reject(new Error(`Snapshot worker exited without completion: ${code}`));
+      });
+    }).catch(error => {
+      // Preserve the existing nonfatal snapshot error handling.
+      logger.error(`[writeSnapshotFile] Failed to write snapshot at ${filePath}: ${error.stack}`);
       return false;
-    } finally {
-      if (temporaryDirectory) {
-        await fs.promises.rm(temporaryDirectory, {
-          recursive: true, force: true,
-        }).catch((error) => {
-          logger.error(`[${LOG_HEADER}] Failed to remove temporary snapshot: ${error}`);
-        });
-      }
-    }
+    });
   }
 
   static deleteSnapshotFile(snapshotPath, blockNumber, isDebug = false) {

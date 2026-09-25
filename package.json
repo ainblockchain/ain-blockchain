@@ -54,7 +54,8 @@
     "test_unit_traffic_sm": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/traffic-stats-manager.test.js",
     "test_unit_tx": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/transaction.test.js",
     "test_unit_tx_pool": "BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node ENABLE_REST_FUNCTION_CALL=true UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 ./node_modules/mocha/bin/mocha --timeout 160000 test/unit/tx-pool.test.js",
-    "tracker": "node ./tracker-server/index.js"
+    "tracker": "node ./tracker-server/index.js",
+    "test_runtime_regression": "node tools/cert-kpi/regression/test-epoch-scheduler.js consensus/index.js && node tools/cert-kpi/regression/test-vote-finalization.js consensus/index.js && node tools/cert-kpi/regression/test-snapshot-phase.js node/index.js && node tools/cert-kpi/regression/test-snapshot-worker.js && node tools/cert-kpi/regression/test-sync-invalid-cache.cjs node/index.js"
   },
   "overrides": {
     "secp256k1": "^4.0.3"
