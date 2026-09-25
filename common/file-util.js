@@ -3,9 +3,9 @@ const logger = new (require('../logger'))('FILE-UTIL');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { pipeline } = require('stream');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const JsonStreamStringify = require('json-stream-stringify');
 const JSONStream = require('JSONStream');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
@@ -238,23 +238,30 @@ class FileUtil {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
         let numChunks = 0;
-        fs.createReadStream(filePath)
-          .pipe(zlib.createGunzip())
-          .pipe(transformStream)
-          .on('data', (data) => {
+        transformStream.on('data', (data) => {
+          try {
             logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
             chunkCallback(numChunks, data);
             numChunks++;
-          })
-          .on('end', () => {
+          } catch (error) {
+            transformStream.destroy(error);
+          }
+        });
+        pipeline(fs.createReadStream(filePath), zlib.createGunzip(), transformStream, (error) => {
+          if (error) {
+            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${error}`);
+            resolve(false);
+            return;
+          }
+          try {
             logger.debug(
                 `[${LOG_HEADER}] Reading ${numChunks} chunks done.`);
             resolve(endCallback(numChunks));
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
+          } catch (error) {
+            logger.error(`[${LOG_HEADER}] Error while finishing ${filePath}: ${error}`);
             resolve(false);
-          });
+          }
+        });
       });
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
@@ -263,34 +270,11 @@ class FileUtil {
   }
 
   static async readChunkedJsonAsync(filePath) {
-    const LOG_HEADER = 'readChunkedJsonAsync';
-    try {
-      return new Promise((resolve) => {
-        const transformStream = JSONStream.parse('docs.*');
-        const chunks = [];
-        let numChunks = 0;
-        fs.createReadStream(filePath)
-          .pipe(zlib.createGunzip())
-          .pipe(transformStream)
-          .on('data', (data) => {
-            logger.debug(`[${LOG_HEADER}] Read chunk[${numChunks}]: ${JSON.stringify(data)}`);
-            chunks.push(data);
-            numChunks++;
-          })
-          .on('end', () => {
-            logger.debug(
-                `[${LOG_HEADER}] Reading ${chunks.length} chunks done.`);
-            resolve(FileUtil.buildObjectFromChunks(chunks));
-          })
-          .on('error', (e) => {
-            logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${e}`);
-            resolve(null);
-          });
-      });
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err.stack}`);
-      return null;
-    }
+    const chunks = [];
+    const result = await FileUtil.processChunkedJsonAsync(filePath,
+        (index, data) => chunks.push(data),
+        () => ({ value: FileUtil.buildObjectFromChunks(chunks) }));
+    return result === false ? null : result.value;
   }
 
   static readChunkedJsonSync(filePath) {
@@ -406,21 +390,25 @@ class FileUtil {
 
   static async writeSnapshotFile(
       snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
-    const LOG_HEADER = 'writeSnapshotFile';
-
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
-    return new Promise((resolve) => {
-      new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
-        .pipe(zlib.createGzip())
-        .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
-        .on('finish', () => {
-          logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
-          resolve();
-        })
-        .on('error', (e) => {
-          logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
-          resolve();
-        });
+    const { fork } = require('child_process');
+    return new Promise((resolve, reject) => {
+      const worker = fork(path.join(__dirname, 'snapshot-writer.js'), [], {
+        stdio: ['ignore', 'ignore', 'ignore', 'ipc'], serialization: 'advanced'
+      });
+      worker.send({ filePath, snapshot, chunkSize: snapshotChunkSize,
+        objectUtilPath: path.join(__dirname, 'object-util.js') }, error => { if (error) reject(error); });
+      let completed = false;
+      worker.once('message', message => { completed = message && message.ok === true; });
+      worker.once('error', reject);
+      worker.once('exit', code => {
+        if (code === 0 && completed) resolve(true);
+        else reject(new Error(`Snapshot worker exited without completion: ${code}`));
+      });
+    }).catch(error => {
+      // Preserve the existing nonfatal snapshot error handling.
+      logger.error(`[writeSnapshotFile] Failed to write snapshot at ${filePath}: ${error.stack}`);
+      return false;
     });
   }
 

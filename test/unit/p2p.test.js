@@ -7,7 +7,8 @@ const {
   BlockchainConsts,
   NodeConfigs,
   P2pNetworkStates,
-  BlockchainParams
+  BlockchainParams,
+  trafficStatsManager
 } = require('../../common/constants');
 const { getIpAddress } = require('../../common/network-util');
 const { setNodeForTesting } = require('../test-util');
@@ -383,13 +384,21 @@ describe("P2p", () => {
     describe("getTrafficStats", () => {
       it("gets traffic stats", () => {
         const expected = { '1m': {}, '5m': {}, '1h': {} };
-        assert.deepEqual(p2pClient.getTrafficStats(), expected);
+        const previous = trafficStatsManager.trafficDbMap;
+        trafficStatsManager.trafficDbMap = new Map();
+        try {
+          assert.deepEqual(p2pClient.getTrafficStats(), expected);
+        } finally {
+          trafficStatsManager.trafficDbMap = previous;
+        }
       });
     });
 
     describe("getClientStatus", () => {
       it("gets client status", () => {
-        const expected = { trafficStats: p2pClient.getTrafficStats() };
+        const expected = { trafficStats: p2pClient.getTrafficStats(),
+          consensusGossip: { enqueued: 0, oversized: 0, backpressure: 0,
+            unavailable: 0, sendErrors: 0 } };
         assert.deepEqual(p2pClient.getClientStatus(), expected);
       });
     });

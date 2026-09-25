@@ -506,3 +506,16 @@ describe("P2P Util", () => {
     });
   });
 });
+
+describe('Peer URL identity', () => {
+  it('distinguishes private hosts even when ports match', () => {
+    assert.isFalse(util.areIdenticalUrls('http://10.0.0.1:8080', 'http://10.0.0.2:8080'));
+  });
+  it('recognizes loopback aliases and preserves endpoint distinctions', () => {
+    assert.isTrue(util.areIdenticalUrls('http://localhost:8080', 'http://127.0.0.1:8080'));
+    assert.isTrue(util.areIdenticalUrls('http://[::1]:8080', 'http://127.0.0.1:8080'));
+    assert.isFalse(util.areIdenticalUrls('http://localhost:8080', 'https://localhost:8080'));
+    assert.isFalse(util.areIdenticalUrls('http://localhost:8080', 'http://localhost:8081'));
+    assert.isFalse(util.areIdenticalUrls('http://localhost:8080/a', 'http://localhost:8080/b'));
+  });
+});

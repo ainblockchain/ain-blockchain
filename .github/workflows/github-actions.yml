@@ -14,7 +14,7 @@ on:
     types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_unit_test:
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action != 'closed' }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -34,6 +34,8 @@ jobs:
         run: yarn install
       - name: run unittest
         run: yarn run test_unit
+      - name: runtime regression tests
+        run: yarn run test_runtime_regression
   performance_test:
     if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.event.pull_request.base.ref == 'develop'
     runs-on: ubuntu-latest

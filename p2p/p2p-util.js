@@ -159,15 +159,13 @@ class P2pUtil {
   }
 
   static areIdenticalUrls(url1, url2) {
-    if (NodeConfigs.HOSTING_ENV === HostingEnvs.LOCAL) {
-      const comparingUrl1 = new URL(url1);
-      const comapringUrl2 = new URL(url2);
-      return CommonUtil.isValidPrivateUrl(comparingUrl1.hostname) &&
-          CommonUtil.isValidPrivateUrl(comapringUrl2.hostname) &&
-          comparingUrl1.port === comapringUrl2.port;
-    } else {
-      return url1 === url2;
-    }
+    // Private IPs on different EC2 hosts are not aliases of the same local node.
+    const first = new URL(url1);
+    const second = new URL(url2);
+    const host = (value) => ['localhost', '127.0.0.1', '[::1]'].includes(value)
+      ? 'loopback' : value;
+    return first.protocol === second.protocol && host(first.hostname) === host(second.hostname) &&
+      first.port === second.port && first.pathname === second.pathname;
   }
 
   static toHostname(url) {

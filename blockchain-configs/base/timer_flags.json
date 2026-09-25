@@ -1,4 +1,8 @@
 {
+  "native_escrow_micro_units": {
+    "enabled_block": null,
+    "has_bandage": false
+  },
   "allow_lower_case_app_names_only": {
     "enabled_block": 2,
     "has_bandage": true

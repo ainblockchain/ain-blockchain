@@ -1,0 +1,35 @@
+{
+  "name": "ain-cert-ainize",
+  "services": {
+    "node": {
+      "image": "${AINIZE_IMAGE:-ain-cert-ainize:relay-runtime-20260911}",
+      "network_mode": "host",
+      "cpus": 2,
+      "cpuset": "0-7",
+      "mem_limit": "8g",
+      "memswap_limit": "8g",
+      "user": "${AINIZE_UID:?set AINIZE_UID}:${AINIZE_GID:?set AINIZE_GID}",
+      "group_add": ["${DOCKER_GID:?set DOCKER_GID}"],
+      "environment": {
+        "AINIZE_HOME": "/mnt/newdata/gov/kpi/ainize/home-docker"
+      },
+      "volumes": [
+        "/mnt/newdata/gov/kpi/ainize/home-docker:/mnt/newdata/gov/kpi/ainize/home-docker",
+        "/mnt/newdata/qwen3.8:/mnt/newdata/qwen3.8",
+        "/mnt/newdata/gov/kpi/harness/dart-datasets:/datasets:ro",
+        "/mnt/newdata/gov/kpi/evidence:/mnt/newdata/gov/kpi/evidence",
+        "/var/run/docker.sock:/var/run/docker.sock:ro"
+      ],
+      "healthcheck": {
+        "test": ["CMD", "node", "-e", "fetch('http://localhost:3410/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"],
+        "interval": "15s",
+        "timeout": "5s",
+        "retries": 4,
+        "start_period": "30s"
+      },
+      "restart": "no",
+      "labels": { "org.ain.cert.role": "ainize-node" },
+      "logging": { "driver": "json-file", "options": { "max-size": "20m", "max-file": "4" } }
+    }
+  }
+}

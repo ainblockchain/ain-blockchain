@@ -91,6 +91,12 @@ GET http://<ip_address>:8080/network_status
 
 ## Blockchain Node 
 
+With `HOSTING_ENV=local`, address discovery uses the local interface for both
+internal and advertised addresses. Local and isolated Docker chains do not need
+an external public-IP lookup to start. This mode does not discover a NAT mapping
+or make a private node publicly reachable; public deployments need an appropriate
+hosting/network configuration.
+
 Operates a single peer node instance of the AIN blockchain. A single blockchain node instance processes incoming transaction requests and maintains a local copy of the entire blockchain. The blockchain node first queries the tracker-server for ip addresses of other peers, and then syncs its local blockchain to the network consensus blockchain. If a node is included in the whitelist and has staked appropriate amount of AIN, it will then take part in the consensus protocol.
 
 ### Running Blockchain Node without Docker
