@@ -1,0 +1,15 @@
+{
+  "name": "ain-v2-layer-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js attestor.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.11.1"
+  }
+}
