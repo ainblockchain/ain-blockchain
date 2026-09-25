@@ -16,6 +16,8 @@ const stateValue = value => value && typeof value === 'object' ?
   Object.fromEntries(Object.entries(value).map(([key, child]) => [key, stateValue(child)])) : value;
 const write = (db, path, value) => db.writeDatabase(['values', ...path.split('/').filter(Boolean)], stateValue(value));
 const special = op => typeof op?.ref === 'string' && (op.ref === '/layer2' || op.ref.startsWith('/layer2/'));
+const unboundSignature = tx => typeof tx?.signature === 'string' &&
+  CommonUtil.isP256Signature(Buffer.from(tx.signature.replace(/^0x/, ''), 'hex'));
 function leaves(op) { return op?.type === 'SET' && Array.isArray(op.op_list) ? op.op_list.flatMap(leaves) : [op]; }
 function consensus(op) {
   return (op?.type === 'SET_VALUE' || op?.type === undefined) && !op.is_global &&
@@ -42,6 +44,8 @@ function precheck(db, tx, blockNumber) {
     return reject('Layer control transactions cannot be batched');
   }
   if (!config) return true;
+  // Legacy P256 signatures omit the chain ID and can be replayed across layers.
+  if (unboundSignature(tx)) return reject('Legacy P256 signatures are not bound to an execution layer');
   if (config.role !== 'L1' && config.role !== 'L2') return reject('Invalid execution-layer configuration');
   if (config.role === 'L1') {
     if (tx.tx_body.gas_price !== 0 || tx.tx_body.billing !== undefined) return reject('Locked L1 accepts zero-fee control/inbox transactions only');
@@ -112,7 +116,7 @@ function execute(db, op, auth, tx, blockNumber) {
     if (pending && config.role === 'L1' && config.genesisHash) {
       if (get(db, op.ref) !== null) throw Error('Inbox marker already recorded');
       const inner = Transaction.create(op.value?.tx_body, op.value?.signature, config.chainId);
-      if (!inner || !Transaction.verifyTransaction(inner, config.chainId) || inner.address !== auth.addr ||
+      if (!inner || unboundSignature(inner) || !Transaction.verifyTransaction(inner, config.chainId) || inner.address !== auth.addr ||
           inner.tx_body.parent_tx_hash !== pending[1] || leaves(inner.tx_body.operation).some(special)) {
         throw Error('Invalid signed L2 inbox payload');
       }

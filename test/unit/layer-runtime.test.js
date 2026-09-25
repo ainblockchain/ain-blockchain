@@ -30,6 +30,21 @@ describe('L1 custody and L2 inbox consensus policy', () => {
     genesis_hash: hash(2), source_state_root: hash(3), source_block_hash: hash(4), source_height: 100,
   })))); }
 
+  it('rejects valid legacy P256 signatures replayable across execution layers', () => {
+    const key = new (require('elliptic').ec)('p256').genKeyPair();
+    const txBody = body('/apps/example/x', 1);
+    const digest = ain.hashTransaction(txBody), sig = key.sign(digest);
+    const signature = '0x' + Buffer.concat([digest, Buffer.from(key.getPublic(true, 'hex'), 'hex'),
+      sig.r.toArrayLike(Buffer, 'be', 32), sig.s.toArrayLike(Buffer, 'be', 32)]).toString('hex');
+    const tx = Transaction.create(txBody, signature, 103);
+    assert.equal(Transaction.verifyTransaction(tx, 103), true);
+    assert.equal(Transaction.verifyTransaction(tx, 104), true);
+    for (const role of ['L1', 'L2']) {
+      db.writeDatabase(['values', 'blockchain_params', 'layer2'], { role });
+      failure(Runtime.precheck(db, tx, 100));
+    }
+  });
+
   it('locks L1 spending and app mutations at consensus while preserving balances', () => {
     const balances = db.getProofHash('/values/accounts'), services = db.getProofHash('/values/service_accounts');
     freeze();
