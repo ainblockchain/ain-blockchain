@@ -86,6 +86,9 @@ class FileUtil {
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
     for (const file of fileList) {
+      // Only atomically published snapshots are eligible after a crash. The
+      // streaming writer can leave <height>.json.gz.<pid>.tmp behind.
+      if (!/^(0|[1-9][0-9]*)\.json\.gz$/.test(file)) continue;
       // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
       if (_.startsWith(file, BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX)) {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);

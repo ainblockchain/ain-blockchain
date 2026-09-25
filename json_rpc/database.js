@@ -100,7 +100,7 @@ module.exports = function getDatabaseApis(node) {
 
     [JSON_RPC_METHODS.AIN_GET_STATE_PROOF]: function(args, done) {
       const beginTime = Date.now();
-      const result = node.db.getStateProof(args.ref);
+      const result = node.db.getStateProof(args.ref, CommonUtil.toGetOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -108,7 +108,7 @@ module.exports = function getDatabaseApis(node) {
 
     [JSON_RPC_METHODS.AIN_GET_PROOF_HASH]: function(args, done) {
       const beginTime = Date.now();
-      const result = node.db.getProofHash(args.ref);
+      const result = node.db.getProofHash(args.ref, CommonUtil.toGetOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));

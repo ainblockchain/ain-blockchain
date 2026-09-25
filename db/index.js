@@ -24,6 +24,7 @@ const {
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
+const LayerRuntime = require('../layer2/runtime');
 const StateNode = require('./state-node');
 const {
   hasFunctionConfig,
@@ -570,18 +571,18 @@ class DB {
    * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  getStateProof(statePath) {
+  getStateProof(statePath, options = {}) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getStateProofFromStateRoot(this.stateRoot, parsedPath);
+    return getStateProofFromStateRoot(options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot, parsedPath);
   }
 
   /**
    * Returns proof hash of a state node.
    * @param {string} statePath full database path to the state node
    */
-  getProofHash(statePath) {
+  getProofHash(statePath, options = {}) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getProofHashFromStateRoot(this.stateRoot, parsedPath);
+    return getProofHashFromStateRoot(options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
@@ -1030,8 +1031,7 @@ class DB {
       const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
       const stakeLockupExtension = DB.getBlockchainParam(
           'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
-      const chainId = DB.getBlockchainParam(
-          'genesis/chain_id', blockNumber, this.stateRoot);
+      const chainId = this.getTransactionChainId(transaction?.tx_body);
       const networkId = DB.getBlockchainParam(
           'genesis/network_id', blockNumber, this.stateRoot);
       const blockchainParams = {
@@ -1333,6 +1333,8 @@ class DB {
   }
 
   executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource) {
+    const layerResult = LayerRuntime.execute(this, op, auth, tx, blockNumber);
+    if (layerResult !== null) return layerResult;
     let result;
     const options = Object.assign(CommonUtil.toSetOptions(op), {
       nonce,
@@ -1447,6 +1449,7 @@ class DB {
       Object.assign(
           result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
     }
+    if (tx) LayerRuntime.afterExecution(this, tx, result, blockNumber);
     if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
       // Apply account registration gas amount for nonce and timestamp.
       const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
@@ -1965,7 +1968,10 @@ class DB {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
     }
-    if (restoreIfFails || isDryrun) {
+    const layerPrecheck = LayerRuntime.precheck(this, tx, blockNumber);
+    if (layerPrecheck !== true) return layerPrecheck;
+    const restoreOnFailure = restoreIfFails || LayerRuntime.isControlTransaction(tx);
+    if (restoreOnFailure || isDryrun) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
           logger,
@@ -1996,7 +2002,7 @@ class DB {
     }
     if (isDryrun) {
       this.restoreDb();
-    } else if (restoreIfFails) {
+    } else if (restoreOnFailure) {
       if (CommonUtil.isFailedTx(executionResult)) {
         this.restoreDb();
       } else {
@@ -2006,12 +2012,18 @@ class DB {
     return executionResult;
   }
 
+  getTransactionChainId(body) {
+    return require('../layer2/domain').transactionChainId(body,
+        this.getValue('/blockchain_params/genesis/chain_id') ?? DB.getBlockchainParam('genesis/chain_id'),
+        this.getValue('/blockchain_params/layer2'));
+  }
+
   executeTransactionList(
       txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
+      const executableTx = Transaction.toExecutable(tx, this.getTransactionChainId(tx.tx_body));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime, eventSource);
       if (CommonUtil.isFailedTx(res)) {

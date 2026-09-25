@@ -87,6 +87,18 @@ describe('Snapshot streaming failure containment and atomic publication', () => 
     });
   }
 
+  it('ignores unpublished files left by an interrupted snapshot writer on restart', async () => {
+    await FileUtil.writeSnapshotFile(directory, 10, { committed: true }, 128);
+    for (const name of ['11.json.gz.123.tmp', '12.json.gz.tmp', '13.json.gz.backup', '14.json', '0015.json.gz']) {
+      fs.writeFileSync(path.join(directory, 'n2s', name), 'incomplete');
+    }
+    assert.equal(FileUtil.getLatestSnapshotInfo(directory).latestSnapshotBlockNumber, 10);
+    const loaded = [];
+    assert.equal(await BlockchainNode.prototype.loadLatestSnapshot.call({ snapshotDir: directory,
+      setBootstrapSnapshot: (_, snapshot) => loaded.push(snapshot) }), true);
+    assert.deepEqual(loaded, [{ committed: true }]);
+  });
+
   it('reports child process write failure as false', async () => {
     assert.equal(await FileUtil.writeSnapshotFile(
         path.join(directory, 'missing'), 10, { value: 1 }, 128), false);

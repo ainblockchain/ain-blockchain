@@ -650,7 +650,7 @@ app.get('/get_network_id', (req, res) => {
 
 app.get('/get_chain_id', (req, res) => {
   const beginTime = Date.now();
-  const result = p2pServer.node.getBlockchainParam('genesis/chain_id');
+  const result = p2pServer.node.getTransactionChainId(null);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
