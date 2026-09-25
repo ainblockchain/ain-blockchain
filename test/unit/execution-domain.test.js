@@ -50,9 +50,10 @@ describe('Execution signing domain transition', () => {
     assert.equal(db.executeTransaction(tx, false, true, 100, cutoff).code, Runtime.CODE);
     assert.equal(db.getProofHash('/'), previous);
   });
-  it('does not exempt batched or global consensus-looking app transactions', () => {
+  it('recognizes native proposal batches but rejects mixed/global operations', () => {
     const op = body('/consensus/number/1/propose', {}).operation;
-    assert.equal(domain.isConsensusBody({ operation: { type: 'SET', op_list: [op] } }), false);
+    assert.equal(domain.isConsensusBody({ operation: { type: 'SET', op_list: [op] } }), true);
+    assert.equal(domain.isConsensusBody({ operation: { type: 'SET', op_list: [op, body('/apps/x', 1).operation] } }), false);
     assert.equal(domain.isConsensusBody({ operation: { ...op, is_global: true } }), false);
   });
 });
