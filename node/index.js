@@ -691,6 +691,11 @@ class BlockchainNode {
     );
   }
 
+  getTransactionChainId(body) {
+    return require('../layer2/domain').transactionChainId(body,
+        this.getBlockchainParam('genesis/chain_id'), this.getAllBlockchainParamsFromState().layer2);
+  }
+
   getAllBlockchainParamsFromState() {
     return DB.getValueFromStateRoot(
         this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
@@ -741,7 +746,7 @@ class BlockchainNode {
       txBody.gas_price = 0;
     }
     return Transaction.fromTxBody(
-        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id'));
+        txBody, this.account.private_key, this.getTransactionChainId(txBody));
   }
 
   /**
@@ -779,7 +784,7 @@ class BlockchainNode {
           TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
           `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
-    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const chainId = this.getTransactionChainId(tx.tx_body);
     const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
@@ -951,14 +956,13 @@ class BlockchainNode {
   executeAndGetValidTransactions(
       longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource = null) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
-    const chainId = this.getBlockchainParam('genesis/chain_id');
     const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
       const res = baseDb.executeTransaction(
-          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
+          Transaction.toExecutable(tx, baseDb.getTransactionChainId(tx.tx_body)), false, true, blockNumber, blockTime, eventSource);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(() => `[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);

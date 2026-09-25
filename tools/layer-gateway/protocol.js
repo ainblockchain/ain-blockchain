@@ -74,6 +74,7 @@ function layerInfo(config) {
     inbox: { enabled: config.l1Inbox === true },
     layers: Object.fromEntries(Object.entries(config.layers).map(([layer, settings]) => [layer, {
       chain_id: settings.chainId, genesis_hash: settings.genesisHash,
+      ...(settings.checkpointChainId !== undefined ? { checkpoint_chain_id: settings.checkpointChainId } : {}),
       execution: 'native-consensus', trust_model: layer === 'L2' ? 'operator-validated' : 'L1-consensus',
       // A root recorded on L1 is not proof of execution or withdrawal finality.
       settlement: layer === 'L2' ? 'see-transaction-anchor' : 'native-finality',

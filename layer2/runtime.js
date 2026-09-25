@@ -3,6 +3,7 @@ const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
 const { verifyCertificate } = require('./anchor');
 const inbox = require('./inbox');
+const domain = require('./domain');
 const HASH = /^0x[a-f0-9]{64}$/;
 const ADDR = /^0x[a-fA-F0-9]{40}$/;
 const CONFIG = '/blockchain_params/layer2';
@@ -51,6 +52,12 @@ function precheck(db, tx, blockNumber) {
     if (tx.tx_body.gas_price !== 0 || tx.tx_body.billing !== undefined) return reject('Locked L1 accepts zero-fee control/inbox transactions only');
     if (!ops.every(op => consensus(op) || special(op))) return reject('State and assets are locked on L1; submit to L2 or the L1 inbox');
   } else {
+    if (config.executionDomain && !domain.isConsensusBody(tx.tx_body)) {
+      if (tx.tx_body.timestamp < config.executionDomain.minTimestamp || tx.tx_body.address ||
+          !Transaction.verifyTransaction({ ...tx, extra: {} }, domain.executionChainId(config))) {
+        return reject('Transaction predates or mismatches the active execution signing domain');
+      }
+    }
     // Genesis, layer control, and their ancestors cannot be overwritten by ordinary operations.
     if (ops.some(op => {
       if (!op || typeof op.ref !== 'string') return true;
@@ -101,6 +108,20 @@ function execute(db, op, auth, tx, blockNumber) {
       write(db, '/layer2/migration', op.value);
       return ok();
     }
+    if (op.ref === '/layer2/control/execution_domain') {
+      const next = op.value;
+      if (auth.addr !== owner || config.executionDomain || !next ||
+          !Number.isSafeInteger(next.chainId) || next.chainId < 0 || next.chainId > 109 ||
+          next.chainId === config.chainId || next.chainId === config.parentChainId ||
+          !Number.isSafeInteger(next.minTimestamp) || next.minTimestamp <= 0 ||
+          next.minTimestamp > tx.tx_body.timestamp || Object.keys(next).length !== 2) {
+        throw Error('Invalid one-time execution signing domain transition');
+      }
+      write(db, CONFIG, { ...config, executionDomain: next });
+      write(db, '/layer2/execution_domain_transition', { ...next, previousChainId: config.chainId,
+        block_number: blockNumber, transaction_hash: tx.hash });
+      return ok();
+    }
     const checkpoint = op.ref.match(/^\/layer2\/checkpoints\/(0|[1-9][0-9]*)$/);
     if (checkpoint && config.role === 'L1') {
       if (get(db, op.ref) !== null) throw Error('Checkpoint already recorded');
@@ -115,8 +136,10 @@ function execute(db, op, auth, tx, blockNumber) {
     const pending = op.ref.match(/^\/layer2\/inbox\/(0x4c31494e[a-f0-9]{56})$/);
     if (pending && config.role === 'L1' && config.genesisHash) {
       if (get(db, op.ref) !== null) throw Error('Inbox marker already recorded');
-      const inner = Transaction.create(op.value?.tx_body, op.value?.signature, config.chainId);
-      if (!inner || unboundSignature(inner) || !Transaction.verifyTransaction(inner, config.chainId) || inner.address !== auth.addr ||
+      const childChainId = domain.executionChainId(config);
+      const inner = Transaction.create(op.value?.tx_body, op.value?.signature, childChainId);
+      if (!inner || unboundSignature(inner) || !Transaction.verifyTransaction(inner, childChainId) || inner.address !== auth.addr ||
+          (config.executionDomain && inner.tx_body.timestamp < config.executionDomain.minTimestamp) ||
           inner.tx_body.parent_tx_hash !== pending[1] || leaves(inner.tx_body.operation).some(special)) {
         throw Error('Invalid signed L2 inbox payload');
       }

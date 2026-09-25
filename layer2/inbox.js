@@ -25,7 +25,7 @@ function body(value) {
 function verify(certificate, config) {
   if (!certificate || !Array.isArray(certificate.signatures)) throw Error('Inbox certificate required');
   const value = canonical(certificate.statement);
-  if (value.parent_chain_id !== config.parentChainId || value.child_chain_id !== config.chainId ||
+  if (value.parent_chain_id !== config.parentChainId || value.child_chain_id !== require('./domain').executionChainId(config) ||
       value.parent_genesis !== config.parentGenesisHash) throw Error('Inbox domain mismatch');
   const validators = Array.isArray(config.parentValidators) ? config.parentValidators : Object.values(config.parentValidators || {});
   if (validators.length !== 5 || validators.some(a => typeof a !== 'string' || !/^0x[a-fA-F0-9]{40}$/.test(a)) ||
@@ -37,7 +37,7 @@ function verify(certificate, config) {
       throw Error('Invalid inbox signer');
     }
     let valid = false;
-    try { valid = ain.ecVerifySig(body(value), vote.signature, vote.address, config.chainId); } catch {}
+    try { valid = ain.ecVerifySig(body(value), vote.signature, vote.address, require('./domain').executionChainId(config)); } catch {}
     if (!valid) throw Error('Invalid inbox signature');
     seen.add(vote.address.toLowerCase());
   }

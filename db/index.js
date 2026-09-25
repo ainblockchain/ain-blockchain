@@ -1031,8 +1031,7 @@ class DB {
       const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
       const stakeLockupExtension = DB.getBlockchainParam(
           'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
-      const chainId = DB.getBlockchainParam(
-          'genesis/chain_id', blockNumber, this.stateRoot);
+      const chainId = this.getTransactionChainId(transaction?.tx_body);
       const networkId = DB.getBlockchainParam(
           'genesis/network_id', blockNumber, this.stateRoot);
       const blockchainParams = {
@@ -2013,12 +2012,18 @@ class DB {
     return executionResult;
   }
 
+  getTransactionChainId(body) {
+    return require('../layer2/domain').transactionChainId(body,
+        this.getValue('/blockchain_params/genesis/chain_id') ?? DB.getBlockchainParam('genesis/chain_id'),
+        this.getValue('/blockchain_params/layer2'));
+  }
+
   executeTransactionList(
       txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
+      const executableTx = Transaction.toExecutable(tx, this.getTransactionChainId(tx.tx_body));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime, eventSource);
       if (CommonUtil.isFailedTx(res)) {

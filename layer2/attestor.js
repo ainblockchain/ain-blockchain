@@ -53,7 +53,7 @@ function createAttestor(config, privateKey) {
         const latest = await value(config.parentEndpoint, '/layer2/latest_checkpoint');
         const previous = latest ? anchor.statementHash(latest.statement) : '0x' + '0'.repeat(64);
         if (input.previous_anchor !== previous || (latest && input.height <= latest.statement.height)) throw Error('Checkpoint parent has changed');
-        statement = anchor.statement({ version: 1, chain_id: config.childChainId, parent_chain_id: config.parentChainId,
+        statement = anchor.statement({ version: 1, chain_id: config.checkpointChainId ?? config.childChainId, parent_chain_id: config.parentChainId,
           genesis_hash: config.childGenesisHash, height: block.number, block_hash: block.hash,
           state_root: block.state_proof_hash, transaction_root: block.transactions_hash,
           previous_anchor: previous, timestamp: block.timestamp });

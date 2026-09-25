@@ -24,6 +24,7 @@ function createGateway(config, store, transport = upstream) {
   validateConfig(config);
   for (const [layer, settings] of Object.entries(config.layers)) store.bind(layer, settings.genesisHash);
   if (config.layers.L2?.validators) store.configureSettlement({ ...config.layers.L2,
+    chainId: config.layers.L2.checkpointChainId ?? config.layers.L2.chainId,
     parentChainId: config.layers.L1.chainId, threshold: 4 });
   const readiness = Object.fromEntries(Object.keys(config.layers).map(layer => [layer, { healthy: false }]));
   const targets = {};
