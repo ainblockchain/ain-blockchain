@@ -30,6 +30,11 @@ function instance() {
   assert.equal(timers.get(a.epochInterval).at, 505);
   duration = 125; time = 505; await timers.get(a.epochInterval).fn();
   assert.equal(timers.get(a.epochInterval).at, 630);
+  a.isInEpochTransition = true;
+  const busyTimer = a.epochInterval;
+  await timers.get(busyTimer).fn();
+  assert.notEqual(a.epochInterval, busyTimer, 'busy transition must keep the timer alive');
+  a.isInEpochTransition = false;
   const old = timers.get(a.epochInterval).fn;
   a.setEpochTransition(); const current = a.epochInterval;
   await old(); assert.equal(a.epochInterval, current);

@@ -49,6 +49,10 @@ test('separate project uses ten immutable images and explicit shared resource ce
     assert.ok(node.volumes.includes('/private-test/config:/network:ro'));
   }
   assert.throws(() => compose({ ...plan, project: 'ain-cert-docker' }, '/private', '/source'));
-  assert.throws(() => compose({ ...plan, rpcPortBase: 18081 }, '/private', '/source'));
+  assert.equal(compose({ ...plan, rpcPortBase: 18081 }, '/private', '/source')
+      .services.node0.environment.PORT, '18081');
+  for (const rpcPortBase of [1023, 65527, 18081.5]) {
+    assert.throws(() => compose({ ...plan, rpcPortBase }, '/private', '/source'));
+  }
   assert.throws(() => compose({ ...plan, chainImage: 'mutable-tag' }, '/private', '/source'));
 });
