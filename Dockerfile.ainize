@@ -1,0 +1,20 @@
+# ainize deploy image: a standalone 1-node AIN blockchain (dev chain, blockchain-configs/1-node), the same
+# setup `yarn client` / the unit tests use. It does not join testnet/mainnet (the runtime has no internet);
+# the season images built by ./Dockerfile + start_node_docker.sh need peers, a tracker and an injected account.
+FROM node:20-bookworm
+WORKDIR /app/ain-blockchain
+COPY package.json yarn.lock ./
+COPY patches ./patches
+RUN yarn install --frozen-lockfile && yarn cache clean
+COPY . .
+# The validator key below is the public dev/test key already committed in package.json (`client`, `test_unit*`);
+# it only controls this throwaway 1-node chain. Chain data lives in /tmp (read-only root at runtime).
+ENV BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node \
+    BLOCKCHAIN_DATA_DIR=/tmp/ain_blockchain_data \
+    UNSAFE_PRIVATE_KEY=b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96 \
+    PORT=8080 P2P_PORT=5000 CONSOLE_LOG=true
+EXPOSE 8080
+USER node
+# A node is the chain's first (genesis) node only when PEER_CANDIDATE_JSON_RPC_URL is its own JSON-RPC URL, which
+# the node builds from its container IP (HOSTING_ENV=local -> first non-loopback IPv4), so set it at start.
+CMD ["sh", "-c", "export PEER_CANDIDATE_JSON_RPC_URL=\"http://$(node -e \"console.log(require('ip').address())\"):${PORT}/json-rpc\"; exec node --max-old-space-size=400 ./client/index.js"]

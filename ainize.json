@@ -1,0 +1,7 @@
+{
+  "name": "ain-blockchain",
+  "kind": "service",
+  "port": 8080,
+  "healthcheck": "/health_check",
+  "build": { "dockerfile": "Dockerfile.ainize", "context": "." }
+}
