@@ -108,14 +108,40 @@ describe('Snapshot streaming failure containment and atomic publication', () => 
 
   it('keeps older snapshots when writing the replacement fails', async () => {
     const deleted = [];
-    const fakeNode = { writeSnapshot: async () => false,
+    for (let i = 0; i <= NodeConfigs.MAX_NUM_SNAPSHOTS; i++) {
+      fs.writeFileSync(FileUtil.getSnapshotPathByBlockNumber(directory, i), 'fixture');
+    }
+    const fakeNode = { snapshotDir: directory, pruneBlockHistory: async () => {},
+      writeSnapshot: async () => false,
       deleteSnapshot: (number) => deleted.push(number) };
     const number = NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
     await BlockchainNode.prototype.updateSnapshots.call(fakeNode, number);
     assert.deepEqual(deleted, []);
     fakeNode.writeSnapshot = async () => true;
     await BlockchainNode.prototype.updateSnapshots.call(fakeNode, number);
-    assert.deepEqual(deleted, [number - NodeConfigs.MAX_NUM_SNAPSHOTS * number]);
+    assert.deepEqual(deleted, [0]);
+  });
+
+  it('does not overlap slow snapshot workers and releases the guard after failure', async () => {
+    let finish;
+    let writes = 0;
+    const fakeNode = { writeSnapshot: () => { writes++; return new Promise(resolve => { finish = resolve; }); } };
+    const first = BlockchainNode.prototype.updateSnapshots.call(fakeNode, 0);
+    await BlockchainNode.prototype.updateSnapshots.call(fakeNode, 0);
+    assert.equal(writes, 1);
+    finish(false); await first;
+    assert.equal(fakeNode.snapshotUpdateInProgress, false);
+    fakeNode.writeSnapshot = async () => { throw Error('write failed'); };
+    await assert.rejects(BlockchainNode.prototype.updateSnapshots.call(fakeNode, 0), /write failed/);
+    assert.equal(fakeNode.snapshotUpdateInProgress, false);
+  });
+
+  it('ignores interrupted snapshot writer temporary files', () => {
+    fs.writeFileSync(FileUtil.getSnapshotPathByBlockNumber(directory, 10), 'complete');
+    fs.writeFileSync(path.join(directory, 'n2s', '20.json.gz.123.tmp'), 'partial');
+    assert.equal(FileUtil.getLatestSnapshotInfo(directory).latestSnapshotBlockNumber, 10);
+    FileUtil.cleanupSnapshotTemps(directory);
+    assert.deepEqual(fs.readdirSync(path.join(directory, 'n2s')), ['10.json.gz']);
   });
 
   it('does not accept an invalid latest snapshot as an empty bootstrap state', async () => {

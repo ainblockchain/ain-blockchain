@@ -1,6 +1,7 @@
 {
   "ACCOUNT_INJECTION_OPTION": null,
   "BLOCKCHAIN_DATA_DIR": "./ain_blockchain_data",
+  "BLOCK_HISTORY_RETENTION": 0,
   "BLOCKCHAIN_GUIDE_URL": "https://docs.ainetwork.ai",
   "CHAIN_SEGMENT_LENGTH": 20,
   "CHAIN_SEGMENT_SLEEP_MS": 10000,

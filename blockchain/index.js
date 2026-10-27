@@ -10,6 +10,7 @@ const {
   SyncModeOptions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const { HistoryRetention } = require('./history-retention');
 
 class Blockchain {
   constructor(basePath) {
@@ -17,6 +18,7 @@ class Blockchain {
     this.chain = [];
     this.blockchainPath = path.resolve(NodeConfigs.CHAINS_DIR, basePath);
     this.setGenesisBlock();
+    this.historyRetention = new HistoryRetention(this.blockchainPath, NodeConfigs, FileUtil);
 
     // Mapping of a block number to the finalized block's info
     this.numberToBlockInfo = {};
@@ -250,6 +252,7 @@ class Blockchain {
 
   writeBlock(block, from = '') {
     const LOG_HEADER = 'writeBlock';
+    if (block && !this.historyRetention.allowsBlock(block.number)) return false;
     if (!block) {
       logger.error(`[${LOG_HEADER}] Writing an empty block ${block} from ${from}`);
     }

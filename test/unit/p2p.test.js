@@ -203,6 +203,10 @@ describe("P2p", () => {
           state: 'CHAIN_SYNCING',
           stateNumeric: 4,
           nonce: 0,
+          historyStorage: {
+            retentionBlocks: 0, historyPruned: false, retainFrom: 0,
+            nextBlockToPrune: null, pruning: false,
+          },
           dbStatus: {
             rootStateInfo: {
               "#num_children": 4,
