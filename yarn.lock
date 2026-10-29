@@ -4814,29 +4814,6 @@ negotiator@0.6.3:
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.3.tgz#58e323a72fedc0d6f9cd4d31fe49f51479590ccd"
   integrity sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==
 
-neo4j-driver-bolt-connection@5.28.3:
-  version "5.28.3"
-  resolved "https://registry.yarnpkg.com/neo4j-driver-bolt-connection/-/neo4j-driver-bolt-connection-5.28.3.tgz#62c5a3a2b6a018fdff422ba2fa379f220d11dd7a"
-  integrity sha512-wqHBYcU0FVRDmdsoZ+Fk0S/InYmu9/4BT6fPYh45Jimg/J7vQBUcdkiHGU7nop7HRb1ZgJmL305mJb6g5Bv35Q==
-  dependencies:
-    buffer "^6.0.3"
-    neo4j-driver-core "5.28.3"
-    string_decoder "^1.3.0"
-
-neo4j-driver-core@5.28.3:
-  version "5.28.3"
-  resolved "https://registry.yarnpkg.com/neo4j-driver-core/-/neo4j-driver-core-5.28.3.tgz#ae1b1ab902db978396a3f4102c63b95f5b053b6e"
-  integrity sha512-Jk+hAmjFmO5YzVH/U7FyKXigot9zmIfLz6SZQy0xfr4zfTE/S8fOYFOGqKQTHBE86HHOWH2RbTslbxIb+XtU2g==
-
-neo4j-driver@^5.0.0:
-  version "5.28.3"
-  resolved "https://registry.yarnpkg.com/neo4j-driver/-/neo4j-driver-5.28.3.tgz#5f7a273a2e157d2c3c19abc1c5189c9c79abe44b"
-  integrity sha512-k7c0wEh3HoONv1v5AyLp9/BDAbYHJhz2TZvzWstSEU3g3suQcXmKEaYBfrK2UMzxcy3bCT0DrnfRbzsOW5G/Ag==
-  dependencies:
-    neo4j-driver-bolt-connection "5.28.3"
-    neo4j-driver-core "5.28.3"
-    rxjs "^7.8.2"
-
 next-tick@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/next-tick/-/next-tick-1.1.0.tgz#1836ee30ad56d67ef281b22bd199f709449b35eb"
