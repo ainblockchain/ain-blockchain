@@ -40,6 +40,10 @@ function createGateway(config, store, transport = upstream, reader = read) {
   // height and consensus. The validators rate-limit reads per source IP (10/s), shared by every
   // service on this host (2026-10-29: re-reading them every 2 s pushed nodes into 429).
   const identities = {};
+  // When each endpoint last agreed as a finalized witness. Requests go to every endpoint confirmed in
+  // the last 60 s (the same bound as readiness): dropping one that was merely rate-limited in the
+  // latest check piles its share onto the rest and pushes them into 429 next.
+  const confirmed = {};
   let turn = 0;
 
   async function handle(body) {
@@ -53,7 +57,8 @@ function createGateway(config, store, transport = upstream, reader = read) {
     if (!status.healthy || Date.now() - status.checked_at > 60000) throw new RpcError(-32052, 'Selected layer is not ready');
     // Spread requests over the verified witnesses; a 429 was refused before execution, so another
     // witness may take it (writes included). Any other failure is returned, never replayed.
-    const witnesses = targets[route.layer]?.length ? targets[route.layer] : route.settings.endpoints.slice(0, 1);
+    const recent = route.settings.endpoints.filter(e => Date.now() - (confirmed[route.layer + ' ' + e] ?? 0) <= 60000);
+    const witnesses = recent.length ? recent : targets[route.layer]?.length ? targets[route.layer] : route.settings.endpoints.slice(0, 1);
     const start = turn++ % witnesses.length;
     let response;
     for (let i = 0; i < witnesses.length; i++) {
@@ -120,6 +125,7 @@ function createGateway(config, store, transport = upstream, reader = read) {
         indexed_height: store.head(layer).height, genesis_hash: settings.genesisHash,
         healthy_witnesses: witnesses.length };
       targets[layer] = witnesses;
+      for (const endpoint of witnesses) confirmed[layer + ' ' + endpoint] = Date.now();
     } catch (error) {
       // A rate-limited or timed-out pass proves nothing new: the last verification stands until its
       // 60 s bound in handle() expires. Disagreement, forks and index faults revoke readiness at once.

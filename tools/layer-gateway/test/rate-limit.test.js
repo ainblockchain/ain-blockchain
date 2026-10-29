@@ -83,3 +83,19 @@ test('a real disagreement still takes the layer down at once', async () => {
   assert.equal(gateway2.readiness.L2.healthy, false);
   store.close();
 });
+
+test('a node rate-limited during one check still serves requests while it was seen healthy recently', async () => {
+  const store = new IndexStore(':memory:'); const limited = new Set();
+  const { reader } = chain({ limited });
+  const sent = [];
+  const transport = async (endpoint, request) => { sent.push(endpoint); return { jsonrpc: '2.0', id: request.id, result: { result: 1 } }; };
+  const gateway = createGateway(config, store, transport, reader);
+  await gateway.indexLayer('L2');
+  limited.add('http://a/json-rpc');
+  await gateway.indexLayer('L2');
+  const read = { jsonrpc: '2.0', id: 1, method: 'ain_get', params: { type: 'GET_VALUE', ref: '/apps/x' } };
+  for (let i = 0; i < 9; i++) await gateway.handle(read);
+  // Excluding it would pile its share onto the others and push them into 429 next.
+  assert.ok(sent.includes('http://a/json-rpc'), 'recently healthy node keeps its share: ' + sent);
+  store.close();
+});
