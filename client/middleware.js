@@ -10,19 +10,27 @@ const { NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { JSON_RPC_SET_METHOD_SET } = require('../json_rpc/constants');
 
+// NOTE: Internal hosts that aggregate many clients behind one IP (e.g. the layer gateway host) are
+// exempt: a shared per-IP limit there refused every client at once (2026-10-29).
+const isRateLimitExempt = (req) =>
+    CommonUtil.isWhitelistedIp(req.ip, NodeConfigs.RATE_LIMIT_EXEMPT_IPS || []);
+
 class Middleware {
   constructor () {
     this.allBlockchainApiRateLimiter = rateLimit({
       windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,   // 1 minute window
-      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_BLOCKCHAIN_API_RATE_LIMIT,
+      skip: isRateLimitExempt,
     });
     this.jsonRpcReadRateLimiter = rateLimit({
       windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,
-      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_READ_RATE_LIMIT,
+      skip: isRateLimitExempt,
     });
     this.jsonRpcWriteRateLimiter = rateLimit({
       windowMs: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * 1000,
-      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT
+      max: NodeConfigs.EXPRESS_RATE_LIMIT_WINDOW_SECS * NodeConfigs.MAX_JSON_RPC_API_WRITE_RATE_LIMIT,
+      skip: isRateLimitExempt,
     });
   }
 
