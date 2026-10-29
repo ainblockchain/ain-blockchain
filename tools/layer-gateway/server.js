@@ -55,15 +55,18 @@ function createGateway(config, store, transport = upstream, reader = read) {
     // Never route to an unverified chain or fall back to a different execution layer.
     const status = readiness[route.layer];
     if (!status.healthy || Date.now() - status.checked_at > 60000) throw new RpcError(-32052, 'Selected layer is not ready');
-    // Spread requests over the verified witnesses; a 429 was refused before execution, so another
-    // witness may take it (writes included). Any other failure is returned, never replayed.
+    // Spread requests over the verified witnesses; a 429 was refused before execution, so one other
+    // witness may take it (writes included). Only one: when every node is at its per-IP limit, trying
+    // them all multiplies the load that caused it (measured 219 req/s on 2026-10-29). Any other
+    // failure is returned, never replayed.
     const recent = route.settings.endpoints.filter(e => Date.now() - (confirmed[route.layer + ' ' + e] ?? 0) <= 60000);
     const witnesses = recent.length ? recent : targets[route.layer]?.length ? targets[route.layer] : route.settings.endpoints.slice(0, 1);
     const start = turn++ % witnesses.length;
     let response;
-    for (let i = 0; i < witnesses.length; i++) {
+    const attempts = Math.min(2, witnesses.length);
+    for (let i = 0; i < attempts; i++) {
       try { response = await transport(witnesses[(start + i) % witnesses.length], route.request); break; }
-      catch (error) { if (!rateLimited(error) || i === witnesses.length - 1) throw error; }
+      catch (error) { if (!rateLimited(error) || i === attempts - 1) throw error; }
     }
     return { ...response, execution: { layer: route.layer, chain_id: route.settings.chainId,
       genesis_hash: route.settings.genesisHash,

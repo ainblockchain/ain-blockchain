@@ -99,3 +99,14 @@ test('a node rate-limited during one check still serves requests while it was se
   assert.ok(sent.includes('http://a/json-rpc'), 'recently healthy node keeps its share: ' + sent);
   store.close();
 });
+
+test('when every witness is rate limited a request tries at most two of them', async () => {
+  const store = new IndexStore(':memory:'); const { reader } = chain();
+  const sent = [];
+  const transport = async endpoint => { sent.push(endpoint); throw new UpstreamError(429); };
+  const gateway = createGateway(config, store, transport, reader);
+  await gateway.indexLayer('L2');
+  await assert.rejects(gateway.handle({ jsonrpc: '2.0', id: 1, method: 'ain_get', params: { type: 'GET_VALUE', ref: '/apps/x' } }));
+  assert.equal(sent.length, 2);
+  store.close();
+});
