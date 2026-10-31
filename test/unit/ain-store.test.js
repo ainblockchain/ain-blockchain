@@ -19,6 +19,7 @@ const {
 } = require('../../common/constants');
 const { TxResultCode } = require('../../common/result-code');
 const { setNodeForTesting } = require('../test-util');
+const ainUtil = require('@ainblockchain/ain-util');
 
 const hash = (str) => CommonUtil.hashString(str);
 
@@ -391,19 +392,41 @@ describe('AIN Store: chain behaviour', () => {
       });
     }
 
-    it('emits value-changed events for the MMR update and the slot erase', () => {
+    it('emits MMR update, slot write, then slot erase, in that order', () => {
       const events = [];
       node.db.eh = {
         emitValueChanged: (auth, tx, path, before, after) =>
-          events.push({ path: CommonUtil.formatPath(path), after }),
+          events.push({ path: CommonUtil.formatPath(path), before, after }),
       };
       const key = nextKey();
       const slot = `/apps/${app}/writes/${collection}/${key}`;
-      expect(execute({ type: 'SET_VALUE', ref: slot, value: record(1) }, null, 'BLOCK').res.code)
-          .to.equal(0);
-      const paths = events.map((e) => e.path);
-      expect(paths).to.include(mmrPath);
-      expect(events.find((e) => e.path === slot && e.after === null)).to.not.equal(undefined);
+      const { tx, res } =
+          execute({ type: 'SET_VALUE', ref: slot, value: record(1) }, null, 'BLOCK');
+      expect(res.code).to.equal(0);
+      const leaf = referenceLeaf(app, collection, key, record(1), tx.hash);
+      assert.deepEqual(events.filter((e) => e.path.startsWith(`/apps/${app}/`)), [
+        { path: mmrPath, before: null, after: { n: 1, peaks: { 0: leaf } } },
+        { path: slot, before: null, after: record(1) },
+        { path: slot, before: record(1), after: null },
+      ]);
+      // A parent-path write: the parent's event precedes both slot erasures.
+      events.length = 0;
+      expect(execute({
+        type: 'SET_RULE', ref: `/apps/${app}/writes`, value: { '.rule': { write: true } },
+      }).res.code).to.equal(0);
+      const keys = [nextKey(), nextKey()];
+      const parent = `/apps/${app}/writes`;
+      expect(execute({
+        type: 'SET_VALUE',
+        ref: parent,
+        value: { [collection]: { [keys[0]]: record(2), [keys[1]]: record(3) } },
+      }, null, 'BLOCK').res.code).to.equal(0);
+      const order = events.filter((e) => e.path.startsWith(`/apps/${app}/`))
+          .map((e) => `${e.path}:${e.after === null ? 'null' : 'set'}`);
+      assert.deepEqual(order, [
+        `${mmrPath}:set`, `${mmrPath}:set`, `${parent}:set`,
+        `${parent}/${collection}/${keys[0]}:null`, `${parent}/${collection}/${keys[1]}:null`,
+      ]);
     });
 
     it('rolls back the MMR and the slot erase when a later function fails', () => {
@@ -443,6 +466,108 @@ describe('AIN Store: chain behaviour', () => {
       expect(node.db.getValue(`/apps/${app}/writes`)).to.equal(null);
     });
   });
+
+  for (const flagOn of [false, true]) {
+    describe(`fees and receipts of failed txs (ain_store ${flagOn ? 'on' : 'off'})`, () => {
+      const addr = () => node.account.address;
+      const balance = () => node.db.getValue(`/accounts/${addr()}/balance`);
+      const gasPriceUnit = () => node.getBlockchainParam('resource/gas_price_unit');
+      const blockCost = (tx, res) => CommonUtil.getServiceGasCostTotalFromTxList(
+          [tx], [res], gasPriceUnit()).gasCostTotal;
+
+      beforeEach(() => {
+        if (!flagOn) {
+          TimerFlags.ain_store = { enabled_block: null };
+        }
+        expect(setup().code).to.equal(0);
+        node.db.setValuesForTesting(`/blockchain_params/resource/app_state_budget/${app}`, 10);
+        node.db.setValuesForTesting('/blockchain_params/resource/free_state_budget_ratio', 0);
+      });
+
+      it('a SET tx failing the budget check', () => {
+        const bal0 = balance();
+        const other = ainUtil.createAccount().address;
+        const { tx, res } = execute({
+          type: 'SET',
+          op_list: [
+            { type: 'SET_VALUE', ref: `/transfer/${addr()}/${other}/1/value`, value: 1 },
+            { type: 'SET_VALUE', ref: `/apps/${app}/m1`, value: 'x'.repeat(100) },
+          ],
+        });
+        const receipt = node.db.getValue(`/receipts/${tx.hash}`);
+        const debited = bal0 - balance();
+        const serviceBandwidth = res.gas_amount_total.bandwidth.service;
+        expect(serviceBandwidth).to.be.above(0);
+        if (flagOn) {
+          expect(res.code).to.equal(TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP);
+          expect(res.tx_failed).to.equal(true);
+          expect(CommonUtil.isFailedTx(res)).to.equal(true);
+          // All ops rolled back.
+          expect(node.db.getValue(`/apps/${app}/m1`)).to.equal(null);
+          expect(node.db.getValue(`/accounts/${other}/balance`)).to.equal(null);
+          // Bandwidth only, actually debited, and recorded in the receipt.
+          expect(res.gas_amount_charged).to.equal(serviceBandwidth);
+          expect(debited).to.be.closeTo(res.gas_cost_total, 1e-9);
+          expect(receipt.exec_result.code).to.equal(res.code);
+          expect(receipt.exec_result.gas_amount_charged).to.equal(serviceBandwidth);
+          expect(receipt.exec_result.gas_cost_total).to.equal(res.gas_cost_total);
+          // Block receipts (trimmed results) read as failed too.
+          const blockReceipt = CommonUtil.txResultsToReceipts([res])[0];
+          expect(blockReceipt.tx_failed).to.equal(true);
+          expect(CommonUtil.isFailedTx(blockReceipt)).to.equal(true);
+          expect(CommonUtil.isFailedTx(receipt.exec_result)).to.equal(true);
+        } else {
+          // Legacy: reported as not failed; writes and fee (bandwidth + state) kept.
+          expect(res.code).to.equal(TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER);
+          expect(res.tx_failed).to.equal(undefined);
+          expect(CommonUtil.isFailedTx(res)).to.equal(false);
+          expect(node.db.getValue(`/apps/${app}/m1`)).to.equal('x'.repeat(100));
+          expect(node.db.getValue(`/accounts/${other}/balance`)).to.equal(1);
+          expect(res.gas_amount_charged).to.be.above(serviceBandwidth);
+          expect(CommonUtil.isFailedTx(CommonUtil.txResultsToReceipts([res])[0])).to.equal(false);
+          expect(debited - 1).to.be.closeTo(res.gas_cost_total, 1e-9);
+          expect(receipt).to.not.equal(null);
+        }
+        // What the block sums as gas_cost_total.
+        expect(res.gas_cost_total).to.equal(blockCost(tx, res));
+      });
+
+      it('a failed single-op tx', () => {
+        const bal0 = balance();
+        const other = ainUtil.createAccount().address;
+        const { tx, res } = execute(
+            { type: 'SET_VALUE', ref: `/transfer/${addr()}/${other}/1/value`, value: 1e15 });
+        expect(CommonUtil.isFailedTx(res)).to.equal(true);
+        expect(res.gas_amount_charged).to.be.above(0);
+        expect(res.gas_cost_total).to.equal(blockCost(tx, res));
+        const receipt = node.db.getValue(`/receipts/${tx.hash}`);
+        if (flagOn) {
+          // The bandwidth fee counted in the block is actually collected.
+          expect(bal0 - balance()).to.be.closeTo(res.gas_cost_total, 1e-9);
+          expect(receipt.exec_result.gas_amount_charged).to.equal(res.gas_amount_charged);
+        } else {
+          // Legacy: counted in the block but rolled back with the tx.
+          expect(balance()).to.equal(bal0);
+          expect(receipt).to.equal(null);
+        }
+      });
+
+      it('a successful tx is unaffected', () => {
+        node.db.setValuesForTesting(`/blockchain_params/resource/app_state_budget/${app}`, null);
+        node.db.setValuesForTesting('/blockchain_params/resource/free_state_budget_ratio', 0.5);
+        const bal0 = balance();
+        const { tx, res } = execute({
+          type: 'SET',
+          op_list: [{ type: 'SET_VALUE', ref: `/apps/${app}/ok`, value: 'v' }],
+        });
+        expect(txOk(res)).to.equal(true);
+        expect(res.tx_failed).to.equal(undefined);
+        expect(node.db.getValue(`/apps/${app}/ok`)).to.equal('v');
+        expect(bal0 - balance()).to.be.closeTo(res.gas_cost_total, 1e-9);
+        expect(res.gas_cost_total).to.equal(blockCost(tx, res));
+      });
+    });
+  }
 
   describe('activation boundary', () => {
     it('behaves as before at block N-1 and switches on at block N in the same node', () => {

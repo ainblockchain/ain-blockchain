@@ -77,6 +77,8 @@ class DB {
     this.appStateBudgetSetCache = { hash: null, value: new Set() };
     this.stateFreeTierUsageCache = null;
     this.stateFreeTierUsageCacheExcludesBudgetApps = false;
+    // Value-changed events of AIN Store slot erasures, emitted after the enclosing write's own.
+    this.deferredStoreEvents = [];
     this.updateRestFunctionsUrlWhitelistCache();
     this.updateStateFreeTierUsageCache();
   }
@@ -1088,6 +1090,7 @@ class DB {
     // NOTE: Skipped when the event source is null.
     if (this.eh && eventSource !== null) {
       this.eh.emitValueChanged(auth, transaction, localPath, prevValueCopy, valueCopy, eventSource);
+      this.flushDeferredStoreEvents(localPath);
     }
 
     return CommonUtil.returnTxResult(
@@ -1161,12 +1164,38 @@ class DB {
     const prevValue = this.getValue(CommonUtil.formatPath(parsedPath));
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    // NOTE: The slot erasure is emitted too, so that off-chain mirrors see the slot cleared.
     if (this.eh && eventSource !== null) {
-      this.eh.emitValueChanged(
-          context.auth, context.transaction, parsedPath, prevValue, valueCopy, eventSource);
+      const event =
+          [context.auth, context.transaction, parsedPath, prevValue, valueCopy, eventSource];
+      if (value === null) {
+        // NOTE: The slot erasure is emitted after the enclosing write's own event (see
+        // setValue()), so that an in-order mirror ends with the slot cleared.
+        this.deferredStoreEvents.push(event);
+      } else {
+        this.eh.emitValueChanged(...event);
+      }
     }
     return CommonUtil.returnTxResult(TxResultCode.SUCCESS, null, unitWriteGasAmount);
+  }
+
+  /**
+   * Emits the deferred slot-erasure events of slots at or under the given path.
+   */
+  flushDeferredStoreEvents(parsedPath) {
+    if (this.deferredStoreEvents.length === 0) {
+      return;
+    }
+    const remaining = [];
+    for (const event of this.deferredStoreEvents) {
+      const slotPath = event[2];
+      if (parsedPath.length <= slotPath.length &&
+          parsedPath.every((label, i) => label === slotPath[i])) {
+        this.eh.emitValueChanged(...event);
+      } else {
+        remaining.push(event);
+      }
+    }
+    this.deferredStoreEvents = remaining;
   }
 
   /**
@@ -2010,6 +2039,11 @@ class DB {
         ]);
       }
     }
+    // NOTE: Present only with the 'ain_store' timer flag (see executeTransaction()), so that
+    // receipts of SET txs that failed as a whole also read as failed.
+    if (executionResult[DB.TX_FAILED_LABEL] === true) {
+      trimmed[DB.TX_FAILED_LABEL] = true;
+    }
     return trimmed;
   }
 
@@ -2223,6 +2257,36 @@ class DB {
     if (isDryrun && executionResult) {
       executionResult.is_dryrun = true;  // Set is_dryrun = true
     }
+    this.deferredStoreEvents = [];
+    if (DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
+      // Makes the failure visible to CommonUtil.isFailedTx() (tx pool, RPC, collectFee, ...).
+      executionResult[DB.TX_FAILED_LABEL] = true;
+    }
+    if (restoreOnFailure && !isDryrun && isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber) &&
+        CommonUtil.isFailedTx(executionResult)) {
+      // NOTE: With the 'ain_store' timer flag, a failed tx is rolled back BEFORE its fee is
+      // collected and its receipt recorded, so the fee (bandwidth only) and the receipt are
+      // actually persisted and match gas_amount_charged / gas_cost_total.
+      this.restoreDb();
+      if (!skipFees) {
+        if (!this.backupDb()) {
+          return CommonUtil.logAndReturnTxResult(
+            logger,
+            TxResultCode.DB_FAILED_TO_BACKUP_DB,
+            `[${LOG_HEADER}] Failed to backup db for tx: ${tx.hash}`, 0);
+        }
+        if (DevFlags.enableGasFeeCollection) {
+          this.collectFee(
+              auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
+        }
+        if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
+          this.recordReceipt(auth, tx, blockNumber, executionResult);
+        }
+        // collectFee() may have used the backup already (balance too low).
+        this.deleteBackupStateVersion();
+      }
+      return executionResult;
+    }
     if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(
@@ -2251,6 +2315,10 @@ class DB {
    * CommonUtil.isFailedTx() ignores that code when result_list is present, so such a tx used to
    * keep its writes. With the 'ain_store' timer flag it is rolled back like a single-op tx.
    */
+  static get TX_FAILED_LABEL() {
+    return 'tx_failed';
+  }
+
   static isFailedMultiSetTopLevel(executionResult, blockNumber) {
     if (!isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
       return false;
