@@ -704,6 +704,12 @@ class P2pClient {
    */
   requestOldChainSegment(forceToReset = false) {
     const LOG_HEADER = 'requestOldChainSegment';
+    const retention = this.server.node.bc.historyRetention;
+    if (retention && !retention.shouldBackfillHistory()) {
+      this.resetOldChainSyncPeer();
+      return;
+    }
+
     if (this.oldChainSyncDone === true) {
       return;
     }
@@ -1138,6 +1144,12 @@ class P2pClient {
   async handleOldChainSegment(
       oldChainSegment, segmentSize, fromBlockNumber, toBlockNumber, socket) {
     const LOG_HEADER = 'handleOldChainSegment';
+    const retention = this.server.node.bc.historyRetention;
+    if (retention && !retention.shouldBackfillHistory()) {
+      this.resetOldChainSyncPeer();
+      return;
+    }
+
 
     const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
     const peerAddress = _.get(this.oldChainSyncInProgress, 'address', null);

@@ -3,6 +3,8 @@ const fs = require('fs');
 const zlib = require('zlib');
 const { pipeline } = require('stream/promises');
 const ObjectUtil = require('./object-util');
+const path = require('path');
+const { syncDirectory } = require('../blockchain/history-retention');
 const JsonStreamStringify = require('json-stream-stringify');
 
 async function writeSnapshot({ filePath, snapshot, chunkSize }) {
@@ -17,6 +19,7 @@ async function writeSnapshot({ filePath, snapshot, chunkSize }) {
       await handle.close();
     }
     await fs.promises.rename(temporary, filePath);
+    await syncDirectory(path.dirname(filePath));
   } finally {
     await fs.promises.rm(temporary, { force: true });
   }
