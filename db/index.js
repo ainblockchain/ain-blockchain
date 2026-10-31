@@ -2292,6 +2292,11 @@ class DB {
         this.collectFee(
             auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
       }
+      if (DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
+        // The ops succeeded but the fee failed (FEE_BALANCE_TOO_LOW or
+        // FEE_FAILED_TO_COLLECT_GAS_FEE), reported only in the top-level code.
+        executionResult[DB.TX_FAILED_LABEL] = true;
+      }
       if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
       }
@@ -2301,7 +2306,11 @@ class DB {
     } else if (restoreOnFailure) {
       if (CommonUtil.isFailedTx(executionResult) ||
           DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
-        this.restoreDb();
+        // NOTE: collectFee() may already have restored (and consumed the backup) when the
+        // balance was too low; the fee it then collected is kept.
+        if (this.backupStateVersion) {
+          this.restoreDb();
+        }
       } else {
         this.deleteBackupStateVersion();
       }

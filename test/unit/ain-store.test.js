@@ -552,6 +552,41 @@ describe('AIN Store: chain behaviour', () => {
         }
       });
 
+      it('a SET tx whose ops succeed but whose fee is unaffordable', () => {
+        const acct = ainUtil.createAccount();
+        node.db.setValuesForTesting(`/accounts/${acct.address}/balance`, 2);
+        const other = ainUtil.createAccount().address;
+        const tx = Transaction.fromTxBody({
+          operation: {
+            type: 'SET',
+            op_list: [
+              { type: 'SET_VALUE', ref: `/transfer/${acct.address}/${other}/5/value`, value: 1 },
+            ],
+          },
+          gas_price: 1000000,
+          nonce: -1,
+          timestamp: timestamp++,
+        }, acct.private_key);
+        const res = node.db.executeTransaction(tx, false, true, blockNumber());
+        expect(res.code).to.equal(TxResultCode.FEE_BALANCE_TOO_LOW);
+        // The transfer is rolled back; what the sender could pay of the bandwidth fee is taken.
+        expect(node.db.getValue(`/accounts/${other}/balance`)).to.equal(null);
+        const bal = node.db.getValue(`/accounts/${acct.address}/balance`);
+        expect(2 - bal).to.be.closeTo(res.gas_cost_total, 1e-9);
+        expect(res.gas_cost_total).to.equal(blockCost(tx, res));
+        if (flagOn) {
+          expect(res.tx_failed).to.equal(true);
+          expect(CommonUtil.isFailedTx(res)).to.equal(true);
+          const receipt = node.db.getValue(`/receipts/${tx.hash}`);
+          expect(receipt.exec_result.tx_failed).to.equal(true);
+          expect(CommonUtil.isFailedTx(CommonUtil.txResultsToReceipts([res])[0])).to.equal(true);
+        } else {
+          // Legacy: reads as not failed.
+          expect(res.tx_failed).to.equal(undefined);
+          expect(CommonUtil.isFailedTx(res)).to.equal(false);
+        }
+      });
+
       it('a successful tx is unaffected', () => {
         node.db.setValuesForTesting(`/blockchain_params/resource/app_state_budget/${app}`, null);
         node.db.setValuesForTesting('/blockchain_params/resource/free_state_budget_ratio', 0.5);
