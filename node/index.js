@@ -490,15 +490,21 @@ class BlockchainNode {
     this.snapshotUpdateInProgress = true;
     try {
       if (await this.writeSnapshot(blockNumber)) {
-        await this.pruneBlockHistory(blockNumber);
         // Numeric rotation also handles a changed per-node snapshot phase.
-        const fs = require('fs');
-        const numbers = fs.readdirSync(path.join(this.snapshotDir, 'n2s'))
-            .filter(name => /^\d+\.json\.gz$/.test(name)).map(name => Number(name.split('.')[0]))
-            .sort((a, b) => b - a);
+        const numbers = this.listSnapshotNumbers().sort((a, b) => b - a);
         for (const number of numbers.slice(NodeConfigs.MAX_NUM_SNAPSHOTS)) this.deleteSnapshot(number);
+        // History pruning has its own busy guard and may take long on the first run (millions
+        // of files); it must neither block later snapshots nor stop snapshot rotation.
+        this.pruneBlockHistory(blockNumber).catch(err =>
+            logger.error(`[pruneBlockHistory] ${err.stack}`));
       }
     } finally { this.snapshotUpdateInProgress = false; }
+  }
+
+  listSnapshotNumbers() {
+    const fs = require('fs');
+    return fs.readdirSync(path.join(this.snapshotDir, 'n2s'))
+        .filter(name => /^\d+\.json\.gz$/.test(name)).map(name => Number(name.split('.')[0]));
   }
 
   async pruneBlockHistory(blockNumber) {

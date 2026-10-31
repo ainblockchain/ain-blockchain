@@ -124,6 +124,7 @@ describe('Snapshot streaming failure containment and atomic publication', () => 
       fs.writeFileSync(FileUtil.getSnapshotPathByBlockNumber(directory, i), 'fixture');
     }
     const fakeNode = { snapshotDir: directory, pruneBlockHistory: async () => {},
+      listSnapshotNumbers: BlockchainNode.prototype.listSnapshotNumbers,
       writeSnapshot: async () => false,
       deleteSnapshot: (number) => deleted.push(number) };
     const number = NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
