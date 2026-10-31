@@ -484,6 +484,9 @@ const NativeFunctionIds = {
   SAVE_LAST_TX: '_saveLastTx',
   SET_OWNER_CONFIG: '_setOwnerConfig',
   STAKE: '_stake',
+  // AIN Store: folds a write slot into the app's Merkle Mountain Range. Known only once the
+  // 'ain_store' timer flag is enabled (see isActiveNativeFunctionId()).
+  STORE_APPEND: '_storeAppend',
   TRANSFER: '_transfer',
   UNSTAKE: '_unstake',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
@@ -492,10 +495,47 @@ const NativeFunctionIds = {
   SYNC_KNOWLEDGE_EXPLORATION: '_syncKnowledgeExploration',
 };
 
+// NOTE: Native functions that exist only after a timer flag activates. They are excluded from
+// isNativeFunctionId() (used without a block number, e.g. for 'fid:' owner validation) so that
+// adding them changes nothing before activation.
+const TimerFlaggedNativeFunctionIds = {
+  _storeAppend: 'ain_store',
+};
+
 function isNativeFunctionId(fid) {
+  if (TimerFlaggedNativeFunctionIds[fid] !== undefined) {
+    return false;
+  }
   const fidList = Object.values(NativeFunctionIds);
   return fidList.includes(fid);
 }
+
+/**
+ * Whether the native function with the given id can be executed at the given block number.
+ */
+function isActiveNativeFunctionId(fid, blockNumber) {
+  const flagName = TimerFlaggedNativeFunctionIds[fid];
+  if (flagName === undefined) {
+    return true;
+  }
+  return isEnabledTimerFlag(flagName, blockNumber);
+}
+
+/**
+ * AIN Store paths and formats (see docs: AIN Store design).
+ */
+const AinStore = {
+  TIMER_FLAG: 'ain_store',
+  WRITES: 'writes',
+  STORE: 'store',
+  MMR: 'mmr',
+  MMR_N: 'n',
+  MMR_PEAKS: 'peaks',
+  COLLECTION_REGEX: /^[a-z][a-z0-9_]{0,62}$/,
+  KEY_REGEX: /^[0-9A-Za-z_-]{20}$/,
+  // blockchain_params/resource/app_state_budget/<app>
+  APP_STATE_BUDGET_PARAM: 'app_state_budget',
+};
 
 /**
  * Properties of sharding configs.
@@ -857,6 +897,8 @@ module.exports = {
   BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
+  isActiveNativeFunctionId,
+  AinStore,
   ShardingProperties,
   ShardingProtocols,
   TokenExchangeSchemes,

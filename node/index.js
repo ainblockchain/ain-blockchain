@@ -24,6 +24,7 @@ const {
   trafficStatsManager,
   ValueChangedEventSources,
   isEnabledTimerFlag,
+  AinStore,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -621,11 +622,17 @@ class BlockchainNode {
     const appStakesTotal = this.db.getAppStakesTotal();
     const appStake = this.db.getAppStake(appName);
     const appStakeRatio = appStakesTotal > 0 ? appStake / appStakesTotal : 1;
+    const lastBlockNumber = this.bc.lastBlockNumber();
+    const finalRoot = this.stateManager.getFinalRoot();
     const {
       appsStateBudget,
       freeStateBudget,
-    } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
-    const freeTierUsage = this.db.getStateFreeTierUsage();
+    } = DB.getStateBudgets(lastBlockNumber, finalRoot);
+    // NOTE: With the 'ain_store' timer flag, an app with its own state budget
+    // ('resource/app_state_budget/<app>') is limited by that budget only, independent of stakes.
+    const ownBudget = isEnabledTimerFlag(AinStore.TIMER_FLAG, lastBlockNumber) ?
+        DB.getAppStateBudget(appName, lastBlockNumber, finalRoot) : null;
+    const freeTierUsage = this.db.getStateFreeTierUsage(lastBlockNumber);
     const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
     const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
     const usage = {
@@ -634,9 +641,11 @@ class BlockchainNode {
       tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
       tree_max_siblings: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_MAX_SIBLINGS] : 0,
     };
-    const availableTreeBytes = appStake > 0 ?
-        Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
-        Math.max(0, freeStateBudget - freeTierTreeBytes);
+    const availableTreeBytes = ownBudget !== null ?
+        Math.max(0, ownBudget - usage.tree_bytes) :
+        appStake > 0 ?
+            Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
+            Math.max(0, freeStateBudget - freeTierTreeBytes);
     // NOTE(platfowner): availableTreeSize is just determined by availableTreeBytes
     // but we provide this for user's reference.
     const availableTreeSize = availableTreeBytes * maxStateTreeSizePerByte;
@@ -648,15 +657,19 @@ class BlockchainNode {
     const staking = {
       app: appStake,
       total: appStakesTotal,
-      unstakeable: BlockchainNode.calcUnstakeableAmount(
+      unstakeable: ownBudget !== null ? appStake : BlockchainNode.calcUnstakeableAmount(
         appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake,
         appStakesTotal),
     };
-    return {
+    const result = {
       usage,
       available,
       staking,
     };
+    if (ownBudget !== null) {
+      result.budget = { tree_bytes: ownBudget };
+    }
+    return result;
   }
 
   getTxPoolSizeUtilization(address) {

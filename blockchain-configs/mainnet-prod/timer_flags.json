@@ -62,5 +62,10 @@
   "update_tx_bytes_limit": {
     "enabled_block": 3940700,
     "has_bandage": true
+  },
+  "ain_store": {
+    "enabled_block": null,
+    "has_bandage": false,
+    "_note": "AIN Store: _storeAppend native function (MMR over /apps/<app>/writes), per-app state budgets (resource/app_state_budget/<app>) and growth-only budget checks. Set enabled_block to activate."
   }
 }

@@ -517,6 +517,11 @@ class CommonUtil {
     if (!result) {
       return true;
     }
+    // NOTE: Set only with the 'ain_store' timer flag, on a SET tx whose sub-operations succeeded
+    // but which failed as a whole (see DB.isFailedMultiSetTopLevel()).
+    if (result.tx_failed === true) {
+      return true;
+    }
     if (CommonUtil.isDict(result.result_list)) {
       for (const subResult of Object.values(result.result_list)) {
         if (CommonUtil.isFailedTxResultCode(subResult.code)) {
