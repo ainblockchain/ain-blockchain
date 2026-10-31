@@ -611,6 +611,19 @@ class TransactionPool {
     return this.txCountTotal;
   }
 
+  /**
+   * Whether the pool holds any transaction other than consensus votes/proposals, i.e. work that
+   * a new block could carry. Used by the proposer-side idle block policy.
+   */
+  hasNonConsensusTransactions() {
+    for (const txList of this.transactions.values()) {
+      if (TransactionPool.excludeConsensusTransactions(txList).length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   getFreePoolSize() {
     return this.freeTxCountTotal;
   }

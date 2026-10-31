@@ -912,6 +912,21 @@ class Functions {
     return 0;
   }
 
+  /**
+   * Number of epochs a block's reward covers. Originally one block was produced every epoch,
+   * so the per-block reward equals one epoch of the annual rate. With the
+   * 'reward_by_elapsed_epochs' timer flag (needed once proposers skip idle epochs), the reward
+   * for block N-1 covers the epochs elapsed until block N, capped at one day of epochs.
+   */
+  static getCreditedRewardEpochs(epoch, prevEpoch, epochMs) {
+    if (!CommonUtil.isNumber(epoch) || !CommonUtil.isNumber(prevEpoch) ||
+        !CommonUtil.isNumber(epochMs) || epochMs <= 0) {
+      return 1;
+    }
+    const maxEpochs = Math.max(1, Math.ceil(Functions.MAX_CREDITED_REWARD_MS / epochMs));
+    return Math.min(Math.max(1, Math.floor(epoch - prevEpoch)), maxEpochs);
+  }
+
   _distributeFee(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -928,8 +943,12 @@ class Functions {
     if (blockNumber <= 1) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const blockRewardMultiplier = this.getBlockRewardMultiplier(context);
+    let blockRewardMultiplier = this.getBlockRewardMultiplier(context);
     const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
+    if (isEnabledTimerFlag('reward_by_elapsed_epochs', blockNumber - 1)) {
+      blockRewardMultiplier *= Functions.getCreditedRewardEpochs(
+          _.get(value, 'epoch'), _.get(lastConsensusRound, 'propose.epoch'), context.epochMs);
+    }
     const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
     const blockHash = lastConsensusRound.propose.block_hash;
     const votes = lastConsensusRound[blockHash].vote;
@@ -1668,5 +1687,8 @@ class Functions {
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 }
+
+// Upper bound of the elapsed time a single block reward can cover (one day).
+Functions.MAX_CREDITED_REWARD_MS = 86400000;
 
 module.exports = Functions;
