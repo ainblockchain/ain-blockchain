@@ -15,6 +15,8 @@ const {
   buildOwnerPermissions,
   buildRulePermission,
   isEnabledTimerFlag,
+  isActiveNativeFunctionId,
+  AinStore,
 } = require('../common/constants');
 const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -71,6 +73,10 @@ class Functions {
         func: this._setOwnerConfig.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.STAKE]: {
         func: this._stake.bind(this), ownerOnly: true, extraGasAmount: 0 },
+      // NOTE: ownerOnly is false so that app owners can install it; where it may be installed is
+      // checked by DB.setFunction() (only under /apps/<app>/writes/**) once 'ain_store' is enabled.
+      [NativeFunctionIds.STORE_APPEND]: {
+        func: this._storeAppend.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.UNSTAKE]: {
         func: this._unstake.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.TRANSFER]: {
@@ -181,7 +187,9 @@ class Functions {
                 formattedParams);
             continue;  // Skips the function.
           }
-          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          const nativeFunction =
+              isActiveNativeFunctionId(functionEntry.function_id, blockNumber) ?
+                  this.nativeFunctionMap[functionEntry.function_id] : null;
           if (nativeFunction) {
             // Execute the matched native function.
             this.pushCall(
@@ -684,6 +692,116 @@ class Functions {
     } else {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+  }
+
+  /**
+   * Computes the AIN Store leaf of a write record.
+   * leaf = hashString(stableStringify({ a: app, c: collection, k: key, r: record, t: txHash }))
+   */
+  static computeStoreLeaf(appName, collection, key, record, txHash) {
+    return CommonUtil.hashString(stringify({
+      a: appName,
+      c: collection,
+      k: key,
+      r: record,
+      t: txHash,
+    }));
+  }
+
+  /**
+   * Appends a leaf to Merkle Mountain Range peaks ({ n, peaks }, peaks ordered left (oldest,
+   * tallest) to right, stored as an index-keyed object). Returns a new object; the input is not
+   * modified.
+   * Inner node = hashString(left + right) of the two '0x'-prefixed hex strings.
+   */
+  static appendToMmr(mmr, leaf) {
+    const n = mmr && CommonUtil.isNumber(mmr[AinStore.MMR_N]) ? mmr[AinStore.MMR_N] : 0;
+    const peaks = Functions.getMmrPeakList(mmr);
+    let cur = leaf;
+    let height = 0;
+    // NOTE: n can exceed 2^31, so bits are taken with Math.floor() instead of bitwise operators.
+    while (Math.floor(n / Math.pow(2, height)) % 2 === 1) {
+      cur = CommonUtil.hashString(peaks.pop() + cur);
+      height++;
+    }
+    peaks.push(cur);
+    return { [AinStore.MMR_N]: n + 1, [AinStore.MMR_PEAKS]: Functions.toMmrPeakObj(peaks) };
+  }
+
+  /**
+   * The state tree cannot hold arrays, so peaks are stored as { '0': <peak0>, '1': <peak1>, ... }.
+   */
+  static toMmrPeakObj(peakList) {
+    const obj = {};
+    peakList.forEach((peak, i) => {
+      obj[i] = peak;
+    });
+    return obj;
+  }
+
+  /**
+   * Returns MMR peaks as an array. The state tree stores arrays as objects keyed by index
+   * ('0', '1', ...), so both forms are accepted.
+   */
+  static getMmrPeakList(mmr) {
+    const peaks = mmr ? mmr[AinStore.MMR_PEAKS] : null;
+    if (CommonUtil.isArray(peaks)) {
+      return peaks.slice();
+    }
+    if (CommonUtil.isDict(peaks)) {
+      const list = [];
+      for (let i = 0; peaks[i] !== undefined; i++) {
+        list.push(peaks[i]);
+      }
+      return list;
+    }
+    return [];
+  }
+
+  /**
+   * AIN Store: on a non-null write to /apps/<app>/writes/<collection>/<key>, folds
+   * the write record (with the tx hash) into /apps/<app>/store/mmr and erases the slot, all in
+   * the same transaction. Both writes bypass app rules and do not trigger further functions;
+   * /apps/<app>/store/mmr cannot be written any other way (see DB.setValue()).
+   */
+  _storeAppend(value, context) {
+    if (value === null) {
+      // Does nothing for null value (including the slot erasure below).
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const parsedValuePath = context.valuePath;
+    if (!CommonUtil.isArray(parsedValuePath) || parsedValuePath.length !== 5 ||
+        parsedValuePath[0] !== PredefinedDbPaths.APPS ||
+        parsedValuePath[2] !== AinStore.WRITES ||
+        !AinStore.COLLECTION_REGEX.test(parsedValuePath[3]) ||
+        !AinStore.KEY_REGEX.test(parsedValuePath[4])) {
+      logger.error(`  ==> _storeAppend on a non-slot path: ` +
+          `${CommonUtil.formatPath(parsedValuePath)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const transaction = context.transaction;
+    const txHash = transaction ? transaction.hash : null;
+    if (!CommonUtil.isString(txHash) || !txHash) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const appName = parsedValuePath[1];
+    const collection = parsedValuePath[3];
+    const key = parsedValuePath[4];
+    const leaf = Functions.computeStoreLeaf(appName, collection, key, value, txHash);
+    const mmrPath = [PredefinedDbPaths.APPS, appName, AinStore.STORE, AinStore.MMR];
+    const mmrPathStr = CommonUtil.formatPath(mmrPath);
+    const newMmr = Functions.appendToMmr(this.db.getValue(mmrPathStr), leaf);
+    const mmrRes = this.db.writeStoreInternalValue(mmrPath, newMmr, context);
+    Functions.addToOpResultList(mmrPathStr, mmrRes, context);
+    if (CommonUtil.isFailedTx(mmrRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const eraseRes = this.db.writeStoreInternalValue(parsedValuePath, null, context);
+    Functions.addToOpResultList(CommonUtil.formatPath(parsedValuePath), eraseRes, context);
+    if (CommonUtil.isFailedTx(eraseRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   /**
