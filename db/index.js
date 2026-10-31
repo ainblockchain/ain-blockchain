@@ -1081,7 +1081,7 @@ class DB {
     if (value !== null) {
       // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
       const applyStateGcRuleRes =
-          this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+          this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath, blockNumber);
       logger.debug(
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
@@ -1161,9 +1161,8 @@ class DB {
     const prevValue = this.getValue(CommonUtil.formatPath(parsedPath));
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
-    // NOTE: The slot erasure is not emitted, as the slot's own write event is emitted afterwards
-    // by the enclosing setValue().
-    if (this.eh && eventSource !== null && value !== null) {
+    // NOTE: The slot erasure is emitted too, so that off-chain mirrors see the slot cleared.
+    if (this.eh && eventSource !== null) {
       this.eh.emitValueChanged(
           context.auth, context.transaction, parsedPath, prevValue, valueCopy, eventSource);
     }
@@ -2236,13 +2235,29 @@ class DB {
     if (isDryrun) {
       this.restoreDb();
     } else if (restoreOnFailure) {
-      if (CommonUtil.isFailedTx(executionResult)) {
+      if (CommonUtil.isFailedTx(executionResult) ||
+          DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
         this.restoreDb();
       } else {
         this.deleteBackupStateVersion();
       }
     }
     return executionResult;
+  }
+
+  /**
+   * A SET (op_list) tx whose sub-operations all succeeded can still fail as a whole, e.g. on the
+   * tree limits or state budgets, which is reported only in the top-level code.
+   * CommonUtil.isFailedTx() ignores that code when result_list is present, so such a tx used to
+   * keep its writes. With the 'ain_store' timer flag it is rolled back like a single-op tx.
+   */
+  static isFailedMultiSetTopLevel(executionResult, blockNumber) {
+    if (!isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
+      return false;
+    }
+    return CommonUtil.isDict(executionResult) && CommonUtil.isDict(executionResult.result_list) &&
+        executionResult.code !== undefined &&
+        CommonUtil.isFailedTxResultCode(executionResult.code);
   }
 
   getTransactionChainId(body) {
@@ -2902,7 +2917,7 @@ class DB {
     };
   }
 
-  applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
+  applyStateGarbageCollectionRule(matchedRules, parsedValuePath, blockNumber = null) {
     const stateRuleConfig = matchedRules.closestRule.config;
     if (!CommonUtil.isDict(stateRuleConfig)) {
       return 0;
@@ -2929,11 +2944,52 @@ class DB {
     }
     let numDeleted = 0;
     const childLabelList = stateNodeForReading.getChildLabels();
+    if (isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
+      // NOTE: GC never deletes a subtree holding an AIN Store MMR; such siblings are skipped.
+      const valueParentPath = parentPath.slice(1);
+      for (const childLabel of childLabelList) {
+        if (numDeleted >= gcNumSiblingsDeleted) {
+          break;
+        }
+        if (this.holdsStoreMmr([...valueParentPath, childLabel])) {
+          continue;
+        }
+        this.writeDatabase([...parentPath, childLabel], null);
+        numDeleted++;
+      }
+      return numDeleted;
+    }
     while (numDeleted < gcNumSiblingsDeleted) {
       const childLabel = childLabelList[numDeleted++];
       this.writeDatabase([...parentPath, childLabel], null);
     }
     return numDeleted;
+  }
+
+  /**
+   * Whether the value subtree at the given path contains an existing /apps/<app>/store/mmr
+   * ('ain_store' timer flag).
+   */
+  holdsStoreMmr(parsedValuePath) {
+    if (parsedValuePath.length === 0) {
+      // The whole state.
+      return true;
+    }
+    if (parsedValuePath[0] !== PredefinedDbPaths.APPS) {
+      return false;
+    }
+    if (parsedValuePath.length === 1) {
+      // NOTE: Conservatively protects '/apps' as a whole.
+      return true;
+    }
+    if (parsedValuePath.length >= 4) {
+      return parsedValuePath[2] === AinStore.STORE && parsedValuePath[3] === AinStore.MMR;
+    }
+    if (parsedValuePath.length === 3 && parsedValuePath[2] !== AinStore.STORE) {
+      return false;
+    }
+    return this.getValue(CommonUtil.formatPath(
+        [PredefinedDbPaths.APPS, parsedValuePath[1], AinStore.STORE, AinStore.MMR])) !== null;
   }
 
   lastBlockNumber() {

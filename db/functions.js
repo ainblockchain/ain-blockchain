@@ -729,6 +729,39 @@ class Functions {
   }
 
   /**
+   * Whether the given stored MMR is well-formed: n is a non-negative safe integer, peaks has
+   * exactly popcount(n) entries keyed '0'..'k-1', each a '0x'-prefixed 64-hex-digit string.
+   * (An absent MMR, null, is the valid initial state and is handled by the caller.)
+   */
+  static isValidMmr(mmr) {
+    if (!CommonUtil.isDict(mmr)) {
+      return false;
+    }
+    const n = mmr[AinStore.MMR_N];
+    if (!Number.isSafeInteger(n) || n < 0) {
+      return false;
+    }
+    const keys = Object.keys(mmr);
+    if (keys.some((k) => k !== AinStore.MMR_N && k !== AinStore.MMR_PEAKS)) {
+      return false;
+    }
+    const peaks = mmr[AinStore.MMR_PEAKS];
+    const numPeaks = n.toString(2).split('').filter((b) => b === '1').length;
+    if (numPeaks === 0) {
+      return peaks === undefined || peaks === null;
+    }
+    if (!CommonUtil.isDict(peaks) || Object.keys(peaks).length !== numPeaks) {
+      return false;
+    }
+    for (let i = 0; i < numPeaks; i++) {
+      if (typeof peaks[i] !== 'string' || !/^0x[0-9a-f]{64}$/.test(peaks[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
    * The state tree cannot hold arrays, so peaks are stored as { '0': <peak0>, '1': <peak1>, ... }.
    */
   static toMmrPeakObj(peakList) {
@@ -790,7 +823,13 @@ class Functions {
     const leaf = Functions.computeStoreLeaf(appName, collection, key, value, txHash);
     const mmrPath = [PredefinedDbPaths.APPS, appName, AinStore.STORE, AinStore.MMR];
     const mmrPathStr = CommonUtil.formatPath(mmrPath);
-    const newMmr = Functions.appendToMmr(this.db.getValue(mmrPathStr), leaf);
+    const curMmr = this.db.getValue(mmrPathStr);
+    if (curMmr !== null && !Functions.isValidMmr(curMmr)) {
+      logger.error(
+          `  ==> _storeAppend on an invalid MMR at ${mmrPathStr}: ${JSON.stringify(curMmr)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const newMmr = Functions.appendToMmr(curMmr, leaf);
     const mmrRes = this.db.writeStoreInternalValue(mmrPath, newMmr, context);
     Functions.addToOpResultList(mmrPathStr, mmrRes, context);
     if (CommonUtil.isFailedTx(mmrRes)) {
