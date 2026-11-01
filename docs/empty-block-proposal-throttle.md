@@ -1,11 +1,10 @@
-# Empty-block proposal throttle
+# Empty-block proposal throttle (superseded)
 
-Set `EMPTY_BLOCK_PROPOSAL_INTERVAL_MS` on an isolated devnet validator to reduce
-empty blocks while preserving immediate proposals whenever the transaction pool
-contains work. The default is `0`, which preserves the existing protocol
-behavior.
+The `EMPTY_BLOCK_PROPOSAL_INTERVAL_MS` devnet throttle has been replaced by the
+idle block policy (`IDLE_BLOCK_PROPOSAL_SKIP`, `IDLE_HEARTBEAT_INTERVAL_MS`). See
+[idle-block-production.md](./idle-block-production.md).
 
-For example, `60000` permits at most one empty proposal per minute. This setting
-is intended for idle devnet presentation environments; do not use it as an
-unreviewed mainnet consensus policy. Keep the value at `0` for production until
-all validators use the same reviewed configuration.
+The old throttle checked the total pool size, which always includes the votes for the
+notarized tip, so it rarely took effect. It did not track whether the last block with
+transactions was finalized. The new policy keeps proposing until such a block is final,
+and it adapts the consensus health status to idle periods. The old env var is ignored.

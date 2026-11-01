@@ -34,7 +34,10 @@ between signing domains. API acknowledgement does not mean transaction finality.
   distinct native `chainId`, pinned `genesisHash`, validator list and endpoints.
   Mainnet uses L1 101 / L2 103; testnet L1 102 / L2 104. Set `l1Inbox: true` only
   after the custody policy and child binding are active. Keep node/admin/attestor
-  endpoints private and enforce ingress rate limits.
+  endpoints private and enforce ingress rate limits. If any validator prunes block
+  history (`BLOCK_HISTORY_RETENTION`), set `archiveEndpoints` to at least two
+  endpoints that keep full history. History indexing and historical block reads then
+  use only those nodes (see `docs/bounded-history.md`).
 
 Install dependencies at the repository root and in this directory. `npm test`
 here checks routing, index integrity, certificates, durable votes and quorum faults.

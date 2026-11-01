@@ -29,6 +29,8 @@ const {
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
+const StateNode = require('../db/state-node');
+const { updateStateInfoForStateTree } = require('../db/state-util');
 const CommonUtil = require('../common/common-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
@@ -281,6 +283,7 @@ class BlockchainNode {
   async loadLatestSnapshot() {
     const LOG_HEADER = 'loadLatestSnapshot';
 
+    FileUtil.cleanupSnapshotTemps(this.snapshotDir);
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
     const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
     if (latestSnapshotPath) {
@@ -366,6 +369,7 @@ class BlockchainNode {
     const LOG_HEADER = 'startNode';
 
     try {
+      this.bc.historyRetention.assertRecoverable(this.bootstrapSnapshotBlockNumber);
       // 1. Initialize DB (with the latest snapshot, if it exists)
       logger.info(
           `[${LOG_HEADER}] Initializing DB with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
@@ -401,6 +405,10 @@ class BlockchainNode {
       this.state = BlockchainNodeStates.CHAIN_SYNCING;
       logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
+      // Resume interrupted retention after recovery without blocking service startup.
+      const recoveredSnapshotNumber = this.bootstrapSnapshotBlockNumber;
+      setImmediate(() => this.pruneBlockHistory(recoveredSnapshotNumber).catch(err =>
+          logger.error(`[pruneBlockHistory] ${err.stack}`)));
       // 6. Reset bootstrap snapshot.
       this.resetBootstrapSnapshot();
     } catch (err) {
@@ -471,20 +479,50 @@ class BlockchainNode {
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDbAndNonce(nodeVersion);
     // NOTE(liayoo): This write is not awaited.
-    this.updateSnapshots(blockNumber);
+    this.updateSnapshots(blockNumber).catch(err =>
+        logger.error(`[updateSnapshots] ${err.stack}`));
   }
 
   async updateSnapshots(blockNumber) {
     const interval = NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
-    // Stable per-node phase; snapshot contents still use this exact finalized block.
     const phase = this.account ? parseInt(this.account.address.slice(2, 10), 16) % interval : 0;
-    if (blockNumber === 0 || blockNumber % interval === phase) {
+    if (blockNumber !== 0 && blockNumber % interval !== phase) return;
+    if (this.snapshotUpdateInProgress) return;
+    this.snapshotUpdateInProgress = true;
+    try {
       if (await this.writeSnapshot(blockNumber)) {
-        const expiredNumber = blockNumber -
-            NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
-        this.deleteSnapshot(expiredNumber);
+        // Numeric rotation also handles a changed per-node snapshot phase.
+        const numbers = this.listSnapshotNumbers().sort((a, b) => b - a);
+        for (const number of numbers.slice(NodeConfigs.MAX_NUM_SNAPSHOTS)) this.deleteSnapshot(number);
+        // History pruning has its own busy guard and may take long on the first run (millions
+        // of files); it must neither block later snapshots nor stop snapshot rotation.
+        this.pruneBlockHistory(blockNumber).catch(err =>
+            logger.error(`[pruneBlockHistory] ${err.stack}`));
       }
-    }
+    } finally { this.snapshotUpdateInProgress = false; }
+  }
+
+  listSnapshotNumbers() {
+    const fs = require('fs');
+    return fs.readdirSync(path.join(this.snapshotDir, 'n2s'))
+        .filter(name => /^\d+\.json\.gz$/.test(name)).map(name => Number(name.split('.')[0]));
+  }
+
+  async pruneBlockHistory(blockNumber) {
+    return this.bc.historyRetention.prune(blockNumber, async () => {
+      const filename = FileUtil.getSnapshotPathByBlockNumber(this.snapshotDir, blockNumber);
+      const snapshot = await FileUtil.readChunkedJsonAsync(filename);
+      const block = this.bc.loadBlock(blockNumber);
+      if (!snapshot || snapshot.block_number !== blockNumber || !block || !snapshot.block ||
+          snapshot.block.hash !== block.hash || snapshot.root_proof_hash !== block.state_proof_hash) {
+        throw Error('Snapshot does not match finalized chain; refusing to prune');
+      }
+      const root = StateNode.fromRadixSnapshot(snapshot.radix_snapshot);
+      updateStateInfoForStateTree(root);
+      if (root.getProofHash() !== snapshot.root_proof_hash) {
+        throw Error('Snapshot state proof mismatch; refusing to prune');
+      }
+    });
   }
 
   async writeSnapshot(blockNumber) {

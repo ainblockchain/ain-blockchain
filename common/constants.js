@@ -99,8 +99,19 @@ NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..', NodeConfigs.BLOCKC
  * (priority: env var > ${BLOCKCHAIN_CONFIGS_DIR}/node_params.json > ./genesis-configs/base/node_params.json)
  */
 const NodeParams = getBlockchainConfig('node_params.json');
+/**
+ * Defaults for node params added after existing networks generated their own node_params.json.
+ * A custom BLOCKCHAIN_CONFIGS_DIR does not inherit base/node_params.json, so without these
+ * defaults such a node would see `undefined` and could not set the param via env var either.
+ */
+const OptionalNodeParamDefaults = {
+  BLOCK_HISTORY_RETENTION: 0,
+  IDLE_BLOCK_PROPOSAL_SKIP: false,
+  IDLE_HEARTBEAT_INTERVAL_MS: 600000,
+};
 function setNodeConfigs() {
-  for (const [param, valFromNodeParams] of Object.entries(NodeParams)) {
+  const nodeParams = Object.assign({}, OptionalNodeParamDefaults, NodeParams);
+  for (const [param, valFromNodeParams] of Object.entries(nodeParams)) {
     const valFromEnvVar = process.env[param];
     if (valFromEnvVar !== undefined) {
       if (CommonUtil.isBool(valFromNodeParams)) {

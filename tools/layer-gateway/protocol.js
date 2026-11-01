@@ -16,6 +16,12 @@ const WRITE_METHODS = new Set([
   'ain_sendSignedTransaction', 'ain_sendSignedTransactionBatch', 'ain_sendSignedTransactionDryrun',
 ]);
 const LOCAL_METHODS = new Set(['ain_getLayerInfo', 'ain_listTransactions', 'ain_getIndexedTransaction']);
+// Reads that may need block history older than a pruned node's retention window.
+const BLOCK_HISTORY_METHODS = new Set([
+  'ain_getBlockByHash', 'ain_getBlockByNumber', 'ain_getBlockList', 'ain_getBlockHeadersList',
+  'ain_getBlockTransactionCountByNumber', 'ain_getTransactionByBlockNumberAndIndex',
+  'ain_getValidatorsByNumber',
+]);
 
 class RpcError extends Error {
   constructor(code, message, data) { super(message); this.code = code; this.data = data; }
@@ -37,6 +43,15 @@ function validateConfig(config) {
       throw Error('At least two independent witnesses are required');
     }
     if (new Set(settings.endpoints).size !== settings.endpoints.length) throw Error('Duplicate witness');
+    // Optional: nodes that keep full block history (BLOCK_HISTORY_RETENTION=0). When set, history
+    // indexing and historical block reads use only these, so pruned validators can't break them.
+    if (settings.archiveEndpoints !== undefined) {
+      const archive = settings.archiveEndpoints;
+      if (!Array.isArray(archive) || archive.length < 2 || new Set(archive).size !== archive.length ||
+          !archive.every(e => settings.endpoints.includes(e))) {
+        throw Error('archiveEndpoints must list at least two distinct configured endpoints');
+      }
+    }
     for (const endpoint of settings.endpoints) {
       const url = new URL(endpoint);
       if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash || url.search) {
@@ -81,4 +96,4 @@ function layerInfo(config) {
     }])) };
 }
 
-module.exports = { READ_METHODS, WRITE_METHODS, RpcError, validateConfig, routeRequest, layerInfo };
+module.exports = { READ_METHODS, WRITE_METHODS, BLOCK_HISTORY_METHODS, RpcError, validateConfig, routeRequest, layerInfo };
