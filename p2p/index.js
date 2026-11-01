@@ -704,6 +704,12 @@ class P2pClient {
    */
   requestOldChainSegment(forceToReset = false) {
     const LOG_HEADER = 'requestOldChainSegment';
+    const retention = this.server.node.bc.historyRetention;
+    if (retention && !retention.shouldBackfillHistory()) {
+      this.resetOldChainSyncPeer();
+      return;
+    }
+
     if (this.oldChainSyncDone === true) {
       return;
     }
@@ -926,9 +932,11 @@ class P2pClient {
           const chainSegment = _.get(parsedMessage, 'data.chainSegment');
           const number = _.get(parsedMessage, 'data.number');
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
+          const historyRetainedFrom = _.get(parsedMessage, 'data.historyRetainedFrom', null);
           logger.debug(() => `[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
-          await this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
+          await this.handleChainSegment(
+              number, chainSegment, catchUpInfo, socket, historyRetainedFrom);
           break;
         case P2pMessageTypes.OLD_CHAIN_SEGMENT_RESPONSE:
           const oldChainSegment = _.get(parsedMessage, 'data.oldChainSegment');
@@ -1053,7 +1061,7 @@ class P2pClient {
   }
 
   // TODO(platfowner): Add peer blacklisting.
-  async handleChainSegment(number, chainSegment, catchUpInfo, socket) {
+  async handleChainSegment(number, chainSegment, catchUpInfo, socket, historyRetainedFrom = null) {
     const LOG_HEADER = 'handleChainSegment';
 
     const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
@@ -1061,6 +1069,17 @@ class P2pClient {
     if (senderAddress !== peerAddress) {
       // Received from a peer that I didn't request from
       logger.error(`[${LOG_HEADER}] Mismatched senderAddress: ${senderAddress} !== ${peerAddress}`);
+      return;
+    }
+    if (!Array.isArray(chainSegment)) {
+      // The peer can't serve the requested range, e.g. it pruned that history. Never treat this
+      // as being synced; try another peer (an archive peer, or a snapshot sync is required).
+      logger.info(`[${LOG_HEADER}] Peer ${senderAddress} cannot serve blocks after ` +
+          `${this.getChainSyncCursor()}` +
+          (historyRetainedFrom !== null ? ` (its history is retained from ${historyRetainedFrom})` : ''));
+      await CommonUtil.sleep(NodeConfigs.CHAIN_SEGMENT_SLEEP_MS);
+      this.resetChainSyncPeer();
+      this.requestChainSegment();
       return;
     }
     if (!this.precheckChainSegment(chainSegment, senderAddress)) {
@@ -1138,6 +1157,12 @@ class P2pClient {
   async handleOldChainSegment(
       oldChainSegment, segmentSize, fromBlockNumber, toBlockNumber, socket) {
     const LOG_HEADER = 'handleOldChainSegment';
+    const retention = this.server.node.bc.historyRetention;
+    if (retention && !retention.shouldBackfillHistory()) {
+      this.resetOldChainSyncPeer();
+      return;
+    }
+
 
     const senderAddress = P2pUtil.getAddressFromSocket(this.outbound, socket);
     const peerAddress = _.get(this.oldChainSyncInProgress, 'address', null);

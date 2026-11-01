@@ -192,6 +192,7 @@ class P2pServer {
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.getNonce(),
       dbStatus: this.getDbStatus(),
+      historyStorage: this.node.bc.historyRetention.status(),
       stateVersionStatus: this.getStateVersionStatus(),
       eventHandlerStatus: this.node.getEventHandlerStatus(),
     };
@@ -583,10 +584,11 @@ class P2pServer {
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
               return;
             }
-            const chainId = this.node.getBlockchainParam('genesis/chain_id');
+            const chainId = this.node.getTransactionChainId(tx.tx_body);
             if (Transaction.isBatchTransaction(tx)) {
               const newTxList = [];
               for (const subTx of tx.tx_list) {
+                const chainId = this.node.getTransactionChainId(subTx.tx_body);
                 const createdTx = Transaction.create(subTx.tx_body, subTx.signature, chainId);
                 if (!createdTx) {
                   logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
@@ -644,6 +646,19 @@ class P2pServer {
               logger.info(`[${LOG_HEADER}] Not ready to accept a chain segment request.\n` +
                   `My node status is now in ${this.node.state}.`);
               this.client.requestChainSegment();
+              const latency = Date.now() - beginTime;
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
+              return;
+            }
+            // A node with pruned history cannot serve blocks below its retention boundary.
+            // Answer explicitly instead of with an empty segment, which a requester would
+            // otherwise take for "already synced".
+            const prunedBelow = this.getPrunedHistoryBoundary(lastBlockNumber);
+            if (prunedBelow !== null) {
+              logger.info(`[${LOG_HEADER}] Requested blocks after ${lastBlockNumber} are pruned ` +
+                  `(history retained from ${prunedBelow})`);
+              this.sendChainSegment(
+                  socket, null, this.node.bc.lastBlockNumber(), null, prunedBelow);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
               return;
@@ -758,10 +773,25 @@ class P2pServer {
     socket.send(JSON.stringify(payload));
   }
 
-  sendChainSegment(socket, chainSegment, number, catchUpInfo) {
+  /**
+   * Returns the retention boundary if the blocks right after `lastBlockNumber` have been pruned
+   * locally (see blockchain/history-retention.js), or null if they can be served.
+   */
+  getPrunedHistoryBoundary(lastBlockNumber) {
+    const retention = this.node.bc.historyRetention;
+    if (!retention || !retention.marker) return null;
+    const from = Number.isInteger(lastBlockNumber) && lastBlockNumber >= 0 ? lastBlockNumber + 1 : 0;
+    if (from === 0 || retention.allowsBlock(from)) return null;
+    return retention.marker.retainFrom;
+  }
+
+  sendChainSegment(socket, chainSegment, number, catchUpInfo, historyRetainedFrom = null) {
     const LOG_HEADER = 'sendChainSegment';
-    const payload = P2pUtil.encapsulateMessage(
-        P2pMessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo });
+    const data = { chainSegment, number, catchUpInfo };
+    if (historyRetainedFrom !== null) {
+      data.historyRetainedFrom = historyRetainedFrom;
+    }
+    const payload = P2pUtil.encapsulateMessage(P2pMessageTypes.CHAIN_SEGMENT_RESPONSE, data);
     if (!payload) {
       logger.error(
           `[${LOG_HEADER}] The chain segment couldn't be sent because of msg encapsulation failure.`);

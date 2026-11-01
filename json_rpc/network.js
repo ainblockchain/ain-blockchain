@@ -18,7 +18,7 @@ module.exports = function getNetworkApis(node, p2pServer) {
 
     [JSON_RPC_METHODS.NET_GET_CHAIN_ID]: function(args, done) {
       const beginTime = Date.now();
-      const result = node.getBlockchainParam('genesis/chain_id');
+      const result = node.getTransactionChainId(null);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));

@@ -32,6 +32,7 @@ const ConsensusUtil = require('./consensus-util');
 const PathUtil = require('../common/path-util');
 const VersionUtil = require('../common/version-util');
 const FileUtil = require('../common/file-util');
+const IdlePolicy = require('./idle-policy');
 
 class ConsensusError extends Error {
   constructor({ code, level, message }) {
@@ -467,7 +468,7 @@ class Consensus {
    * Proposal block and transaction validation functions
    */
 
-  static validateProposalTx(proposalTx, proposer, validators, hash) {
+  static validateProposalTx(proposalTx, proposer, validators, hash, number = null, epoch = null) {
     if (proposalTx) {
       if (!ConsensusUtil.isValidConsensusTx(proposalTx)) {
         throw new ConsensusError({
@@ -489,6 +490,16 @@ class Consensus {
           code: ConsensusErrorCode.BLOCK_HASH_MISMATCH,
           message: `The block_hash value in proposalTx (${proposalValue.block_hash}) and ` +
               `the actual proposalBlock's hash (${hash}) don't match`,
+          level: 'error'
+        });
+      }
+      // NOTE: The proposal's epoch scales the block reward under 'reward_by_elapsed_epochs',
+      // so it must then equal the block's own (proposer-selection-checked) epoch.
+      if (isEnabledTimerFlag('reward_by_elapsed_epochs', number) && proposalValue.epoch !== epoch) {
+        throw new ConsensusError({
+          code: ConsensusErrorCode.INVALID_EPOCH,
+          message: `The epoch value in proposalTx (${proposalValue.epoch}) and ` +
+              `the actual proposalBlock's epoch (${epoch}) don't match`,
           level: 'error'
         });
       }
@@ -891,7 +902,7 @@ class Consensus {
     }
     const { hash, number, epoch, timestamp, transactions, receipts, gas_amount_total, gas_cost_total,
         proposer, validators, last_votes, evidence, last_hash, state_proof_hash } = block;
-    Consensus.validateProposalTx(proposalTx, proposer, validators, hash);
+    Consensus.validateProposalTx(proposalTx, proposer, validators, hash, number, epoch);
 
     const prevBlockInfo = Consensus.getPrevBlockInfo(number, last_hash, node.bc.lastBlock(), node.bp);
     const prevBlock = prevBlockInfo.block;
@@ -1056,13 +1067,23 @@ class Consensus {
     }
     if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
       logger.debug(() => `[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
-      if (this.shouldThrottleEmptyProposal()) {
-        logger.debug(() => `[${LOG_HEADER}] Skipping empty proposal during configured idle interval`);
+      const idleDecision = this.getIdleProposalDecision();
+      if (!idleDecision.propose) {
+        logger.debug(() => `[${LOG_HEADER}] Skipping an idle proposal at epoch ${epoch}`);
         return;
       }
       try {
+        const proposal = this.createProposal(epoch);
+        if (!IdlePolicy.shouldBroadcastProposal(idleDecision, proposal.proposalBlock)) {
+          logger.debug(() => `[${LOG_HEADER}] Dropping an empty proposal at epoch ${epoch}: ` +
+              `no includable transactions`);
+          if (NodeConfigs.LIGHTWEIGHT) {
+            delete this.cache[proposal.proposalBlock.number];
+          }
+          return;
+        }
         const consensusMsg = this.encapsulateConsensusMessage(
-            this.createProposal(epoch), ConsensusMessageTypes.PROPOSE);
+            proposal, ConsensusMessageTypes.PROPOSE);
         this.handleConsensusMessage(consensusMsg);
       } catch (err) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err.stack}`);
@@ -1072,13 +1093,86 @@ class Consensus {
     }
   }
 
-  shouldThrottleEmptyProposal() {
-    const intervalMs = Number(process.env.EMPTY_BLOCK_PROPOSAL_INTERVAL_MS || 0);
-    if (!Number.isFinite(intervalMs) || intervalMs <= 0) return false;
-    if (this.node.tp.getPoolSize() > 0) return false;
-    const lastBlock = this.node.bc.lastBlock();
-    if (!lastBlock || (lastBlock.transactions && lastBlock.transactions.length > 0)) return false;
-    return Date.now() - lastBlock.timestamp < intervalMs;
+  getIdleProposalConfig() {
+    return IdlePolicy.getIdleProposalConfig(
+        NodeConfigs, this.node.getBlockchainParam('genesis/epoch_ms'));
+  }
+
+  /**
+   * Proposer-side only (see consensus/idle-policy.js): decides whether to use this epoch's
+   * proposal slot. It falls back to proposing whenever the chain state is uncertain.
+   */
+  getIdleProposalDecision() {
+    const { enabled, heartbeatMs } = this.getIdleProposalConfig();
+    if (!enabled) {
+      return { propose: true, reason: IdlePolicy.IdleProposalReasons.DISABLED };
+    }
+    let settled = false;
+    let tipTimestamp = NaN;
+    try {
+      const tip = this.getLastNotarizedBlock();
+      tipTimestamp = tip ? tip.timestamp : NaN;
+      const extending = tip ? this.node.bp.getExtendingChain(tip.hash) : null;
+      // A block seen above the notarized tip (e.g. its votes haven't reached this node yet), or a
+      // competing block at the tip's height (validators that missed the tip's votes re-proposed
+      // it), means the chain is still moving: keep proposing as before so the split resolves
+      // (the next block carries the tip's votes) instead of waiting for the heartbeat.
+      const seenAboveTip = tip && this.node.bp.getHeighestSeenBlockNumber() > tip.number;
+      settled = !seenAboveTip && !this.findCompetingBlocks(tip).length && IdlePolicy.isChainSettled(
+          extending ? extending.chain : null, this.node.bc.lastBlock());
+    } catch (err) {
+      logger.error(`[getIdleProposalDecision] Falling back to proposing: ${err.stack}`);
+      settled = false;
+    }
+    return IdlePolicy.decideIdleProposal({
+      enabled,
+      heartbeatMs,
+      now: Date.now() - this.timeAdjustment,
+      tipTimestamp,
+      settled,
+      hasPendingTxs: this.node.tp.hasNonConsensusTransactions(),
+    });
+  }
+
+  /**
+   * Valid blocks other than `tip` at the tip's height or above it.
+   */
+  findCompetingBlocks(tip) {
+    const competing = [];
+    if (!tip) return competing;
+    for (const [number, hashSet] of this.node.bp.numberToBlockSet.entries()) {
+      if (Number(number) < tip.number) continue;
+      for (const hash of hashSet) {
+        const block = _.get(this.node.bp.hashToBlockInfo.get(hash), 'block');
+        if (block && block.hash !== tip.hash) competing.push(block);
+      }
+    }
+    return competing;
+  }
+
+  getPeerCount() {
+    const inbound = _.get(this.server, 'inbound');
+    const outbound = _.get(this.server, 'client.outbound');
+    return Object.keys(inbound || {}).length + Object.keys(outbound || {}).length;
+  }
+
+  /**
+   * Ages (ms) of the idle-health stall signals (see IdlePolicy.isConsensusHealthyWithIdle).
+   */
+  getIdleStallAgesMs(tip) {
+    const now = Date.now();
+    const finalRoot = this.node.stateManager.getFinalRoot();
+    const pendingTx = this.node.tp.getOldestIncludableNonConsensusTxAgeMs(now,
+        (address) => DB.getAccountNonceAndTimestampFromStateRoot(finalRoot, address));
+    const competing = this.findCompetingBlocks(tip);
+    const seenBlock = competing.reduce((acc, block) => Math.max(acc, now - block.timestamp), 0);
+    if (this.getPeerCount() > 0) {
+      this.noPeersSince = null;
+    } else if (!this.noPeersSince) {
+      this.noPeersSince = now;
+    }
+    const noPeers = this.noPeersSince ? now - this.noPeersSince : 0;
+    return { pendingTx, seenBlock, noPeers };
   }
 
   tryVoteForValidBlock(proposalBlock) {
@@ -1092,6 +1186,15 @@ class Consensus {
     if (proposalBlock.epoch < this.epoch) {
       logger.info(
           `[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.epoch})`);
+    }
+    // NOTE: Under 'reward_by_elapsed_epochs' an epoch far in the future would inflate the block
+    // reward (and stall honest proposers), so don't vote for blocks ahead of local time beyond a
+    // small clock-skew tolerance. Requires synchronized clocks (NTP/chrony) on validators.
+    if (isEnabledTimerFlag('reward_by_elapsed_epochs', proposalBlock.number) &&
+        proposalBlock.epoch > this.epoch + ConsensusConsts.MAX_FUTURE_EPOCHS_TO_VOTE) {
+      logger.info(`[${LOG_HEADER}] Not voting for a block from a future epoch ` +
+          `(${proposalBlock.epoch} / ${this.epoch})`);
+      return;
     }
     const myAddr = this.node.account.address;
     const validatorInfo = proposalBlock.validators[myAddr];
@@ -1461,7 +1564,30 @@ class Consensus {
   isConsensusHealthy(lastFinalizedBlock) {
     if (!lastFinalizedBlock) return false;
     const healthThresholdEpoch = this.node.getBlockchainParam('consensus/health_threshold_epoch');
-    return (this.epoch - lastFinalizedBlock.epoch) < healthThresholdEpoch;
+    if ((this.epoch - lastFinalizedBlock.epoch) < healthThresholdEpoch) return true;
+    const idleConfig = this.getIdleProposalConfig();
+    if (!idleConfig.enabled) return false;
+    // NOTE: With idle block skipping, an old finalized block alone doesn't mean a stall.
+    let unfinalizedChain = null;
+    let stallAgesMs = null;
+    try {
+      const tip = this.getLastNotarizedBlock();
+      const extending = tip ? this.node.bp.getExtendingChain(tip.hash) : null;
+      unfinalizedChain = extending ? extending.chain : null;
+      stallAgesMs = this.getIdleStallAgesMs(tip);
+    } catch (err) {
+      logger.error(`[isConsensusHealthy] Failed to read the chain view: ${err.stack}`);
+      return false;
+    }
+    return IdlePolicy.isConsensusHealthyWithIdle({
+      currentEpoch: this.epoch,
+      lastFinalizedBlock,
+      unfinalizedChain,
+      thresholdEpochs: healthThresholdEpoch,
+      epochMs: this.node.getBlockchainParam('genesis/epoch_ms'),
+      idleConfig,
+      stallAgesMs,
+    });
   }
 
   /**

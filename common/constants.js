@@ -99,8 +99,19 @@ NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..', NodeConfigs.BLOCKC
  * (priority: env var > ${BLOCKCHAIN_CONFIGS_DIR}/node_params.json > ./genesis-configs/base/node_params.json)
  */
 const NodeParams = getBlockchainConfig('node_params.json');
+/**
+ * Defaults for node params added after existing networks generated their own node_params.json.
+ * A custom BLOCKCHAIN_CONFIGS_DIR does not inherit base/node_params.json, so without these
+ * defaults such a node would see `undefined` and could not set the param via env var either.
+ */
+const OptionalNodeParamDefaults = {
+  BLOCK_HISTORY_RETENTION: 0,
+  IDLE_BLOCK_PROPOSAL_SKIP: false,
+  IDLE_HEARTBEAT_INTERVAL_MS: 600000,
+};
 function setNodeConfigs() {
-  for (const [param, valFromNodeParams] of Object.entries(NodeParams)) {
+  const nodeParams = Object.assign({}, OptionalNodeParamDefaults, NodeParams);
+  for (const [param, valFromNodeParams] of Object.entries(nodeParams)) {
     const valFromEnvVar = process.env[param];
     if (valFromEnvVar !== undefined) {
       if (CommonUtil.isBool(valFromNodeParams)) {
@@ -484,17 +495,58 @@ const NativeFunctionIds = {
   SAVE_LAST_TX: '_saveLastTx',
   SET_OWNER_CONFIG: '_setOwnerConfig',
   STAKE: '_stake',
+  // AIN Store: folds a write slot into the app's Merkle Mountain Range. Known only once the
+  // 'ain_store' timer flag is enabled (see isActiveNativeFunctionId()).
+  STORE_APPEND: '_storeAppend',
   TRANSFER: '_transfer',
   UNSTAKE: '_unstake',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
+  // Historical function IDs: accepted only as inert compatibility hooks.
   SYNC_KNOWLEDGE_TOPIC: '_syncKnowledgeTopic',
   SYNC_KNOWLEDGE_EXPLORATION: '_syncKnowledgeExploration',
 };
 
+// NOTE: Native functions that exist only after a timer flag activates. They are excluded from
+// isNativeFunctionId() (used without a block number, e.g. for 'fid:' owner validation) so that
+// adding them changes nothing before activation.
+const TimerFlaggedNativeFunctionIds = {
+  _storeAppend: 'ain_store',
+};
+
 function isNativeFunctionId(fid) {
+  if (TimerFlaggedNativeFunctionIds[fid] !== undefined) {
+    return false;
+  }
   const fidList = Object.values(NativeFunctionIds);
   return fidList.includes(fid);
 }
+
+/**
+ * Whether the native function with the given id can be executed at the given block number.
+ */
+function isActiveNativeFunctionId(fid, blockNumber) {
+  const flagName = TimerFlaggedNativeFunctionIds[fid];
+  if (flagName === undefined) {
+    return true;
+  }
+  return isEnabledTimerFlag(flagName, blockNumber);
+}
+
+/**
+ * AIN Store paths and formats (see docs: AIN Store design).
+ */
+const AinStore = {
+  TIMER_FLAG: 'ain_store',
+  WRITES: 'writes',
+  STORE: 'store',
+  MMR: 'mmr',
+  MMR_N: 'n',
+  MMR_PEAKS: 'peaks',
+  COLLECTION_REGEX: /^[a-z][a-z0-9_]{0,62}$/,
+  KEY_REGEX: /^[0-9A-Za-z_-]{20}$/,
+  // blockchain_params/resource/app_state_budget/<app>
+  APP_STATE_BUDGET_PARAM: 'app_state_budget',
+};
 
 /**
  * Properties of sharding configs.
@@ -856,6 +908,8 @@ module.exports = {
   BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
+  isActiveNativeFunctionId,
+  AinStore,
   ShardingProperties,
   ShardingProtocols,
   TokenExchangeSchemes,

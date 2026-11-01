@@ -71,6 +71,17 @@ class FileUtil {
     return `${chunkIndex}.${JSON_GZIP_FILE_EXTENSION}`;
   }
 
+  // Called only during bootstrap, before this node starts any snapshot workers.
+  static cleanupSnapshotTemps(snapshotPath) {
+    const directory = path.join(snapshotPath, BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME);
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      if (entry.isFile() && /^\d+\.json\.gz\.\d+\.tmp$/.test(entry.name)) {
+        fs.unlinkSync(path.join(directory, entry.name));
+      }
+    }
+  }
+
   static getLatestSnapshotInfo(snapshotPath) {
     const LOG_HEADER = 'getLatestSnapshotInfo';
 
@@ -86,6 +97,9 @@ class FileUtil {
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
     for (const file of fileList) {
+      // Only atomically published snapshots are eligible after a crash. The
+      // streaming writer can leave <height>.json.gz.<pid>.tmp behind.
+      if (!/^(0|[1-9][0-9]*)\.json\.gz$/.test(file)) continue;
       // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
       if (_.startsWith(file, BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX)) {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
@@ -149,6 +163,7 @@ class FileUtil {
   }
 
   static getBlockNumberFromGzipFilename(filename) {
+    if (!/^\d+\.json\.gz$/.test(filename)) return -1;
     const numString = _.get(_.split(filename, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
     let blockNumber = Number(numString);
     return CommonUtil.isNumber(blockNumber) ? blockNumber : -1;

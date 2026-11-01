@@ -33,7 +33,7 @@ function sendTransactionOnNode(node, p2pServer, args, done, isDryrun) {
     }));
     return;
   }
-  const chainId = node.getBlockchainParam('genesis/chain_id');
+  const chainId = node.getTransactionChainId(args.tx_body);
   const createdTx = Transaction.create(args.tx_body, args.signature, chainId);
   if (!createdTx) {
     const latency = Date.now() - beginTime;
@@ -166,7 +166,6 @@ module.exports = function getTransactionApis(node, p2pServer) {
         return;
       }
       const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
-      const chainId = node.getBlockchainParam('genesis/chain_id');
       const txList = [];
       for (let i = 0; i < args.tx_list.length; i++) {
         const tx = args.tx_list[i];
@@ -190,6 +189,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
           }));
           return;
         }
+        const chainId = node.getTransactionChainId(tx.tx_body);
         const createdTx = Transaction.create(tx.tx_body, tx.signature, chainId);
         if (!createdTx) {
           const latency = Date.now() - beginTime;

@@ -385,3 +385,18 @@ Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on our code of 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+
+### Bounded history storage
+
+State-serving nodes can opt into snapshot-backed history retention with
+`SYNC_MODE=fast BLOCK_HISTORY_RETENTION=20000`. This bounds block/index growth
+without changing consensus or current state. Archive mode remains the default.
+See [configuration, API limitations and recovery](docs/bounded-history.md).
+
+### Idle block production
+
+Validators can stop proposing empty blocks while nothing happens with
+`IDLE_BLOCK_PROPOSAL_SKIP=true` (optional heartbeat `IDLE_HEARTBEAT_INTERVAL_MS`,
+default 10 minutes). This is a proposer-side policy that older validators accept, and
+blocks with transactions are still finalized as fast as before. It is off by default.
+See [design, safety argument and rollout](docs/idle-block-production.md).

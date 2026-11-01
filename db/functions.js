@@ -15,6 +15,8 @@ const {
   buildOwnerPermissions,
   buildRulePermission,
   isEnabledTimerFlag,
+  isActiveNativeFunctionId,
+  AinStore,
 } = require('../common/constants');
 const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -71,6 +73,10 @@ class Functions {
         func: this._setOwnerConfig.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.STAKE]: {
         func: this._stake.bind(this), ownerOnly: true, extraGasAmount: 0 },
+      // NOTE: ownerOnly is false so that app owners can install it; where it may be installed is
+      // checked by DB.setFunction() (only under /apps/<app>/writes/**) once 'ain_store' is enabled.
+      [NativeFunctionIds.STORE_APPEND]: {
+        func: this._storeAppend.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.UNSTAKE]: {
         func: this._unstake.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.TRANSFER]: {
@@ -78,9 +84,9 @@ class Functions {
       [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
         func: this._updateLatestShardReport.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.SYNC_KNOWLEDGE_TOPIC]: {
-        func: this._syncKnowledgeTopic.bind(this), ownerOnly: false, extraGasAmount: 0 },
+        func: this._legacyIndexNoop.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.SYNC_KNOWLEDGE_EXPLORATION]: {
-        func: this._syncKnowledgeExploration.bind(this), ownerOnly: false, extraGasAmount: 0 },
+        func: this._legacyIndexNoop.bind(this), ownerOnly: false, extraGasAmount: 0 },
     };
     this.callStack = [];
   }
@@ -181,7 +187,9 @@ class Functions {
                 formattedParams);
             continue;  // Skips the function.
           }
-          const nativeFunction = this.nativeFunctionMap[functionEntry.function_id];
+          const nativeFunction =
+              isActiveNativeFunctionId(functionEntry.function_id, blockNumber) ?
+                  this.nativeFunctionMap[functionEntry.function_id] : null;
           if (nativeFunction) {
             // Execute the matched native function.
             this.pushCall(
@@ -687,6 +695,155 @@ class Functions {
   }
 
   /**
+   * Computes the AIN Store leaf of a write record.
+   * leaf = hashString(stableStringify({ a: app, c: collection, k: key, r: record, t: txHash }))
+   */
+  static computeStoreLeaf(appName, collection, key, record, txHash) {
+    return CommonUtil.hashString(stringify({
+      a: appName,
+      c: collection,
+      k: key,
+      r: record,
+      t: txHash,
+    }));
+  }
+
+  /**
+   * Appends a leaf to Merkle Mountain Range peaks ({ n, peaks }, peaks ordered left (oldest,
+   * tallest) to right, stored as an index-keyed object). Returns a new object; the input is not
+   * modified.
+   * Inner node = hashString(left + right) of the two '0x'-prefixed hex strings.
+   */
+  static appendToMmr(mmr, leaf) {
+    const n = mmr && CommonUtil.isNumber(mmr[AinStore.MMR_N]) ? mmr[AinStore.MMR_N] : 0;
+    const peaks = Functions.getMmrPeakList(mmr);
+    let cur = leaf;
+    let height = 0;
+    // NOTE: n can exceed 2^31, so bits are taken with Math.floor() instead of bitwise operators.
+    while (Math.floor(n / Math.pow(2, height)) % 2 === 1) {
+      cur = CommonUtil.hashString(peaks.pop() + cur);
+      height++;
+    }
+    peaks.push(cur);
+    return { [AinStore.MMR_N]: n + 1, [AinStore.MMR_PEAKS]: Functions.toMmrPeakObj(peaks) };
+  }
+
+  /**
+   * Whether the given stored MMR is well-formed: n is a non-negative safe integer, peaks has
+   * exactly popcount(n) entries keyed '0'..'k-1', each a '0x'-prefixed 64-hex-digit string.
+   * (An absent MMR, null, is the valid initial state and is handled by the caller.)
+   */
+  static isValidMmr(mmr) {
+    if (!CommonUtil.isDict(mmr)) {
+      return false;
+    }
+    const n = mmr[AinStore.MMR_N];
+    if (!Number.isSafeInteger(n) || n < 0) {
+      return false;
+    }
+    const keys = Object.keys(mmr);
+    if (keys.some((k) => k !== AinStore.MMR_N && k !== AinStore.MMR_PEAKS)) {
+      return false;
+    }
+    const peaks = mmr[AinStore.MMR_PEAKS];
+    const numPeaks = n.toString(2).split('').filter((b) => b === '1').length;
+    if (numPeaks === 0) {
+      return peaks === undefined || peaks === null;
+    }
+    if (!CommonUtil.isDict(peaks) || Object.keys(peaks).length !== numPeaks) {
+      return false;
+    }
+    for (let i = 0; i < numPeaks; i++) {
+      if (typeof peaks[i] !== 'string' || !/^0x[0-9a-f]{64}$/.test(peaks[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * The state tree cannot hold arrays, so peaks are stored as { '0': <peak0>, '1': <peak1>, ... }.
+   */
+  static toMmrPeakObj(peakList) {
+    const obj = {};
+    peakList.forEach((peak, i) => {
+      obj[i] = peak;
+    });
+    return obj;
+  }
+
+  /**
+   * Returns MMR peaks as an array. The state tree stores arrays as objects keyed by index
+   * ('0', '1', ...), so both forms are accepted.
+   */
+  static getMmrPeakList(mmr) {
+    const peaks = mmr ? mmr[AinStore.MMR_PEAKS] : null;
+    if (CommonUtil.isArray(peaks)) {
+      return peaks.slice();
+    }
+    if (CommonUtil.isDict(peaks)) {
+      const list = [];
+      for (let i = 0; peaks[i] !== undefined; i++) {
+        list.push(peaks[i]);
+      }
+      return list;
+    }
+    return [];
+  }
+
+  /**
+   * AIN Store: on a non-null write to /apps/<app>/writes/<collection>/<key>, folds
+   * the write record (with the tx hash) into /apps/<app>/store/mmr and erases the slot, all in
+   * the same transaction. Both writes bypass app rules and do not trigger further functions;
+   * /apps/<app>/store/mmr cannot be written any other way (see DB.setValue()).
+   */
+  _storeAppend(value, context) {
+    if (value === null) {
+      // Does nothing for null value (including the slot erasure below).
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const parsedValuePath = context.valuePath;
+    if (!CommonUtil.isArray(parsedValuePath) || parsedValuePath.length !== 5 ||
+        parsedValuePath[0] !== PredefinedDbPaths.APPS ||
+        parsedValuePath[2] !== AinStore.WRITES ||
+        !AinStore.COLLECTION_REGEX.test(parsedValuePath[3]) ||
+        !AinStore.KEY_REGEX.test(parsedValuePath[4])) {
+      logger.error(`  ==> _storeAppend on a non-slot path: ` +
+          `${CommonUtil.formatPath(parsedValuePath)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const transaction = context.transaction;
+    const txHash = transaction ? transaction.hash : null;
+    if (!CommonUtil.isString(txHash) || !txHash) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const appName = parsedValuePath[1];
+    const collection = parsedValuePath[3];
+    const key = parsedValuePath[4];
+    const leaf = Functions.computeStoreLeaf(appName, collection, key, value, txHash);
+    const mmrPath = [PredefinedDbPaths.APPS, appName, AinStore.STORE, AinStore.MMR];
+    const mmrPathStr = CommonUtil.formatPath(mmrPath);
+    const curMmr = this.db.getValue(mmrPathStr);
+    if (curMmr !== null && !Functions.isValidMmr(curMmr)) {
+      logger.error(
+          `  ==> _storeAppend on an invalid MMR at ${mmrPathStr}: ${JSON.stringify(curMmr)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const newMmr = Functions.appendToMmr(curMmr, leaf);
+    const mmrRes = this.db.writeStoreInternalValue(mmrPath, newMmr, context);
+    Functions.addToOpResultList(mmrPathStr, mmrRes, context);
+    if (CommonUtil.isFailedTx(mmrRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    const eraseRes = this.db.writeStoreInternalValue(parsedValuePath, null, context);
+    Functions.addToOpResultList(CommonUtil.formatPath(parsedValuePath), eraseRes, context);
+    if (CommonUtil.isFailedTx(eraseRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  /**
    * Does nothing except always fails.
    * This is often used for testing purposes.
    */
@@ -912,6 +1069,21 @@ class Functions {
     return 0;
   }
 
+  /**
+   * Number of epochs a block's reward covers. Originally one block was produced every epoch,
+   * so the per-block reward equals one epoch of the annual rate. With the
+   * 'reward_by_elapsed_epochs' timer flag (needed once proposers skip idle epochs), the reward
+   * for block N-1 covers the epochs elapsed until block N, capped at MAX_CREDITED_REWARD_MS.
+   */
+  static getCreditedRewardEpochs(epoch, prevEpoch, epochMs) {
+    if (!CommonUtil.isNumber(epoch) || !CommonUtil.isNumber(prevEpoch) ||
+        !CommonUtil.isNumber(epochMs) || epochMs <= 0) {
+      return 1;
+    }
+    const maxEpochs = Math.max(1, Math.ceil(Functions.MAX_CREDITED_REWARD_MS / epochMs));
+    return Math.min(Math.max(1, Math.floor(epoch - prevEpoch)), maxEpochs);
+  }
+
   _distributeFee(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -928,8 +1100,12 @@ class Functions {
     if (blockNumber <= 1) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const blockRewardMultiplier = this.getBlockRewardMultiplier(context);
+    let blockRewardMultiplier = this.getBlockRewardMultiplier(context);
     const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
+    if (isEnabledTimerFlag('reward_by_elapsed_epochs', blockNumber - 1)) {
+      blockRewardMultiplier *= Functions.getCreditedRewardEpochs(
+          _.get(value, 'epoch'), _.get(lastConsensusRound, 'propose.epoch'), context.epochMs);
+    }
     const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
     const blockHash = lastConsensusRound.propose.block_hash;
     const votes = lastConsensusRound[blockHash].vote;
@@ -1654,80 +1830,9 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  // ---------------------------------------------------------------------------
-  // Knowledge graph sync functions
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Native function triggered when a topic's .info is written.
-   * Fire-and-forget: sync is async, not consensus-critical.
-   */
-  _syncKnowledgeTopic(value, context) {
-    if (value === null) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    if (!this.db.knowledgeGraphIndex || !this.db.knowledgeGraphIndex.isEnabled()) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-
-    // Extract topic path from valuePath.
-    // The function is attached to /apps/knowledge/topics, so valuePath might be like:
-    // ['apps', 'knowledge', 'topics', 'ai', 'transformers', '.info']
-    const valuePath = context.valuePath;
-    const topicsIdx = valuePath.indexOf('topics');
-    if (topicsIdx < 0) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-
-    // Everything between 'topics' and '.info' is the topic path
-    let endIdx = valuePath.length;
-    if (valuePath[valuePath.length - 1] === '.info') {
-      endIdx = valuePath.length - 1;
-    }
-    const topicSegments = valuePath.slice(topicsIdx + 1, endIdx);
-    if (topicSegments.length === 0) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    const topicPath = topicSegments.join('/');
-
-    // Fire-and-forget
-    this.db.knowledgeGraphIndex.syncTopic(topicPath, value).catch(function(err) {
-      logger.error(`Knowledge graph syncTopic error: ${err.message}`);
-    });
-
-    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-  }
-
-  /**
-   * Native function triggered when an exploration entry is written.
-   * Fire-and-forget: sync is async, not consensus-critical.
-   */
-  _syncKnowledgeExploration(value, context) {
-    if (value === null) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    if (!this.db.knowledgeGraphIndex || !this.db.knowledgeGraphIndex.isEnabled()) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-
-    // Extract params from context.
-    // The function is attached to /apps/knowledge/explorations/$addr/$topic_key/$entry_id
-    const params = context.params || {};
-    const addr = params.addr;
-    const topicKey = params.topic_key;
-    const entryId = params.entry_id;
-
-    if (!addr || !topicKey || !entryId) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-
-    const topicPath = topicKey.replace(/\|/g, '/');
-
-    // Fire-and-forget
-    this.db.knowledgeGraphIndex.syncExploration(addr, topicPath, entryId, value).catch(function(err) {
-      logger.error(`Knowledge graph syncExploration error: ${err.message}`);
-    });
-
+  // Retired index hooks remain in historical state. Preserve their original
+  // success/gas result during replay and app writes, without external effects.
+  _legacyIndexNoop(value, context) {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
@@ -1739,5 +1844,9 @@ class Functions {
     return parsedPath.length && parsedPath[0] === PredefinedDbPaths.TRANSFER;
   }
 }
+
+// Upper bound of the elapsed time a single block reward can cover: three default idle heartbeat
+// intervals (30 min). Heartbeats longer than 10 min forgo part of the reward.
+Functions.MAX_CREDITED_REWARD_MS = 1800000;
 
 module.exports = Functions;

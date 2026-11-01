@@ -24,10 +24,13 @@ const {
   trafficStatsManager,
   ValueChangedEventSources,
   isEnabledTimerFlag,
+  AinStore,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
+const StateNode = require('../db/state-node');
+const { updateStateInfoForStateTree } = require('../db/state-util');
 const CommonUtil = require('../common/common-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
@@ -39,7 +42,6 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
 const EventHandler = require('../event-handler');
-const KnowledgeGraphIndex = require('../db/knowledge-graph-index');
 
 class BlockchainNode {
   constructor(account = null) {
@@ -71,25 +73,6 @@ class BlockchainNode {
     this.requestedSnapshotBlockNumber = -1;
     this.requestedSnapshotNumChunks = 0;
     this.state = BlockchainNodeStates.STARTING;
-    this.knowledgeGraphIndex = null;
-    if (NodeConfigs.ENABLE_KNOWLEDGE_GRAPH_INDEX === true) {
-      const kgi = new KnowledgeGraphIndex(
-        NodeConfigs.KNOWLEDGE_GRAPH_BACKEND || 'memory',
-        {
-          uri: NodeConfigs.KNOWLEDGE_NEO4J_URI,
-          username: NodeConfigs.KNOWLEDGE_NEO4J_USERNAME,
-          password: NodeConfigs.KNOWLEDGE_NEO4J_PASSWORD,
-        }
-      );
-      this.knowledgeGraphIndex = kgi;
-      kgi.initialize().then(() => {
-        this.db.knowledgeGraphIndex = kgi;
-        logger.info('Knowledge Graph Index attached to DB.');
-      }).catch((err) => {
-        logger.error(`Knowledge Graph Index failed to initialize: ${err.message}`);
-        this.knowledgeGraphIndex = null;
-      });
-    }
     logger.info(`Now node in STARTING state!`);
 
     if (account === null) {
@@ -300,6 +283,7 @@ class BlockchainNode {
   async loadLatestSnapshot() {
     const LOG_HEADER = 'loadLatestSnapshot';
 
+    FileUtil.cleanupSnapshotTemps(this.snapshotDir);
     const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
     const latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
     if (latestSnapshotPath) {
@@ -385,6 +369,7 @@ class BlockchainNode {
     const LOG_HEADER = 'startNode';
 
     try {
+      this.bc.historyRetention.assertRecoverable(this.bootstrapSnapshotBlockNumber);
       // 1. Initialize DB (with the latest snapshot, if it exists)
       logger.info(
           `[${LOG_HEADER}] Initializing DB with bootstrap snapshot from ${this.bootstrapSnapshotSource}..`);
@@ -420,6 +405,10 @@ class BlockchainNode {
       this.state = BlockchainNodeStates.CHAIN_SYNCING;
       logger.info(`[${LOG_HEADER}] Now node in CHAIN_SYNCING state!`);
 
+      // Resume interrupted retention after recovery without blocking service startup.
+      const recoveredSnapshotNumber = this.bootstrapSnapshotBlockNumber;
+      setImmediate(() => this.pruneBlockHistory(recoveredSnapshotNumber).catch(err =>
+          logger.error(`[pruneBlockHistory] ${err.stack}`)));
       // 6. Reset bootstrap snapshot.
       this.resetBootstrapSnapshot();
     } catch (err) {
@@ -490,20 +479,50 @@ class BlockchainNode {
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDbAndNonce(nodeVersion);
     // NOTE(liayoo): This write is not awaited.
-    this.updateSnapshots(blockNumber);
+    this.updateSnapshots(blockNumber).catch(err =>
+        logger.error(`[updateSnapshots] ${err.stack}`));
   }
 
   async updateSnapshots(blockNumber) {
     const interval = NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
-    // Stable per-node phase; snapshot contents still use this exact finalized block.
     const phase = this.account ? parseInt(this.account.address.slice(2, 10), 16) % interval : 0;
-    if (blockNumber === 0 || blockNumber % interval === phase) {
+    if (blockNumber !== 0 && blockNumber % interval !== phase) return;
+    if (this.snapshotUpdateInProgress) return;
+    this.snapshotUpdateInProgress = true;
+    try {
       if (await this.writeSnapshot(blockNumber)) {
-        const expiredNumber = blockNumber -
-            NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER;
-        this.deleteSnapshot(expiredNumber);
+        // Numeric rotation also handles a changed per-node snapshot phase.
+        const numbers = this.listSnapshotNumbers().sort((a, b) => b - a);
+        for (const number of numbers.slice(NodeConfigs.MAX_NUM_SNAPSHOTS)) this.deleteSnapshot(number);
+        // History pruning has its own busy guard and may take long on the first run (millions
+        // of files); it must neither block later snapshots nor stop snapshot rotation.
+        this.pruneBlockHistory(blockNumber).catch(err =>
+            logger.error(`[pruneBlockHistory] ${err.stack}`));
       }
-    }
+    } finally { this.snapshotUpdateInProgress = false; }
+  }
+
+  listSnapshotNumbers() {
+    const fs = require('fs');
+    return fs.readdirSync(path.join(this.snapshotDir, 'n2s'))
+        .filter(name => /^\d+\.json\.gz$/.test(name)).map(name => Number(name.split('.')[0]));
+  }
+
+  async pruneBlockHistory(blockNumber) {
+    return this.bc.historyRetention.prune(blockNumber, async () => {
+      const filename = FileUtil.getSnapshotPathByBlockNumber(this.snapshotDir, blockNumber);
+      const snapshot = await FileUtil.readChunkedJsonAsync(filename);
+      const block = this.bc.loadBlock(blockNumber);
+      if (!snapshot || snapshot.block_number !== blockNumber || !block || !snapshot.block ||
+          snapshot.block.hash !== block.hash || snapshot.root_proof_hash !== block.state_proof_hash) {
+        throw Error('Snapshot does not match finalized chain; refusing to prune');
+      }
+      const root = StateNode.fromRadixSnapshot(snapshot.radix_snapshot);
+      updateStateInfoForStateTree(root);
+      if (root.getProofHash() !== snapshot.root_proof_hash) {
+        throw Error('Snapshot state proof mismatch; refusing to prune');
+      }
+    });
   }
 
   async writeSnapshot(blockNumber) {
@@ -641,11 +660,17 @@ class BlockchainNode {
     const appStakesTotal = this.db.getAppStakesTotal();
     const appStake = this.db.getAppStake(appName);
     const appStakeRatio = appStakesTotal > 0 ? appStake / appStakesTotal : 1;
+    const lastBlockNumber = this.bc.lastBlockNumber();
+    const finalRoot = this.stateManager.getFinalRoot();
     const {
       appsStateBudget,
       freeStateBudget,
-    } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
-    const freeTierUsage = this.db.getStateFreeTierUsage();
+    } = DB.getStateBudgets(lastBlockNumber, finalRoot);
+    // NOTE: With the 'ain_store' timer flag, an app with its own state budget
+    // ('resource/app_state_budget/<app>') is limited by that budget only, independent of stakes.
+    const ownBudget = isEnabledTimerFlag(AinStore.TIMER_FLAG, lastBlockNumber) ?
+        DB.getAppStateBudget(appName, lastBlockNumber, finalRoot) : null;
+    const freeTierUsage = this.db.getStateFreeTierUsage(lastBlockNumber);
     const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
     const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
     const usage = {
@@ -654,9 +679,11 @@ class BlockchainNode {
       tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
       tree_max_siblings: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_MAX_SIBLINGS] : 0,
     };
-    const availableTreeBytes = appStake > 0 ?
-        Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
-        Math.max(0, freeStateBudget - freeTierTreeBytes);
+    const availableTreeBytes = ownBudget !== null ?
+        Math.max(0, ownBudget - usage.tree_bytes) :
+        appStake > 0 ?
+            Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes) :
+            Math.max(0, freeStateBudget - freeTierTreeBytes);
     // NOTE(platfowner): availableTreeSize is just determined by availableTreeBytes
     // but we provide this for user's reference.
     const availableTreeSize = availableTreeBytes * maxStateTreeSizePerByte;
@@ -668,15 +695,19 @@ class BlockchainNode {
     const staking = {
       app: appStake,
       total: appStakesTotal,
-      unstakeable: BlockchainNode.calcUnstakeableAmount(
+      unstakeable: ownBudget !== null ? appStake : BlockchainNode.calcUnstakeableAmount(
         appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake,
         appStakesTotal),
     };
-    return {
+    const result = {
       usage,
       available,
       staking,
     };
+    if (ownBudget !== null) {
+      result.budget = { tree_bytes: ownBudget };
+    }
+    return result;
   }
 
   getTxPoolSizeUtilization(address) {
@@ -709,6 +740,11 @@ class BlockchainNode {
       blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
       stateVersion !== null ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
     );
+  }
+
+  getTransactionChainId(body) {
+    return require('../layer2/domain').transactionChainId(body,
+        this.getBlockchainParam('genesis/chain_id'), this.getAllBlockchainParamsFromState().layer2);
   }
 
   getAllBlockchainParamsFromState() {
@@ -761,7 +797,7 @@ class BlockchainNode {
       txBody.gas_price = 0;
     }
     return Transaction.fromTxBody(
-        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id'));
+        txBody, this.account.private_key, this.getTransactionChainId(txBody));
   }
 
   /**
@@ -799,7 +835,7 @@ class BlockchainNode {
           TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
           `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
-    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const chainId = this.getTransactionChainId(tx.tx_body);
     const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
@@ -971,14 +1007,13 @@ class BlockchainNode {
   executeAndGetValidTransactions(
       longestNotarizedChain, blockNumber, blockTime, baseDb, isExecutionOnly = false, eventSource = null) {
     const LOG_HEADER = 'executeAndGetValidTransactions';
-    const chainId = this.getBlockchainParam('genesis/chain_id');
     const candidates = this.tp.getValidTransactions(longestNotarizedChain, baseDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
       const res = baseDb.executeTransaction(
-          Transaction.toExecutable(tx, chainId), false, true, blockNumber, blockTime, eventSource);
+          Transaction.toExecutable(tx, baseDb.getTransactionChainId(tx.tx_body)), false, true, blockNumber, blockTime, eventSource);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(() => `[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);

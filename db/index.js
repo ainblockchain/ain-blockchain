@@ -20,10 +20,13 @@ const {
   BlockchainParams,
   TimerFlagEnabledBandageMap,
   isEnabledTimerFlag,
+  NativeFunctionIds,
+  AinStore,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
+const LayerRuntime = require('../layer2/runtime');
 const StateNode = require('./state-node');
 const {
   hasFunctionConfig,
@@ -71,7 +74,11 @@ class DB {
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.appStateUsageCache = { hash: null, value: null };
     this.stakedAppSetCache = { hash: null, value: new Set() };
+    this.appStateBudgetSetCache = { hash: null, value: new Set() };
     this.stateFreeTierUsageCache = null;
+    this.stateFreeTierUsageCacheExcludesBudgetApps = false;
+    // Value-changed events of AIN Store slot erasures, emitted after the enclosing write's own.
+    this.deferredStoreEvents = [];
     this.updateRestFunctionsUrlWhitelistCache();
     this.updateStateFreeTierUsageCache();
   }
@@ -570,18 +577,18 @@ class DB {
    * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  getStateProof(statePath) {
+  getStateProof(statePath, options = {}) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getStateProofFromStateRoot(this.stateRoot, parsedPath);
+    return getStateProofFromStateRoot(options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot, parsedPath);
   }
 
   /**
    * Returns proof hash of a state node.
    * @param {string} statePath full database path to the state node
    */
-  getProofHash(statePath) {
+  getProofHash(statePath, options = {}) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getProofHashFromStateRoot(this.stateRoot, parsedPath);
+    return getProofHashFromStateRoot(options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
@@ -989,6 +996,14 @@ class DB {
           null,
           unitWriteGasAmount);
     }
+    if (isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber) &&
+        this.changesStoreMmr(localPath, value)) {
+      return CommonUtil.returnTxResult(
+          TxResultCode.SET_VALUE_STORE_MMR_NOT_WRITABLE,
+          `Only the ${NativeFunctionIds.STORE_APPEND} native function can write ` +
+          `/${PredefinedDbPaths.APPS}/<app>/${AinStore.STORE}/${AinStore.MMR}`,
+          unitWriteGasAmount);
+    }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, options);
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
@@ -1030,8 +1045,7 @@ class DB {
       const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
       const stakeLockupExtension = DB.getBlockchainParam(
           'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
-      const chainId = DB.getBlockchainParam(
-          'genesis/chain_id', blockNumber, this.stateRoot);
+      const chainId = this.getTransactionChainId(transaction?.tx_body);
       const networkId = DB.getBlockchainParam(
           'genesis/network_id', blockNumber, this.stateRoot);
       const blockchainParams = {
@@ -1069,13 +1083,14 @@ class DB {
     if (value !== null) {
       // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
       const applyStateGcRuleRes =
-          this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+          this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath, blockNumber);
       logger.debug(
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
     // NOTE: Skipped when the event source is null.
     if (this.eh && eventSource !== null) {
       this.eh.emitValueChanged(auth, transaction, localPath, prevValueCopy, valueCopy, eventSource);
+      this.flushDeferredStoreEvents(localPath);
     }
 
     return CommonUtil.returnTxResult(
@@ -1084,6 +1099,126 @@ class DB {
         unitWriteGasAmount,
         funcResults,
         subtreeFuncResults);
+  }
+
+  /**
+   * Whether writing the given value at the given (local) path would change any
+   * /apps/<app>/store/mmr ('ain_store' timer flag). Writes to ancestors are checked by comparing
+   * the mmr subtree they would leave behind with the current one.
+   */
+  changesStoreMmr(parsedPath, value) {
+    const appsLabel = PredefinedDbPaths.APPS;
+    const mmrRelPath = [AinStore.STORE, AinStore.MMR];
+    if (parsedPath.length > 0 && parsedPath[0] !== appsLabel) {
+      return false;
+    }
+    if (parsedPath.length >= 4) {
+      return parsedPath[2] === AinStore.STORE && parsedPath[3] === AinStore.MMR;
+    }
+    const isChanged = (appName, newMmr) => {
+      const curMmr = this.getValue(CommonUtil.formatPath([appsLabel, appName, ...mmrRelPath]));
+      return !_.isEqual(curMmr, newMmr === undefined ? null : newMmr);
+    };
+    if (parsedPath.length === 3) {
+      if (parsedPath[2] !== AinStore.STORE) {
+        return false;
+      }
+      return isChanged(parsedPath[1], CommonUtil.getJsObject(value, [AinStore.MMR]));
+    }
+    if (parsedPath.length === 2) {
+      return isChanged(parsedPath[1], CommonUtil.getJsObject(value, mmrRelPath));
+    }
+    // Writes to '/apps' or '/'.
+    const appsValue = parsedPath.length === 1 ? value : CommonUtil.getJsObject(value, [appsLabel]);
+    const curApps = this.getValue(`/${appsLabel}`, { isShallow: true }) || {};
+    const appNames = new Set(Object.keys(curApps));
+    if (CommonUtil.isDict(appsValue)) {
+      Object.keys(appsValue).forEach((appName) => appNames.add(appName));
+    }
+    for (const appName of appNames) {
+      if (isChanged(appName, CommonUtil.getJsObject(appsValue, [appName, ...mmrRelPath]))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Writes a value for the _storeAppend native function ('ain_store' timer flag): the app's
+   * /store/mmr and the erasure of the write slot. Unlike setValue(), this does not evaluate
+   * write rules or trigger functions, so the MMR is maintained regardless of app rules.
+   */
+  writeStoreInternalValue(parsedPath, value, context) {
+    const blockNumber = _.get(context, 'blockNumber', null);
+    const eventSource = _.get(context, 'eventSource', null);
+    const unitWriteGasAmount = DB.getBlockchainParam(
+        'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const fullPath = DB.getFullPath(parsedPath, PredefinedDbPaths.VALUES_ROOT);
+    const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
+    if (!isWritablePath.isValid) {
+      return CommonUtil.returnTxResult(
+          TxResultCode.SET_VALUE_NO_WRITABLE_PATH_WITH_SHARD_CONFIG,
+          `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
+          unitWriteGasAmount);
+    }
+    const prevValue = this.getValue(CommonUtil.formatPath(parsedPath));
+    const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
+    this.writeDatabase(fullPath, valueCopy);
+    if (this.eh && eventSource !== null) {
+      const event =
+          [context.auth, context.transaction, parsedPath, prevValue, valueCopy, eventSource];
+      if (value === null) {
+        // NOTE: The slot erasure is emitted after the enclosing write's own event (see
+        // setValue()), so that an in-order mirror ends with the slot cleared.
+        this.deferredStoreEvents.push(event);
+      } else {
+        this.eh.emitValueChanged(...event);
+      }
+    }
+    return CommonUtil.returnTxResult(TxResultCode.SUCCESS, null, unitWriteGasAmount);
+  }
+
+  /**
+   * Emits the deferred slot-erasure events of slots at or under the given path.
+   */
+  flushDeferredStoreEvents(parsedPath) {
+    if (this.deferredStoreEvents.length === 0) {
+      return;
+    }
+    const remaining = [];
+    for (const event of this.deferredStoreEvents) {
+      const slotPath = event[2];
+      if (parsedPath.length <= slotPath.length &&
+          parsedPath.every((label, i) => label === slotPath[i])) {
+        this.eh.emitValueChanged(...event);
+      } else {
+        remaining.push(event);
+      }
+    }
+    this.deferredStoreEvents = remaining;
+  }
+
+  /**
+   * Returns the paths (relative to the given function tree) of non-null
+   * .function entries with the given function id.
+   */
+  static findFunctionIdPaths(funcTree, fid, path = [], found = []) {
+    if (!CommonUtil.isDict(funcTree)) {
+      return found;
+    }
+    for (const label of Object.keys(funcTree)) {
+      const child = funcTree[label];
+      if (label === PredefinedDbPaths.DOT_FUNCTION) {
+        if (CommonUtil.isDict(child) && CommonUtil.isDict(child[fid])) {
+          found.push(path.slice());
+        }
+      } else {
+        path.push(label);
+        DB.findFunctionIdPaths(child, fid, path, found);
+        path.pop();
+      }
+    }
+    return found;
   }
 
   incValue(valuePath, delta, auth, transaction, options) {
@@ -1165,6 +1300,21 @@ class DB {
           TxResultCode.SUCCESS,
           null,
           unitWriteGasAmount);
+    }
+    if (isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
+      // _storeAppend can be installed only under /apps/<app>/writes/<collection>/...
+      for (const subPath of DB.findFunctionIdPaths(func, NativeFunctionIds.STORE_APPEND)) {
+        const installPath = [...localPath, ...subPath];
+        if (installPath.length < 4 || installPath[0] !== PredefinedDbPaths.APPS ||
+            installPath[2] !== AinStore.WRITES) {
+          return CommonUtil.returnTxResult(
+              TxResultCode.SET_FUNCTION_STORE_APPEND_INVALID_PATH,
+              `${NativeFunctionIds.STORE_APPEND} can be set only under ` +
+              `/${PredefinedDbPaths.APPS}/<app>/${AinStore.WRITES}/<collection>: ` +
+              `${CommonUtil.formatPath(installPath)}`,
+              unitWriteGasAmount);
+        }
+      }
     }
     const curFunction = this.getFunction(CommonUtil.formatPath(localPath));
     const applyRes = applyFunctionChange(curFunction, func);
@@ -1333,6 +1483,8 @@ class DB {
   }
 
   executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource) {
+    const layerResult = LayerRuntime.execute(this, op, auth, tx, blockNumber);
+    if (layerResult !== null) return layerResult;
     let result;
     const options = Object.assign(CommonUtil.toSetOptions(op), {
       nonce,
@@ -1447,6 +1599,7 @@ class DB {
       Object.assign(
           result, this.executeSingleSetOperation(op, auth, nonce, timestamp, tx, blockNumber, blockTime, eventSource));
     }
+    if (tx) LayerRuntime.afterExecution(this, tx, result, blockNumber);
     if (isEnabledTimerFlag('extend_account_registration_gas_amount', blockNumber)) {
       // Apply account registration gas amount for nonce and timestamp.
       const isNonExistingAccount = this.checkIfNonExistingAccount(tx, auth);
@@ -1462,19 +1615,27 @@ class DB {
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
-      const heightAndBytesCheck = this.checkTreeHeightAndBytes(blockNumber);
+      // NOTE: With the 'ain_store' timer flag, only state-growing ops are checked against the
+      // tree limits and state budgets, so deletions are always accepted.
+      const growthOnly = isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber);
+      const allStateUsageAfter = this.getAllStateUsages();
+      const growth = growthOnly ? DB.getStateGrowth(
+          allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
+          stateUsagePerAppAfter) : null;
+      // NOTE: Deletions never increase the tree height, so the height is always checked.
+      const heightAndBytesCheck =
+          this.checkTreeHeightAndBytes(blockNumber, growthOnly && !growth.root);
       if (CommonUtil.isFailedTx(heightAndBytesCheck)) {
         return Object.assign(result, heightAndBytesCheck);
       }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
-      const allStateUsageAfter = this.getAllStateUsages();
       DB.updateStateGasAmount(
           tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
           stateUsagePerAppAfter, blockNumber, this.stateRoot);
       const budgets = DB.getStateBudgets(blockNumber, this.stateRoot);
       const stateGasBudgetCheck = this.checkStateGasBudgets(
-          op, allStateUsageAfter.apps, allStateUsageAfter.service, budgets);
+          op, allStateUsageAfter.apps, allStateUsageAfter.service, budgets, blockNumber, growth);
       if (CommonUtil.isFailedTx(stateGasBudgetCheck)) {
         return Object.assign(result, stateGasBudgetCheck);
       }
@@ -1562,23 +1723,81 @@ class DB {
     return false;
   }
 
-  updateStateFreeTierUsageCache() {
-    const appStateUsageCached = this.updateAppStateUsageCache();
-    const freeTierAppCached = this.updateAppStakeCache();
-    if (appStateUsageCached || freeTierAppCached) {
-      const usage = {};
-      for (const appName in this.appStateUsageCache.value) {
-        if (!this.stakedAppSetCache.value.has(appName)) {
-          CommonUtil.mergeNumericJsObjects(usage, this.appStateUsageCache.value[appName]);
+  static getAppStateBudgetsRootPath() {
+    return CommonUtil.formatPath([
+      PredefinedDbPaths.BLOCKCHAIN_PARAMS, 'resource', AinStore.APP_STATE_BUDGET_PARAM]);
+  }
+
+  /**
+   * Returns the app's own state budget in tree bytes (blockchain param
+   * 'resource/app_state_budget/<app>'), or null if not set. Only meaningful with the
+   * 'ain_store' timer flag.
+   */
+  static getAppStateBudget(appName, blockNumber = 0, stateRoot = null) {
+    let budget;
+    if (blockNumber <= 0 || !stateRoot) {
+      budget = _.get(
+          BlockchainParams, ['resource', AinStore.APP_STATE_BUDGET_PARAM, appName], null);
+    } else {
+      budget = DB.getValueFromStateRoot(
+          stateRoot, CommonUtil.appendPath(DB.getAppStateBudgetsRootPath(), appName));
+    }
+    return CommonUtil.isNumber(budget) && budget >= 0 ? budget : null;
+  }
+
+  updateAppStateBudgetCache() {
+    const cachedHash = this.appStateBudgetSetCache.hash;
+    const currentHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, DB.getAppStateBudgetsRootPath()));
+    if (cachedHash !== currentHash) {
+      const newValue = new Set();
+      const budgets =
+          DB.getValueFromStateRoot(this.stateRoot, DB.getAppStateBudgetsRootPath(), true) || {};
+      for (const appName of Object.keys(budgets)) {
+        const budget = DB.getValueFromStateRoot(
+            this.stateRoot, CommonUtil.appendPath(DB.getAppStateBudgetsRootPath(), appName));
+        if (CommonUtil.isNumber(budget) && budget >= 0) {
+          newValue.add(appName);
         }
       }
+      this.appStateBudgetSetCache = {
+        hash: currentHash,
+        value: newValue
+      };
+      return true;
+    }
+    return false;
+  }
+
+  updateStateFreeTierUsageCache(excludeBudgetApps = false) {
+    const appStateUsageCached = this.updateAppStateUsageCache();
+    const freeTierAppCached = this.updateAppStakeCache();
+    const budgetAppCached = excludeBudgetApps ? this.updateAppStateBudgetCache() : false;
+    if (appStateUsageCached || freeTierAppCached || budgetAppCached ||
+        this.stateFreeTierUsageCacheExcludesBudgetApps !== excludeBudgetApps) {
+      const usage = {};
+      for (const appName in this.appStateUsageCache.value) {
+        if (this.stakedAppSetCache.value.has(appName)) {
+          continue;
+        }
+        if (excludeBudgetApps && this.appStateBudgetSetCache.value.has(appName)) {
+          continue;
+        }
+        CommonUtil.mergeNumericJsObjects(usage, this.appStateUsageCache.value[appName]);
+      }
       this.stateFreeTierUsageCache = usage;
+      this.stateFreeTierUsageCacheExcludesBudgetApps = excludeBudgetApps;
     }
   }
 
-  getStateFreeTierUsage() {
+  /**
+   * Returns the state usage of the free tier: apps without stakes (and, with the 'ain_store'
+   * timer flag at the given block number, without their own state budget).
+   */
+  getStateFreeTierUsage(blockNumber = null) {
+    const excludeBudgetApps = isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber);
     if (DevFlags.enableGetStateFreeTierUsageOptimization) {
-      this.updateStateFreeTierUsageCache();
+      this.updateStateFreeTierUsageCache(excludeBudgetApps);
       return this.stateFreeTierUsageCache;
     }
     // legacy logic
@@ -1587,6 +1806,10 @@ class DB {
     for (const appName of Object.keys(apps)) {
       if (!DB.getValueFromStateRoot(
           this.stateRoot, PathUtil.getStakingBalanceTotalPath(appName))) {
+        if (excludeBudgetApps &&
+            DB.getAppStateBudget(appName, blockNumber, this.stateRoot) !== null) {
+          continue;
+        }
         CommonUtil.mergeNumericJsObjects(
             usage, this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`));
       }
@@ -1651,27 +1874,68 @@ class DB {
     };
   }
 
+  /**
+   * Which parts of the state tree grew in tree bytes ('ain_store' timer flag).
+   */
+  static getStateGrowth(
+      allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter) {
+    const bytes = (usage, key) => _.get(usage, [key, StateLabelProperties.TREE_BYTES], 0);
+    const app = {};
+    for (const appName of Object.keys(stateUsagePerAppAfter)) {
+      app[appName] = bytes(stateUsagePerAppAfter, appName) > bytes(stateUsagePerAppBefore, appName);
+    }
+    return {
+      root: bytes(allStateUsageAfter, 'root') > bytes(allStateUsageBefore, 'root'),
+      service: bytes(allStateUsageAfter, 'service') > bytes(allStateUsageBefore, 'service'),
+      apps: bytes(allStateUsageAfter, 'apps') > bytes(allStateUsageBefore, 'apps'),
+      app,
+    };
+  }
+
   // TODO(platfowner): Add unit tests for this function.
-  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, budgets) {
-    if (serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
+  // NOTE: With the 'ain_store' timer flag (growth != null), a budget is checked only when the
+  // op grew the corresponding part of the state, and an app with its own budget
+  // ('resource/app_state_budget/<app>') is checked against it instead of stakes or the free tier.
+  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, budgets, blockNumber = null,
+      growth = null) {
+    const ainStore = growth !== null && isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber);
+    if ((!ainStore || growth.service) &&
+        serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return {
         code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
         message: `Exceeded state budget limit for services ` +
             `(${serviceStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       };
     }
-    if (allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
+    if ((!ainStore || growth.apps) &&
+        allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return {
         code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
         message: `Exceeded state budget limit for apps ` +
             `(${allAppsStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       };
     }
-    const stateFreeTierUsage = this.getStateFreeTierUsage();
+    const stateFreeTierUsage = this.getStateFreeTierUsage(ainStore ? blockNumber : null);
     const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateLabelProperties.TREE_BYTES] >= budgets.freeStateBudget;
     const appStakesTotal = this.getAppStakesTotal();
     for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
+      if (ainStore && !growth.app[appName]) {
+        // The op did not grow this app's state.
+        continue;
+      }
       const appStateUsage = this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+      const ownBudget =
+          ainStore ? DB.getAppStateBudget(appName, blockNumber, this.stateRoot) : null;
+      if (ownBudget !== null) {
+        if (appStateUsage[StateLabelProperties.TREE_BYTES] > ownBudget) {
+          return {
+            code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
+            message: `Exceeded state budget limit for app ${appName} ` +
+                `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${ownBudget})`
+          };
+        }
+        continue;
+      }
       const appStake = this.getAppStake(appName);
       if (appStake === 0) {
         if (freeTierTreeBytesLimitReached) {
@@ -1774,6 +2038,11 @@ class DB {
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
         ]);
       }
+    }
+    // NOTE: Present only with the 'ain_store' timer flag (see executeTransaction()), so that
+    // receipts of SET txs that failed as a whole also read as failed.
+    if (executionResult[DB.TX_FAILED_LABEL] === true) {
+      trimmed[DB.TX_FAILED_LABEL] = true;
     }
     return trimmed;
   }
@@ -1965,7 +2234,10 @@ class DB {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
     }
-    if (restoreIfFails || isDryrun) {
+    const layerPrecheck = LayerRuntime.precheck(this, tx, blockNumber);
+    if (layerPrecheck !== true) return layerPrecheck;
+    const restoreOnFailure = restoreIfFails || LayerRuntime.isControlTransaction(tx);
+    if (restoreOnFailure || isDryrun) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
           logger,
@@ -1985,10 +2257,45 @@ class DB {
     if (isDryrun && executionResult) {
       executionResult.is_dryrun = true;  // Set is_dryrun = true
     }
+    this.deferredStoreEvents = [];
+    if (DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
+      // Makes the failure visible to CommonUtil.isFailedTx() (tx pool, RPC, collectFee, ...).
+      executionResult[DB.TX_FAILED_LABEL] = true;
+    }
+    if (restoreOnFailure && !isDryrun && isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber) &&
+        CommonUtil.isFailedTx(executionResult)) {
+      // NOTE: With the 'ain_store' timer flag, a failed tx is rolled back BEFORE its fee is
+      // collected and its receipt recorded, so the fee (bandwidth only) and the receipt are
+      // actually persisted and match gas_amount_charged / gas_cost_total.
+      this.restoreDb();
+      if (!skipFees) {
+        if (!this.backupDb()) {
+          return CommonUtil.logAndReturnTxResult(
+            logger,
+            TxResultCode.DB_FAILED_TO_BACKUP_DB,
+            `[${LOG_HEADER}] Failed to backup db for tx: ${tx.hash}`, 0);
+        }
+        if (DevFlags.enableGasFeeCollection) {
+          this.collectFee(
+              auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
+        }
+        if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
+          this.recordReceipt(auth, tx, blockNumber, executionResult);
+        }
+        // collectFee() may have used the backup already (balance too low).
+        this.deleteBackupStateVersion();
+      }
+      return executionResult;
+    }
     if (!skipFees) {
       if (DevFlags.enableGasFeeCollection) {
         this.collectFee(
             auth, tx, timestamp, blockNumber, blockTime, executionResult, eventSource, isDryrun);
+      }
+      if (DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
+        // The ops succeeded but the fee failed (FEE_BALANCE_TOO_LOW or
+        // FEE_FAILED_TO_COLLECT_GAS_FEE), reported only in the top-level code.
+        executionResult[DB.TX_FAILED_LABEL] = true;
       }
       if (!isEnabledTimerFlag('disable_tx_receipt_recording', blockNumber)) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
@@ -1996,9 +2303,14 @@ class DB {
     }
     if (isDryrun) {
       this.restoreDb();
-    } else if (restoreIfFails) {
-      if (CommonUtil.isFailedTx(executionResult)) {
-        this.restoreDb();
+    } else if (restoreOnFailure) {
+      if (CommonUtil.isFailedTx(executionResult) ||
+          DB.isFailedMultiSetTopLevel(executionResult, blockNumber)) {
+        // NOTE: collectFee() may already have restored (and consumed the backup) when the
+        // balance was too low; the fee it then collected is kept.
+        if (this.backupStateVersion) {
+          this.restoreDb();
+        }
       } else {
         this.deleteBackupStateVersion();
       }
@@ -2006,12 +2318,37 @@ class DB {
     return executionResult;
   }
 
+  /**
+   * A SET (op_list) tx whose sub-operations all succeeded can still fail as a whole, e.g. on the
+   * tree limits or state budgets, which is reported only in the top-level code.
+   * CommonUtil.isFailedTx() ignores that code when result_list is present, so such a tx used to
+   * keep its writes. With the 'ain_store' timer flag it is rolled back like a single-op tx.
+   */
+  static get TX_FAILED_LABEL() {
+    return 'tx_failed';
+  }
+
+  static isFailedMultiSetTopLevel(executionResult, blockNumber) {
+    if (!isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
+      return false;
+    }
+    return CommonUtil.isDict(executionResult) && CommonUtil.isDict(executionResult.result_list) &&
+        executionResult.code !== undefined &&
+        CommonUtil.isFailedTxResultCode(executionResult.code);
+  }
+
+  getTransactionChainId(body) {
+    return require('../layer2/domain').transactionChainId(body,
+        this.getValue('/blockchain_params/genesis/chain_id') ?? DB.getBlockchainParam('genesis/chain_id'),
+        this.getValue('/blockchain_params/layer2'));
+  }
+
   executeTransactionList(
       txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null, eventSource = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
+      const executableTx = Transaction.toExecutable(tx, this.getTransactionChainId(tx.tx_body));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime, eventSource);
       if (CommonUtil.isFailedTx(res)) {
@@ -2027,7 +2364,7 @@ class DB {
   }
 
   // NOTE(platfowner): Tree size check is skipped since it's covered by the tree bytes check.
-  checkTreeHeightAndBytes(blockNumber) {
+  checkTreeHeightAndBytes(blockNumber, skipBytesCheck = false) {
     const stateTreeHeightLimit = DB.getBlockchainParam(
         'resource/state_tree_height_limit', blockNumber, this.stateRoot);
     const stateTreeBytesLimit = DB.getBlockchainParam(
@@ -2042,7 +2379,7 @@ class DB {
         message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
-    if (treeBytes > stateTreeBytesLimit) {
+    if (!skipBytesCheck && treeBytes > stateTreeBytesLimit) {
       return {
         code: TxResultCode.TREE_OUT_OF_TREE_BYTES_LIMIT,
         message: `Out of tree bytes limit (${treeBytes} > ${stateTreeBytesLimit})`
@@ -2657,7 +2994,7 @@ class DB {
     };
   }
 
-  applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
+  applyStateGarbageCollectionRule(matchedRules, parsedValuePath, blockNumber = null) {
     const stateRuleConfig = matchedRules.closestRule.config;
     if (!CommonUtil.isDict(stateRuleConfig)) {
       return 0;
@@ -2684,11 +3021,52 @@ class DB {
     }
     let numDeleted = 0;
     const childLabelList = stateNodeForReading.getChildLabels();
+    if (isEnabledTimerFlag(AinStore.TIMER_FLAG, blockNumber)) {
+      // NOTE: GC never deletes a subtree holding an AIN Store MMR; such siblings are skipped.
+      const valueParentPath = parentPath.slice(1);
+      for (const childLabel of childLabelList) {
+        if (numDeleted >= gcNumSiblingsDeleted) {
+          break;
+        }
+        if (this.holdsStoreMmr([...valueParentPath, childLabel])) {
+          continue;
+        }
+        this.writeDatabase([...parentPath, childLabel], null);
+        numDeleted++;
+      }
+      return numDeleted;
+    }
     while (numDeleted < gcNumSiblingsDeleted) {
       const childLabel = childLabelList[numDeleted++];
       this.writeDatabase([...parentPath, childLabel], null);
     }
     return numDeleted;
+  }
+
+  /**
+   * Whether the value subtree at the given path contains an existing /apps/<app>/store/mmr
+   * ('ain_store' timer flag).
+   */
+  holdsStoreMmr(parsedValuePath) {
+    if (parsedValuePath.length === 0) {
+      // The whole state.
+      return true;
+    }
+    if (parsedValuePath[0] !== PredefinedDbPaths.APPS) {
+      return false;
+    }
+    if (parsedValuePath.length === 1) {
+      // NOTE: Conservatively protects '/apps' as a whole.
+      return true;
+    }
+    if (parsedValuePath.length >= 4) {
+      return parsedValuePath[2] === AinStore.STORE && parsedValuePath[3] === AinStore.MMR;
+    }
+    if (parsedValuePath.length === 3 && parsedValuePath[2] !== AinStore.STORE) {
+      return false;
+    }
+    return this.getValue(CommonUtil.formatPath(
+        [PredefinedDbPaths.APPS, parsedValuePath[1], AinStore.STORE, AinStore.MMR])) !== null;
   }
 
   lastBlockNumber() {
