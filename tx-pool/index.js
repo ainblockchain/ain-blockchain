@@ -612,6 +612,29 @@ class TransactionPool {
   }
 
   /**
+   * Age (ms) of the oldest non-consensus transaction in the pool that is includable against the
+   * given final state's account nonces/timestamps, or 0 if there is none. Transactions that can't
+   * be included yet (e.g. a future numbered nonce) are ignored so they can't mark a node unhealthy.
+   */
+  getOldestIncludableNonConsensusTxAgeMs(now, getAccountNonceAndTimestamp) {
+    let oldest = 0;
+    for (const [address, txList] of this.transactions.entries()) {
+      const candidates = TransactionPool.excludeConsensusTransactions(txList);
+      if (!candidates.length) continue;
+      const { nonce, timestamp } = getAccountNonceAndTimestamp(address);
+      for (const tx of candidates) {
+        if (!TransactionPool.isCorrectlyNoncedOrTimestamped(
+            tx.tx_body.nonce, tx.tx_body.timestamp, nonce, timestamp)) {
+          continue;
+        }
+        const receivedAt = _.get(tx, 'extra.created_at', tx.tx_body.timestamp);
+        if (Number.isFinite(receivedAt)) oldest = Math.max(oldest, now - receivedAt);
+      }
+    }
+    return oldest;
+  }
+
+  /**
    * Whether the pool holds any transaction other than consensus votes/proposals, i.e. work that
    * a new block could carry. Used by the proposer-side idle block policy.
    */

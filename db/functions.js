@@ -1073,7 +1073,7 @@ class Functions {
    * Number of epochs a block's reward covers. Originally one block was produced every epoch,
    * so the per-block reward equals one epoch of the annual rate. With the
    * 'reward_by_elapsed_epochs' timer flag (needed once proposers skip idle epochs), the reward
-   * for block N-1 covers the epochs elapsed until block N, capped at one day of epochs.
+   * for block N-1 covers the epochs elapsed until block N, capped at MAX_CREDITED_REWARD_MS.
    */
   static getCreditedRewardEpochs(epoch, prevEpoch, epochMs) {
     if (!CommonUtil.isNumber(epoch) || !CommonUtil.isNumber(prevEpoch) ||
@@ -1845,7 +1845,8 @@ class Functions {
   }
 }
 
-// Upper bound of the elapsed time a single block reward can cover (one day).
-Functions.MAX_CREDITED_REWARD_MS = 86400000;
+// Upper bound of the elapsed time a single block reward can cover: three default idle heartbeat
+// intervals (30 min). Heartbeats longer than 10 min forgo part of the reward.
+Functions.MAX_CREDITED_REWARD_MS = 1800000;
 
 module.exports = Functions;

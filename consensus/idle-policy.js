@@ -109,14 +109,25 @@ function shouldBroadcastProposal(decision, proposalBlock) {
  *     heartbeat + threshold epochs), and
  *   - an unsettled chain is healthy while the oldest block still waiting for finality is younger
  *     than threshold epochs, which is the original rule applied to the blocks that matter.
+ * In addition, while the finalized block is older than the threshold, any sign of work that is
+ * not progressing makes the node unhealthy once it is older than the threshold (stallAgesMs):
+ *   - an includable non-consensus transaction waiting in the pool (e.g. a tx block that never
+ *     gets notarized),
+ *   - a block seen at or above the notarized tip height that isn't the tip (a vote split or a
+ *     block whose votes never arrive),
+ *   - zero connected peers (an isolated or solo-restarted node).
  * A stalled chain with a pending transaction is therefore reported as fast as before.
  */
 function isConsensusHealthyWithIdle({ currentEpoch, lastFinalizedBlock, unfinalizedChain,
-    thresholdEpochs, epochMs, idleConfig }) {
+    thresholdEpochs, epochMs, idleConfig, stallAgesMs = {} }) {
   if (!lastFinalizedBlock) return false;
   if (currentEpoch - lastFinalizedBlock.epoch < thresholdEpochs) return true;
   if (!idleConfig || !idleConfig.enabled || !(epochMs > 0) || !Array.isArray(unfinalizedChain)) {
     return false;
+  }
+  const thresholdMs = thresholdEpochs * epochMs;
+  for (const age of Object.values(stallAgesMs)) {
+    if (Number.isFinite(age) && age > thresholdMs) return false;
   }
   if (isChainSettled(unfinalizedChain, lastFinalizedBlock)) {
     const tip = unfinalizedChain.length ? unfinalizedChain[0] : lastFinalizedBlock;

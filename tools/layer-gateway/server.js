@@ -3,7 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const { IndexStore } = require('./index-store');
-const { RpcError, validateConfig, routeRequest, layerInfo } = require('./protocol');
+const { RpcError, validateConfig, routeRequest, layerInfo, BLOCK_HISTORY_METHODS } = require('./protocol');
 
 /** A non-2xx upstream answer. 429 means the node's per-IP rate limiter refused it before any execution. */
 class UpstreamError extends RpcError {
@@ -60,7 +60,13 @@ function createGateway(config, store, transport = upstream, reader = read) {
     // them all multiplies the load that caused it (measured 219 req/s on 2026-10-29). Any other
     // failure is returned, never replayed.
     const recent = route.settings.endpoints.filter(e => Date.now() - (confirmed[route.layer + ' ' + e] ?? 0) <= 60000);
-    const witnesses = recent.length ? recent : targets[route.layer]?.length ? targets[route.layer] : route.settings.endpoints.slice(0, 1);
+    let witnesses = recent.length ? recent : targets[route.layer]?.length ? targets[route.layer] : route.settings.endpoints.slice(0, 1);
+    const archive = route.settings.archiveEndpoints;
+    if (archive && BLOCK_HISTORY_METHODS.has(body.method)) {
+      // Pruned validators answer null for old blocks; serve block history from archive nodes.
+      const archived = witnesses.filter(e => archive.includes(e));
+      witnesses = archived.length ? archived : archive;
+    }
     const start = turn++ % witnesses.length;
     let response;
     const attempts = Math.min(2, witnesses.length);
@@ -112,16 +118,30 @@ function createGateway(config, store, transport = upstream, reader = read) {
       }
       const head = store.head(layer);
       if (head.height > height) throw Error('Witnesses behind indexed history');
+      // History is read only from archive nodes when they are configured: a pruned validator has
+      // no old blocks and must never make a reindex look like a disagreement.
+      let sources = witnesses;
+      if (settings.archiveEndpoints && head.height < height) {
+        sources = settings.archiveEndpoints.filter(e => witnesses.includes(e));
+        if (sources.length < 2) {
+          throw Error('Fewer than two configured archiveEndpoints agree on the finalized tip; ' +
+              'history indexing reads only from archive nodes');
+        }
+      }
       if (head.height >= 0) {
-        const old = await reader(witnesses[0], 'ain_getBlockByNumber', { number: head.height, getFullTransactions: false });
+        const old = await reader(sources[0], 'ain_getBlockByNumber', { number: head.height, getFullTransactions: false });
+        if (!old?.hash) throw Error(`Block ${head.height} unavailable from ${sources[0]} (pruned history?); configure archiveEndpoints`);
         const indexed = store.db.prepare('SELECT hash FROM blocks WHERE layer=? AND number=?').get(layer, head.height);
         if (old?.hash !== indexed.hash) throw Error('Indexed finalized history changed');
       }
       // Bound each pass so a catch-up job cannot starve requests or other layers.
       for (let number = head.height + 1; number <= Math.min(height, head.height + 20); number++) {
-        const block = await reader(witnesses[0], 'ain_getBlockByNumber', { number, getFullTransactions: true });
-        const witness = await reader(witnesses[1], 'ain_getBlockByNumber', { number, getFullTransactions: false });
-        if (!block?.hash || block.hash !== witness?.hash) throw Error('Block witnesses disagree');
+        const block = await reader(sources[0], 'ain_getBlockByNumber', { number, getFullTransactions: true });
+        const witness = await reader(sources[1], 'ain_getBlockByNumber', { number, getFullTransactions: false });
+        for (const [endpoint, value] of [[sources[0], block], [sources[1], witness]]) {
+          if (!value?.hash) throw Error(`Block ${number} unavailable from ${endpoint} (pruned history?); configure archiveEndpoints`);
+        }
+        if (block.hash !== witness.hash) throw Error('Block witnesses disagree');
         store.append(layer, block);
       }
       readiness[layer] = { healthy: true, checked_at: Date.now(), finalized_height: height,

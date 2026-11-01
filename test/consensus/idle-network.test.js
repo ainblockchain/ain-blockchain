@@ -45,6 +45,11 @@ class IdleTestNetwork {
     this.validators = [];
     this.queue = [];
     this.offline = new Set();
+    // Running but disconnected from everyone (zero peers).
+    this.isolated = new Set();
+    // Optional (from, to, msg) => true to drop a message.
+    this.dropFilter = null;
+    this.syncRequests = [];
     this.portBase = 19100 + Math.floor(Math.random() * 500) * 10;
   }
 
@@ -55,11 +60,14 @@ class IdleTestNetwork {
       code.constants.NodeConfigs.PORT = this.portBase + i;
       const node = new code.BlockchainNode();
       await code.testUtil.setNodeForTesting(node, i, true);
+      const net = this;
       const server = {
+        get inbound() { return net.peersOf(i); },
         client: {
           broadcastConsensusMessage: (msg) => this.broadcast(i, msg),
-          requestChainSegment: () => {},
+          requestChainSegment: () => this.syncRequests.push(i),
           setIntervalForShardProofHashReports: () => {},
+          outbound: {},
         },
         executeAndBroadcastTransaction: () => {},
         stop: () => {},
@@ -76,22 +84,58 @@ class IdleTestNetwork {
     }
   }
 
+  connected(i) {
+    return !this.offline.has(i) && !this.isolated.has(i);
+  }
+
+  peersOf(i) {
+    const peers = {};
+    if (!this.connected(i)) return peers;
+    for (let j = 0; j < this.validators.length; j++) {
+      if (j !== i && this.connected(j)) peers[`peer${j}`] = {};
+    }
+    return peers;
+  }
+
   broadcast(from, msg) {
-    if (this.offline.has(from)) return;
+    if (!this.connected(from)) return;
     for (let to = 0; to < this.validators.length; to++) {
-      if (to !== from && !this.offline.has(to)) {
+      if (to !== from && this.connected(to) && !(this.dropFilter && this.dropFilter(from, to, msg))) {
         this.queue.push({ to, msg: JSON.parse(JSON.stringify(msg)) });
       }
     }
   }
 
   drain() {
-    while (this.queue.length) {
-      const { to, msg } = this.queue.shift();
-      if (!this.offline.has(to)) {
-        this.validators[to].consensus.handleConsensusMessage(msg);
+    while (this.queue.length || this.syncRequests.length) {
+      while (this.queue.length) {
+        const { to, msg } = this.queue.shift();
+        if (!this.offline.has(to)) {
+          this.validators[to].consensus.handleConsensusMessage(msg);
+        }
       }
+      const requesters = [...new Set(this.syncRequests)];
+      this.syncRequests = [];
+      for (const i of requesters) this.serveChainSync(i);
     }
+  }
+
+  // Mirrors CHAIN_SEGMENT_REQUEST/RESPONSE: finalized blocks by number, then catchUpInfo.
+  serveChainSync(i) {
+    if (!this.connected(i)) return;
+    const me = this.validators[i];
+    const peers = this.validators.filter((v, j) => j !== i && this.connected(j));
+    if (!peers.length) return;
+    const peer = _.maxBy(peers, (v) => v.node.bc.lastBlockNumber());
+    for (let guard = 0; guard < 1000; guard++) {
+      const before = me.node.bc.lastBlockNumber();
+      if (peer.node.bc.lastBlockNumber() <= before) break;
+      const segment = peer.node.bc.getBlockList(before + 1);
+      if (!segment || !segment.length) break;
+      me.node.mergeChainSegment(JSON.parse(JSON.stringify(segment)));
+      if (me.node.bc.lastBlockNumber() === before) break;
+    }
+    me.consensus.catchUp(JSON.parse(JSON.stringify(peer.consensus.getCatchUpInfo())));
   }
 
   /** One epoch, in the order of Consensus.setEpochTransition(). Returns the new block or null. */
@@ -108,7 +152,7 @@ class IdleTestNetwork {
       v.consensus.tryPropose();
       this.drain();
     }
-    const observer = this.validators.find((v, i) => !this.offline.has(i));
+    const observer = this.validators.find((v, i) => this.connected(i));
     const hash = observer.node.bp.epochToBlock.get(epoch);
     const info = hash ? observer.node.bp.hashToBlockInfo.get(hash) : null;
     return info ? info.block : null;
@@ -341,6 +385,96 @@ describe('Idle block production (proposer-side policy, real consensus code)', fu
     net.assertSameFinalizedChain();
     const oldNode = net.validators[0].node;
     assert.ok(oldNode.bc.lastBlockNumber() >= 3);
+  });
+
+  it('resolves a vote split at the tip without waiting for the heartbeat', async () => {
+    net = new IdleTestNetwork(['new', 'new', 'new'], clock);
+    await net.start();
+    let epoch = runUntilIdle(net, 2);
+    // A tx burst whose third (settling) block's votes never reach validator 2: validators 0 and 1
+    // notarize it (2 of 3 is a majority) and see a settled chain; validator 2 doesn't.
+    net.submit(0);
+    const first = net.step(epoch);
+    const second = net.step(epoch + 1);
+    assert.ok(first && second && second.number === first.number + 1);
+    const splitNumber = second.number + 1;
+    let splitTip = null;
+    net.dropFilter = (from, to, msg) => {
+      if (msg.type === 'propose' && msg.value.proposalBlock.number === splitNumber && !splitTip) {
+        splitTip = msg.value.proposalBlock.hash;
+      }
+      return to === 2 && msg.type === 'vote' && !!splitTip &&
+          _.get(msg, 'value.tx_body.operation.ref', '').includes(splitTip);
+    };
+    let e = epoch + 2;
+    while (!splitTip && e < epoch + 10) net.step(e++);
+    assert.ok(splitTip, 'settling block proposed');
+    const tipOf = (i) => net.validators[i].consensus.getLastNotarizedBlock().hash;
+    assert.equal(tipOf(0), splitTip);
+    assert.equal(tipOf(1), splitTip);
+    assert.notEqual(tipOf(2), splitTip, 'validator 2 missed the tip votes');
+    // Validator 2 re-proposes at the tip height; 0 and 1 see a competing block there, treat the
+    // chain as unsettled and propose on the tip, whose votes then reach validator 2 in last_votes.
+    const start = e;
+    let resolved = false;
+    for (; e < start + 15 && !resolved; e++) {
+      net.step(e);
+      resolved = net.validators.every((v) => v.node.bc.lastBlockNumber() >= splitNumber);
+    }
+    assert.equal(resolved, true, `split not resolved: finalized ${net.finalizedNumbers()}`);
+    assert.ok(e - start < HEARTBEAT_MS / EPOCH_MS, 'resolved before the heartbeat');
+    net.dropFilter = null;
+    net.assertSameFinalizedChain();
+  });
+
+  it('reports a stalled chain (two of three validators down) unhealthy within the threshold', async () => {
+    net = new IdleTestNetwork(['new', 'new', 'new'], clock);
+    await net.start();
+    let epoch = runUntilIdle(net, 2);
+    net.run(epoch, epoch + 4);
+    epoch += 5;
+    // Validators 1 and 2 go down; validator 0 keeps "peers" (e.g. non-validator nodes) so only the
+    // stall signals can flag it.
+    net.offline.add(1);
+    net.offline.add(2);
+    const v0 = net.validators[0];
+    const peersOf = net.peersOf.bind(net);
+    net.peersOf = (i) => (i === 0 ? { observer: {} } : peersOf(i));
+    net.submit(0);
+    const health = [];
+    for (let k = 0; k < 16; k++) {
+      net.step(epoch + k);
+      health.push(v0.consensus.isConsensusHealthy(v0.node.bc.lastBlock()));
+    }
+    // Healthy while the finalized block is recent, then unhealthy once the pending tx (and the
+    // never-notarized block) are older than health_threshold_epoch (10 epochs).
+    assert.equal(health[0], true);
+    assert.equal(health[15], false, `health: ${health}`);
+    assert.ok(health.indexOf(false) <= 12, `health: ${health}`);
+  });
+
+  it('reports a solo-restarted node with zero peers unhealthy within the threshold', async () => {
+    net = new IdleTestNetwork(['new', 'new', 'new'], clock);
+    await net.start();
+    let epoch = runUntilIdle(net, 2);
+    net.run(epoch, epoch + 4);
+    epoch += 5;
+    net.isolated.add(2);
+    const v2 = net.validators[2];
+    const v0 = net.validators[0];
+    const health2 = [];
+    const health0 = [];
+    for (let k = 0; k < 15; k++) {
+      net.step(epoch + k);
+      health2.push(v2.consensus.isConsensusHealthy(v2.node.bc.lastBlock()));
+      health0.push(v0.consensus.isConsensusHealthy(v0.node.bc.lastBlock()));
+    }
+    assert.equal(health2[14], false, `isolated node: ${health2}`);
+    assert.ok(health0.every((h) => h === true), `connected node: ${health0}`);
+    // Reconnecting clears the signal.
+    net.isolated.delete(2);
+    net.step(epoch + 15);
+    assert.equal(v2.consensus.isConsensusHealthy(v2.node.bc.lastBlock()), true);
   });
 
   it("credits block rewards for elapsed epochs under 'reward_by_elapsed_epochs'", async () => {

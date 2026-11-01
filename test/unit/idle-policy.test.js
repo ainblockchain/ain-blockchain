@@ -116,6 +116,19 @@ describe('Idle proposal policy', () => {
       assert.equal(check(1010, [txTip]), true);
       assert.equal(check(1011, [txTip]), false);
     });
+    it('flags stall signals older than the threshold once finality lags', () => {
+      const ages = (a) => IdlePolicy.isConsensusHealthyWithIdle({ currentEpoch: 1100,
+        lastFinalizedBlock: fin, unfinalizedChain: [tip], thresholdEpochs: 10, epochMs: 2000,
+        idleConfig: on, stallAgesMs: a });
+      assert.equal(ages({ pendingTx: 20000, seenBlock: 0, noPeers: 0 }), true);
+      assert.equal(ages({ pendingTx: 20001 }), false);
+      assert.equal(ages({ seenBlock: 20001 }), false);
+      assert.equal(ages({ noPeers: 20001 }), false);
+      // While the finalized block is recent, the original rule decides (no change under load).
+      assert.equal(IdlePolicy.isConsensusHealthyWithIdle({ currentEpoch: 1005, lastFinalizedBlock: fin,
+        unfinalizedChain: [tip], thresholdEpochs: 10, epochMs: 2000, idleConfig: on,
+        stallAgesMs: { pendingTx: 10 ** 9 } }), true);
+    });
     it('fails safe on a missing chain view', () => {
       assert.equal(check(1100, null), false);
       assert.equal(IdlePolicy.isConsensusHealthyWithIdle({ currentEpoch: 1, lastFinalizedBlock: null }), false);
@@ -137,7 +150,9 @@ describe('Consensus.tryPropose with the idle policy', () => {
         account: { address: ADDR },
         bc: { lastBlock: () => finalized },
         bp: { epochToBlock: new Map(), getExtendingChain: () => ({ chain }),
-          getHeighestSeenBlockNumber: () => tip.number },
+          getHeighestSeenBlockNumber: () => tip.number,
+          numberToBlockSet: new Map([[tip.number, new Set([tip.hash])]]),
+          hashToBlockInfo: new Map([[tip.hash, { block: tip }]]) },
         tp: { hasNonConsensusTransactions: () => pending },
         getBlockchainParam: () => 2000,
       },
@@ -190,6 +205,23 @@ describe('Consensus.tryPropose with the idle policy', () => {
     f.consensus.tryPropose();
     assert.equal(f.sent.length, 1);
   });
+  it('keeps proposing while a competing block exists at the tip height (vote split)', () => {
+    const f = fakeConsensus();
+    const tip = f.consensus.getLastNotarizedBlock();
+    const rival = { ...tip, hash: '0xrival' };
+    f.consensus.node.bp.numberToBlockSet.get(tip.number).add(rival.hash);
+    f.consensus.node.bp.hashToBlockInfo.set(rival.hash, { block: rival });
+    f.consensus.tryPropose();
+    assert.equal(f.sent.length, 1);
+  });
+  it('ignores blocks below the tip height and invalid (unknown) blocks', () => {
+    const f = fakeConsensus();
+    f.consensus.node.bp.numberToBlockSet.set(5, new Set(['0xold']));
+    f.consensus.node.bp.hashToBlockInfo.set('0xold', { block: { number: 5, hash: '0xold' } });
+    f.consensus.node.bp.numberToBlockSet.get(11).add('0xinvalid');
+    f.consensus.tryPropose();
+    assert.equal(f.sent.length, 0);
+  });
   it('falls back to proposing if the chain view cannot be read', () => {
     const f = fakeConsensus();
     f.consensus.node.bp.getExtendingChain = () => { throw Error('broken'); };
@@ -207,6 +239,23 @@ describe('Transaction pool work detection', () => {
   });
   afterEach(() => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
+  });
+
+  it('ages only includable non-consensus transactions', () => {
+    const now = Date.now();
+    const accounts = () => ({ nonce: 3, timestamp: 0 });
+    assert.equal(node.tp.getOldestIncludableNonConsensusTxAgeMs(now, accounts), 0);
+    const mk = (nonce, createdAt) => {
+      const tx = getTransaction(node, { operation: { type: 'SET_VALUE', ref: '/apps/test/value',
+        value: nonce }, nonce, gas_price: 1 });
+      tx.extra.created_at = createdAt;
+      return tx;
+    };
+    node.tp.addTransaction(mk(7, now - 50000));  // future nonce: never includable now
+    assert.equal(node.tp.getOldestIncludableNonConsensusTxAgeMs(now, accounts), 0);
+    node.tp.addTransaction(mk(3, now - 30000));
+    node.tp.addTransaction(mk(-1, now - 40000));
+    assert.equal(node.tp.getOldestIncludableNonConsensusTxAgeMs(now, accounts), 40000);
   });
 
   it('ignores consensus votes and proposals', () => {
@@ -228,11 +277,11 @@ describe('Transaction pool work detection', () => {
 describe("Block reward for elapsed epochs ('reward_by_elapsed_epochs')", () => {
   afterEach(() => { delete TimerFlags.reward_by_elapsed_epochs; });
 
-  it('credits the epochs elapsed since the previous block, within [1, one day]', () => {
+  it('credits the epochs elapsed since the previous block, within [1, 30 min]', () => {
     assert.equal(Functions.getCreditedRewardEpochs(101, 100, 2000), 1);
     assert.equal(Functions.getCreditedRewardEpochs(400, 100, 2000), 300);
     assert.equal(Functions.getCreditedRewardEpochs(100, 100, 2000), 1);
-    assert.equal(Functions.getCreditedRewardEpochs(10 ** 9, 0, 2000), 43200);
+    assert.equal(Functions.getCreditedRewardEpochs(10 ** 9, 0, 2000), 900);  // 30 min of 2 s epochs
     assert.equal(Functions.getCreditedRewardEpochs(undefined, 100, 2000), 1);
   });
 
@@ -256,6 +305,40 @@ describe("Block reward for elapsed epochs ('reward_by_elapsed_epochs')", () => {
     } finally {
       ConsensusUtil.isValidConsensusTx = original;
     }
+  });
+});
+
+describe('Voting on future-epoch blocks under the reward flag', () => {
+  afterEach(() => { delete TimerFlags.reward_by_elapsed_epochs; });
+  function voter(epoch) {
+    const consensus = Object.create(Consensus.prototype);
+    const sent = [];
+    Object.assign(consensus, { epoch,
+      node: { account: { address: ADDR }, bp: { epochToBlock: new Map() },
+        createTransaction: (body) => ({ ...body, hash: '0xvote' }) },
+      handleConsensusMessage: (msg) => sent.push(msg),
+      encapsulateConsensusMessage: (value) => ({ value }) });
+    return { consensus, sent };
+  }
+  const block = (epoch) => ({ number: 20, epoch, hash: '0xb', validators: { [ADDR]: { stake: 1 } } });
+  const Transaction = require('../../tx-pool/transaction');
+  let toJs;
+  beforeEach(() => { toJs = Transaction.toJsObject; Transaction.toJsObject = (tx) => tx; });
+  afterEach(() => { Transaction.toJsObject = toJs; });
+
+  it('votes regardless of epoch while the flag is off (unchanged behavior)', () => {
+    const v = voter(100);
+    v.consensus.tryVoteForValidBlock(block(500));
+    assert.equal(v.sent.length, 1);
+  });
+  it('refuses blocks more than MAX_FUTURE_EPOCHS_TO_VOTE ahead once the flag is on', () => {
+    TimerFlags.reward_by_elapsed_epochs = { enabled_block: 0, has_bandage: false };
+    const far = voter(100);
+    far.consensus.tryVoteForValidBlock(block(103));
+    assert.equal(far.sent.length, 0);
+    const near = voter(100);
+    near.consensus.tryVoteForValidBlock(block(102));
+    assert.equal(near.sent.length, 1);
   });
 });
 

@@ -22,8 +22,11 @@ The proposer of epoch `e` proposes exactly as before unless all of these hold:
 1. **The chain is settled.** Every block except the notarized tip is finalized. The tip
    has no transactions and no evidence. The tip directly follows the last finalized block
    in epochs, so it is the block that completed the three-epoch run. In addition, the node
-   has not seen any block numbered above the tip, which would mean votes are still on
-   their way.
+   has seen no other valid block at or above the tip's height. A block above the tip means
+   votes are still on their way. A competing block at the tip's height means some validators
+   missed the tip's votes and re-proposed that height (a vote split). Proposing on the tip
+   resolves the split, because the next block carries the tip's votes in `last_votes`.
+   Otherwise nobody could notarize anything until the heartbeat.
 2. **No heartbeat is due.** The notarized tip is younger than `IDLE_HEARTBEAT_INTERVAL_MS`.
 3. **The pool has no work.** The pool holds no transactions other than consensus votes and
    proposals. If it does hold some, the proposer builds the block. It drops the block only
@@ -75,9 +78,26 @@ epoch-timer watchdog use the following rule instead:
 - **Unsettled chain:** healthy while the oldest block that still waits for finality is
   younger than the threshold. This is the original rule, applied to the blocks that matter,
   so a stalled transaction is reported as fast as before.
+- **Stall signals:** while the finalized block is older than the threshold, the node is
+  unhealthy if any of these has lasted longer than the threshold (10 epochs, 20 s on L2):
+  - an includable non-consensus transaction is waiting in the pool, for example in a tx
+    block that never notarizes (transactions with a future nonce are ignored, so they can't
+    make nodes unhealthy);
+  - a valid block other than the tip exists at or above the tip's height;
+  - the node has zero peers, for example a solo-restarted node.
+
+  These signals are not checked while the finalized block is recent, so a busy pool under
+  load doesn't change health.
 
 The layer gateway and the relayer require `health === true`, so this change is needed for
 them to keep working.
+
+**Enable the policy on all validators close together, with the same
+`IDLE_HEARTBEAT_INTERVAL_MS`.** A node with the policy off keeps the old health rule. Once
+the network is mostly idle, the finalized block gets older than 10 epochs, so that node
+reports unhealthy until it is switched on too. Its proposals are still accepted. A
+different heartbeat per node only changes when bursts happen, but mixed values make health
+and monitoring harder to reason about.
 
 ## Block rewards (`reward_by_elapsed_epochs` timer flag)
 
@@ -91,8 +111,21 @@ unless scheduled. When it is enabled at block number B:
 - **Proposal epoch check:** a proposal tx for block N ≥ B must carry `epoch` equal to the
   block's own epoch. A mismatch is `INVALID_EPOCH`, and validators vote against it.
 - **Reward scaling:** the reward for block N-1, distributed by proposal N (when N-1 ≥ B), is
-  multiplied by `epoch(N) - epoch(N-1)`. The multiplier is at least 1 and covers at most one
-  day of epochs.
+  multiplied by `epoch(N) - epoch(N-1)`. The multiplier is at least 1 and covers at most
+  30 minutes (`Functions.MAX_CREDITED_REWARD_MS`, three default heartbeat intervals), so it
+  must be deterministic and can't depend on the per-node heartbeat setting. A heartbeat
+  longer than 10 minutes forgoes part of the reward.
+- **No votes for future epochs:** validators don't vote for a block whose epoch is more than
+  `ConsensusConsts.MAX_FUTURE_EPOCHS_TO_VOTE` (2) epochs ahead of their local epoch. A
+  proposer therefore can't claim a far-future epoch to inflate the reward or stall honest
+  proposers. This is a local voting rule, active only once the flag is enabled.
+
+**Clocks must be synchronized.** The epoch is derived from wall-clock time. With
+`HOSTING_ENV=local`, which the on-prem nodes use, the built-in NTP adjustment is disabled
+(`consensus/index.js` `setEpochTransition`). Operators must run chrony or NTP on every
+validator, and should alert on an offset of more than about one epoch. That matters for the
+future-epoch voting rule (clock skew beyond two epochs means missed votes) and for heartbeat
+timing.
 
 To enable it, add the flag to the `timer_flags.json` of every node, for example
 `"reward_by_elapsed_epochs": { "enabled_block": <future block>, "has_bandage": false }`.
@@ -125,6 +158,8 @@ Check the decision against the tokenomics first, because missed epochs are then 
    validators are mixed, old proposers still propose every turn and new proposers add only
    what finality needs, so finality is unaffected. Enable the policy on the remaining
    validators the same way.
+   Do this for all validators close together with the same `IDLE_HEARTBEAT_INTERVAL_MS`:
+   nodes still running the policy off report unhealthy once the network idles.
 3. **Verify the network.** Check the following:
    - the block rate drops while idle;
    - `net_consensusStatus.health` is `true` on all nodes;
@@ -147,6 +182,9 @@ Check the decision against the tokenomics first, because missed epochs are then 
   - finality with a validator offline;
   - heartbeat bursts and their interval;
   - mixed old/new validators;
+  - a vote split at the tip, resolved well before the heartbeat;
+  - a stalled chain (two of three validators down) and a node with zero peers, both
+    reported unhealthy within the threshold;
   - rewards for elapsed epochs.
 
   Set `OLD_CODE_DIR=<checkout of the previous release>` to run the "old" validators from

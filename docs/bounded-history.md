@@ -72,10 +72,26 @@ history, which `ain_listTransactions` and `ain_getIndexedTransaction` serve. A g
 re-index from scratch needs two witnesses that agree on every block, so it needs two
 archive nodes. Recommended:
 
-- Keep at least two archive validators per network (retention `0`), or route historical
-  reads to archive nodes, before pruning any production validator.
-- Do not prune L1 nodes while a relayer `inbox-cursor` could fall behind the window. The
-  relayer reads L1 blocks by number.
+- **Keep at least two archive nodes per network** (retention `0`) before pruning any
+  production validator. Peers syncing from scratch, and a gateway reindex, need two archive
+  sources.
+- **Pin the archive nodes in the layer gateway** with `archiveEndpoints` (at least two
+  entries from `endpoints`) per layer. History indexing then reads only from those nodes.
+  If fewer than two of them agree on the finalized tip, it fails with
+  `Fewer than two configured archiveEndpoints agree ...`. A pruned block shows up as
+  `Block N unavailable from <endpoint> (pruned history?)` instead of "Block witnesses
+  disagree". Historical block reads (`ain_getBlockByNumber`, `ain_getBlockByHash`,
+  `ain_getBlockList`, ...) are also routed to the archive nodes. Other reads and writes
+  still spread over all witnesses.
+- **Enable retention only after every node runs a binary with this feature.** An older
+  requester that gets the explicit "pruned" answer (`chainSegment: null`) logs an error
+  and keeps retrying the same peer.
+- **Never prune L1 below the relayer's position.** The relayer reads L1 blocks by number
+  from its `inbox-cursor`. Before you enable retention on an L1 node, and on every change of
+  `BLOCK_HISTORY_RETENTION`, check that the cursor height is above
+  `latest snapshot - retention`. The node doesn't know the relayer's cursor (the relayer runs
+  on the management server), so this is not enforced in code. Prefer leaving L1 nodes in
+  archive mode.
 - On-prem L2 configs already use `SYNC_MODE=fast`, `SNAPSHOTS_INTERVAL_BLOCK_NUMBER=1000`
   and `MAX_NUM_SNAPSHOTS=10`. That makes the minimum retention 10,020 blocks, and 20,000
   is suggested.

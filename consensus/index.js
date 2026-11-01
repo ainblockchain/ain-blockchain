@@ -1113,10 +1113,12 @@ class Consensus {
       const tip = this.getLastNotarizedBlock();
       tipTimestamp = tip ? tip.timestamp : NaN;
       const extending = tip ? this.node.bp.getExtendingChain(tip.hash) : null;
-      // A block seen above the notarized tip (e.g. its votes haven't reached this node yet)
-      // means the chain is still moving: keep proposing as before.
+      // A block seen above the notarized tip (e.g. its votes haven't reached this node yet), or a
+      // competing block at the tip's height (validators that missed the tip's votes re-proposed
+      // it), means the chain is still moving: keep proposing as before so the split resolves
+      // (the next block carries the tip's votes) instead of waiting for the heartbeat.
       const seenAboveTip = tip && this.node.bp.getHeighestSeenBlockNumber() > tip.number;
-      settled = !seenAboveTip && IdlePolicy.isChainSettled(
+      settled = !seenAboveTip && !this.findCompetingBlocks(tip).length && IdlePolicy.isChainSettled(
           extending ? extending.chain : null, this.node.bc.lastBlock());
     } catch (err) {
       logger.error(`[getIdleProposalDecision] Falling back to proposing: ${err.stack}`);
@@ -1132,6 +1134,47 @@ class Consensus {
     });
   }
 
+  /**
+   * Valid blocks other than `tip` at the tip's height or above it.
+   */
+  findCompetingBlocks(tip) {
+    const competing = [];
+    if (!tip) return competing;
+    for (const [number, hashSet] of this.node.bp.numberToBlockSet.entries()) {
+      if (Number(number) < tip.number) continue;
+      for (const hash of hashSet) {
+        const block = _.get(this.node.bp.hashToBlockInfo.get(hash), 'block');
+        if (block && block.hash !== tip.hash) competing.push(block);
+      }
+    }
+    return competing;
+  }
+
+  getPeerCount() {
+    const inbound = _.get(this.server, 'inbound');
+    const outbound = _.get(this.server, 'client.outbound');
+    return Object.keys(inbound || {}).length + Object.keys(outbound || {}).length;
+  }
+
+  /**
+   * Ages (ms) of the idle-health stall signals (see IdlePolicy.isConsensusHealthyWithIdle).
+   */
+  getIdleStallAgesMs(tip) {
+    const now = Date.now();
+    const finalRoot = this.node.stateManager.getFinalRoot();
+    const pendingTx = this.node.tp.getOldestIncludableNonConsensusTxAgeMs(now,
+        (address) => DB.getAccountNonceAndTimestampFromStateRoot(finalRoot, address));
+    const competing = this.findCompetingBlocks(tip);
+    const seenBlock = competing.reduce((acc, block) => Math.max(acc, now - block.timestamp), 0);
+    if (this.getPeerCount() > 0) {
+      this.noPeersSince = null;
+    } else if (!this.noPeersSince) {
+      this.noPeersSince = now;
+    }
+    const noPeers = this.noPeersSince ? now - this.noPeersSince : 0;
+    return { pendingTx, seenBlock, noPeers };
+  }
+
   tryVoteForValidBlock(proposalBlock) {
     const LOG_HEADER = 'tryVoteForValidBlock';
     logger.info(`[${LOG_HEADER}] Trying to vote for ${proposalBlock.number} / ` +
@@ -1143,6 +1186,15 @@ class Consensus {
     if (proposalBlock.epoch < this.epoch) {
       logger.info(
           `[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.epoch})`);
+    }
+    // NOTE: Under 'reward_by_elapsed_epochs' an epoch far in the future would inflate the block
+    // reward (and stall honest proposers), so don't vote for blocks ahead of local time beyond a
+    // small clock-skew tolerance. Requires synchronized clocks (NTP/chrony) on validators.
+    if (isEnabledTimerFlag('reward_by_elapsed_epochs', proposalBlock.number) &&
+        proposalBlock.epoch > this.epoch + ConsensusConsts.MAX_FUTURE_EPOCHS_TO_VOTE) {
+      logger.info(`[${LOG_HEADER}] Not voting for a block from a future epoch ` +
+          `(${proposalBlock.epoch} / ${this.epoch})`);
+      return;
     }
     const myAddr = this.node.account.address;
     const validatorInfo = proposalBlock.validators[myAddr];
@@ -1517,12 +1569,15 @@ class Consensus {
     if (!idleConfig.enabled) return false;
     // NOTE: With idle block skipping, an old finalized block alone doesn't mean a stall.
     let unfinalizedChain = null;
+    let stallAgesMs = null;
     try {
       const tip = this.getLastNotarizedBlock();
       const extending = tip ? this.node.bp.getExtendingChain(tip.hash) : null;
       unfinalizedChain = extending ? extending.chain : null;
+      stallAgesMs = this.getIdleStallAgesMs(tip);
     } catch (err) {
-      unfinalizedChain = null;
+      logger.error(`[isConsensusHealthy] Failed to read the chain view: ${err.stack}`);
+      return false;
     }
     return IdlePolicy.isConsensusHealthyWithIdle({
       currentEpoch: this.epoch,
@@ -1531,6 +1586,7 @@ class Consensus {
       thresholdEpochs: healthThresholdEpoch,
       epochMs: this.node.getBlockchainParam('genesis/epoch_ms'),
       idleConfig,
+      stallAgesMs,
     });
   }
 
